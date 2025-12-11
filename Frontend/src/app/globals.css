@@ -1,0 +1,395 @@
+@import "preflight.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media print {
+  html,
+  body {
+    display: none;
+  }
+}
+
+
+
+.login-register-bg {
+  background-image: url("./../../public/background.jpg");
+  height: 100%;
+
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(8px);
+  -webkit-filter: blur(8px);
+}
+
+.login-register-component {
+  /* background-color: rgb(0,0,0); 
+    background-color: rgba(0,0,0, 0.4); */
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.login-form,
+.register-form {
+  .ant-form-item-control-input-content {
+    .ant-input,
+    .ant-input-password {
+      border: none;
+      border-bottom: solid 1px #eaeaea;
+      border-radius: 0;
+      box-shadow: none !important;
+    }
+
+    .ant-input-affix-wrapper {
+      .ant-input {
+        border: none;
+      }
+    }
+
+    .ant-form-item-control-input-content {
+      .ant-picker {
+        border: none;
+        border-bottom: solid 1px #eaeaea;
+        border-radius: 0;
+        box-shadow: none !important;
+      }
+    }
+
+    .ant-select-selector {
+      border-top: none !important;
+      border-right: none !important;
+      border-left: none !important;
+      border-radius: 0px;
+    }
+  }
+}
+
+.register-form {
+  .ant-carousel .slick-dots li button {
+    background: rgb(54, 77, 121);
+    opacity: 0.3;
+  }
+
+  .ant-carousel .slick-dots li.slick-active button {
+    background: rgb(54, 77, 121);
+    opacity: 1;
+  }
+
+  .slick-dots.slick-dots-bottom {
+  }
+}
+
+.ql-editor {
+  min-height: 100px;
+}
+
+.test-result-collapse {
+  .ant-collapse-expand-icon {
+    margin-top: 1.25rem;
+  }
+}
+
+.pdf-page {
+  border: 1px solid #000; /* Example: 1px solid black border */
+  box-sizing: border-box; /* This ensures the border doesn't affect the size */
+}
+
+.ql-toolbar.ql-snow {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.ql-container.ql-snow {
+  border-bottom-right-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.blink {
+  animation: blink 1s linear infinite;
+}
+
+.button-tile {
+  aspect-ratio: 1;
+}
+
+.custom-badge {
+  sup {
+    animation: blink 1s linear infinite;
+  }
+}
+
+.quizModalFooter {
+  text-align: center !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.quizModalCustom {
+  max-width: 75vw !important; /* Maximum width */
+  width: 75vw !important; /* Width */
+  height: 75vh !important; /* Height */
+  top: 12.5vh !important; /* Position from top */
+  overflow-y: auto !important; /* Scroll for overflow content */
+}
+
+.ant-badge-count {
+  border-radius: 4px !important; /* Adjust for desired roundness */
+  width: 20px !important; /* Set a fixed width */
+  height: 20px !important; /* Set a fixed height to make it square */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: none !important;
+}
+
+.notification-collpase {
+  .ant-badge {
+    line-height: 1.5;
+  }
+
+  .ant-collapse-item {
+    /* border: 2px solid red; */
+  }
+}
+
+.custom-ul li {
+  list-style-type: "|";
+  margin-right: 5px;
+  margin-left: 20px; /* Adjust as needed for proper indentation */
+}
+
+/* ::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 7px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, .5);
+    box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+  } */
+
+.reading-passage {
+  max-height: 700px;
+  overflow-y: scroll;
+}
+
+.reading-passage::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+
+.reading-passage::-webkit-scrollbar:vertical {
+  width: 11px;
+}
+
+.reading-passage::-webkit-scrollbar:horizontal {
+  height: 11px;
+}
+
+.reading-passage::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  border: 2px solid white; /* should match background, can't be transparent */
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.question-table-class table {
+  border-collapse: collapse; /* This is important for border display */
+}
+
+.question-table-class td,
+.myTableClass th {
+  border: 1px solid black; /* Adjust the color and width as needed */
+  padding: 8px; /* Optional: Adjust padding for cell content */
+}
+
+/* Hide the default checkbox */
+.custom-checkbox input {
+  opacity: 0;
+  position: absolute;
+}
+
+/* Style your custom checkbox */
+.custom-checkbox .checkmark {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+  vertical-align: middle;
+  position: relative;
+}
+
+/* Style the "X" sign using ::before and ::after for the diagonal lines */
+.custom-checkbox input:checked + .checkmark::before,
+.custom-checkbox input:checked + .checkmark::after {
+  content: "";
+  position: absolute;
+  background-color: #333;
+  height: 2px; /* Line thickness */
+  width: 24px; /* Line length - should be slightly longer to go corner to corner */
+  top: 9px; /* Center vertically */
+  left: -2px; /* Adjust based on width to ensure centering */
+}
+
+.custom-checkbox input:checked + .checkmark::before {
+  transform: rotate(45deg); /* Diagonal line */
+}
+
+.custom-checkbox input:checked + .checkmark::after {
+  transform: rotate(-45deg); /* Opposite diagonal line */
+}
+
+.bookmark {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  background-color: maroon; /* Visual styling */
+  padding: 5px; /* Padding around the text */
+  border-radius: 8px; /* Rounded corner for aesthetics */
+  text-decoration: none; /* Removes the underline from the link */
+  color: black;
+}
+
+.arrow-down-outside {
+  width: 0;
+  height: 0;
+  border-left: 50px solid transparent;
+  border-right: 50px solid transparent;
+
+  border-top: 40px solid gray;
+}
+
+.arrow-down-inside {
+  width: 0;
+  height: 0;
+  border-left: 48px solid transparent;
+  border-right: 48px solid transparent;
+
+  border-top: 40px solid #fff;
+}
+
+body.fullscreen-mode footer {
+  bottom: 0;
+  position: relative;
+}
+
+.mathfield {
+  background-color: whitesmoke;
+  width: 100%;
+  min-height: "5rem";
+  border: 2px solid lightblue;
+  border-radius: "1rem";
+}
+
+.sider-icon-container {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  transition: all 0.3s ease;
+}
+
+.sider-icon-container.collapsed {
+  right: 0;
+}
+
+.tablestyles {
+  .ant-table {
+    border: 1px solid #e0e0e0;
+    height: 70%;
+  }
+  .ant-table-thead > tr > th {
+    background-color: #ffffff;
+    color: #667085;
+    font-weight: normal;
+  }
+
+  .ant-table-tbody > tr:nth-child(even) {
+    background-color: #f7f7f7;
+  }
+
+  .ant-table-tbody > tr:nth-child(odd) {
+    background-color: #ffffff;
+  }
+
+  .ant-table-tbody > tr > td {
+    padding: 9px;
+  }
+
+  .footer-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.ant-menu-inline .ant-menu-item {
+    height: 33px;
+    line-height: 33px;
+    list-style-position: inside;
+    list-style-type: disc;
+}
+
+.ant-card-body {
+  padding-top: 0%;
+}
+
+.ant-form-item-control-input .ant-input-number-handler-wrap {
+  visibility: visible !important;
+  opacity: 1;
+}
+.ant-message-notice-content {
+  font-size: 20px;
+}
+
+.ant-message {
+  right: 10px !important;
+}
+
+.ant-notification-notice {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+
+/* Remove TinyMCE overlay background completely */
+.tox-dialog-wrap__backdrop {
+  background: transparent !important;  /* remove dimming */
+}
+
+.tox-dialog-wrap {
+  pointer-events: none !important;     /* let clicks pass through backdrop */
+}
+
+.tox-dialog {
+  pointer-events: auto !important;     /* keep dialog usable */
+}
+
+/* Highlight label when TinyMCE focused */
+.editor-focused .ant-form-item-label > label {
+  color: #1677ff !important; /* AntD blue */
+  font-weight: 600;
+}
+
+/* Highlight border too */
+.editor-focused .tox-tinymce {
+  border-color: #1677ff !important;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+}
