@@ -5,20 +5,24 @@ import axios from "axios";
 import "./Dashboard.css";
 
 import Header from "@/components/student_report/Header";
-import Tabs from "@/components/student_report/Tabs";
 import PracticeDonut from "@/components/student_report/PracticeDonut";
 import AccuracyChart from "@/components/student_report/AccuracyChart";
 import TimeCompact from "@/components/student_report/TimeCompact";
 import Heatmap from "@/components/student_report/Heatmap";
-import TabsCourses from "@/components/student_report/TabsCourses";
 import TopicWiseReport from "@/components/student_report/TopicWiseReport";
+import CourseDropdown from "@/components/student_report/CourseDropdown";
+import TestTypeDropdown from "@/components/student_report/TestTypeDropdown";
+import Tabs from "@/components/student_report/Tabs";
 
 import { BASE_URL } from "@/app/constants/apiConstants";
 import { useParams } from "next/navigation";
 import { subjectColors } from "./data";
 import Topic_Wise_Practice from "@/components/student_report/Topic_Wise_Practice";
 import TopicAccuracyDummy from "@/components/student_report/TopicAccuracyDummy";
-import SubTopicPracticeStyled from "@/components/student_report/SubTopicPracticeStyled"
+import SubTopicPracticeStyled from "@/components/student_report/SubTopicPracticeStyled";
+import Math_Topic_Wise_Practice from "@/components/student_report/Math_Topic_Wise_Practice";
+import Math_TopicAccuracy from "@/components/student_report/Math_TopicAccuracy";
+import Math_SubTopicPractice from "@/components/student_report/Math_SubTopicPractice"
 
 
 
@@ -173,18 +177,45 @@ function Dashboard() {
     <div className="dashboard-container">
       <Header />
 
-      <TabsCourses
-        courses={coursesList}
-        selectedCourse={selectedCourse}
-        setSelectedCourse={setSelectedCourse}
-      />
+      {/* INLINE DROPDOWNS - Course & Test Type */}
+      <div className="w-full mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-auto">
+          
+          {/* COURSE CARD */}
+          <div className="bg-gray-100 rounded-xl p-5 border-l-4 border-orange-400">
+            <CourseDropdown 
+              coursesList={coursesList}
+              selectedCourse={selectedCourse}
+              setSelectedCourse={setSelectedCourse}
+            />
+          </div>
 
-      <Tabs
-        testType={testType}
-        setTestType={setTestType}
-        activeReportTab={activeReportTab}
-        setActiveReportTab={setActiveReportTab}
-      />
+          {/* TEST TYPE CARD */}
+          <div className="bg-gray-100 rounded-xl p-5 border-l-4 border-orange-400">
+            <TestTypeDropdown 
+              testType={testType}
+              setTestType={setTestType}
+            />
+          </div>
+
+        </div>
+      </div>
+
+      {/* REPORT TYPE TABS */}
+      <div className="w-full mb-6">
+        <Tabs
+          tabs={[
+            { value: 'subject', label: 'Subject Wise Report' },
+            { value: 'english', label: 'English Topic Wise Report' },
+            { value: 'math', label: 'Math Topic Wise Report' }
+          ]}
+          activeTab={activeReportTab}
+          onChange={setActiveReportTab}
+          variant="pills"
+          className="report-tabs"
+        />
+      </div>
+
 
       {activeReportTab === "subject" && (
         <div className="data-grid-v2">
@@ -227,6 +258,21 @@ function Dashboard() {
     {/* FULL WIDTH BELOW */}
     <div style={{ marginTop: "25px" }}>
       <SubTopicPracticeStyled />
+    </div>
+  </>
+)}
+
+{activeReportTab === "math" && (
+  <>
+    {/* TOP ROW (2 COLUMNS) */}
+    <div className="data-grid-v1">
+      <Math_Topic_Wise_Practice />
+      <Math_TopicAccuracy />
+    </div>
+
+    {/* FULL WIDTH BELOW */}
+    <div style={{ marginTop: "25px" }}>
+      <Math_SubTopicPractice />
     </div>
   </>
 )}

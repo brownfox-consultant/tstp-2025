@@ -1,108 +1,162 @@
 "use client";
 
-import { PieChart, Pie, Cell } from "recharts";
+import { useState } from "react";
 
 export default function PracticeDonut({ practice }) {
-  if (!practice) return null;
+  const [activeIndex, setActiveIndex] = useState(0);
 
+  // Default data when no practice data available
+  const defaultPractice = [
+    { subject: "English", percent: 0, color: "#FFD36A" },
+    { subject: "Math", percent: 0, color: "#F7931E" },
+  ];
+
+  // Use practice data if available, otherwise use default
+  const displayData = practice && practice.length > 0 ? practice : defaultPractice;
+
+  const activeSubject = displayData[activeIndex] || displayData[0];
+  const percent = activeSubject.percent;
+
+  // Wave path calculation based on percentage
+  const waveHeight = 180 - (percent / 100) * 160; // 180 is bottom, higher percent = lower waveHeight
+  
   return (
-    <div className="data-card practice-card">
-      <h3 className="card-title">
-       
-        Subject Wise Practice
-      </h3>
-
-      {/* TOP SECTION: TWO DONUTS */}
-      <div
+    <div className="data-card practice-card" style={{ padding: "24px" }}>
+      {/* TITLE */}
+      <h3
         style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: "10px",
+          fontSize: "18px",
+          fontWeight: "700",
+          color: "#333",
           marginBottom: "20px",
         }}
       >
-        {practice.map((p, i) => (
-          <PieChart key={i} width={140} height={140}>
-            <Pie
-              data={[
-                { name: "value", value: p.percent },
-                { name: "rest", value: 100 - p.percent },
-              ]}
-              cx="50%"
-              cy="50%"
-              innerRadius={45}
-              outerRadius={60}
-              startAngle={90}
-              endAngle={-270}
-              dataKey="value"
-            >
-              <Cell fill={p.color} />
-              <Cell fill="#eee" />
-            </Pie>
+        Subject Practice Progress
+      </h3>
 
-            {/* SUBJECT SHORT NAME */}
-            <text
-              x={75}
-              y={70}
-              textAnchor="middle"
-              fontSize="16"
-              fontWeight="700"
-              fill="#333"
-            >
-              {p.subject.substring(0, 2)}
-            </text>
-
-            {/* PERCENTAGE */}
-            <text
-              x={75}
-              y={90}
-              textAnchor="middle"
-              fontSize="13"
-              fontWeight="600"
-              fill="#333"
-            >
-              {p.percent}%
-            </text>
-          </PieChart>
+      {/* SUBJECT TABS */}
+      <div
+        style={{
+          display: "flex",
+          backgroundColor: "#f0f0f0",
+          borderRadius: "30px",
+          padding: "4px",
+          marginBottom: "30px",
+        }}
+      >
+        {displayData.map((p, index) => (
+          <button
+            key={p.subject}
+            onClick={() => setActiveIndex(index)}
+            style={{
+              flex: 1,
+              padding: "10px 20px",
+              borderRadius: "25px",
+              border: "none",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              background:
+                activeIndex === index
+                  ? "linear-gradient(90deg, #F7931E, #F15A24)"
+                  : "transparent",
+              color: activeIndex === index ? "#fff" : "#666",
+            }}
+          >
+            {p.subject}
+          </button>
         ))}
       </div>
 
-      {/* BOTTOM SECTION: LABEL INDICATOR LIST */}
+      {/* WATERFALL CIRCLE */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "12px",
-          paddingLeft: "140px",
+          alignItems: "center",
         }}
       >
-        {practice.map((p) => (
-          <div
-            key={p.subject}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              fontSize: "14px",
-              fontWeight: "600",
-              color: p.color,
-            }}
+        <svg width="200" height="200" viewBox="0 0 200 200">
+          <defs>
+            {/* Clip path for circle */}
+            <clipPath id="circleClip">
+              <circle cx="100" cy="100" r="85" />
+            </clipPath>
+
+            {/* Gradient for wave */}
+            <linearGradient id="waveGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FFE5B4" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#FFD36A" stopOpacity="1" />
+            </linearGradient>
+          </defs>
+
+          {/* Outer circle border */}
+          <circle
+            cx="100"
+            cy="100"
+            r="90"
+            fill="none"
+            stroke="#FFD36A"
+            strokeWidth="3"
+          />
+
+          {/* Inner white background */}
+          <circle cx="100" cy="100" r="85" fill="#fff" />
+
+          {/* Wave fill */}
+          <g clipPath="url(#circleClip)">
+            <path
+              d={`
+                M 0 ${waveHeight}
+                Q 25 ${waveHeight - 15} 50 ${waveHeight}
+                T 100 ${waveHeight}
+                T 150 ${waveHeight}
+                T 200 ${waveHeight}
+                L 200 200
+                L 0 200
+                Z
+              `}
+              fill="url(#waveGradient)"
+            >
+              {/* Wave animation */}
+              <animate
+                attributeName="d"
+                dur="3s"
+                repeatCount="indefinite"
+                values={`
+                  M 0 ${waveHeight} Q 25 ${waveHeight - 12} 50 ${waveHeight} T 100 ${waveHeight} T 150 ${waveHeight} T 200 ${waveHeight} L 200 200 L 0 200 Z;
+                  M 0 ${waveHeight} Q 25 ${waveHeight + 12} 50 ${waveHeight} T 100 ${waveHeight} T 150 ${waveHeight} T 200 ${waveHeight} L 200 200 L 0 200 Z;
+                  M 0 ${waveHeight} Q 25 ${waveHeight - 12} 50 ${waveHeight} T 100 ${waveHeight} T 150 ${waveHeight} T 200 ${waveHeight} L 200 200 L 0 200 Z
+                `}
+              />
+            </path>
+          </g>
+
+          {/* Percentage text */}
+          <text
+            x="100"
+            y="110"
+            textAnchor="middle"
+            fontSize="42"
+            fontWeight="700"
+            fill="#333"
           >
-            <span
-              style={{
-                width: "12px",
-                height: "12px",
-                borderRadius: "50%",
-                background: p.color,
-                display: "inline-block",
-              }}
-            />
-            <span style={{ width: "80px", color: "#333", fontWeight: "500" }}>
-              {p.subject}
-            </span>
-            <span style={{ fontWeight: "700" }}>{p.percent}%</span>
-          </div>
-        ))}
+            {percent}%
+          </text>
+        </svg>
+
+        {/* Subject label below circle */}
+        <div
+          style={{
+            marginTop: "15px",
+            fontSize: "16px",
+            fontWeight: "700",
+            color: "#F7931E",
+          }}
+        >
+          {activeSubject.subject}
+        </div>
       </div>
     </div>
   );

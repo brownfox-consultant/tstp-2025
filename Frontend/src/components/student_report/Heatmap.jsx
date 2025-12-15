@@ -4,202 +4,143 @@ import { useState } from "react";
 
 function levelForSeconds(sec) {
   if (sec === 0) return 0;
-  if (sec < 180) return 1;
-  if (sec < 600) return 2;
-  return 3;
+  if (sec < 1800) return 1;
+  if (sec < 3600) return 2;
+  if (sec < 7200) return 3;
+  return 4;
 }
 
 function secondsToLabel(sec) {
   if (sec === 0) return "";
   if (sec < 60) return `${sec}s`;
-  return `${Math.round(sec / 60)}m`;
+  if (sec < 3600) return `${Math.round(sec / 60)}min`;
+  const hours = Math.floor(sec / 3600);
+  const mins = Math.round((sec % 3600) / 60);
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}min`;
 }
 
-/* Build a full 30-day month */
-function buildFullMonth(dateWise, monthIndex) {
-  const base = Array.from({ length: 31 }, (_, i) => ({
-    dayLabel: (i + 1).toString(),
-    seconds: 0,
-  }));
-
-  dateWise
-    .filter((d) => d.monthIndex === monthIndex) // 👈 match month
-    .forEach((d) => {
-      const index = parseInt(d.dayLabel) - 1;
-      if (base[index]) base[index].seconds = d.seconds;
-    });
-
-  return base;
+function getFirstDayOffset(year, month) {
+  const firstDay = new Date(year, month, 1).getDay();
+  return firstDay === 0 ? 6 : firstDay - 1;
 }
 
+function getDaysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
 
-/* Month names */
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December"
 ];
 
-export default function Heatmap({ dateWise }) {
+// Level to Tailwind classes mapping
+const levelClasses = {
+  0: "bg-gray-200 text-gray-600",
+  1: "bg-orange-100 text-gray-600",
+  2: "bg-orange-300 text-gray-700",
+  3: "bg-orange-400 text-white",
+  4: "bg-orange-500 text-white",
+};
 
+const legendClasses = ["bg-gray-200", "bg-orange-100", "bg-orange-300", "bg-orange-400", "bg-orange-500"];
+
+export default function Heatmap({ dateWise = [] }) {
   const [monthOffset, setMonthOffset] = useState(0);
 
-  
-
   const current = new Date();
-  const month1Index = (current.getMonth() - monthOffset + 12) % 12;
-  const month2Index = (month1Index - 1 + 12) % 12;
-  const month1 = buildFullMonth(dateWise, month1Index);
-const month2 = buildFullMonth(dateWise, month2Index);
-  const months = [
-    { title: MONTH_NAMES[month2Index], data: month2 },
-    { title: MONTH_NAMES[month1Index], data: month1 },
-  ];
+  const targetDate = new Date(current.getFullYear(), current.getMonth() - monthOffset, 1);
+  const year = targetDate.getFullYear();
+  const month = targetDate.getMonth();
+  
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDayOffset = getFirstDayOffset(year, month);
+  
+  const days = [];
+  
+  for (let i = 0; i < firstDayOffset; i++) {
+    days.push({ isEmpty: true });
+  }
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayData = dateWise.find(d => 
+      parseInt(d.dayLabel) === day && d.monthIndex === month
+    );
+    days.push({
+      dayLabel: day.toString(),
+      seconds: dayData?.seconds || 0,
+      isEmpty: false
+    });
+  }
+
+  const isCurrentMonth = monthOffset === 0;
 
   return (
-    <div className="data-card calendar-card">
-      <h3 className="card-title">📅 Last 2 Months — Time Spent</h3>
-
-      {/* Navigation */}
-      <div className="month-nav">
-        <button onClick={() => setMonthOffset(monthOffset + 1)}>← Prev</button>
-        <span> {MONTH_NAMES[month2Index]} & {MONTH_NAMES[month1Index]} </span>
-        <button
-          onClick={() => monthOffset > 0 && setMonthOffset(monthOffset - 1)}
-          disabled={monthOffset === 0}
+    <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 md:mb-8">
+        <button 
+          className="px-5 py-2.5 rounded-full font-semibold text-sm border-2 border-orange-500 text-orange-500 bg-transparent hover:bg-orange-50 transition-all"
+          onClick={() => setMonthOffset(monthOffset + 1)}
+        >
+          ← Prev
+        </button>
+        
+        <h2 className="text-xl md:text-xl font-bold text-gray-800">
+          {MONTH_NAMES[month]} {year}
+        </h2>
+        
+        <button 
+          className={`px-5 py-2.5 rounded-full font-semibold text-sm border-2 transition-all ${
+            isCurrentMonth 
+              ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed" 
+              : "bg-orange-500 border-orange-500 text-white hover:bg-orange-600"
+          }`}
+          onClick={() => setMonthOffset(monthOffset - 1)}
+          disabled={isCurrentMonth}
         >
           Next →
         </button>
       </div>
 
-      <div className="two-month-wrapper">
-        {months.map((month, mIndex) => (
-          <div key={mIndex} className="single-month">
-
-            <div className="month-title">{month.title}</div>
-
-            <div className="calendar-header">
-              {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
-
-            <div className="calendar-grid">
-              {month.data.map((d) => (
-                <div
-                  key={`${d.dayLabel}-${mIndex}`}
-                  className="calendar-day-cell"
-                  data-level={levelForSeconds(d.seconds)}
-                >
-                  <div className="day-number">{d.dayLabel}</div>
-                  <div className="time-spent">{secondsToLabel(d.seconds)}</div>
-                </div>
-              ))}
-            </div>
+      {/* Weekdays */}
+      <div className="grid grid-cols-7 gap-2 md:gap-3 mb-2 md:mb-3">
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+          <div key={day} className="text-center text-sm font-semibold text-gray-400 py-2">
+            {day}
           </div>
         ))}
       </div>
 
-      <style jsx>{`
-        /* Overall container width */
-        .calendar-card {
-          width: 100%;
-        }
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-2 md:gap-3">
+        {days.map((d, index) => (
+          d.isEmpty ? (
+            <div key={`empty-${index}`} className="aspect-square" />
+          ) : (
+            <div
+              key={`day-${d.dayLabel}`}
+              className={`aspect-square rounded-xl flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg cursor-pointer ${levelClasses[levelForSeconds(d.seconds)]}`}
+            >
+              <span className="text-base md:text-lg font-bold">{d.dayLabel}</span>
+              {d.seconds > 0 && (
+                <span className="text-[9px] md:text-[10px] font-medium mt-0.5 opacity-90">
+                  {secondsToLabel(d.seconds)}
+                </span>
+              )}
+            </div>
+          )
+        ))}
+      </div>
 
-        .month-nav {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 20px;
-          margin-bottom: 15px;
-          font-weight: 600;
-          color: #333;
-        }
-
-        .month-nav button {
-          background: #f59403;
-          border: none;
-          padding: 6px 14px;
-          border-radius: 6px;
-          color: white;
-          cursor: pointer;
-        }
-
-        .month-nav button:disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
-
-        /* Make months take full width */
-        .two-month-wrapper {
-          display: flex;
-          gap: 50px;
-          justify-content: center;
-        }
-
-        .single-month {
-          flex: 1;
-        }
-
-        .month-title {
-          text-align: center;
-          font-size: 18px;
-          font-weight: 700;
-          margin-bottom: 10px;
-        }
-
-        /* Week header */
-        .calendar-header {
-          display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          font-size: 13px;
-          color: #666;
-          font-weight: 600;
-          margin-bottom: 8px;
-          text-align: center;
-        }
-
-        /* Bigger calendar */
-        .calendar-grid {
-          display: grid;
-          grid-template-columns: repeat(7, 55px); /* ⬅️ FIXED WIDTH COLUMNS */
-          gap: 12px;
-          justify-content: center;
-        }
-
-        /* Bigger day cells */
-        .calendar-day-cell {
-          width: 55px;  /* ⬅️ Bigger width */
-          height: 55px; /* ⬅️ Bigger height */
-          border-radius: 10px;
-          border: 1px solid #eee;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          transition: 0.2s;
-          font-size: 12px;
-        }
-
-        .calendar-day-cell:hover {
-          transform: scale(1.1);
-          box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-
-        .calendar-day-cell[data-level="0"] { background: #f4f4f4; }
-        .calendar-day-cell[data-level="1"] { background: #ffe7b5; }
-        .calendar-day-cell[data-level="2"] { background: #ffbe57; color: #fff; }
-        .calendar-day-cell[data-level="3"] { background: #ff9500; color: #fff; }
-
-        .day-number {
-          font-size: 14px;
-          font-weight: 700;
-        }
-
-        .time-spent {
-          font-size: 11px;
-          opacity: 0.8;
-        }
-      `}</style>
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-2 mt-5 md:mt-6">
+        <span className="text-xs text-gray-400">Less</span>
+        {legendClasses.map((cls, i) => (
+          <div key={i} className={`w-4 h-4 rounded ${cls}`} />
+        ))}
+        <span className="text-xs text-gray-400">More</span>
+      </div>
     </div>
   );
 }

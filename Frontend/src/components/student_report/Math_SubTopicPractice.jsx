@@ -15,7 +15,7 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend);
 
-export default function SubTopicPracticeStyled() {
+export default function Math_SubTopicPractice() {
   // State to track window width for dynamic chart resizing
   const [windowWidth, setWindowWidth] = useState(1024); // Default to desktop
 
@@ -42,30 +42,45 @@ export default function SubTopicPracticeStyled() {
   const isMobile = windowWidth < 768;
   const isSmallMobile = windowWidth < 480;
 
-  // 🔥 EXTENDED DUMMY DATA
+  // 🔥 MATH TOPIC DUMMY DATA
   const topics = [
     {
-      title: "Information and Ideas",
+      title: "Algebra",
       rows: [
-        { label: "Central Ideas and Details", q: 18, t: 38, a: 76 },
-        { label: "Inferences", q: 22, t: 42, a: 58 },
-        { label: "Command of Evidence", q: 28, t: 28, a: 92 },
+        { label: "Linear equations", q: 15, t: 38, a: 76 },
+        { label: "Linear functions", q: 18, t: 42, a: 58 },
+        { label: "Systems of two linear equations in two variables", q: 22, t: 28, a: 92 },
+        { label: "Linear inequalities in one or two variables", q: 18, t: 35, a: 75 },
+        { label: "Word-Based Problems", q: 22, t: 48, a: 56 },
+        { label: "Coordinate Geometry", q: 15, t: 32, a: 85 },
+        { label: "Exponents and Radicals", q: 18, t: 45, a: 98 },
+        { label: "Absolute Value Function / Modulus Functions", q: 15, t: 32, a: 85 },
       ],
     },
     {
-      title: "Craft & Structure",
+      title: "Advanced Math",
       rows: [
-        { label: "Words in Context", q: 15, t: 12, a: 76 },
-        { label: "Text Structure & Purpose", q: 18, t: 15, a: 58 },
-        { label: "Cross-Text Connections", q: 22, t: 20, a: 92 },
+        { label: "Quadratic and Nonlinear functions", q: 15, t: 12, a: 76 },
+        { label: "Nonlinear equations in one variable", q: 18, t: 15, a: 58 },
+        { label: "Systems of equations in two variables", q: 22, t: 20, a: 92 },
+        { label: "Equivalent expressions", q: 22, t: 32, a: 68 },
+        { label: "Advance Questions of Function and Graph", q: 12, t: 63, a: 95 },
       ],
     },
     {
-      title: "Expression of Ideas",
+      title: "Problem-Solving & Data Analysis",
       rows: [
-        { label: "Organization", q: 14, t: 18, a: 65 },
-        { label: "Effective Language Use", q: 20, t: 22, a: 56 },
-        { label: "Logical Sequence", q: 26, t: 25, a: 88 },
+        { label: "Ratios & Proportions", q: 26, t: 28, a: 88 },
+        { label: "Percentages", q: 23, t: 25, a: 90 },
+        { label: "Data Interpretation", q: 20, t: 32, a: 75 },
+      ],
+    },
+    {
+      title: "Geometry & Trigonometry",
+      rows: [
+        { label: "Area & Volume", q: 18, t: 36, a: 70 },
+        { label: "Right Triangles", q: 21, t: 33, a: 82 },
+        { label: "Circles", q: 17, t: 38, a: 66 },
       ],
     },
   ];

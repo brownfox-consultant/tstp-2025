@@ -277,9 +277,9 @@ function Dashboard() {
         <div className="data-grid-v2">
           {/* Card 1: Subject Wise Practice (donut + legend) */}
           <div className="data-card practice-card">
-            <h3 className="card-title">
+            {/* <h3 className="card-title">
               <PracticeIcon /> Subject Wise Practice
-            </h3>
+            </h3> */}
             <div className="practice-content">
              
    <div style={{ display: "flex", gap: "20px" }}>

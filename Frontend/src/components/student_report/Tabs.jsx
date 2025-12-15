@@ -1,78 +1,46 @@
-export default function Tabs({ testType, setTestType, activeReportTab, setActiveReportTab }) {
+"use client";
+
+import React, { useState } from 'react';
+import './Tabs.css';
+
+const Tabs = ({ 
+  tabs = [], 
+  activeTab, 
+  onChange,
+  className = '' 
+}) => {
+  const [active, setActive] = useState(activeTab || (tabs.length > 0 ? tabs[0].value : ''));
+
+  const handleTabClick = (value) => {
+    setActive(value);
+    if (onChange) {
+      onChange(value);
+    }
+  };
+
   return (
-    <div style={{ width: "100%" }}>
-
-      {/* TEST TYPE TABS */}
-      <div
-        className="test-type-tabs"
-        style={{ width: "100%", display: "flex", justifyContent: "center" }}
-      >
+    <div className={`tabs ${className}`}>
+      {tabs.map((tab, index) => (
         <button
-          className={`custom-tab ${testType === "fullLength" ? "active" : ""}`}
-          onClick={() => setTestType("fullLength")}
+          key={tab.value || index}
+          className={`tab ${active === tab.value ? 'tab-active' : ''}`}
+          onClick={() => handleTabClick(tab.value)}
+          disabled={tab.disabled}
         >
-          Full Length Test
+          {tab.icon && <span className="tab-icon">{tab.icon}</span>}
+          <span className="tab-label">{tab.label}</span>
+          {tab.badge && <span className="tab-badge">{tab.badge}</span>}
         </button>
-
-        <button
-          className={`custom-tab ${testType === "practiceTest" ? "active" : ""}`}
-          onClick={() => setTestType("practiceTest")}
-        >
-          Practice Test
-        </button>
-      </div>
-
-      {/* REPORT TABS */}
-      <div
-        className="report-buttons"
-        style={{ width: "100%", display: "flex", justifyContent: "center" }}
-      >
-        <button
-          className={`custom-tab ${activeReportTab === "subject" ? "active" : ""}`}
-          onClick={() => setActiveReportTab("subject")}
-        >
-          Subject Wise Report
-        </button>
-
-        <button
-          className={`custom-tab ${activeReportTab === "english" ? "active" : ""}`}
-          onClick={() => setActiveReportTab("english")}
-        >
-          English Topic Wise Report
-        </button>
-
-        <button
-          className={`custom-tab ${activeReportTab === "math" ? "active" : ""}`}
-          onClick={() => setActiveReportTab("math")}
-        >
-          Math Topic Wise Report
-        </button>
-      </div>
-
-      {/* INLINE CSS */}
-      <style jsx>{`
-        .custom-tab {
-          background: #f3f3f3;
-          color: #444;
-          padding: 10px 20px;
-          border-radius: 999px;
-          border: none;
-          cursor: pointer;
-          transition: 0.25s;
-          font-weight: 500;
-          margin: 0 5px;
-        }
-
-        .custom-tab:hover {
-          background: #e5e5e5;
-        }
-
-        .custom-tab.active {
-          background: #f59403; /* ORANGE */
-          color: white;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-        }
-      `}</style>
+      ))}
+      <div 
+        className="tab-indicator" 
+        style={{
+          width: `${99 / tabs.length}%`,
+          transform: `translateX(${tabs.findIndex(t => t.value === active) * 100}%)`
+        }}
+      />
     </div>
   );
-}
+};
+
+export default Tabs;
