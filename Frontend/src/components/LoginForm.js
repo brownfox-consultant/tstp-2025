@@ -145,6 +145,7 @@ function LoginForm({ handleNext }) {
                   message: "Please enter a valid email address.",
                 },
               ]}
+              style={{ padding: "0" }}
             >
               <Input />
             </Form.Item>
