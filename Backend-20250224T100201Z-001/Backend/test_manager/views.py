@@ -3041,6 +3041,300 @@ class ResultViewSet(viewsets.ModelViewSet):
             })
 
         return Response(response)
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAuthenticated],
+    url_path='Topic_Wise_Practice'
+)
+    def Topic_Wise_Practice(self, request, *args, **kwargs):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+
+        if not student_id or not course_id:
+            return Response({"error": "student_id and course_id are required"}, status=400)
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+        course_subjects = CourseSubjects.objects.filter(course=course)
+
+        final_response = []
+
+        for cs in course_subjects:
+            
+            subject_block = {
+                "subject": cs.subject.name,
+                "topics": []
+            }
+
+            # Get all topics under this subject
+            topics = Topic.objects.filter(course_subject=cs)
+
+            for topic in topics:
+
+                # ⭐ Total available DB questions for this topic
+                total_questions = Question.objects.filter(
+                    course_subject=cs,
+                    topic=topic
+                ).count()
+
+                practiced_ids = set()
+
+                # ----------------------------------------------------
+                # FULL LENGTH TEST QUESTIONS (from QuestionAnswer)
+                # ----------------------------------------------------
+                if test_type in ["fullLength", "all"]:
+                    full_qs = QuestionAnswer.objects.filter(
+                        result__test_submission__student=student,
+                        course_subject=cs,
+                        question__topic=topic      # ✅ FIXED FIELD
+                    ).values_list("question_id", flat=True)
+
+                    practiced_ids |= set(full_qs)
+
+                # ----------------------------------------------------
+                # PRACTICE TEST QUESTIONS (from PracticeTestResult)
+                # ----------------------------------------------------
+                if test_type in ["practiceTest", "all"]:
+
+                    practice_tests = PracticeTest.objects.filter(
+                        student=student,
+                        course_subject=cs
+                    )
+
+                    practice_qs = PracticeQuestionAnswer.objects.filter(
+                        practice_test_result__practice_test__in=practice_tests,
+                        question__topic=topic      # ✅ FIXED FIELD
+                    ).values_list("question_id", flat=True)
+
+                    practiced_ids |= set(practice_qs)
+
+                practiced_count = len(practiced_ids)
+
+                percent = round(
+                    (practiced_count / total_questions) * 100, 2
+                ) if total_questions else 0
+
+                subject_block["topics"].append({
+                    "topic": topic.name,
+                    "total_questions": total_questions,
+                    "practiced_questions": practiced_count,
+                    "practice_percent": percent,
+                })
+
+            final_response.append(subject_block)
+
+        return Response(final_response)
+
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAuthenticated],
+    url_path='Topic_Wise_Accuracy'
+)
+    def Topic_Wise_Accuracy(self, request, *args, **kwargs):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+
+        if not student_id or not course_id:
+            return Response({"error": "student_id and course_id are required"}, status=400)
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+        course_subjects = CourseSubjects.objects.filter(course=course)
+
+        final_response = []
+
+        for cs in course_subjects:
+
+            subject_block = {
+                "subject": cs.subject.name,
+                "topics": []
+            }
+
+            # All topics under subject
+            topics = Topic.objects.filter(course_subject=cs)
+
+            for topic in topics:
+
+                # Count attempted & correct
+                attempted_ids = set()
+                correct_ids = set()
+
+                # ---------------------------
+                # FULL LENGTH TEST ANSWERS
+                # ---------------------------
+                if test_type in ["fullLength", "all"]:
+                    full_qs = QuestionAnswer.objects.filter(
+                        result__test_submission__student=student,
+                        course_subject=cs,
+                        question__topic=topic,
+                        is_skipped=False
+                    )
+
+                    attempted_ids |= set(full_qs.values_list("question_id", flat=True))
+                    correct_ids |= set(
+                        full_qs.filter(is_correct=True).values_list("question_id", flat=True)
+                    )
+
+                # ---------------------------
+                # PRACTICE TEST ANSWERS
+                # ---------------------------
+                if test_type in ["practiceTest", "all"]:
+                    practice_tests = PracticeTest.objects.filter(
+                        student=student, 
+                        course_subject=cs
+                    )
+
+                    practice_qs = PracticeQuestionAnswer.objects.filter(
+                        practice_test_result__practice_test__in=practice_tests,
+                        question__topic=topic,
+                        is_skipped=False
+                    )
+
+                    attempted_ids |= set(practice_qs.values_list("question_id", flat=True))
+                    correct_ids |= set(
+                        practice_qs.filter(is_correct=True).values_list("question_id", flat=True)
+                    )
+
+                total_attempted = len(attempted_ids)
+                total_correct = len(correct_ids)
+
+                accuracy_percent = (
+                    round((total_correct / total_attempted) * 100, 2)
+                    if total_attempted else 0
+                )
+
+                subject_block["topics"].append({
+                    "topic": topic.name,
+                    "total_attempted": total_attempted,
+                    "correct": total_correct,
+                    "accuracy_percent": accuracy_percent,
+                })
+
+            final_response.append(subject_block)
+
+        return Response(final_response)
+    
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAuthenticated],
+    url_path='SubTopic_Wise_Practice'
+)
+    def SubTopic_Wise_Practice(self, request, *args, **kwargs):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+
+        if not student_id or not course_id:
+            return Response({"error": "student_id and course_id are required"}, status=400)
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+        course_subjects = CourseSubjects.objects.filter(course=course)
+
+        final_response = []
+
+        for cs in course_subjects:
+
+            subject_block = {
+                "subject": cs.subject.name,
+                "topics": []
+            }
+
+            topics = Topic.objects.filter(course_subject=cs)
+
+            for topic in topics:
+
+                topic_block = {
+                    "topic": topic.name,
+                    "subtopics": []
+                }
+
+                subtopics = SubTopic.objects.filter(topic=topic)
+
+                for sub in subtopics:
+
+                    # ⭐ Total questions in DB
+                    total_questions = Question.objects.filter(
+                        course_subject=cs,
+                        topic=topic,
+                        sub_topic=sub
+                    ).count()
+
+                    practiced_ids = set()
+                    right_ids = set()
+                    time_spent = 0
+                    attempted_count = 0
+
+                    # ==================================================
+                    # ⭐ FULL LENGTH TEST DATA
+                    # ==================================================
+                    if test_type in ["fullLength", "all"]:
+                        full_entries = QuestionAnswer.objects.filter(
+                            result__test_submission__student=student,
+                            course_subject=cs,
+                            question__topic=topic,
+                            question__sub_topic=sub
+                        )
+
+                        practiced_ids |= set(full_entries.values_list("question_id", flat=True))
+                        right_ids |= set(full_entries.filter(is_correct=True).values_list("question_id", flat=True))
+
+                        time_spent += sum(full_entries.values_list("time_taken", flat=True) or [0])
+                        attempted_count += full_entries.count()
+
+                    # ==================================================
+                    # ⭐ PRACTICE TEST DATA
+                    # ==================================================
+                    if test_type in ["practiceTest", "all"]:
+
+                        practice_entries = PracticeQuestionAnswer.objects.filter(
+                            practice_test_result__practice_test__student=student,
+                            practice_test_result__practice_test__course_subject=cs,
+                            question__topic=topic,
+                            question__sub_topic=sub
+                        )
+
+                        practiced_ids |= set(practice_entries.values_list("question_id", flat=True))
+                        right_ids |= set(practice_entries.filter(is_correct=True).values_list("question_id", flat=True))
+
+                        time_spent += sum(practice_entries.values_list("time_taken", flat=True) or [0])
+                        attempted_count += practice_entries.count()
+
+                    # ==================================================
+                    # ⭐ CALCULATIONS
+                    # ==================================================
+                    practiced_count = len(practiced_ids)
+                    practice_percent = round((practiced_count / total_questions) * 100, 2) if total_questions else 0
+
+                    accuracy_percent = round(
+                        (len(right_ids) / attempted_count) * 100, 2
+                    ) if attempted_count else 0
+
+                    avg_time = round(time_spent / attempted_count, 2) if attempted_count else 0
+
+                    # ==================================================
+                    # ⭐ BUILD SUBTOPIC BLOCK
+                    # ==================================================
+                    topic_block["subtopics"].append({
+                        "subtopic": sub.name,
+                        "total_questions": total_questions,
+                        "practiced_questions": practiced_count,
+                        "practice_percent": practice_percent,
+                        "accuracy_percent": accuracy_percent,
+                        "avg_time_seconds": avg_time,
+                        "total_time_spent": time_spent,
+                    })
+
+                subject_block["topics"].append(topic_block)
+
+            final_response.append(subject_block)
+
+        return Response(final_response)
 
 class PracticeTestViewSet(viewsets.ModelViewSet):
     queryset = PracticeTest.objects.all()
