@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Bar } from "react-chartjs-2";
+import { Chart } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -31,6 +31,7 @@ export default function Math_SubTopicPractice() {
       window.addEventListener("resize", handleResize);
     }
 
+    // Cleanup
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("resize", handleResize);
@@ -38,49 +39,58 @@ export default function Math_SubTopicPractice() {
     };
   }, []);
 
-  // Helpers to determine screen size categories
-  const isMobile = windowWidth < 768;
-  const isSmallMobile = windowWidth < 480;
+  // Breakpoints for rendering logic
+  const isMobile = windowWidth <= 768;
+  const isSmallMobile = windowWidth <= 480;
 
-  // 🔥 MATH TOPIC DUMMY DATA
+  // DATA
   const topics = [
     {
       title: "Algebra",
       rows: [
-        { label: "Linear equations", q: 15, t: 38, a: 76 },
-        { label: "Linear functions", q: 18, t: 42, a: 58 },
-        { label: "Systems of two linear equations in two variables", q: 22, t: 28, a: 92 },
-        { label: "Linear inequalities in one or two variables", q: 18, t: 35, a: 75 },
-        { label: "Word-Based Problems", q: 22, t: 48, a: 56 },
-        { label: "Coordinate Geometry", q: 15, t: 32, a: 85 },
-        { label: "Exponents and Radicals", q: 18, t: 45, a: 98 },
-        { label: "Absolute Value Function / Modulus Functions", q: 15, t: 32, a: 85 },
+        { label: "Linear equations in one variable", q: 45, t: 90, a: 80 },
+        { label: "Linear functions", q: 35, t: 70, a: 85 },
+        { label: "Linear equations in two variables", q: 20, t: 30, a: 50 },
+        { label: "Systems of two linear equations", q: 10, t: 40, a: 70 },
+        { label: "Linear inequalities in one or two variables", q: 5, t: 10, a: 90 },
+        { label: "Word-Based Problems", q: 30, t: 60, a: 65 },
+        { label: "Coordinate Geometry (Lines)", q: 25, t: 50, a: 75 },
+        { label: "Exponents and Radicals", q: 40, t: 80, a: 60 },
+        { label: "Absolute Value Function / Modulus Functions", q: 15, t: 20, a: 95 },
       ],
     },
     {
       title: "Advanced Math",
       rows: [
-        { label: "Quadratic and Nonlinear functions", q: 15, t: 12, a: 76 },
-        { label: "Nonlinear equations in one variable", q: 18, t: 15, a: 58 },
-        { label: "Systems of equations in two variables", q: 22, t: 20, a: 92 },
-        { label: "Equivalent expressions", q: 22, t: 32, a: 68 },
-        { label: "Advance Questions of Function and Graph", q: 12, t: 63, a: 95 },
+        { label: "Quadratic and Nonlinear functions", q: 30, t: 60, a: 70 },
+        { label: "Nonlinear equations in one variable", q: 25, t: 45, a: 80 },
+        { label: "Systems of equations", q: 20, t: 40, a: 60 },
+        { label: "Equivalent expressions", q: 35, t: 75, a: 90 },
+        { label: "Advance Questions of Function and Graph", q: 15, t: 30, a: 55 },
       ],
     },
     {
       title: "Problem-Solving & Data Analysis",
       rows: [
-        { label: "Ratios & Proportions", q: 26, t: 28, a: 88 },
-        { label: "Percentages", q: 23, t: 25, a: 90 },
-        { label: "Data Interpretation", q: 20, t: 32, a: 75 },
+        { label: "Rates and Proportional relationships", q: 25, t: 50, a: 75 },
+        { label: "Ratio and Percentages", q: 35, t: 60, a: 80 },
+        { label: "One-variable data distributions", q: 15, t: 30, a: 70 },
+        { label: "Two-variable data models", q: 20, t: 45, a: 65 },
+        { label: "Probability", q: 10, t: 25, a: 85 },
+        { label: "Statistical claims evaluation", q: 30, t: 55, a: 60 },
+        { label: "Trade and Exchange questions", q: 15, t: 35, a: 90 },
+        { label: "Real Life Calculations", q: 20, t: 40, a: 75 },
       ],
     },
     {
       title: "Geometry & Trigonometry",
       rows: [
-        { label: "Area & Volume", q: 18, t: 36, a: 70 },
-        { label: "Right Triangles", q: 21, t: 33, a: 82 },
-        { label: "Circles", q: 17, t: 38, a: 66 },
+        { label: "Area and volume", q: 30, t: 60, a: 80 },
+        { label: "Lines angles and triangles", q: 25, t: 45, a: 75 },
+        { label: "Quadrilaterals and Polygons", q: 20, t: 35, a: 70 },
+        { label: "Right triangles and Trigonometry", q: 35, t: 70, a: 85 },
+        { label: "Circles", q: 15, t: 30, a: 60 },
+        { label: "Overlapping Figures", q: 10, t: 20, a: 90 },
       ],
     },
   ];
@@ -96,7 +106,7 @@ export default function Math_SubTopicPractice() {
           <div className="topic-container">
             <div className="topic-left-text">{sec.title}</div>
 
-            {/* COMBO CHART FOR ALL SUB-TOPICS */}
+            {/* LOLLIPOP (MIXED BAR + LINE) CHART */}
             <div className="chart-wrapper">
               {(() => {
                 const labels = sec.rows.map((row) => row.label);
@@ -104,100 +114,144 @@ export default function Math_SubTopicPractice() {
                 const timeData = sec.rows.map((row) => row.t);
                 const accuracyData = sec.rows.map((row) => row.a);
 
-                const comboData = {
+                const data = {
                   labels: labels,
                   datasets: [
+                    // --- Sticks (Bars) ---
                     {
-                      type: "bar",
-                      label: "Questions",
+                      type: 'bar',
+                      label: "Questions Stick",
                       data: questionsData,
                       backgroundColor: "#F59403",
                       borderColor: "#F59403",
-                      borderWidth: 1,
-                      barPercentage: isMobile ? 0.6 : 0.7,
+                      barThickness: 2, // THIN STICK
+                      order: 2,
                     },
                     {
-                      type: "bar",
-                      label: "Time",
+                      type: 'bar',
+                      label: "Time Stick",
                       data: timeData,
                       backgroundColor: "#FFD36A",
                       borderColor: "#FFD36A",
-                      borderWidth: 1,
-                      barPercentage: isMobile ? 0.6 : 0.7,
+                      barThickness: 2,
+                      order: 2,
                     },
                     {
-                      type: "bar",
-                      label: "Accuracy",
+                      type: 'bar',
+                      label: "Accuracy Stick",
                       data: accuracyData,
                       backgroundColor: "#0071BC",
                       borderColor: "#0071BC",
-                      borderWidth: 1,
-                      barPercentage: isMobile ? 0.6 : 0.7,
+                      barThickness: 2,
+                      order: 2, // Render behind points
+                    },
+                    
+                    // --- Heads (Points) ---
+                    {
+                      type: 'line',
+                      label: "Questions",
+                      data: questionsData,
+                      backgroundColor: "#F59403",
+                      borderColor: "#fff", // White border around dot
+                      borderWidth: 2,
+                      pointRadius: 6,
+                      pointHoverRadius: 8,
+                      showLine: false, // No connecting lines
+                      order: 1, // Render on top
+                    },
+                    {
+                      type: 'line',
+                      label: "Time",
+                      data: timeData,
+                      backgroundColor: "#FFD36A",
+                      borderColor: "#fff",
+                      borderWidth: 2,
+                      pointRadius: 6,
+                      pointHoverRadius: 8,
+                      showLine: false,
+                      order: 1,
+                    },
+                    {
+                      type: 'line',
+                      label: "Accuracy",
+                      data: accuracyData,
+                      backgroundColor: "#0071BC",
+                      borderColor: "#fff",
+                      borderWidth: 2,
+                      pointRadius: 6,
+                      pointHoverRadius: 8,
+                      showLine: false,
+                      order: 1,
                     },
                   ],
                 };
 
-                const comboOptions = {
+                const options = {
+                  indexAxis: 'y', // HORIZONTAL
                   responsive: true,
                   maintainAspectRatio: false,
+                  interaction: {
+                    mode: 'index',
+                    intersect: false,
+                  },
                   plugins: {
                     legend: {
-                      display: true,
-                      position: "top",
-                      align: isMobile ? "start" : "center",
+                      position: 'top',
+                      // HIDE STICK LEGENDS
                       labels: {
-                        usePointStyle: true,
-                        boxWidth: isSmallMobile ? 8 : 10,
-                        padding: isSmallMobile ? 10 : 20,
-                        font: {
-                          size: isSmallMobile ? 10 : 12,
-                          weight: "600",
+                        filter: function(item, chart) {
+                          return !item.text.includes('Stick');
                         },
-                      },
+                        font: { size: 12, weight: '600' },
+                        usePointStyle: true,
+                         boxWidth: 8,
+                      }
                     },
                     tooltip: {
-                      mode: "index",
-                      intersect: false,
-                      bodyFont: { size: isSmallMobile ? 10 : 12 },
-                      titleFont: { size: isSmallMobile ? 11 : 13 },
-                    },
+                      callbacks: {
+                         // Only show tooltips for the Head datasets
+                         label: function(context) {
+                            if (context.dataset.label && context.dataset.label.includes('Stick')) {
+                                return null;
+                            }
+                            return context.dataset.label + ': ' + context.formattedValue + '%';
+                         }
+                      },
+                      filter: function(tooltipItem) {
+                         // Filter out stick tooltips
+                         return !tooltipItem.dataset.label.includes('Stick');
+                      }
+                    }
                   },
                   scales: {
                     x: {
+                      beginAtZero: true,
+                      max: 100,
+                      grid: { 
+                         color: '#f0f0f0',
+                         borderDash: [5, 5]
+                      },
+                      ticks: {
+                        stepSize: 20,
+                        callback: (v) => v + '%'
+                      }
+                    },
+                    y: {
                       grid: { display: false },
                       ticks: {
                         autoSkip: false,
-                        font: {
-                          size: isSmallMobile ? 9 : 11,
-                        },
-                        // Rotate labels on mobile so they don't overlap
-                        maxRotation: isMobile ? 45 : 0,
-                        minRotation: isMobile ? 45 : 0,
-                      },
-                    },
-                    y: {
-                      beginAtZero: true,
-                      max: 100,
-                      ticks: {
-                        stepSize: 20,
-                        font: {
-                          size: isSmallMobile ? 9 : 10,
-                        },
-                        callback: function (value) {
-                          return value + "%";
-                        },
-                      },
-                      grid: {
-                        color: "#e0e0e0",
-                        drawBorder: false,
-                      },
-                    },
+                        font: { size: isSmallMobile ? 9 : 11, weight: '500' }
+                      }
+                    }
                   },
                 };
 
                 return (
-                  <div className="chart-canvas-container">
-                    <Bar data={comboData} options={comboOptions} />
+                  <div className="chart-scroll-container">
+                    <div className="chart-canvas-container">
+                      {/* Use generic Chart component for mixed types */}
+                      <Chart type='bar' data={data} options={options} />
+                    </div>
                   </div>
                 );
               })()}
@@ -210,9 +264,9 @@ export default function Math_SubTopicPractice() {
         /* --- Base Layout --- */
         .data-card {
           width: 100%;
-          background: #fff; /* Ensure bg is white */
+          background: #fff;
           padding: 25px;
-          border-radius: 8px; /* Optional rounded corners */
+          border-radius: 8px;
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
@@ -237,49 +291,52 @@ export default function Math_SubTopicPractice() {
 
         .topic-container {
           display: flex;
-          gap: 40px;
+          flex-direction: column; /* VERTICAL STACK */
+          gap: 20px;
           align-items: flex-start;
           width: 100%;
         }
 
         .topic-left-text {
-          font-size: 30px;
+          font-size: 30px; 
           font-weight: 800;
-          width: 260px;
-          min-width: 260px; /* Prevent shrinking */
-          text-align: center;
+          width: 100%; /* Full width */
+          text-align: left; /* Alignment left */
           color: #000;
           line-height: 1.2;
-          padding-top: 20px; /* Visual alignment with chart top */
+          padding-bottom: 10px; /* Space between title and chart */
         }
 
         .chart-wrapper {
           flex: 1;
-          width: 100%; /* Ensure it fills remaining space */
-          min-width: 0; /* Flexbox trick to allow chart to shrink */
+          width: 100%; 
+          min-width: 0; 
+        }
+
+        /* --- Chart Container --- */
+        .chart-scroll-container {
+          width: 100%;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 15px; 
+          display: block; 
         }
 
         .chart-canvas-container {
-          height: 300px;
+          height: 350px; /* Good height for horizontal list */
           width: 100%;
+          min-width: 700px; /* Force scroll */
           position: relative;
         }
 
         /* --- Tablet Responsive (max-width: 1024px) --- */
         @media (max-width: 1024px) {
-          .topic-container {
-            gap: 20px;
-          }
-          
           .topic-left-text {
-            font-size: 22px;
-            width: 180px;
-            min-width: 180px;
-            padding-top: 10px;
+            font-size: 26px;
           }
 
           .chart-canvas-container {
-            height: 280px;
+            height: 320px;
           }
         }
 
@@ -295,23 +352,13 @@ export default function Math_SubTopicPractice() {
             border-top: 1px solid #f0f0f0;
           }
 
-          .topic-container {
-            flex-direction: column; /* Stack vertically */
-            gap: 15px;
-            align-items: center;
-          }
-
           .topic-left-text {
-            width: 100%;
-            min-width: auto;
-            text-align: left; /* Align text left on mobile */
-            font-size: 20px;
-            padding-top: 0;
-            padding-bottom: 5px;
+            font-size: 22px;
           }
 
           .chart-canvas-container {
-            height: 250px;
+            height: 350px; 
+             min-width: 600px; 
           }
           
           .big-title {
@@ -331,11 +378,11 @@ export default function Math_SubTopicPractice() {
           }
 
           .topic-left-text {
-            font-size: 18px;
+            font-size: 20px;
           }
 
           .chart-canvas-container {
-            height: 220px; /* Shorter chart for small screens */
+            height: 300px; 
           }
         }
       `}</style>

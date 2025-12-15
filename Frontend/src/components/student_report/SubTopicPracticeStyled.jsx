@@ -7,13 +7,30 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  LineElement,
-  PointElement,
   Tooltip,
   Legend,
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+
+// Helper to wrap long labels
+const formatLabel = (str, maxLen = 12) => {
+  if (str.length <= maxLen) return str;
+  const words = str.split(" ");
+  const lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    if ((currentLine + " " + words[i]).length <= maxLen) {
+      currentLine += " " + words[i];
+    } else {
+      lines.push(currentLine);
+      currentLine = words[i];
+    }
+  }
+  lines.push(currentLine);
+  return lines;
+};
 
 export default function SubTopicPracticeStyled() {
   // State to track window width for dynamic chart resizing
@@ -25,12 +42,13 @@ export default function SubTopicPracticeStyled() {
       setWindowWidth(window.innerWidth);
     }
     
-    // Add event listener (check for window existence for SSR safety)
+    // Add event listener
     if (typeof window !== "undefined") {
       setWindowWidth(window.innerWidth);
       window.addEventListener("resize", handleResize);
     }
 
+    // Cleanup
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("resize", handleResize);
@@ -75,129 +93,134 @@ export default function SubTopicPracticeStyled() {
       {/* TITLE */}
       <div className="big-title">Sub – Topic Wise Practice</div>
 
-      {topics.map((sec, i) => (
-        <div key={i} className="section-wrapper">
-          {/* RESPONSIVE LAYOUT */}
-          <div className="topic-container">
-            <div className="topic-left-text">{sec.title}</div>
+      {/* GRID CONTAINER FOR SUB-TOPICS */}
+      <div className="subtopics-grid">
+        {topics.map((sec, i) => (
+          <div key={i} className="section-wrapper">
+            {/* RESPONSIVE LAYOUT */}
+            <div className="topic-container">
+              <div className="topic-left-text">{sec.title}</div>
 
-            {/* COMBO CHART FOR ALL SUB-TOPICS */}
-            <div className="chart-wrapper">
-              {(() => {
-                const labels = sec.rows.map((row) => row.label);
-                const questionsData = sec.rows.map((row) => row.q);
-                const timeData = sec.rows.map((row) => row.t);
-                const accuracyData = sec.rows.map((row) => row.a);
+              {/* BAR CHART FOR EACH SUB-TOPIC SECTION */}
+              <div className="chart-wrapper">
+                {(() => {
+                  // FORMAT LABELS FOR WRAPPING
+                  const labels = sec.rows.map((row) => formatLabel(row.label, 15));
+                  const questionsData = sec.rows.map((row) => row.q);
+                  const timeData = sec.rows.map((row) => row.t);
+                  const accuracyData = sec.rows.map((row) => row.a);
 
-                const comboData = {
-                  labels: labels,
-                  datasets: [
-                    {
-                      type: "bar",
-                      label: "Questions",
-                      data: questionsData,
-                      backgroundColor: "#F59403",
-                      borderColor: "#F59403",
-                      borderWidth: 1,
-                      barPercentage: isMobile ? 0.6 : 0.7,
-                    },
-                    {
-                      type: "bar",
-                      label: "Time",
-                      data: timeData,
-                      backgroundColor: "#FFD36A",
-                      borderColor: "#FFD36A",
-                      borderWidth: 1,
-                      barPercentage: isMobile ? 0.6 : 0.7,
-                    },
-                    {
-                      type: "bar",
-                      label: "Accuracy",
-                      data: accuracyData,
-                      backgroundColor: "#0071BC",
-                      borderColor: "#0071BC",
-                      borderWidth: 1,
-                      barPercentage: isMobile ? 0.6 : 0.7,
-                    },
-                  ],
-                };
+                  const comboData = {
+                    labels: labels,
+                    datasets: [
+                      {
+                        label: "Questions",
+                        data: questionsData,
+                        backgroundColor: "#F59403",
+                        borderColor: "#F59403",
+                        borderWidth: 1,
+                        barThickness: 30,    // FIXED THICKNESS
+                        maxBarThickness: 40,
+                      },
+                      {
+                        label: "Time",
+                        data: timeData,
+                        backgroundColor: "#FFD36A",
+                        borderColor: "#FFD36A",
+                        borderWidth: 1,
+                        barThickness: 30,
+                        maxBarThickness: 40,
+                      },
+                      {
+                        label: "Accuracy",
+                        data: accuracyData,
+                        backgroundColor: "#0071BC",
+                        borderColor: "#0071BC",
+                        borderWidth: 1,
+                        barThickness: 30,
+                        maxBarThickness: 40,
+                      },
+                    ],
+                  };
 
-                const comboOptions = {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      display: true,
-                      position: "top",
-                      align: isMobile ? "start" : "center",
-                      labels: {
-                        usePointStyle: true,
-                        boxWidth: isSmallMobile ? 8 : 10,
-                        padding: isSmallMobile ? 10 : 20,
-                        font: {
-                          size: isSmallMobile ? 10 : 12,
-                          weight: "600",
+                  const comboOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: true,
+                        position: "top",
+                        align: "start", // Align legend left
+                        labels: {
+                          usePointStyle: true,
+                          boxWidth: 8,
+                          padding: 15,
+                          font: {
+                            size: 11,
+                            weight: "600",
+                          },
+                        },
+                      },
+                      tooltip: {
+                        mode: "index",
+                        intersect: false,
+                      },
+                    },
+                    scales: {
+                      x: {
+                        grid: { display: false },
+                        ticks: {
+                          autoSkip: false,
+                          font: {
+                            size: 11, // Fixed size for readability
+                            weight: '500'
+                          },
+                          maxRotation: 0, // NO ROTATION
+                          minRotation: 0,
+                          align: 'center',
+                        },
+                      },
+                      y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                          stepSize: 20,
+                          font: {
+                             size: 10,
+                          },
+                          callback: function (value) {
+                            return value + "%";
+                          },
+                        },
+                        grid: {
+                          color: "#f0f0f0",
+                          drawBorder: false,
                         },
                       },
                     },
-                    tooltip: {
-                      mode: "index",
-                      intersect: false,
-                      bodyFont: { size: isSmallMobile ? 10 : 12 },
-                      titleFont: { size: isSmallMobile ? 11 : 13 },
-                    },
-                  },
-                  scales: {
-                    x: {
-                      grid: { display: false },
-                      ticks: {
-                        autoSkip: false,
-                        font: {
-                          size: isSmallMobile ? 9 : 11,
-                        },
-                        // Rotate labels on mobile so they don't overlap
-                        maxRotation: isMobile ? 45 : 0,
-                        minRotation: isMobile ? 45 : 0,
-                      },
-                    },
-                    y: {
-                      beginAtZero: true,
-                      max: 100,
-                      ticks: {
-                        stepSize: 20,
-                        font: {
-                          size: isSmallMobile ? 9 : 10,
-                        },
-                        callback: function (value) {
-                          return value + "%";
-                        },
-                      },
-                      grid: {
-                        color: "#e0e0e0",
-                        drawBorder: false,
-                      },
-                    },
-                  },
-                };
+                  };
 
-                return (
-                  <div className="chart-canvas-container">
-                    <Bar data={comboData} options={comboOptions} />
-                  </div>
-                );
-              })()}
+                  return (
+                    <div className="chart-scroll-container">
+                      <div className="chart-canvas-container">
+                        <Bar data={comboData} options={comboOptions} />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <style jsx>{`
         /* --- Base Layout --- */
         .data-card {
           width: 100%;
-          background: #fff; /* Ensure bg is white */
+          background: #fff; 
           padding: 25px;
-          border-radius: 8px; /* Optional rounded corners */
+          border-radius: 8px; 
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
@@ -214,114 +237,85 @@ export default function SubTopicPracticeStyled() {
           display: inline-block;
           font-size: 18px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          margin-bottom: 30px;
+        }
+        
+        /* --- Grid Layout for Sub-Topics --- */
+        .subtopics-grid {
+          display: grid;
+          grid-template-columns: 1fr; /* Default to single column */
+          gap: 30px;
+        }
+
+        /* Large screens: Side-by-side */
+        @media (min-width: 1350px) {
+          .subtopics-grid {
+            grid-template-columns: repeat(2, 1fr); /* Two columns */
+            align-items: start;
+          }
         }
 
         .section-wrapper {
-          margin-top: 50px;
+          width: 100%;
+          /* margin-top removed, handled by grid gap */
         }
 
         .topic-container {
           display: flex;
-          gap: 40px;
+          flex-direction: column; /* VERTICAL STACK */
+          gap: 20px;
           align-items: flex-start;
           width: 100%;
         }
 
         .topic-left-text {
-          font-size: 30px;
+          font-size: 24px; /* Slightly smaller for grid fit */
           font-weight: 800;
-          width: 260px;
-          min-width: 260px; /* Prevent shrinking */
-          text-align: center;
+          width: 100%; 
+          text-align: left; 
           color: #000;
           line-height: 1.2;
-          padding-top: 20px; /* Visual alignment with chart top */
+          padding-bottom: 15px; 
         }
 
         .chart-wrapper {
-          flex: 1;
-          width: 100%; /* Ensure it fills remaining space */
-          min-width: 0; /* Flexbox trick to allow chart to shrink */
+          width: 100%; 
+        }
+
+        /* --- Chart Container --- */
+        .chart-scroll-container {
+          width: 100%;
+          overflow-x: auto; /* ENABLE HORIZONTAL SCROLL */
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 10px;
         }
 
         .chart-canvas-container {
-          height: 300px;
+          height: 350px;
+          /* Fixed width strategy adjusted for grid */
           width: 100%;
+          min-width: 500px; /* Ensure it doesn't get squashed too small */
           position: relative;
         }
-
-        /* --- Tablet Responsive (max-width: 1024px) --- */
-        @media (max-width: 1024px) {
-          .topic-container {
-            gap: 20px;
-          }
-          
-          .topic-left-text {
-            font-size: 22px;
-            width: 180px;
-            min-width: 180px;
-            padding-top: 10px;
-          }
-
-          .chart-canvas-container {
-            height: 280px;
-          }
+        
+        /* On large screens, we might want to enforce a min-width to prevent squashing 
+           if the screen is just barely wide enough for 2 columns */
+        @media (min-width: 1350px) {
+           .chart-canvas-container {
+              min-width: 550px; 
+           }
         }
 
-        /* --- Mobile Responsive (max-width: 768px) --- */
+        /* --- Global Responsive --- */
         @media (max-width: 768px) {
-          .data-card {
-            padding: 15px;
-          }
-
-          .section-wrapper {
-            margin-top: 35px;
-            padding-top: 15px;
-            border-top: 1px solid #f0f0f0;
-          }
-
-          .topic-container {
-            flex-direction: column; /* Stack vertically */
-            gap: 15px;
-            align-items: center;
-          }
-
-          .topic-left-text {
-            width: 100%;
-            min-width: auto;
-            text-align: left; /* Align text left on mobile */
-            font-size: 20px;
-            padding-top: 0;
-            padding-bottom: 5px;
-          }
-
-          .chart-canvas-container {
-            height: 250px;
-          }
-          
-          .big-title {
-            font-size: 16px;
-            padding: 6px 15px;
-          }
+          .data-card { padding: 15px; }
+          .big-title { font-size: 16px; padding: 6px 15px; margin-bottom: 20px; }
+          .topic-left-text { font-size: 20px; }
+          .chart-canvas-container { height: 300px; min-width: 500px; }
         }
-
-        /* --- Small Mobile Responsive (max-width: 480px) --- */
+        
         @media (max-width: 480px) {
-          .data-card {
-            padding: 10px;
-          }
-
-          .section-wrapper {
-            margin-top: 25px;
-          }
-
-          .topic-left-text {
-            font-size: 18px;
-          }
-
-          .chart-canvas-container {
-            height: 220px; /* Shorter chart for small screens */
-          }
+           .chart-canvas-container { height: 280px; min-width: 450px; }
         }
       `}</style>
     </div>

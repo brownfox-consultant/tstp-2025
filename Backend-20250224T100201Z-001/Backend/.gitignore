@@ -1,0 +1,31 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore virtual environments
+venv/
+env/
+.venv/
+
+# Ignore logs folder completely
+logs/
+*.log
+
+# Ignore config environment file
+config/*.env
+.env
+.env.local
+.env.*.local
+
+# Ignore SSL certificates (optional)
+ssl/
+*.pem
+*.crt
+*.key
+
+# Ignore OS and IDE files
+.DS_Store
+.vscode/
+.idea/
