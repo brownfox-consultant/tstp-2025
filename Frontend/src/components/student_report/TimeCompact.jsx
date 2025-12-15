@@ -21,40 +21,32 @@ export default function TimeCompact({ timeMetrics }) {
         <div className="compact-block">
           <h4 className="compact-title avg-title">Average Time per Question</h4>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-around",
-              marginBottom: "20px",
-              flexWrap: "wrap",
-              gap: "20px",
-            }}
-          >
+          <div className="gauges-container">
             {timeMetrics.map((t, i) => {
               // Calculate percentage and angle for the needle
               const maxSeconds = 120; // Max time for gauge
               const percent = Math.min((t.avgSeconds / maxSeconds) * 100, 100);
-              const angle = 180 - (percent / 100) * 180; // 180° to 0° (left to right)
+              // Corrected Angle Logic: -90 deg = Left, +90 deg = Right
+              const angle = -90 + (percent / 100) * 180; 
 
               return (
-                <div key={i} style={{ textAlign: "center" }}>
-                  {/* SVG GRADIENT SPEEDOMETER */}
-                  <svg width="150" height="100" viewBox="0 0 150 100">
-                    {/* Define gradient */}
+                <div key={i} className="single-gauge-wrapper">
+                  {/* SVG GRADIENT SPEEDOMETER - RESPONSIVE CLASS */}
+                  <svg className="gauge-svg" viewBox="0 0 150 100">
                     <defs>
                       <linearGradient id={`gradient-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" style={{ stopColor: "#E74C3C", stopOpacity: 1 }} />
-                        <stop offset="33%" style={{ stopColor: "#E67E22", stopOpacity: 1 }} />
-                        <stop offset="66%" style={{ stopColor: "#F1C40F", stopOpacity: 1 }} />
-                        <stop offset="100%" style={{ stopColor: "#2ECC71", stopOpacity: 1 }} />
+                        <stop offset="0%" style={{ stopColor: "#2ECC71", stopOpacity: 1 }} />
+                        <stop offset="33%" style={{ stopColor: "#F1C40F", stopOpacity: 1 }} />
+                        <stop offset="66%" style={{ stopColor: "#E67E22", stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: "#E74C3C", stopOpacity: 1 }} />
                       </linearGradient>
                     </defs>
 
-                    {/* Background arc (light gray) */}
+                    {/* Background arc */}
                     <path
                       d="M 15,85 A 60,60 0 0,1 135,85"
                       fill="none"
-                      stroke="#E0E0E0"
+                      stroke="#f0f0f0"
                       strokeWidth="12"
                       strokeLinecap="round"
                     />
@@ -68,7 +60,7 @@ export default function TimeCompact({ timeMetrics }) {
                       strokeLinecap="round"
                     />
 
-                    {/* Needle/Pointer */}
+                    {/* Needle */}
                     <line
                       x1="75"
                       y1="85"
@@ -80,32 +72,16 @@ export default function TimeCompact({ timeMetrics }) {
                       transform={`rotate(${angle} 75 85)`}
                       style={{ transition: "transform 0.5s ease" }}
                     />
-
-                    {/* Center dot */}
                     <circle cx="75" cy="85" r="4" fill="#333" />
                   </svg>
 
                   {/* VALUE BELOW */}
-                  <div
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: "700",
-                      color: "#333",
-                      marginTop: "5px",
-                    }}
-                  >
+                  <div className="gauge-value">
                     {t.avgSeconds}s
                   </div>
 
                   {/* SUBJECT NAME */}
-                  <div
-                    style={{
-                      fontSize: "15px",
-                      marginTop: "5px",
-                      color: "#555",
-                      fontWeight: "600",
-                    }}
-                  >
+                  <div className="gauge-label">
                     {t.subject}
                   </div>
                 </div>
@@ -116,81 +92,174 @@ export default function TimeCompact({ timeMetrics }) {
 
         {/* ⭐ TOTAL TIME - Horizontal Bars */}
         <div className="compact-block">
-          <h4 className="compact-title total-title" style={{ textAlign: "center" }}>
+          <h4 className="compact-title total-title" style={{ textAlign: "center", marginBottom: "25px" }}>
             Total Time Spent
           </h4>
 
-          {timeMetrics.map((t) => {
-            const percent = Math.min((t.totalSeconds / 600) * 100, 100);
-            const minutes = Math.round(t.totalSeconds / 60);
+          {/* Wrapper for Bars to center them - Widened to 600px */}
+          <div style={{ maxWidth: "600px", margin: "0 auto" }}> 
+            {timeMetrics.map((t) => {
+              const percent = Math.min((t.totalSeconds / 600) * 100, 100);
+              const minutes = Math.round(t.totalSeconds / 60);
 
-            return (
-              <div
-                key={t.subject}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "15px",
-                  gap: "15px",
-                }}
-              >
-                {/* SUBJECT LABEL */}
-                <span style={{ width: "80px", fontSize: "14px", fontWeight: 600 }}>
-                  {t.subject}
-                </span>
-
-                {/* BAR TRACK */}
+              return (
                 <div
+                  key={t.subject}
                   style={{
-                    flex: 1,
-                    height: "32px",
-                    background: "#f4f4f4",
-                    borderRadius: "20px",
-                    position: "relative",
-                    overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "20px",
+                    gap: "20px",
                   }}
                 >
-                  {/* FILLED BAR */}
+                  {/* SUBJECT LABEL */}
+                  <span style={{ width: "80px", fontSize: "16px", fontWeight: 700, color: "#444" }}>
+                    {t.subject}
+                  </span>
+
+                  {/* BAR TRACK */}
                   <div
                     style={{
-                      width: `${percent}%`,
-                      height: "100%",
-                      background: t.borderColor,
+                      flex: 1,
+                      height: "40px", // Taller bars
+                      background: "#f8f9fa",
                       borderRadius: "20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontSize: "13px",
-                      fontWeight: "700",
+                      position: "relative",
+                      overflow: "hidden",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.05)"
                     }}
                   >
-                    {t.totalSeconds}s / {minutes}min
+                    {/* FILLED BAR */}
+                    <div
+                      style={{
+                        width: `${percent}%`,
+                        height: "100%",
+                        background: t.borderColor,
+                        borderRadius: "20px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontSize: "14px",
+                        fontWeight: "700",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                      }}
+                    >
+                      {t.totalSeconds}s / {minutes}min
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* NUMBER SCALE */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "12px",
-              color: "#777",
-              marginTop: "10px",
-              paddingLeft: "95px",
-            }}
-          >
-            {Array.from({ length: 11 }).map((_, i) => (
-              <span key={i}>{i * 10}</span>
-            ))}
+            {/* NUMBER SCALE */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "12px",
+                color: "#999",
+                marginTop: "10px",
+                paddingLeft: "100px", // Align with bar start
+              }}
+            >
+              {Array.from({ length: 11 }).map((_, i) => (
+                <span key={i}>{i * 10}</span>
+              ))}
+            </div>
           </div>
         </div>
-
-
       </div>
+
+      <style jsx>{`
+        .time-compact-card {
+          padding: 24px;
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .card-title {
+           font-size: 18px; 
+           font-weight: 700; 
+           margin-bottom: 24px;
+           color: #222;
+        }
+
+        .compact-title {
+           font-size: 16px;
+           font-weight: 700;
+           color: #d946ef; /* Light purple title color from screenshot/theme */
+           text-align: center;
+           margin-bottom: 20px;
+        }
+
+        /* --- GAUGES CONTAINER --- */
+        .gauges-container {
+           display: flex;
+           justify-content: center;
+           margin-bottom: 30px;
+           flex-wrap: wrap;
+           gap: 80px;
+           align-items: flex-end;
+        }
+
+        .single-gauge-wrapper {
+           text-align: center;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+        }
+
+        /* --- RESPONSIVE GAUGE SVG --- */
+        .gauge-svg {
+           width: 240px; 
+           height: 160px;
+           transition: all 0.3s ease;
+        }
+        .gauge-value {
+           font-size: 36px;
+           font-weight: 700;
+           color: #333;
+           margin-top: -20px;
+           margin-bottom: 5px;
+           transition: font-size 0.3s ease;
+        }
+        .gauge-label {
+           font-size: 18px;
+           color: #555;
+           font-weight: 600;
+           transition: font-size 0.3s ease;
+        }
+
+        /* --- MEDIA QUERY (Matching 1630px breakpoint) --- */
+        @media (max-width: 1630px) {
+           .gauges-container {
+              gap: 40px;
+           }
+           .gauge-svg {
+              width: 180px;
+              height: 120px;
+           }
+           .gauge-value {
+              font-size: 28px;
+              margin-top: -15px;
+           }
+           .gauge-label {
+              font-size: 16px;
+           }
+        }
+
+        /* --- EXTRA SMALL SCREENS --- */
+        @media (max-width: 480px) {
+           .gauge-svg {
+              width: 150px;
+              height: 100px;
+           }
+           .gauge-value {
+              font-size: 24px;
+           }
+        }
+      `}</style>
     </div>
   );
 }

@@ -218,7 +218,7 @@ function Dashboard() {
 
 
       {activeReportTab === "subject" && (
-        <div className="data-grid-v2">
+        <div className="grid grid-cols-2 gap-[25px] max-[1200px]:grid-cols-1">
           <PracticeDonut practice={practice} />
           <AccuracyChart accuracy={accuracy} />
           <TimeCompact timeMetrics={timeMetrics} />

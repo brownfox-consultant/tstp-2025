@@ -10,6 +10,12 @@ function levelForSeconds(sec) {
   return 4;
 }
 
+function secondsToMinutes(sec) {
+  if (sec === 0) return "";
+  if (sec < 60) return `${sec}s`;
+  return `${Math.round(sec / 60)}min`;
+}
+
 function secondsToLabel(sec) {
   if (sec === 0) return "";
   if (sec < 60) return `${sec}s`;
@@ -57,6 +63,7 @@ export default function Heatmap({ dateWise = [] }) {
   const firstDayOffset = getFirstDayOffset(year, month);
   
   const days = [];
+  let totalSeconds = 0; // Track total time for the month
   
   for (let i = 0; i < firstDayOffset; i++) {
     days.push({ isEmpty: true });
@@ -66,9 +73,13 @@ export default function Heatmap({ dateWise = [] }) {
     const dayData = dateWise.find(d => 
       parseInt(d.dayLabel) === day && d.monthIndex === month
     );
+    
+    const seconds = dayData?.seconds || 0;
+    totalSeconds += seconds;
+
     days.push({
       dayLabel: day.toString(),
-      seconds: dayData?.seconds || 0,
+      seconds: seconds,
       isEmpty: false
     });
   }
@@ -76,7 +87,7 @@ export default function Heatmap({ dateWise = [] }) {
   const isCurrentMonth = monthOffset === 0;
 
   return (
-    <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg">
+    <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border-[1px] border-[#E5E5E5]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <button 
@@ -86,9 +97,14 @@ export default function Heatmap({ dateWise = [] }) {
           ← Prev
         </button>
         
-        <h2 className="text-xl md:text-xl font-bold text-gray-800">
-          {MONTH_NAMES[month]} {year}
-        </h2>
+        <div className="flex flex-col items-center">
+          <h2 className="text-xl md:text-xl font-bold text-gray-800">
+            {MONTH_NAMES[month]} {year}
+          </h2>
+          <span className="text-sm font-semibold text-orange-600 mt-1">
+            Total Time: {secondsToLabel(totalSeconds)}
+          </span>
+        </div>
         
         <button 
           className={`px-5 py-2.5 rounded-full font-semibold text-sm border-2 transition-all ${
@@ -125,7 +141,7 @@ export default function Heatmap({ dateWise = [] }) {
               <span className="text-base md:text-lg font-bold">{d.dayLabel}</span>
               {d.seconds > 0 && (
                 <span className="text-[9px] md:text-[10px] font-medium mt-0.5 opacity-90">
-                  {secondsToLabel(d.seconds)}
+                  {secondsToMinutes(d.seconds)}
                 </span>
               )}
             </div>
