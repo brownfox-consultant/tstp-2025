@@ -12,14 +12,36 @@
   border-radius: 12px;
   padding: 6px;
   gap: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Show scrollbar for tabs */
+.tabs::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tabs::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.tabs::-webkit-scrollbar-thumb {
+  background: #fb923c;
+  border-radius: 10px;
+}
+
+.tabs::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
 }
 
 /* Individual Tab Button */
 .tab {
   position: relative;
   z-index: 1;
-  flex: 1;
+  flex: 0 0 auto;
   padding: 14px 24px;
   border: none;
   background: transparent;
@@ -34,6 +56,7 @@
   gap: 8px;
   white-space: nowrap;
   border-radius: 8px;
+  min-width: fit-content;
 }
 
 .tab:hover:not(.tab-active) {
@@ -133,6 +156,32 @@
   flex: 2;
   min-width: 400px;
   width: 32%;
+  position: relative;
+}
+
+/* Scroll indicators - subtle fade effect */
+.filter-tabs-container::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to right, rgba(255,255,255,0.9), transparent);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.filter-tabs-container::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to left, rgba(255,255,255,0.9), transparent);
+  pointer-events: none;
+  z-index: 10;
 }
 
 .report-tabs {
@@ -143,13 +192,38 @@
   display: flex;
   align-items: center;
   padding: 6px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Show scrollbar for report-tabs */
+.report-tabs::-webkit-scrollbar {
+  height: 8px;
+}
+
+.report-tabs::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 10px;
+  margin: 0 4px;
+}
+
+.report-tabs::-webkit-scrollbar-thumb {
+  background: #fb923c;
+  border-radius: 10px;
+}
+
+.report-tabs::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
 }
 
 .report-tabs .tab {
   white-space: nowrap;
   text-align: center;
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 180px;
+  padding: 12px 20px;
 }
 
 /* ============================
@@ -187,16 +261,31 @@
 
 @media (max-width: 768px) {
   .tabs {
-    flex-wrap: wrap;
+    /* Enable scrolling, disable wrapping */
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    /* Hide scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .tabs::-webkit-scrollbar {
+    display: none;
   }
   
   .tab {
-    padding: 10px 12px;
-    font-size: 13px;
+    padding: 10px 16px;
+    font-size: 14px;
+    /* Allow tabs to take necessary width and not shrink */
+    flex: 0 0 auto;
+    min-width: fit-content;
   }
   
   .tab-label {
-    font-size: 13px;
+    font-size: 14px;
   }
   
   .filter-tabs-container {
@@ -205,20 +294,24 @@
 
   .report-tabs {
     padding: 4px;
+    /* Ensure scrolling on report tabs too if different class used */
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
   }
 }
 
 @media (max-width: 480px) {
   .tab {
-    padding: 8px 10px;
-    font-size: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
   }
   
   .tab-icon {
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .report-tabs {
-    padding: 3px;
+    padding: 4px;
   }
 }

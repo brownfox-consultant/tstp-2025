@@ -23,6 +23,14 @@ import SubTopicPracticeStyled from "@/components/student_report/SubTopicPractice
 import Math_Topic_Wise_Practice from "@/components/student_report/Math_Topic_Wise_Practice";
 import Math_TopicAccuracy from "@/components/student_report/Math_TopicAccuracy";
 import Math_SubTopicPractice from "@/components/student_report/Math_SubTopicPractice"
+import Scoreboard from "@/components/student_report/Scoreboard";
+import SelfPractice from "@/components/student_report/SelfPractice";
+// import StatusOfDoubts from "@/components/student_report/StatusOfDoubts";
+
+// import UtilisationOfResources from "@/components/student_report/UtilisationOfResources";
+// import PatternOfUsage from "@/components/student_report/PatternOfUsage";
+// import DateWiseReport from "@/components/student_report/DateWiseReport";
+// import TopicWiseProgress from "@/components/student_report/TopicWiseProgress";
 
 
 
@@ -170,9 +178,6 @@ function Dashboard() {
     }));
   }, [timeData]);
 
-  // ============================
-  // RENDER
-  // ============================
   return (
     <div className="dashboard-container">
       <Header />
@@ -180,10 +185,10 @@ function Dashboard() {
       {/* INLINE DROPDOWNS - Course & Test Type */}
       <div className="w-full mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-auto">
-          
+
           {/* COURSE CARD */}
           <div className="bg-gray-100 rounded-xl p-5 border-l-4 border-orange-400">
-            <CourseDropdown 
+            <CourseDropdown
               coursesList={coursesList}
               selectedCourse={selectedCourse}
               setSelectedCourse={setSelectedCourse}
@@ -192,7 +197,7 @@ function Dashboard() {
 
           {/* TEST TYPE CARD */}
           <div className="bg-gray-100 rounded-xl p-5 border-l-4 border-orange-400">
-            <TestTypeDropdown 
+            <TestTypeDropdown
               testType={testType}
               setTestType={setTestType}
             />
@@ -207,7 +212,13 @@ function Dashboard() {
           tabs={[
             { value: 'subject', label: 'Subject Wise Report' },
             { value: 'english', label: 'English Topic Wise Report' },
-            { value: 'math', label: 'Math Topic Wise Report' }
+            { value: 'math', label: 'Math Topic Wise Report' },
+            { value: 'scoreboard', label: 'SCOREBOARD' },
+            // { value: 'resources', label: 'Utilisation of Resources' },
+            // { value: 'pattern', label: 'Pattern of Usage' },
+            // { value: 'doubts', label: 'Status of Doubts' },
+            // { value: 'topicwise-english', label: 'Topic Progress - English' },
+            // { value: 'topicwise-math', label: 'Topic Progress - Math' }
           ]}
           activeTab={activeReportTab}
           onChange={setActiveReportTab}
@@ -247,64 +258,92 @@ function Dashboard() {
         
       )} */}
 
-   {activeReportTab === "english" && (
-  <>
-    <div className="data-grid-v1">
-      <Topic_Wise_Practice
-        student_id={studentId}
-        course_id={selectedCourse}
-        test_type={testType}
-        subject="English"
-      />
+      {activeReportTab === "english" && (
+        <>
+          <div className="data-grid-v1">
+            <Topic_Wise_Practice
+              student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+              subject="English"
+            />
 
-      <TopicAccuracy
-        student_id={studentId}
-        course_id={selectedCourse}
-        test_type={testType}
-        subject="English"
-      />
-    </div>
+            <TopicAccuracy
+              student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+              subject="English"
+            />
+          </div>
 
-    <div style={{ marginTop: "25px" }}>
-      <SubTopicPracticeStyled
-        student_id={studentId}
-        course_id={selectedCourse}
-        test_type={testType}
-        subject="English"
-      />
-    </div>
-  </>
-)}
+          <div style={{ marginTop: "25px" }}>
+            <SubTopicPracticeStyled
+              student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+              subject="English"
+            />
+          </div>
+        </>
+      )}
 
 
-{activeReportTab === "math" && (
-  <>
-    {/* TOP ROW (2 COLUMNS) */}
-    <div className="data-grid-v1">
-      <Math_Topic_Wise_Practice
-  student_id={studentId}
-  course_id={selectedCourse}
-  test_type={testType}
-/>
-     <Math_TopicAccuracy
-  student_id={studentId}
-  course_id={selectedCourse}
-  test_type={testType}
-/>
+      {activeReportTab === "math" && (
+        <>
+          {/* TOP ROW (2 COLUMNS) */}
+          <div className="data-grid-v1">
+            <Math_Topic_Wise_Practice
+              student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+            />
+            <Math_TopicAccuracy
+              student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+            />
 
-    </div>
+          </div>
 
-    {/* FULL WIDTH BELOW */}
-    <div style={{ marginTop: "25px" }}>
-      <Math_SubTopicPractice
-  student_id={studentId}
-  course_id={selectedCourse}
-  test_type={testType}
-/>
+          {/* FULL WIDTH BELOW */}
+          <div style={{ marginTop: "25px" }}>
+            <Math_SubTopicPractice
+              student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+            />
 
-    </div>
-  </>
-)}
+          </div>
+        </>
+      )}
+
+      {activeReportTab === "scoreboard" && (
+        testType === "practiceTest" ? <SelfPractice /> : <Scoreboard />
+      )}
+{/* 
+      {activeReportTab === "doubts" && (
+        <StatusOfDoubts />
+      )} */}
+
+      {/* {activeReportTab === "resources" && (
+        <UtilisationOfResources />
+      )} */}
+
+      {/* {activeReportTab === "pattern" && (
+        <PatternOfUsage />
+      )} */}
+
+      {/* {activeReportTab === "datewise" && (
+        <DateWiseReport />
+      )} */}
+
+      {/* {activeReportTab === "topicwise-english" && (
+        <TopicWiseProgress subject="english" />
+      )} */}
+
+      {/* {activeReportTab === "topicwise-math" && (
+        <TopicWiseProgress subject="math" />
+      )} */}
 
     </div>
   );

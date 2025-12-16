@@ -133,7 +133,7 @@ export default function Math_SubTopicPractice({
               labels: {
                 filter: (item) => !item.text.includes("Stick"),
                 usePointStyle: true,
-                font: { size: 12, weight: "600" },
+                font: { size: 14, weight: "600" },
               },
             },
             tooltip: {
@@ -147,7 +147,7 @@ export default function Math_SubTopicPractice({
               ticks: { callback: (v) => v + "%" },
             },
             y: {
-              ticks: { autoSkip: false, font: { size: 11 } },
+              ticks: { autoSkip: false, font: { size: 16 } },
               grid: { display: false },
             },
           },
@@ -181,7 +181,7 @@ export default function Math_SubTopicPractice({
         }
 
         .topic-left-text {
-          font-size: 28px;
+          font-size: 36px;
           font-weight: 800;
           margin-bottom: 15px;
         }

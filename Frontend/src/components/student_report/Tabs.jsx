@@ -9,7 +9,30 @@ const Tabs = ({
   onChange,
   className = '' 
 }) => {
-  const [active, setActive] = useState(activeTab || (tabs.length > 0 ? tabs[0].value : ''));
+  /* State for active tab, defaulting to prop or first tab */
+  const [active, setActive] = React.useState(activeTab || (tabs.length > 0 ? tabs[0].value : ''));
+  const [indicatorStyle, setIndicatorStyle] = useState({});
+  const tabsRef = React.useRef([]);
+
+  /* Sync state if prop changes */
+  React.useEffect(() => {
+    if (activeTab !== undefined) {
+      setActive(activeTab);
+    }
+  }, [activeTab]);
+
+  /* Update indicator position */
+  React.useEffect(() => {
+    const activeIndex = tabs.findIndex(t => t.value === active);
+    const currentTab = tabsRef.current[activeIndex];
+    
+    if (currentTab) {
+      setIndicatorStyle({
+        width: `${currentTab.offsetWidth}px`,
+        transform: `translateX(${currentTab.offsetLeft}px)`
+      });
+    }
+  }, [active, tabs]);
 
   const handleTabClick = (value) => {
     setActive(value);
@@ -23,6 +46,7 @@ const Tabs = ({
       {tabs.map((tab, index) => (
         <button
           key={tab.value || index}
+          ref={el => tabsRef.current[index] = el}
           className={`tab ${active === tab.value ? 'tab-active' : ''}`}
           onClick={() => handleTabClick(tab.value)}
           disabled={tab.disabled}
@@ -34,10 +58,7 @@ const Tabs = ({
       ))}
       <div 
         className="tab-indicator" 
-        style={{
-          width: `${99 / tabs.length}%`,
-          transform: `translateX(${tabs.findIndex(t => t.value === active) * 100}%)`
-        }}
+        style={indicatorStyle}
       />
     </div>
   );

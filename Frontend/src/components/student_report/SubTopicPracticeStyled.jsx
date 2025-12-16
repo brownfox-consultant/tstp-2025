@@ -116,21 +116,21 @@ export default function SubTopicPracticeStyled({
               {
                 label: "Questions",
                 data: questionData,
-                backgroundColor: "#F59403", // ❌ DO NOT CHANGE
+                backgroundColor: "#F59403",
                 borderColor: "#F59403",
                 barThickness: 30,
               },
               {
                 label: "Time",
                 data: timeData,
-                backgroundColor: "#FFD36A", // ❌ DO NOT CHANGE
+                backgroundColor: "#FFD36A",
                 borderColor: "#FFD36A",
                 barThickness: 30,
               },
               {
                 label: "Accuracy",
                 data: accuracyData,
-                backgroundColor: "#0071BC", // ❌ DO NOT CHANGE
+                backgroundColor: "#0071BC",
                 borderColor: "#0071BC",
                 barThickness: 30,
               },
@@ -147,7 +147,7 @@ export default function SubTopicPracticeStyled({
                 labels: {
                   usePointStyle: true,
                   boxWidth: 8,
-                  font: { size: 11, weight: "600" },
+                  font: { size: 14, weight: "600" },
                 },
               },
               tooltip: { mode: "index", intersect: false },
@@ -157,7 +157,7 @@ export default function SubTopicPracticeStyled({
                 grid: { display: false },
                 ticks: {
                   autoSkip: false,
-                  font: { size: 11 },
+                  font: { size: 16 },
                 },
               },
               y: {
@@ -166,7 +166,7 @@ export default function SubTopicPracticeStyled({
                 ticks: {
                   stepSize: 20,
                   callback: (v) => v + "%",
-                  font: { size: 10 },
+                  font: { size: 14 },
                 },
                 grid: { color: "#f0f0f0", drawBorder: false },
               },
@@ -210,7 +210,7 @@ export default function SubTopicPracticeStyled({
         }
 
         .topic-left-text {
-          font-size: 22px;
+          font-size: 36px;
           font-weight: 800;
           margin-bottom: 12px;
         }
