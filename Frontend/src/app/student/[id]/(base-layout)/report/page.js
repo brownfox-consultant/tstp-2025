@@ -18,7 +18,7 @@ import { BASE_URL } from "@/app/constants/apiConstants";
 import { useParams } from "next/navigation";
 import { subjectColors } from "./data";
 import Topic_Wise_Practice from "@/components/student_report/Topic_Wise_Practice";
-import TopicAccuracyDummy from "@/components/student_report/TopicAccuracyDummy";
+import TopicAccuracy from "@/components/student_report/TopicAccuracy";
 import SubTopicPracticeStyled from "@/components/student_report/SubTopicPracticeStyled";
 import Math_Topic_Wise_Practice from "@/components/student_report/Math_Topic_Wise_Practice";
 import Math_TopicAccuracy from "@/components/student_report/Math_TopicAccuracy";
@@ -247,32 +247,61 @@ function Dashboard() {
         
       )} */}
 
-      {activeReportTab === "english" && (
+   {activeReportTab === "english" && (
   <>
-    {/* TOP ROW (2 COLUMNS) */}
     <div className="data-grid-v1">
-      <Topic_Wise_Practice />
-      <TopicAccuracyDummy />
+      <Topic_Wise_Practice
+        student_id={studentId}
+        course_id={selectedCourse}
+        test_type={testType}
+        subject="English"
+      />
+
+      <TopicAccuracy
+        student_id={studentId}
+        course_id={selectedCourse}
+        test_type={testType}
+        subject="English"
+      />
     </div>
 
-    {/* FULL WIDTH BELOW */}
     <div style={{ marginTop: "25px" }}>
-      <SubTopicPracticeStyled />
+      <SubTopicPracticeStyled
+        student_id={studentId}
+        course_id={selectedCourse}
+        test_type={testType}
+        subject="English"
+      />
     </div>
   </>
 )}
+
 
 {activeReportTab === "math" && (
   <>
     {/* TOP ROW (2 COLUMNS) */}
     <div className="data-grid-v1">
-      <Math_Topic_Wise_Practice />
-      <Math_TopicAccuracy />
+      <Math_Topic_Wise_Practice
+  student_id={studentId}
+  course_id={selectedCourse}
+  test_type={testType}
+/>
+     <Math_TopicAccuracy
+  student_id={studentId}
+  course_id={selectedCourse}
+  test_type={testType}
+/>
+
     </div>
 
     {/* FULL WIDTH BELOW */}
     <div style={{ marginTop: "25px" }}>
-      <Math_SubTopicPractice />
+      <Math_SubTopicPractice
+  student_id={studentId}
+  course_id={selectedCourse}
+  test_type={testType}
+/>
+
     </div>
   </>
 )}

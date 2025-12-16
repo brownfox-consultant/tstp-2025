@@ -1,25 +1,60 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { BASE_URL } from "@/app/constants/apiConstants";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export default function Math_Topic_Wise_Practice() {
-  const legendItems = [
-    { label: "Algebra", value: 28, color: "#F59403" },
-    { label: "Advanced Math", value: 25, color: "#FFD36A" },
-    { label: "Problem-Solving", value: 30, color: "#2E2725" },
-    { label: "Geometry", value: 17, color: "#805B30" },
-  ];
+export default function Math_Topic_Wise_Practice({
+  student_id,
+  course_id,
+  test_type,
+}) {
+  const [topics, setTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (student_id && course_id && test_type) {
+      fetchData();
+    }
+  }, [student_id, course_id, test_type]);
+
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(
+        `${BASE_URL}/api/result/Topic_Wise_Practice/?student_id=${student_id}&course_id=${course_id}&test_type=${test_type}`,
+        { withCredentials: true }
+      );
+
+      const mathData = res.data.find(
+        (item) => item.subject === "Math"
+      );
+
+      setTopics(mathData?.topics || []);
+    } catch (err) {
+      console.error("Math Topic Practice API Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!topics.length) return <div>No data available</div>;
+
+  // ❌ COLORS NOT CHANGED
+  const colors = ["#F59403", "#FFD36A", "#2E2725", "#805B30"];
 
   const data = {
-    labels: legendItems.map((item) => `${item.label} ${item.value}%`),
+    labels: topics.map(
+      (t) => `${t.topic} ${Math.round(t.practice_percent)}%`
+    ),
     datasets: [
       {
-        data: legendItems.map((item) => item.value),
-        backgroundColor: legendItems.map((item) => item.color),
+        data: topics.map((t) => Math.round(t.practice_percent)),
+        backgroundColor: colors,
         borderWidth: 0,
       },
     ],
@@ -27,70 +62,48 @@ export default function Math_Topic_Wise_Practice() {
 
   return (
     <div className="data-card hover-card">
-      {/* TITLE */}
       <h3 className="card-title">Topic Wise Practice</h3>
 
-      {/* CHART */}
-      <div style={{ width: "300px", margin: "0 auto", paddingBottom: "20px" }}>
+      {/* PIE */}
+      <div style={{ width: "300px", margin: "0 auto", paddingBottom: "12px" }}>
         <Pie
           data={data}
           options={{
             plugins: { legend: { display: false } },
             cutout: "60%",
-            maintainAspectRatio: true,
           }}
         />
       </div>
 
-      {/* CUSTOM LEGEND WITH COLORS */}
-      <div className="custom-legend">
-        {legendItems.map((item, index) => (
-          <div key={index} className="legend-item">
-            <span
-              className="legend-color"
-              style={{ backgroundColor: item.color }}
-            ></span>
-            <span className="legend-text">
-              {item.label} {item.value}%
-            </span>
+      {/* ✅ TEXT-ONLY LEGEND (IMAGE STYLE) */}
+      <div className="text-legend-grid">
+        {topics.map((t, i) => (
+          <div key={i} className="text-legend-item">
+            {t.topic} {Math.round(t.practice_percent)}%
           </div>
         ))}
       </div>
 
       <style jsx>{`
-        .data-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            text-align: center;
+        .text-legend-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 6px 20px;
+          margin-top: 10px;
+          text-align: center;
         }
-        .card-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            text-align: left;
+
+        .text-legend-item {
+          font-size: 13px;
+          font-weight: 600;
+          color: #111;
+          white-space: nowrap;
         }
-        .custom-legend {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #333;
-        }
-        .legend-color {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
+
+        @media (max-width: 480px) {
+          .text-legend-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>
