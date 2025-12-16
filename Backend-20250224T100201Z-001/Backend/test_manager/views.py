@@ -76,6 +76,7 @@ from rest_framework.response import Response
 from collections import defaultdict
 from rest_framework.permissions import IsAdminUser
 from course_manager.models import Course, CourseSubjects
+from django.db.models import Sum, Max
 
 
 
@@ -3335,6 +3336,207 @@ class ResultViewSet(viewsets.ModelViewSet):
             final_response.append(subject_block)
 
         return Response(final_response)
+    
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="scoreboard_flt"
+)
+    def scoreboard_flt(self, request):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+
+        if not student_id or not course_id:
+            return Response(
+                {"error": "student_id and course_id are required"},
+                status=400
+            )
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+
+        labels = ["Recent", "Second Last", "Third Last", "Fourth Last", "Fifth Last"]
+        response = []
+
+        # =====================================================
+        # ✅ FULL LENGTH TEST SCOREBOARD (COMBINEDSCORE 200–800)
+        # =====================================================
+        submissions = (
+            TestSubmission.objects.filter(
+                student=student,
+                test__course=course,
+                status=TestSubmission.COMPLETED
+            )
+            .select_related("test")
+            .order_by("-completion_date")[:5]
+        )
+
+        for idx, submission in enumerate(submissions):
+            test = submission.test
+            result = submission.result
+
+            english_score = 0
+            math_score = 0
+            english_accuracy = 0
+            math_accuracy = 0
+            total_score = 0
+
+            sections = Section.objects.filter(test=test)
+
+            # Map: subject_name -> [sections]
+            subject_map = {}
+            for section in sections:
+                subject_name = section.course_subject.subject.name
+                subject_map.setdefault(subject_name, []).append(section)
+
+            # ---------- SUBJECT LOOP ----------
+            for subject_name, subject_sections in subject_map.items():
+
+                section_1_correct = 0
+                section_2_correct = 0
+                total_correct = 0
+                total_wrong = 0
+
+                for section in subject_sections:
+                    for sub_section in section.sub_sections:
+
+                        qas = QuestionAnswer.objects.filter(
+                            result=result,
+                            course_subject=section.course_subject,
+                            section_id=sub_section["id"]
+                        )
+
+                        correct = qas.filter(is_correct=True).count()
+                        wrong = qas.filter(is_correct=False, is_skipped=False).count()
+
+                        total_correct += correct
+                        total_wrong += wrong
+
+                        # ✅ SAME SPLIT AS get_details
+                        if sub_section["id"] == 1:
+                            section_1_correct += correct
+                        else:
+                            section_2_correct += correct
+
+                attempted = total_correct + total_wrong
+                accuracy = round(
+                    (total_correct / attempted) * 100, 2
+                ) if attempted else 0
+
+                # ✅ CombinedScore lookup (200–800)
+                score_record = CombinedScore.objects.filter(
+                    subject_name=subject_name,
+                    section1_correct=section_1_correct,
+                    section2_correct=section_2_correct
+                ).first()
+
+                scaled_score = score_record.total_score if score_record else 0
+
+                if subject_name.lower() == "english":
+                    english_score = scaled_score
+                    english_accuracy = accuracy
+                elif subject_name.lower() == "math":
+                    math_score = scaled_score
+                    math_accuracy = accuracy
+
+                total_score += scaled_score
+
+            response.append({
+                "label": labels[idx],
+                "test_date": submission.completion_date.date()
+                            if submission.completion_date else None,
+
+                "total_score": total_score,
+
+                "english_score": english_score,
+                "english_accuracy": english_accuracy,
+
+                "math_score": math_score,
+                "math_accuracy": math_accuracy,
+            })
+
+        return Response({
+            "test_type": "fullLength",
+            "results": response
+        })
+
+
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="practice-scoreboard"
+)
+    def practice_scoreboard(self, request):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+
+        if not student_id or not course_id:
+            return Response(
+                {"error": "student_id and course_id are required"},
+                status=400
+            )
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+
+        response = []
+
+        # All subjects in this course
+        course_subjects = CourseSubjects.objects.filter(course=course)
+
+        for cs in course_subjects:
+
+            practice_results = PracticeTestResult.objects.filter(
+                practice_test__student=student,
+                practice_test__course_subject=cs
+            )
+
+            if not practice_results.exists():
+                continue
+
+            total_correct = practice_results.aggregate(
+                Sum("correct_answer_count")
+            )["correct_answer_count__sum"] or 0
+
+            total_wrong = practice_results.aggregate(
+                Sum("incorrect_answer_count")
+            )["incorrect_answer_count__sum"] or 0
+
+            total_time = practice_results.aggregate(
+                Sum("time_taken")
+            )["time_taken__sum"] or 0
+
+            last_practice_date = practice_results.aggregate(
+                Max("created_at")
+            )["created_at__max"]
+
+            attempted = total_correct + total_wrong
+            total_questions = PracticeQuestionAnswer.objects.filter(
+                practice_test_result__in=practice_results
+            ).count()
+
+            total_skip = max(0, total_questions - attempted)
+
+            avg_time = round(
+                total_time / attempted, 2
+            ) if attempted else 0
+
+            response.append({
+                "subject_name": cs.subject.name,
+                "test_date": last_practice_date.date() if last_practice_date else None,
+                "total_correct": total_correct,
+                "total_wrong": total_wrong,
+                "total_skip": total_skip,
+                "total_time_seconds": total_time,
+                "avg_time_per_question": avg_time
+            })
+
+        return Response({
+            "test_type": "self_practice",
+            "results": response
+        })
 
 class PracticeTestViewSet(viewsets.ModelViewSet):
     queryset = PracticeTest.objects.all()
