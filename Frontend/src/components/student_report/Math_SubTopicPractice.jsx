@@ -3,27 +3,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Chart } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
+import "@/lib/chartjs";
 import { BASE_URL } from "@/app/constants/apiConstants";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Tooltip,
-  Legend
-);
+
 
 export default function Math_SubTopicPractice({
   student_id,
