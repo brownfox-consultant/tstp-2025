@@ -188,11 +188,6 @@ export default function PatternOfUsage({
             </ResponsiveContainer>
           </div>
 
-          {/* INFO STRIP */}
-          <div className="mt-8 bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-full text-center font-semibold">
-            Click on Date to know more about the work done on that day!
-          </div>
-
           {/* SELECTED DATE DETAILS */}
           {selectedDate && (
             <div className="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border">

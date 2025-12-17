@@ -258,7 +258,7 @@ function Dashboard() {
 
       {activeReportTab === "english" && (
         <>
-          <div className="data-grid-v1">
+          <div className="grid grid-cols-2 gap-[25px] max-[1300px]:grid-cols-1">
             <Topic_Wise_Practice
               student_id={studentId}
               course_id={selectedCourse}
