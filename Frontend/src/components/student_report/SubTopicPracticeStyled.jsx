@@ -59,7 +59,6 @@ export default function SubTopicPracticeStyled({
         { withCredentials: true }
       );
 
-      // ✅ FILTER SUBJECT (English / Math)
       const subjectBlock = res.data.find(
         (s) => s.subject.toLowerCase() === subject.toLowerCase()
       );
@@ -77,9 +76,13 @@ export default function SubTopicPracticeStyled({
 
   if (!topics.length) {
     return (
-      <div className="data-card hover-card">
-        <div className="big-title">Sub – Topic Wise Practice</div>
-        <div style={{ marginTop: "20px", color: "#777" }}>
+      <div className="w-full py-6 px-4">
+        <div className="bg-white rounded-xl px-4 py-2 inline-block mb-6 shadow-sm">
+          <h2 className="text-lg md:text-xl font-extrabold text-gray-800">
+            Sub – Topic Wise Practice
+          </h2>
+        </div>
+        <div className="text-center text-gray-500 mt-8">
           No sub-topic data available
         </div>
       </div>
@@ -87,12 +90,14 @@ export default function SubTopicPracticeStyled({
   }
 
   return (
-    <div className="data-card hover-card">
-      <div className="big-title">
-        Sub – Topic Wise Practice — {subject}
+    <div className="w-full">
+      <div className="bg-white px-4 py-2 inline-block mb-6 border-b">
+        <h2 className="text-lg md:text-xl font-extrabold text-gray-800">
+          Sub – Topic Wise Practice — {subject}
+        </h2>
       </div>
 
-      <div className="subtopics-grid">
+      <div className="grid grid-cols-2 gap-[25px] max-[1300px]:grid-cols-1">
         {topics.map((topicBlock, i) => {
           const labels = topicBlock.subtopics.map((s) =>
             formatLabel(s.subtopic)
@@ -118,21 +123,21 @@ export default function SubTopicPracticeStyled({
                 data: questionData,
                 backgroundColor: "#F59403",
                 borderColor: "#F59403",
-                barThickness: 30,
+                maxBarThickness: 30,
               },
               {
                 label: "Time",
                 data: timeData,
                 backgroundColor: "#FFD36A",
                 borderColor: "#FFD36A",
-                barThickness: 30,
+                maxBarThickness: 30,
               },
               {
                 label: "Accuracy",
                 data: accuracyData,
                 backgroundColor: "#0071BC",
                 borderColor: "#0071BC",
-                barThickness: 30,
+                maxBarThickness: 30,
               },
             ],
           };
@@ -142,13 +147,7 @@ export default function SubTopicPracticeStyled({
             maintainAspectRatio: false,
             plugins: {
               legend: {
-                position: "top",
-                align: "start",
-                labels: {
-                  usePointStyle: true,
-                  boxWidth: 8,
-                  font: { size: 14, weight: "600" },
-                },
+                display: false, 
               },
               tooltip: { mode: "index", intersect: false },
             },
@@ -174,11 +173,13 @@ export default function SubTopicPracticeStyled({
           };
 
           return (
-            <div key={i} className="section-wrapper">
-              <div className="topic-left-text">{topicBlock.topic}</div>
+            <div key={i} className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100">
+              <h3 className="text-xl font-extrabold text-gray-800 mb-3">
+                {topicBlock.topic}
+              </h3>
 
-              <div className="chart-scroll-container">
-                <div className="chart-canvas-container">
+              <div className="overflow-x-auto pb-2">
+                <div className="h-[300px] md:h-[340px] w-full max-w-[700px]">
                   <Bar data={data} options={options} />
                 </div>
               </div>
@@ -186,45 +187,6 @@ export default function SubTopicPracticeStyled({
           );
         })}
       </div>
-
-      <style jsx>{`
-        .big-title {
-          background: white;
-          padding: 8px 22px;
-          font-weight: 800;
-          border-radius: 12px;
-          display: inline-block;
-          margin-bottom: 25px;
-        }
-
-        .subtopics-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 35px;
-        }
-
-        @media (min-width: 1350px) {
-          .subtopics-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        .topic-left-text {
-          font-size: 36px;
-          font-weight: 800;
-          margin-bottom: 12px;
-        }
-
-        .chart-scroll-container {
-          overflow-x: auto;
-          padding-bottom: 10px;
-        }
-
-        .chart-canvas-container {
-          height: 340px;
-          min-width: 520px;
-        }
-      `}</style>
     </div>
   );
 }

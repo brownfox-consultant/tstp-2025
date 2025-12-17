@@ -44,7 +44,6 @@ export default function Math_Topic_Wise_Practice({
   if (loading) return <div>Loading...</div>;
   if (!topics.length) return <div>No data available</div>;
 
-  // ❌ COLORS NOT CHANGED
   const colors = ["#F59403", "#FFD36A", "#2E2725", "#805B30"];
 
   const data = {
@@ -61,11 +60,11 @@ export default function Math_Topic_Wise_Practice({
   };
 
   return (
-    <div className="data-card hover-card">
-      <h3 className="card-title">Topic Wise Practice</h3>
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+      <h3 className="text-xl font-extrabold text-gray-800 mb-6 text-center">Topic Wise Practice</h3>
 
       {/* PIE */}
-      <div style={{ width: "300px", margin: "0 auto", paddingBottom: "12px" }}>
+      <div className="w-[300px] mx-auto pb-3">
         <Pie
           data={data}
           options={{
@@ -76,36 +75,13 @@ export default function Math_Topic_Wise_Practice({
       </div>
 
       {/* ✅ TEXT-ONLY LEGEND (IMAGE STYLE) */}
-      <div className="text-legend-grid">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-2.5 text-center ">
         {topics.map((t, i) => (
-          <div key={i} className="text-legend-item">
+          <div key={i} className="text-[13px] font-semibold text-gray-900 whitespace-nowrap">
             {t.topic} {Math.round(t.practice_percent)}%
           </div>
         ))}
       </div>
-
-      <style jsx>{`
-        .text-legend-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 6px 20px;
-          margin-top: 10px;
-          text-align: center;
-        }
-
-        .text-legend-item {
-          font-size: 13px;
-          font-weight: 600;
-          color: #111;
-          white-space: nowrap;
-        }
-
-        @media (max-width: 480px) {
-          .text-legend-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 }

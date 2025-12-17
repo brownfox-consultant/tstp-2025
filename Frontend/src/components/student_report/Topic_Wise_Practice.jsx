@@ -30,7 +30,6 @@ export default function Topic_Wise_Practice({
         { withCredentials: true }
       );
 
-      // ✅ FILTER ONLY REQUIRED SUBJECT
       const subjectData = res.data.find(
         (item) => item.subject === subject
       );
@@ -46,7 +45,6 @@ export default function Topic_Wise_Practice({
   if (loading) return <div>Loading...</div>;
   if (!topics.length) return <div>No data available</div>;
 
-  /* ❌ COLORS MUST NOT CHANGE */
   const backgroundColors = [
     "#F59403",
     "#FFD36A",
@@ -70,13 +68,12 @@ export default function Topic_Wise_Practice({
   };
 
   return (
-    <div className="data-card hover-card">
-      <h3 className="card-title">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+      <h3 className="text-lg font-extrabold text-gray-800 mb-6">
         Topic Wise Practice — {subject}
       </h3>
 
-      {/* PIE */}
-      <div style={{ width: "300px", margin: "0 auto", paddingBottom: "10px" }}>
+      <div className="w-[300px] mx-auto pb-3">
         <Pie
           data={data}
           options={{
@@ -86,37 +83,17 @@ export default function Topic_Wise_Practice({
         />
       </div>
 
-      {/* ✅ IMAGE-STYLE TEXT STRUCTURE */}
-      <div className="text-legend-grid">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-2.5 text-center">
         {topics.map((t, i) => (
-          <div key={i} className="text-legend-item">
+          <div key={i} className="text-[13px] font-semibold text-gray-900 whitespace-nowrap flex items-center">
+            <span
+              className="w-2.5 h-2.5 rounded-full inline-block mr-2"
+              style={{ backgroundColor: backgroundColors[i % backgroundColors.length] }}
+            ></span>
             {t.topic} {Math.round(t.practice_percent)}%
           </div>
         ))}
       </div>
-
-      <style jsx>{`
-        .text-legend-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 6px 20px;
-          margin-top: 10px;
-          text-align: center;
-        }
-
-        .text-legend-item {
-          font-size: 13px;
-          font-weight: 600;
-          color: #111;
-          white-space: nowrap;
-        }
-
-        @media (max-width: 480px) {
-          .text-legend-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 }
