@@ -3538,6 +3538,109 @@ class ResultViewSet(viewsets.ModelViewSet):
             "results": response
         })
 
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="utilisation-full-length"
+)
+    def utilisation_full_length(self, request):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+
+        if not student_id or not course_id:
+            return Response({"error": "student_id and course_id are required"}, status=400)
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+
+        submissions = TestSubmission.objects.filter(
+            student=student,
+            test__course=course,
+            status=TestSubmission.COMPLETED
+        )
+
+        subjects_data = {}
+
+        for submission in submissions:
+            test = submission.test
+            result = submission.result
+
+            sections = Section.objects.filter(test=test)
+
+            for section in sections:
+                subject_name = section.course_subject.subject.name
+                subjects_data.setdefault(subject_name, {"answered": 0, "total": 0})
+
+                for sub_section in section.sub_sections:
+                    question_ids = sub_section.get("questions", [])
+                    subjects_data[subject_name]["total"] += len(question_ids)
+
+                    answered = QuestionAnswer.objects.filter(
+                        result=result,
+                        course_subject=section.course_subject,
+                        section_id=sub_section["id"],
+                        is_skipped=False
+                    ).count()
+
+                    subjects_data[subject_name]["answered"] += answered
+
+        response = {}
+        for subject, data in subjects_data.items():
+            response[subject] = {
+                "answered": data["answered"],
+                "unanswered": max(0, data["total"] - data["answered"])
+            }
+
+        return Response({
+            "test_type": "fullLength",
+            "subjects": response
+        })
+
+
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="utilisation-practice"
+)
+    def utilisation_practice(self, request):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+
+        if not student_id or not course_id:
+            return Response({"error": "student_id and course_id are required"}, status=400)
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+
+        subjects_data = {}
+
+        practice_results = PracticeQuestionAnswer.objects.filter(
+            practice_test_result__practice_test__student=student,
+            practice_test_result__practice_test__course_subject__course=course
+        ).select_related("practice_test_result__practice_test__course_subject")
+
+        for qa in practice_results:
+            subject_name = qa.practice_test_result.practice_test.course_subject.subject.name
+            subjects_data.setdefault(subject_name, {"answered": 0, "total": 0})
+
+            subjects_data[subject_name]["total"] += 1
+            if not qa.is_skipped:
+                subjects_data[subject_name]["answered"] += 1
+
+        response = {}
+        for subject, data in subjects_data.items():
+            response[subject] = {
+                "answered": data["answered"],
+                "unanswered": max(0, data["total"] - data["answered"])
+            }
+
+        return Response({
+            "test_type": "self_practice",
+            "subjects": response
+        })
+
 class PracticeTestViewSet(viewsets.ModelViewSet):
     queryset = PracticeTest.objects.all()
     logger = logging.getLogger('Practice-Test')
