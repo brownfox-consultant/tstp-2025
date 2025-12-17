@@ -217,8 +217,8 @@ function Dashboard() {
             { value: 'resources', label: 'Utilisation of Resources' },
             { value: 'pattern', label: 'Pattern of Usage' },
             { value: 'doubts', label: 'Status of Doubts' },
-            // { value: 'topicwise-english', label: 'Topic Progress - English' },
-            // { value: 'topicwise-math', label: 'Topic Progress - Math' }
+            { value: 'topicwise-english', label: 'Topic Progress - English' },
+            { value: 'topicwise-math', label: 'Topic Progress - Math' }
           ]}
           activeTab={activeReportTab}
           onChange={setActiveReportTab}
@@ -359,13 +359,13 @@ function Dashboard() {
         <DateWiseReport />
       )}
 
-      {/* {activeReportTab === "topicwise-english" && (
+      {activeReportTab === "topicwise-english" && (
         <TopicWiseProgress subject="english" />
       )}
 
       {activeReportTab === "topicwise-math" && (
         <TopicWiseProgress subject="math" />
-      )} */}
+      )}
 
     </div>
   );
