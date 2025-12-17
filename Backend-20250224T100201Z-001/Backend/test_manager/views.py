@@ -3641,6 +3641,91 @@ class ResultViewSet(viewsets.ModelViewSet):
             "subjects": response
         })
 
+        
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="pattern-of-usage"
+)
+    def pattern_of_usage(self, request):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+        test_type = request.GET.get("test_type")  # FULL_LENGTH | PRACTICE
+
+        if not student_id or not course_id or not test_type:
+            return Response(
+                {"error": "student_id, course_id and test_type are required"},
+                status=400
+            )
+
+        student = User.objects.get(id=student_id)
+        course = Course.objects.get(id=course_id)
+
+        data = []
+
+        # =========================================================
+        # FULL LENGTH TEST
+        # =========================================================
+        if test_type == "FULL_LENGTH":
+            results = (
+                Result.objects
+                .filter(
+                    test_submission__student=student,
+                    test_submission__test__course=course,
+                    test_submission__status=TestSubmission.COMPLETED
+                )
+                .annotate(date=TruncDate("created_at"))
+                .values("date")
+                .annotate(
+                    total_time=Sum("time_taken"),
+                    total_questions=Count("question_answers__id", distinct=True)
+                )
+                .order_by("date")
+            )
+
+            for r in results:
+                data.append({
+                    "date": r["date"].strftime("%Y-%m-%d"),
+                    "time": round((r["total_time"] or 0) / 60),  # minutes
+                    "questions": r["total_questions"] or 0,
+                    "details": "Full Length Test Activity"
+                })
+
+        # =========================================================
+        # PRACTICE TEST
+        # =========================================================
+        elif test_type == "PRACTICE":
+            results = (
+                PracticeTestResult.objects
+                .filter(
+                    practice_test__student=student,
+                    practice_test__course_subject__course=course
+                )
+                .annotate(date=TruncDate("created_at"))
+                .values("date")
+                .annotate(
+                    total_time=Sum("time_taken"),
+                    total_questions=Count("question_answers__id", distinct=True)
+                )
+                .order_by("date")
+            )
+
+            for r in results:
+                data.append({
+                    "date": r["date"].strftime("%Y-%m-%d"),
+                    "time": round((r["total_time"] or 0) / 60),  # minutes
+                    "questions": r["total_questions"] or 0,
+                    "details": "Practice Test Activity"
+                })
+
+        else:
+            return Response({"error": "Invalid test_type"}, status=400)
+
+        return Response({
+            "results": data
+        })
+
 class PracticeTestViewSet(viewsets.ModelViewSet):
     queryset = PracticeTest.objects.all()
     logger = logging.getLogger('Practice-Test')

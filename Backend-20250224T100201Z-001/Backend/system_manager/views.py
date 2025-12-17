@@ -53,6 +53,18 @@ from system_manager.filters import SuggestionFilter
 from django.db.models.functions import Lower
 from rest_framework.decorators import api_view, permission_classes
 from test_manager.models import TestFeedback
+from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
+from django.db.models.functions import TruncMonth
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
+from system_manager.models import Doubt
+from course_manager.models import Course
+from user_manager.models import User
+from django.db.models import Count, Avg, F, Q, ExpressionWrapper, DurationField
+from django.db.models.functions import TruncMonth
 
 
 
@@ -62,6 +74,113 @@ class DoubtViewSet(viewsets.ModelViewSet):
     serializer_class = DoubtListSerializer
     logger = logging.getLogger('Doubts')
 
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="status-of-doubts"
+)
+    def status_of_doubts(self, request):
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+        test_type = request.GET.get("test_type")  # ✅ NEW
+
+        if not student_id or not course_id:
+            return Response(
+                {"error": "student_id and course_id are required"},
+                status=400
+            )
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+
+        # ==================================================
+        # BASE QUERY
+        # ==================================================
+        doubts_qs = Doubt.objects.filter(
+            student=student,
+            course_subject__course=course
+        )
+
+        # ==================================================
+        # ✅ FILTER BY TEST TYPE (OPTIONAL)
+        # ==================================================
+        if test_type:
+            doubts_qs = doubts_qs.filter(
+                test__test_type=test_type
+            )
+
+        # ==================================================
+        # 1️⃣ MONTH-WISE RAISED vs SOLVED
+        # ==================================================
+        monthly = (
+            doubts_qs
+            .annotate(month=TruncMonth("created_at"))
+            .values("month")
+            .annotate(
+                raised=Count("id"),
+                solved=Count("id", filter=Q(status=Doubt.RESOLVED))
+            )
+            .order_by("month")
+        )
+
+        chart_data = [
+            {
+                "month": row["month"].strftime("%b-%y"),
+                "raised": row["raised"],
+                "solved": row["solved"]
+            }
+            for row in monthly
+        ]
+
+        # ==================================================
+        # 2️⃣ TOTALS
+        # ==================================================
+        total_raised = doubts_qs.count()
+        total_solved = doubts_qs.filter(status=Doubt.RESOLVED).count()
+
+        resolution_rate = round(
+            (total_solved / total_raised) * 100, 2
+        ) if total_raised else 0
+
+        # ==================================================
+        # 3️⃣ AVERAGE RESOLUTION TIME (HOURS)
+        # ==================================================
+        resolved_doubts = doubts_qs.filter(
+            status=Doubt.RESOLVED,
+            resolution_date__isnull=False
+        ).annotate(
+            resolution_time=ExpressionWrapper(
+                F("resolution_date") - F("created_at"),
+                output_field=DurationField()
+            )
+        )
+
+        avg_resolution = resolved_doubts.aggregate(
+            avg_time=Avg("resolution_time")
+        )["avg_time"]
+
+        avg_hours = round(
+            avg_resolution.total_seconds() / 3600, 1
+        ) if avg_resolution else 0
+
+        # ==================================================
+        # FINAL RESPONSE
+        # ==================================================
+        return Response({
+            "filters": {
+                "student_id": student_id,
+                "course_id": course_id,
+                "test_type": test_type or "ALL"
+            },
+            "chart": chart_data,
+            "summary": {
+                "total_raised": total_raised,
+                "total_solved": total_solved,
+                "resolution_rate": resolution_rate
+            },
+            "average_resolution_time_hours": avg_hours
+        })
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='developer_unread_summary')
     def get_developer_unread_summary(self, request):
