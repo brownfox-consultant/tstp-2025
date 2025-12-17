@@ -318,7 +318,16 @@ function Dashboard() {
       )}
 
       {activeReportTab === "scoreboard" && (
-        testType === "practiceTest" ? <SelfPractice /> : <Scoreboard />
+        testType === "practiceTest" ? <SelfPractice
+        student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+        /> : <Scoreboard 
+        
+        student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+        />
       )}
 {/* 
       {activeReportTab === "doubts" && (
