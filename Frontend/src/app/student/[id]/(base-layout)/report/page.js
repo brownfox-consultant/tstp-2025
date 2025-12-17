@@ -25,11 +25,11 @@ import Math_TopicAccuracy from "@/components/student_report/Math_TopicAccuracy";
 import Math_SubTopicPractice from "@/components/student_report/Math_SubTopicPractice"
 import Scoreboard from "@/components/student_report/Scoreboard";
 import SelfPractice from "@/components/student_report/SelfPractice";
-// import StatusOfDoubts from "@/components/student_report/StatusOfDoubts";
+import StatusOfDoubts from "@/components/student_report/StatusOfDoubts";
 
-// import UtilisationOfResources from "@/components/student_report/UtilisationOfResources";
-// import PatternOfUsage from "@/components/student_report/PatternOfUsage";
-// import DateWiseReport from "@/components/student_report/DateWiseReport";
+import UtilisationOfResources from "@/components/student_report/UtilisationOfResources";
+import PatternOfUsage from "@/components/student_report/PatternOfUsage";
+import DateWiseReport from "@/components/student_report/DateWiseReport";
 // import TopicWiseProgress from "@/components/student_report/TopicWiseProgress";
 
 
@@ -214,9 +214,9 @@ function Dashboard() {
             { value: 'english', label: 'English Topic Wise Report' },
             { value: 'math', label: 'Math Topic Wise Report' },
             { value: 'scoreboard', label: 'SCOREBOARD' },
-            // { value: 'resources', label: 'Utilisation of Resources' },
-            // { value: 'pattern', label: 'Pattern of Usage' },
-            // { value: 'doubts', label: 'Status of Doubts' },
+            { value: 'resources', label: 'Utilisation of Resources' },
+            { value: 'pattern', label: 'Pattern of Usage' },
+            { value: 'doubts', label: 'Status of Doubts' },
             // { value: 'topicwise-english', label: 'Topic Progress - English' },
             // { value: 'topicwise-math', label: 'Topic Progress - Math' }
           ]}
@@ -238,24 +238,22 @@ function Dashboard() {
       )}
 
       {/* {activeReportTab === "english" && (
-        // <TopicWiseReport
-        //   practice={practice}
-        //   accuracy={accuracy}
-        //   timeMetrics={timeMetrics}
-        //   heatmapData={heatmapData}
-        // />
-        <div className="data-grid-v1">
-  <Topic_Wise_Practice/>
-  <TopicAccuracyDummy />
-</div>
+        <>
+          <TopicWiseReport
+            practice={practice}
+            accuracy={accuracy}
+            timeMetrics={timeMetrics}
+            heatmapData={heatmapData}
+          />
+          <div className="data-grid-v1">
+            <Topic_Wise_Practice />
+            <TopicAccuracyDummy />
+          </div>
 
-<div style={{ marginTop: "25px" }}>
-  <SubTopicPracticeStyled/>
-</div>
-
-           
-           
-        
+          <div style={{ marginTop: "25px" }}>
+            <SubTopicPracticeStyled />
+          </div>
+        </>
       )} */}
 
       {activeReportTab === "english" && (
@@ -329,28 +327,28 @@ function Dashboard() {
               test_type={testType}
         />
       )}
-{/* 
+
       {activeReportTab === "doubts" && (
         <StatusOfDoubts />
-      )} */}
+      )}
 
-      {/* {activeReportTab === "resources" && (
+      {activeReportTab === "resources" && (
         <UtilisationOfResources />
-      )} */}
+      )}
 
-      {/* {activeReportTab === "pattern" && (
+      {activeReportTab === "pattern" && (
         <PatternOfUsage />
-      )} */}
+      )}
 
-      {/* {activeReportTab === "datewise" && (
+      {activeReportTab === "datewise" && (
         <DateWiseReport />
-      )} */}
+      )}
 
       {/* {activeReportTab === "topicwise-english" && (
         <TopicWiseProgress subject="english" />
-      )} */}
+      )}
 
-      {/* {activeReportTab === "topicwise-math" && (
+      {activeReportTab === "topicwise-math" && (
         <TopicWiseProgress subject="math" />
       )} */}
 
