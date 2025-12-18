@@ -25,7 +25,7 @@ function TestList() {
   const router = useRouter();
   const pathname = usePathname();
   const role = pathname.split("/")[1];
-  const { setTestRunning, testRunning, setCollapsed } = useGlobalContext();
+  const { setTestRunning, testRunning } = useGlobalContext();
   const { isFullScreen, goFullScreen, exitFullScreen } = useFullScreen();
   const [showResult, setShowResult] = useState(false);
   const [submissionId, setSubmissionId] = useState();
@@ -38,7 +38,6 @@ function TestList() {
 
   useEffect(() => {
     setTestRunning(false);
-    setCollapsed(false);
 
     isFullScreen && exitFullScreen();
   }, []);

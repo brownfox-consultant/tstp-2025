@@ -21,7 +21,7 @@ export const GlobalContextProvider = ({ children }) => {
   const [userId, setUserId] = useState();
   const [role, setRole] = useState();
   const [userName, setUserName] = useState();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [collapsedWidth, setCollapsedWidth] = useState(0);
   const [testRunning, setTestRunning] = useState(false);
   const [roles, setRoles] = useState([]);
