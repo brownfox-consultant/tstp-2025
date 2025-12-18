@@ -3649,6 +3649,7 @@ class ResultViewSet(viewsets.ModelViewSet):
     url_path="pattern-of-usage"
 )
     def pattern_of_usage(self, request):
+
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
         test_type = request.GET.get("test_type")  # FULL_LENGTH | PRACTICE
@@ -3659,72 +3660,89 @@ class ResultViewSet(viewsets.ModelViewSet):
                 status=400
             )
 
-        student = User.objects.get(id=student_id)
-        course = Course.objects.get(id=course_id)
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
 
-        data = []
+        results = []
 
-        # =========================================================
-        # FULL LENGTH TEST
-        # =========================================================
+        # =====================================================
+        # ✅ FULL LENGTH TEST (LATEST 7)
+        # =====================================================
         if test_type == "FULL_LENGTH":
-            results = (
-                Result.objects
+
+            submissions = (
+                TestSubmission.objects
                 .filter(
-                    test_submission__student=student,
-                    test_submission__test__course=course,
-                    test_submission__status=TestSubmission.COMPLETED
+                    student=student,
+                    test__course=course,
+                    status=TestSubmission.COMPLETED
                 )
-                .annotate(date=TruncDate("created_at"))
-                .values("date")
-                .annotate(
-                    total_time=Sum("time_taken"),
-                    total_questions=Count("question_answers__id", distinct=True)
-                )
-                .order_by("date")
+                .select_related("test", "result")
+                .order_by("-completion_date")[:7]   # 🔥 ONLY 7 (LATEST)
             )
 
-            for r in results:
-                data.append({
-                    "date": r["date"].strftime("%Y-%m-%d"),
-                    "time": round((r["total_time"] or 0) / 60),  # minutes
-                    "questions": r["total_questions"] or 0,
-                    "details": "Full Length Test Activity"
+            for submission in submissions:
+                if not hasattr(submission, "result"):
+                    continue
+
+                result = submission.result
+
+                # ✅ SAME TIME LOGIC AS details API
+                total_time_seconds = (
+                    SectionStats.objects
+                    .filter(result=result)
+                    .aggregate(total=Sum("time_taken"))["total"] or 0
+                )
+
+                total_questions = QuestionAnswer.objects.filter(result=result).count()
+
+                results.append({
+                    "test_submission_id": submission.id,
+                    "test_id": submission.test.id,
+                    "test_type": "FULL_LENGTH",
+                    "date": submission.completion_date.strftime("%Y-%m-%d"),
+                    "time": round(total_time_seconds / 60),
+                    "questions": total_questions,
+                    "details": f"Full Length Test - {submission.test.name}"
                 })
 
-        # =========================================================
-        # PRACTICE TEST
-        # =========================================================
+        # =====================================================
+        # ✅ PRACTICE TEST (LATEST 7)
+        # =====================================================
         elif test_type == "PRACTICE":
-            results = (
+
+            practice_results = (
                 PracticeTestResult.objects
                 .filter(
                     practice_test__student=student,
                     practice_test__course_subject__course=course
                 )
-                .annotate(date=TruncDate("created_at"))
-                .values("date")
-                .annotate(
-                    total_time=Sum("time_taken"),
-                    total_questions=Count("question_answers__id", distinct=True)
-                )
-                .order_by("date")
+                .select_related("practice_test")
+                .order_by("-created_at")[:7]   # 🔥 ONLY 7
             )
 
-            for r in results:
-                data.append({
-                    "date": r["date"].strftime("%Y-%m-%d"),
-                    "time": round((r["total_time"] or 0) / 60),  # minutes
-                    "questions": r["total_questions"] or 0,
+            for r in practice_results:
+                results.append({
+                    "test_submission_id": r.practice_test.id,
+                    "test_id": None,
+                    "test_type": "PRACTICE",
+                    "date": r.created_at.strftime("%Y-%m-%d"),
+                    "time": round((r.time_taken or 0) / 60),
+                    "questions": r.question_answers.count(),
                     "details": "Practice Test Activity"
                 })
 
         else:
             return Response({"error": "Invalid test_type"}, status=400)
 
+        # 🔁 Oldest → Newest for chart
+        results.reverse()
+
         return Response({
-            "results": data
+            "count": len(results),
+            "results": results
         })
+
 
 class PracticeTestViewSet(viewsets.ModelViewSet):
     queryset = PracticeTest.objects.all()
