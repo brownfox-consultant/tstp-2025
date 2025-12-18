@@ -394,7 +394,7 @@ function RegisterForm() {
           <Button
             loading={submitLoader}
             disabled={!formCompleted}
-            className="justify-center"
+            className="justify-center w-full py-3"
             type="primary"
             htmlType="submit"
           >
