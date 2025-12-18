@@ -3742,6 +3742,158 @@ class ResultViewSet(viewsets.ModelViewSet):
             "count": len(results),
             "results": results
         })
+    
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="topic-wise-progress"
+)
+    def topic_wise_progress(self, request):
+
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+        subject_name = request.GET.get("subject")        # ENGLISH / MATH
+        test_type = request.GET.get("test_type")         # FULL_LENGTH / PRACTICE
+        
+        if not all([student_id, course_id, subject_name, test_type]):
+            return Response(
+                {"error": "student_id, course_id, subject and test_type are required"},
+                status=400
+            )
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+
+        # =====================================================
+        # 1️⃣ Resolve CourseSubject
+        # =====================================================
+        course_subject = CourseSubjects.objects.filter(
+            course=course,
+            subject__name__iexact=subject_name
+        ).first()
+
+        if not course_subject:
+            return Response({"results": []})
+
+        topic_map = {}
+
+        # =====================================================
+        # 2️⃣ FULL LENGTH TEST LOGIC
+        # =====================================================
+        if test_type == "FULL_LENGTH":
+
+            submission = (
+                TestSubmission.objects
+                .filter(
+                    student=student,
+                    test__course=course,
+                    status=TestSubmission.COMPLETED
+                )
+                .select_related("test", "result")
+                .order_by("-completion_date")
+                .first()
+            )
+
+            if not submission or not hasattr(submission, "result"):
+                return Response({"results": []})
+
+            answers = QuestionAnswer.objects.filter(
+                result=submission.result,
+                course_subject=course_subject,
+                is_skipped=False
+            ).select_related("question", "question__topic")
+
+        # =====================================================
+        # 3️⃣ PRACTICE TEST LOGIC
+        # =====================================================
+        elif test_type == "PRACTICE":
+
+            practice_result = (
+                PracticeTestResult.objects
+                .filter(
+                    practice_test__student=student,
+                    practice_test__course_subject=course_subject
+                )
+                .order_by("-created_at")
+                .first()
+            )
+
+            if not practice_result:
+                return Response({"results": []})
+
+            answers = PracticeQuestionAnswer.objects.filter(
+                practice_test_result=practice_result,
+                is_skipped=False
+            ).select_related("question", "question__topic")
+
+        else:
+            return Response({"error": "Invalid test_type"}, status=400)
+
+        # =====================================================
+        # 4️⃣ AGGREGATE TOPIC + SUBTOPIC
+        # =====================================================
+        for ans in answers:
+
+            topic = ans.question.topic.name if ans.question.topic else "General"
+            sub_topic = (
+                ans.question.sub_topic.name
+                if hasattr(ans.question, "sub_topic") and ans.question.sub_topic
+                else "General"
+            )
+
+            topic_map.setdefault(topic, {
+                "correct": 0,
+                "total": 0,
+                "sub_topics": {}
+            })
+
+            topic_map[topic]["total"] += 1
+            if ans.is_correct:
+                topic_map[topic]["correct"] += 1
+
+            st = topic_map[topic]["sub_topics"].setdefault(sub_topic, {
+                "correct": 0,
+                "total": 0
+            })
+
+            st["total"] += 1
+            if ans.is_correct:
+                st["correct"] += 1
+
+        # =====================================================
+        # 5️⃣ FORMAT RESPONSE (FRONTEND READY)
+        # =====================================================
+        chart_data = []
+        accordion_data = []
+
+        for topic, data in topic_map.items():
+            topic_score = round((data["correct"] / data["total"]) * 100) if data["total"] else 0
+
+            chart_data.append({
+                "shortName": topic.split()[0],
+                "fullName": topic,
+                "value": topic_score
+            })
+
+            accordion_data.append({
+                "title": topic,
+                "score": topic_score,
+                "subTopics": [
+                    {
+                        "name": sub,
+                        "score": round((v["correct"] / v["total"]) * 100) if v["total"] else 0,
+                        "status": "Strong" if (v["correct"] / v["total"]) >= 0.75 else "On Track"
+                    }
+                    for sub, v in data["sub_topics"].items()
+                ]
+            })
+
+        return Response({
+            "test_type": test_type,
+            "chartData": chart_data,
+            "accordionData": accordion_data
+        })
 
 
 class PracticeTestViewSet(viewsets.ModelViewSet):

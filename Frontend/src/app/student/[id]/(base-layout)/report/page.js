@@ -29,8 +29,8 @@ import StatusOfDoubts from "@/components/student_report/StatusOfDoubts";
 
 import UtilisationOfResources from "@/components/student_report/UtilisationOfResources";
 import PatternOfUsage from "@/components/student_report/PatternOfUsage";
-// import DateWiseReport from "@/components/student_report/DateWiseReport";
-// import TopicWiseProgress from "@/components/student_report/TopicWiseProgress";
+//import DateWiseReport from "@/components/student_report/DateWiseReport";
+import TopicWiseProgress from "@/components/student_report/TopicWiseProgress";
 
 
 
@@ -360,11 +360,22 @@ function Dashboard() {
       )}
 
       {activeReportTab === "topicwise-english" && (
-        <TopicWiseProgress subject="english" />
+        <TopicWiseProgress
+  student_id={studentId}
+              course_id={selectedCourse}
+  subject="ENGLISH"
+  test_type={testType}   
+/>
+
       )}
 
       {activeReportTab === "topicwise-math" && (
-        <TopicWiseProgress subject="math" />
+        <TopicWiseProgress 
+         student_id={studentId}
+              course_id={selectedCourse}
+        subject="MATH" 
+         test_type={testType} 
+        />
       )}
 
     </div>
