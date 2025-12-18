@@ -29,15 +29,16 @@ import StatusOfDoubts from "@/components/student_report/StatusOfDoubts";
 
 import UtilisationOfResources from "@/components/student_report/UtilisationOfResources";
 import PatternOfUsage from "@/components/student_report/PatternOfUsage";
-//import DateWiseReport from "@/components/student_report/DateWiseReport";
+// import DateWiseReport from "@/components/student_report/DateWiseReport";
 import TopicWiseProgress from "@/components/student_report/TopicWiseProgress";
+import ScoreAnalysis from "@/components/student_report/ScoreAnalysis";
 
 
 
 
 function Dashboard() {
   const [testType, setTestType] = useState("fullLength");
-  const [activeReportTab, setActiveReportTab] = useState("subject");
+  const [activeReportTab, setActiveReportTab] = useState("score-analysis");
 
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [coursesList, setCoursesList] = useState([]);
@@ -69,6 +70,11 @@ function Dashboard() {
     }
     loadCourses();
   }, []);
+
+  const selectedCourseName = useMemo(() => {
+    const course = coursesList.find(c => c.id == selectedCourse);
+    return course ? course.name : "Course";
+  }, [coursesList, selectedCourse]);
 
   // ============================
   // SUBJECT WISE PRACTICE
@@ -210,6 +216,7 @@ function Dashboard() {
       <div className="w-full mb-6">
         <Tabs
           tabs={[
+            { value: 'score-analysis', label: `${selectedCourseName} Score Analysis` },
             { value: 'subject', label: 'Subject Wise Report' },
             { value: 'english', label: 'English Topic Wise Report' },
             { value: 'math', label: 'Math Topic Wise Report' },
@@ -227,6 +234,10 @@ function Dashboard() {
         />
       </div>
 
+
+      {activeReportTab === "score-analysis" && (
+        <ScoreAnalysis courseName={selectedCourseName} />
+      )}
 
       {activeReportTab === "subject" && (
         <div className="grid grid-cols-2 gap-[25px] max-[1200px]:grid-cols-1">
@@ -317,41 +328,41 @@ function Dashboard() {
 
       {activeReportTab === "scoreboard" && (
         testType === "practiceTest" ? <SelfPractice
-        student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
-        /> : <Scoreboard 
-        
-        student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
+          student_id={studentId}
+          course_id={selectedCourse}
+          test_type={testType}
+        /> : <Scoreboard
+
+          student_id={studentId}
+          course_id={selectedCourse}
+          test_type={testType}
         />
       )}
 
       {activeReportTab === "doubts" && (
-        <StatusOfDoubts 
+        <StatusOfDoubts
 
-         student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
+          student_id={studentId}
+          course_id={selectedCourse}
+          test_type={testType}
         />
       )}
 
       {activeReportTab === "resources" && (
-        <UtilisationOfResources 
-        
-         student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
+        <UtilisationOfResources
+
+          student_id={studentId}
+          course_id={selectedCourse}
+          test_type={testType}
         />
       )}
 
       {activeReportTab === "pattern" && (
-        <PatternOfUsage 
-        
-        student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
+        <PatternOfUsage
+
+          student_id={studentId}
+          course_id={selectedCourse}
+          test_type={testType}
         />
       )}
 
@@ -361,20 +372,20 @@ function Dashboard() {
 
       {activeReportTab === "topicwise-english" && (
         <TopicWiseProgress
-  student_id={studentId}
-              course_id={selectedCourse}
-  subject="ENGLISH"
-  test_type={testType}   
-/>
+          student_id={studentId}
+          course_id={selectedCourse}
+          subject="ENGLISH"
+          test_type={testType}
+        />
 
       )}
 
       {activeReportTab === "topicwise-math" && (
-        <TopicWiseProgress 
-         student_id={studentId}
-              course_id={selectedCourse}
-        subject="MATH" 
-         test_type={testType} 
+        <TopicWiseProgress
+          student_id={studentId}
+          course_id={selectedCourse}
+          subject="MATH"
+          test_type={testType}
         />
       )}
 

@@ -24,6 +24,7 @@ import {
   WarningOutlined,
   CommentOutlined,
   MenuUnfoldOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 
 const { Content } = Layout;
@@ -157,7 +158,6 @@ function DashboardLayout({ children }) {
 
   return (
     <Layout className="min-h-screen">
-      {/* Mobile Overlay */}
       {isMobile && mobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
@@ -166,7 +166,6 @@ function DashboardLayout({ children }) {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
           fixed top-0 left-0 h-screen bg-white border-r border-gray-200 z-50
@@ -175,7 +174,6 @@ function DashboardLayout({ children }) {
         `}
         style={{ width: isMobile ? 280 : sidebarWidth }}
       >
-        {/* Toggle Button - Positioned at right edge (hidden on mobile) */}
         {!isMobile && (
           <button
             onClick={handleToggle}
@@ -202,12 +200,29 @@ function DashboardLayout({ children }) {
           </button>
         )}
 
+        {/* Close Button for Mobile */}
+        {isMobile && mobileMenuOpen && (
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="
+              absolute top-4 right-4 z-50
+              w-8 h-8 rounded-full bg-gray-100
+              flex items-center justify-center cursor-pointer
+              hover:bg-gray-200 transition-colors duration-200
+              focus:outline-none focus:ring-2 focus:ring-primary-color focus:ring-opacity-50
+            "
+            aria-label="Close menu"
+          >
+            <CloseOutlined className="text-gray-600 text-sm" />
+          </button>
+        )}
+
         {/* Logo Section */}
         <div className={`
           flex items-center h-20 min-h-[80px] px-4
           transition-all duration-300 ease-in-out
         `}>
-          {collapsed ? (
+          {collapsed && !isMobile ? (
             <Image
               alt="TSTP Logo"
               src={justlogo}
@@ -254,19 +269,17 @@ function DashboardLayout({ children }) {
                   }
                 }}
               >
-                {/* Icon Container - Fixed width for alignment */}
                 <span className={`
                   flex items-center justify-center flex-shrink-0
                   w-12 h-12 text-lg
                 `}>
                   {item.icon}
                 </span>
-                
-                {/* Label - Hidden when collapsed */}
+       
                 <span className={`
                   flex-1 text-sm font-medium whitespace-nowrap overflow-hidden
                   transition-all duration-300 ease-in-out
-                  ${collapsed 
+                  ${collapsed && !isMobile 
                     ? 'w-0 opacity-0 ml-0' 
                     : 'opacity-100 ml-1'
                   }
@@ -276,7 +289,6 @@ function DashboardLayout({ children }) {
               </div>
             );
 
-            // Wrap with Tooltip when collapsed (show label on hover)
             if (collapsed && !isMobile) {
               return (
                 <Tooltip
@@ -294,7 +306,6 @@ function DashboardLayout({ children }) {
           })}
         </nav>
 
-        {/* Footer / Profile Section */}
         <div className="mt-auto border-t border-gray-200 p-3">
           <div
             onClick={handleProfileClick}
@@ -318,11 +329,11 @@ function DashboardLayout({ children }) {
               <UserProfileIcon />
             </div>
             
-            {/* Profile Info - Hidden when collapsed */}
+      
             <div className={`
               flex-1 min-w-0 overflow-hidden
               transition-all duration-300 ease-in-out
-              ${collapsed ? 'w-0 opacity-0' : 'opacity-100'}
+              ${collapsed && !isMobile ? 'w-0 opacity-0' : 'opacity-100'}
             `}>
               <div className="text-sm font-medium text-gray-900 truncate">
                 {name}
@@ -332,7 +343,6 @@ function DashboardLayout({ children }) {
               </div>
             </div>
             
-            {/* Logout Button - Hidden when collapsed */}
             <div
               onClick={(e) => {
                 e.stopPropagation();
@@ -342,10 +352,10 @@ function DashboardLayout({ children }) {
                 flex items-center justify-center flex-shrink-0
                 w-8 h-8 rounded-md cursor-pointer
                 hover:bg-gray-200 transition-all duration-200
-                ${collapsed ? 'hidden' : 'block'}
+                ${collapsed && !isMobile ? 'hidden' : 'block'}
               `}
               role="button"
-              tabIndex={collapsed ? -1 : 0}
+              tabIndex={collapsed && !isMobile ? -1 : 0}
               aria-label="Logout"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -361,7 +371,6 @@ function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      {/* Toggle Button for Mobile */}
       {isMobile && !mobileMenuOpen && (
         <button
           onClick={handleToggle}
@@ -372,7 +381,6 @@ function DashboardLayout({ children }) {
         </button>
       )}
 
-      {/* Main Content Area */}
       <Layout
         className="transition-all duration-300 ease-in-out"
         style={{
