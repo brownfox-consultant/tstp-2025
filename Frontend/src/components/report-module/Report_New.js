@@ -1,12 +1,24 @@
+'use client';
 import './ReportNew.css';
 import { getTestResult } from "@/app/services/authService";
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useRouter,useParams } from "next/navigation";
-import { LeftOutlined } from "@ant-design/icons";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
+import { Spin, Progress } from "antd";
 import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
+import {
+  TrophyIcon,
+  BookIcon,
+  CalculatorIcon,
+  ChartBarIcon,
+  ClockIcon,
+  ArrowLeftIcon,
+  UserIcon,
+  FileTextIcon,
+  SparklesIcon
+} from "./icons";
 
-const ReportNew = ({ testSubmissionId,onClose  }) => {
+const ReportNew = ({ testSubmissionId, onClose }) => {
   const [activeTab, setActiveTab] = useState("english");
   const [questionMainTab, setQuestionMainTab] = useState("english");
   const [englishSubTab, setEnglishSubTab] = useState("sectionA");
@@ -17,17 +29,16 @@ const ReportNew = ({ testSubmissionId,onClose  }) => {
   const router = useRouter();
   const availableSubjects = resultData?.subjects?.map(s => s.name.toLowerCase()) || [];
   const tabs = [...availableSubjects, "questions"];
-    
 
-  const questionItemStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px 15px",
-    marginBottom: "10px",
-    border: "1px solid #e5e7eb",
-    borderRadius: "10px",
-  };
+  // const questionItemStyle = {
+  //   display: "flex",
+  //   justifyContent: "space-between",
+  //   alignItems: "center",
+  //   padding: "10px 15px",
+  //   marginBottom: "10px",
+  //   border: "1px solid #e5e7eb",
+  //   borderRadius: "10px",
+  // };
 
   useEffect(() => {
     setLoading(true);
@@ -72,26 +83,6 @@ const ReportNew = ({ testSubmissionId,onClose  }) => {
 
   const renderTopicWisePerformance = (subject) => {
     const topics = mergeAreasOfFocus(subject);
-    // return (
-    //   <div className="card-section">
-    //     <h3>Topic-wise Performance</h3>
-    //     {topics.length > 0 ? (
-    //       topics.map((topic, idx) => (
-    //         <div className="bar-item" key={idx}>
-    //           <div className="label">
-    //             <span>{topic.topic}</span>
-    //             <span className={`badge ${topic.badge}`}>{topic.score}</span>
-    //           </div>
-    //           <div className="bar-bg">
-    //             <div className="bar-fill" style={{ width: `${topic.percentage}%` }} />
-    //           </div>
-    //         </div>
-    //       ))
-    //     ) : (
-    //       <p style={{ padding: "10px" }}>No topic data available.</p>
-    //     )}
-    //   </div>
-    // );
   };
 
   const renderFocusAreas = (subject) => {
@@ -101,265 +92,257 @@ const ReportNew = ({ testSubmissionId,onClose  }) => {
 
     return (
       <div className="focus-card">
-        {/* <h3>{subject} Focus Areas</h3> */}
-        {/* <div className="focus-areas">
-          <div className="left">
-            <h4 className="red">Needs Improvement</h4>
-            <div className="tag-group">
-              {weak.map((t, idx) => (
-                <span key={idx} className="tag red-tag">
-                  {t.topic} ({t.percentage}%)
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="right">
-            <h4 className="green">Strong Areas</h4>
-            <div className="tag-group">
-              {strong.map((t, idx) => (
-                <span key={idx} className="tag green-tag">
-                  {t.topic} ({t.percentage}%)
-                </span>
-              ))}
-            </div>
-          </div>
-        </div> */}
       </div>
     );
   };
 
+  const getSubjectIcon = (subjectName) => {
+    const name = subjectName?.toLowerCase();
+    if (name?.includes("english") || name?.includes("reading") || name?.includes("writing")) {
+      return <BookIcon size={20} className="text-genz-dark" />;
+    } else if (name?.includes("math") || name?.includes("calculator")) {
+      return <CalculatorIcon size={20} className="text-genz-dark" />;
+    }
+    return <ChartBarIcon size={20} className="text-genz-dark" />;
+  };
+
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-lg font-bold blink">Loading test results...</div>
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-orange-50">
+        <div className="text-center p-12 bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl">
+          <Spin size="large" />
+          <p className="mt-5 text-lg font-semibold text-gray-800 animate-pulse">
+            Loading test results...
+          </p>
+        </div>
       </div>
     );
   }
 
+  const totalScore = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0);
+  const totalMaxScore = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_max_score || 0), 0);
+  const totalPercent = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
+
   return (
-    <div className="report-container">
-      {/* <button
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-        onClick={() => router.back()}
+    <div className="min-h-screen">
+      {/* Back Button */}
+      <button
+        className="absolute top-2 right-6 inline-flex items-center gap-2 px-5 py-3 bg-white/90 backdrop-blur-lg border border-gray-100 rounded-full text-sm font-semibold text-gray-800 cursor-pointer transition-all duration-300 shadow-sm hover:bg-primary-color hover:text-white hover:-translate-x-1 hover:shadow-lg hover:shadow-orange-200"
+        onClick={() => window.location.reload()}
       >
-        ← Back
-      </button> */}
-      
-      <LeftOutlined
-                         className="text-lg cursor-pointer mr-2"
-                         onClick={() => {
-                           /* router.push(`/${role}/${id}/test/`); */
-                           /* setShowTestList(true); */
-                           window.location.reload();
-        }}
-        
-        
-                       />
+        <ArrowLeftIcon size={18} />
+        <span className="hidden sm:inline">Back</span>
+      </button>
 
-      <div className="header-info">
-        {resultData?.testDate && (
-          <p className="taken-date">
-            🕒 Taken on {new Date(resultData.testDate).toDateString()}
-          </p>
-        )}
-        <h2 className="test-title">Test Results</h2>
-        <p className="student-name">{resultData?.studentName}</p>
-        <p className="test-label">
-          <span className="test-name"> {resultData?.testName}</span>
-        </p>
-      </div>
+      <div className="bg-gray-100 rounded-2xl p-4 md:p-6 shadow-card mb-6 animate-fade-in">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Header Card - Left Aligned */}
+          <div className="lg:col-span-1 flex flex-col justify-center">
+            <div className="">
+              {/* Date Badge */}
+              {resultData?.testDate && (
+                <div className="inline-flex items-center gap-1.5 text-sm text-black mb-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <span className="font-medium">{new Date(resultData.testDate).toDateString()}</span>
+                </div>
+              )}
 
-      {/* Score Summary */}
-      <div className="scorecards-container">
-        <div className="card total-score">
-          <div className="title">🏆 Total Score</div>
-          <div className="score">
-            {resultData?.subjects?.reduce(
-              (acc, s) => acc + (s.subject_score || 0),
-              0
-            )}
-          </div>
-          <div className="subtitle">
-            out of{" "}
-            {resultData?.subjects?.reduce(
-              (acc, s) => acc + (s.subject_max_score || 0),
-              0
-            )}
-          </div>
-        </div>
+              {/* Title */}
+              <h1 className="text-2xl font-bold text-[#F59403] mb-3">
+                Test Results
+              </h1>
 
-        {resultData?.subjects?.map((subject, idx) => {
-          const percent = Math.round(
-            (subject.subject_score / subject.subject_max_score) * 100
-          );
-          return (
-            <div className="card subject-card" key={idx}>
-              <div className="title-row">
-                {subject.name === "English" ? "📘" : "🧮"} {subject.name}
-                <span className="percentage red">{percent}%</span>
+              {/* Badges - Stacked */}
+              <div className="flex flex-wrap gap-2">
+                <div className="inline-flex items-center gap-2 px-3 rounded-full text-xs font-semibold bg-gray-900 text-white w-fit">
+                  <UserIcon size={14} />
+                  <span>{resultData?.studentName}</span>
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 w-fit">
+                  <FileTextIcon size={14} />
+                  <span>{resultData?.testName}</span>
+                </div>
               </div>
-              <div className="subject-score red">{subject.subject_score}</div>
-              <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${percent}%` }}
+            </div>
+          </div>
+
+          <div className="rounded-xl overflow-hidden bg-gradient-to-br bg-sky-400 text-white shadow-lg p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold uppercase tracking-wide opacity-90">
+                Total Score
+              </span>
+              <span className="text-xs font-bold">{totalPercent}%</span>
+            </div>
+
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-4xl font-black">
+                {totalScore}
+              </span>
+              <span className="text-md font-medium opacity-70">
+                OUT OF {totalMaxScore}
+              </span>
+            </div>
+
+            <div className="w-full h-2 bg-white/30 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white/70 rounded-full transition-all duration-500"
+                style={{ width: `${totalPercent}%` }}
+              />
+            </div>
+          </div>
+
+          {/* 3. Subject Score Cards - Same UI as Total Score */}
+          {resultData?.subjects?.map((subject, idx) => {
+            const percent = Math.round((subject.subject_score / subject.subject_max_score) * 100);
+
+            return (
+              <div key={idx} className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+                {/* Header Row: Icon + Name + Percent */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                    {getSubjectIcon(subject.name)}
+                  </div>
+                  <span className="flex-1 text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    {subject.name}
+                  </span>
+                  <span className="text-md font-bold">
+                    {percent}%
+                  </span>
+                </div>
+
+                {/* Score Row */}
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="text-3xl font-black">
+                    {subject.subject_score}
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-medium uppercase">
+                    Out of {subject.subject_max_score}
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <Progress
+                  percent={percent}
+                  showInfo={false}
+                  strokeWidth={6}
+                  size="small"
                 />
               </div>
-              <div className="subtitle1">
-                out of {subject.subject_max_score}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
-      {/* Tabs */}
-      {/* <div className="tabs-container">
-        {["english", "math", "questions"].map((tab) => (
-          <div
-            key={tab}
-            className={`tab-item ${activeTab === tab ? "active" : ""}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab === "english"
-              ? "English Analysis"
-              : tab === "math"
-              ? "Math Analysis"
-              : "Question Breakdown"}
-          </div>
-        ))}
-      </div> */}
-
-      <div className="tabs-container">
-  {tabs.map((tab) => (
-    <div
-      key={tab}
-      className={`tab-item ${activeTab === tab ? "active" : ""}`}
-      onClick={() => setActiveTab(tab)}
-    >
-      {tab === "questions"
-        ? "Question Breakdown"
-        : `${tab.charAt(0).toUpperCase() + tab.slice(1)} Analysis`}
-    </div>
-  ))}
-</div>
-
-
-      {/* English Analysis */}
-      {activeTab === "english" && (
-        <>
-          <CurrentTab_New selectedSubject={0} data={resultData} testSubmissionId={testSubmissionId} /> 
-          {/* <div className="performance-sections">
-            <div className="card-section">
-              <h3>📘 Reading & Writing Sections</h3>
-              <div className="bar-item">
-                <div className="label">
-                  <span>Reading</span>
-                  <span className="badge gold">60%</span>
-                </div>
-                <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: "60%" }} />
-                </div>
-                <p className="score-info">120 out of 200</p>
-              </div>
-              <div className="bar-item">
-                <div className="label">
-                  <span>Writing & Language</span>
-                  <span className="badge red">40%</span>
-                </div>
-                <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: "40%" }} />
-                </div>
-                <p className="score-info">80 out of 200</p>
-              </div>
-            </div>
-            {renderTopicWisePerformance("English")}
-          </div> */}
-          {renderFocusAreas("English")}
-        </>
-      )}
-
-      {/* Math Analysis */}
-      {activeTab === "math" && (
-        <>
-          <CurrentTab_New selectedSubject={1} data={resultData} testSubmissionId={testSubmissionId} />
-          {/* <div className="performance-sections">
-            <div className="card-section">
-              <h3>🧮 Calculator vs No Calculator</h3>
-              <div className="bar-item">
-                <div className="label">
-                  <span>Calculator Section</span>
-                  <span className="badge gold">55%</span>
-                </div>
-                <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: "55%" }} />
-                </div>
-                <p className="score-info">110 out of 200</p>
-              </div>
-              <div className="bar-item">
-                <div className="label">
-                  <span>No Calculator Section</span>
-                  <span className="badge red">45%</span>
-                </div>
-                <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: "45%" }} />
-                </div>
-                <p className="score-info">90 out of 200</p>
-              </div>
-            </div>
-            {renderTopicWisePerformance("Math")}
-          </div> */}
-          {renderFocusAreas("Math")}
-        </>
-      )}
-
-      {/* Question Breakdown */}
-     {activeTab === "questions" && (
-  <div className="card-section" style={{ maxWidth: "1300px", margin: "auto" }}>
-    <h3>📊 Question-by-Question Analysis</h3>
-    <div className="question-tabs">
-      {(resultData?.subjects || []).map((subject) => (
-        <div
-          key={subject.name}
-          className={`question-tab ${questionMainTab === subject.name ? "active" : ""}`}
-          onClick={() => {
-            setQuestionMainTab(subject.name);
-            const firstSection = subject.sections?.[0]?.name;
-            if (firstSection) setEnglishSubTab(firstSection);
-          }}
-        >
-          {subject.name} Score
+      {/* Custom Tabs Section */}
+      <div className="my-5 bg-white/90 backdrop-blur-lg p-2 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${activeTab === tab
+                ? 'bg-gradient-to-r from-primary-color to-orange-500 text-white shadow-lg shadow-orange-200'
+                : 'bg-transparent text-gray-600 hover:bg-gray-100'
+                }`}
+            >
+              {tab === "questions" ? (
+                <>
+                  <ChartBarIcon size={18} />
+                  <span className="hidden sm:inline">Question Breakdown</span>
+                </>
+              ) : (
+                <>
+                  {getSubjectIcon(tab)}
+                  <span className="hidden sm:inline">{tab.charAt(0).toUpperCase() + tab.slice(1)} Analysis</span>
+                </>
+              )}
+            </button>
+          ))}
         </div>
-      ))}
-    </div>
+      </div>
 
-    <div className="sub-tabs">
-      {resultData?.subjects
-        ?.find((s) => s.name === questionMainTab)
-        ?.sections?.map((section) => (
-          <div
-            key={section.name}
-            className={`sub-tab ${englishSubTab === section.name ? "active" : ""}`}
-            onClick={() => setEnglishSubTab(section.name)}
-          >
-            {section.name}
+      {/* Content Area */}
+      <div className="flex justify-center">
+        {/* English Analysis */}
+        {activeTab === "english" && (
+          <>
+            <CurrentTab_New selectedSubject={0} data={resultData} testSubmissionId={testSubmissionId} />
+            {renderFocusAreas("English")}
+          </>
+        )}
+
+        {/* Math Analysis */}
+        {activeTab === "math" && (
+          <>
+            <CurrentTab_New selectedSubject={1} data={resultData} testSubmissionId={testSubmissionId} />
+            {renderFocusAreas("Math")}
+          </>
+        )}
+
+        {/* Question Breakdown */}
+        {activeTab === "questions" && (
+          <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100 w-full">
+            <div className="flex items-center gap-3 mb-7">
+              <ChartBarIcon size={24} className="text-primary-color" />
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800 m-0">
+                Question By Question Analysis
+              </h2>
+            </div>
+
+            <div className="flex flex-wrap gap-3 mb-5">
+              {(resultData?.subjects || []).map((subject) => (
+                <button
+                  key={subject.name}
+                  className={`inline-flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-300 ${questionMainTab === subject.name
+                    ? 'bg-gradient-to-r from-primary-color to-orange-500 text-white shadow-lg shadow-orange-200 border-transparent'
+                    : 'bg-gray-50 border-2 border-gray-200 text-gray-800 hover:bg-orange-50 hover:border-orange-200'
+                    }`}
+                  onClick={() => {
+                    setQuestionMainTab(subject.name);
+                    const firstSection = subject.sections?.[0]?.name;
+                    if (firstSection) setEnglishSubTab(firstSection);
+                  }}
+                >
+                  {getSubjectIcon(subject.name)}
+                  <span>{subject.name} Score</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2.5 mb-6 p-4 bg-gray-50 rounded-xl">
+              {resultData?.subjects
+                ?.find((s) => s.name === questionMainTab)
+                ?.sections?.map((section) => (
+                  <button
+                    key={section.name}
+                    className={`px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 ${englishSubTab === section.name
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600'
+                      }`}
+                    onClick={() => setEnglishSubTab(section.name)}
+                  >
+                    {section.name}
+                  </button>
+                ))}
+            </div>
+
+            <div className="mt-6">
+              <ReportTable
+                sectionData={resultData?.subjects
+                  ?.find((s) => s.name === questionMainTab)
+                  ?.sections?.find((sec) => sec.name === englishSubTab)}
+                testSubmissionId={testSubmissionId}
+              />
+            </div>
           </div>
-        ))}
-    </div>
-
-    {/* ⬇️ Replace simple list with full table */}
-    <div style={{ marginTop: "20px" }}>
-      <ReportTable
-        sectionData={resultData?.subjects
-          ?.find((s) => s.name === questionMainTab)
-          ?.sections?.find((sec) => sec.name === englishSubTab)}
-           testSubmissionId={testSubmissionId}
-          
-      />
-    </div>
-  </div>
-)}
-
+        )}
+      </div>
     </div>
   );
 };
