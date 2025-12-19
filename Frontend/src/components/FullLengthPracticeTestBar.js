@@ -12,7 +12,6 @@ import {
 } from "recharts";
 import { getTestsPerDay } from "@/app/services/authService";
 
-// Custom Legend Component with Heading
 const CustomLegend = (props) => {
   const { payload } = props;
 
@@ -70,28 +69,49 @@ function FullLengthPracticeTestBar({ date, start_date, end_date }) {
       {chartData.length > 0 ? (
         <div className="w-[97%] h-[400px] pt-2 p-5 bg-white border border-gray-300 rounded-lg shadow-md ml-4">
           <ResponsiveContainer width="100%" height="90%" className="mt-4">
-            <BarChart data={chartData} barCategoryGap="20%" barSize={50}>
+
+            <BarChart
+              data={chartData}
+              barCategoryGap="30%"
+              barGap={6}
+            >
               <CartesianGrid
                 vertical={false}
                 horizontal={true}
                 stroke="#E0E0E0"
               />
+
               <XAxis dataKey="date" axisLine={false} />
               <YAxis
                 domain={[0, 100]}
                 axisLine={false}
                 tickFormatter={(tick) => `${tick}%`}
               />
-              <Tooltip cursor={{ fill: 'transparent' }} />
+
+              <Tooltip cursor={{ fill: "transparent" }} />
+
               <Legend
                 content={<CustomLegend />}
                 verticalAlign="top"
                 align="right"
                 wrapperStyle={{ paddingBottom: 20 }}
               />
-              <Bar dataKey="fullLengthTest" stackId="a" fill="#FFB74D" />
-              <Bar dataKey="practiceTest" stackId="a" fill="#FFE0B2" />
+
+              <Bar
+                dataKey="fullLengthTest"
+                fill="#FB923C" 
+                radius={[6, 6, 0, 0]}
+                barSize={24}
+              />
+
+              <Bar
+                dataKey="practiceTest"
+                fill="#FDE68A"
+                radius={[6, 6, 0, 0]}
+                barSize={24}
+              />
             </BarChart>
+
           </ResponsiveContainer>
         </div>
       ) : null}

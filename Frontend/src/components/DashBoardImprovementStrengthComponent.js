@@ -4,9 +4,37 @@ import { Row, Col, Progress, Spin } from "antd";
 import { usePathname } from "next/navigation";
 import { BASE_URL } from "@/app/constants/apiConstants";
 import Select from "react-select";
+import { EnglishIcon, MathIcon, NoDataIcon } from "@/components/icons/improvement-strength-icons";
+
+const customSelectStyles = {
+  control: (provided, state) => ({
+    ...provided,
+    borderRadius: '12px',
+    border: state.isFocused ? '2px solid #f97316' : '1px solid #e5e7eb',
+    boxShadow: state.isFocused ? '0 0 0 3px rgba(249, 115, 22, 0.1)' : 'none',
+    padding: '4px 8px',
+    minHeight: '44px',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      borderColor: '#f97316',
+    },
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isSelected ? '#f97316' : state.isFocused ? 'rgba(249, 115, 22, 0.1)' : 'white',
+    color: state.isSelected ? 'white' : '#374151',
+    padding: '12px 16px',
+    cursor: 'pointer',
+  }),
+  menu: (provided) => ({
+    ...provided,
+    borderRadius: '12px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+    overflow: 'hidden',
+  }),
+};
 
 const DashBoardImprovementStrengthComponent = ({ date }) => {
-  console.log("dateRange", date);
   const pathname = usePathname();
   const studentId = pathname?.split("/")?.[2];
 
@@ -23,7 +51,7 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
       .then((res) => {
         setCourses(res.data);
         if (res.data.length > 0) {
-          setSelectedCourse(res.data[0].id); // Set first course by default
+          setSelectedCourse(res.data[0].id);
         }
       })
       .catch((err) => console.error("Error loading courses", err));
@@ -62,19 +90,19 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
     }
   }, [selectedCourse, studentId, date]);
 
-  // function for conditional color
-  const getStrokeColor = (score) => (score >= 50 ? "#22c55e" : "#ef4444");
-
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md mt-8 mx-4">
-      {/* Dropdown */}
-      <div className="flex justify-end flex-wrap gap-4 mb-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
-            Course
-          </label>
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      {/* Header with Course Dropdown */}
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <span className="w-1 h-5 bg-gradient-to-b from-blue-500 to-cyan-400 rounded-full"></span>
+          <h3 className="text-lg font-semibold text-gray-800">
+            Topic-wise Performance
+          </h3>
+        </div>
+        <div className="w-full sm:w-52">
           <Select
-            className="w-64"
+            styles={customSelectStyles}
             value={courses.find((c) => c.id === selectedCourse)}
             onChange={(option) => setSelectedCourse(option.id)}
             options={courses}
@@ -87,55 +115,85 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-10">
+        <div className="flex justify-center items-center py-16">
           <Spin size="large" />
         </div>
       ) : (
-        <Row gutter={[16, 16]}>
+        <Row gutter={[24, 24]}>
+          {/* English Section */}
           <Col xs={24} md={12}>
-            <div className="border border-gray-300 rounded-lg p-5">
-              <h3 className="text-lg font-semibold mb-4">English</h3>
+            <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 border border-blue-100 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
+                  <EnglishIcon />
+                </div>
+                <h4 className="text-lg font-semibold text-blue-600">English</h4>
+              </div>
+              
               {improvements.length === 0 ? (
-                <p className="text-gray-400 text-center">Data not found</p>
+                <div className="text-center py-10 text-gray-400">
+                  <NoDataIcon />
+                  <p className="text-sm">No data available</p>
+                </div>
               ) : (
-                improvements.map((item, index) => (
-                  <div key={index} className="mb-3">
-                    <div className="flex justify-between text-sm text-gray-700">
-                      <span>{item.topic}</span>
-                      <span>{item.score}%</span>
+                <div className="space-y-4">
+                  {improvements.map((item, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600">{item.topic}</span>
+                        <span className={`text-sm font-semibold ${item.score >= 50 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {item.score}%
+                        </span>
+                      </div>
+                      <Progress
+                        percent={item.score}
+                        strokeColor="#f59403"
+                        trailColor="#e5e7eb"
+                        showInfo={false}
+                        strokeWidth={8}
+                      />
                     </div>
-                    <Progress
-                      percent={item.score}
-                      strokeColor={getStrokeColor(item.score)}
-                      showInfo={false}
-                      strokeWidth={10}
-                    />
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </Col>
 
+          {/* Math Section */}
           <Col xs={24} md={12}>
-            <div className="border border-gray-300 rounded-lg p-5">
-              <h3 className="text-lg font-semibold mb-4">Math</h3>
+            <div className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 border border-orange-100 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
+                  <MathIcon />
+                </div>
+                <h4 className="text-lg font-semibold text-orange-500">Math</h4>
+              </div>
+              
               {strengths.length === 0 ? (
-                <p className="text-gray-400 text-center">Data not found</p>
+                <div className="text-center py-10 text-gray-400">
+                  <NoDataIcon />
+                  <p className="text-sm">No data available</p>
+                </div>
               ) : (
-                strengths.map((item, index) => (
-                  <div key={index} className="mb-3">
-                    <div className="flex justify-between text-sm text-gray-700">
-                      <span>{item.topic}</span>
-                      <span>{item.score}%</span>
+                <div className="space-y-4">
+                  {strengths.map((item, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600">{item.topic}</span>
+                        <span className="text-sm font-semibold">
+                          {item.score}%
+                        </span>
+                      </div>
+                      <Progress
+                        percent={item.score}
+                        strokeColor="#f59403"
+                        trailColor="#"
+                        showInfo={false}
+                        strokeWidth={8}
+                      />
                     </div>
-                    <Progress
-                      percent={item.score}
-                      strokeColor={getStrokeColor(item.score)}
-                      showInfo={false}
-                      strokeWidth={10}
-                    />
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </Col>
