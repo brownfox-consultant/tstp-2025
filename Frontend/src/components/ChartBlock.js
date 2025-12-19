@@ -90,9 +90,9 @@ const ChartBlock = ({
   const [marks, setMarks] = useState([]);
   const [times, setTimes] = useState([]);
 
- const fixExcelScore = (val) => {
-  return val ? `\`${val}\`` : "";
-};
+  const fixExcelScore = (val) => {
+    return val ? `\`${val}\`` : "";
+  };
 
 
 
@@ -201,134 +201,134 @@ const ChartBlock = ({
     customEndDate,
   ]);
 
-const handleDownloadCSV = async () => {
-  try {
-    let url = "";
-    let isFullLength = apiPath.includes("full-length");
+  const handleDownloadCSV = async () => {
+    try {
+      let url = "";
+      let isFullLength = apiPath.includes("full-length");
 
-    if (isFullLength) {
-      url = `${BASE_URL}/api/test/full-length-scores-export/?date_range=${selectedFilter || "last_month"}`;
-      if (selectedCourseId) url += `&course_id=${selectedCourseId}`;
-    } else {
-      url = `${BASE_URL}/api/practice/test-performance-report/?course_id=${selectedCourseId || ""}`;
-      if (selectedFilter) {
-        url += `&date_range=${selectedFilter}`;
-      } else if (customStartDate && customEndDate) {
-        url += `&date_range=custom&start_date=${customStartDate}&end_date=${customEndDate}`;
+      if (isFullLength) {
+        url = `${BASE_URL}/api/test/full-length-scores-export/?date_range=${selectedFilter || "last_month"}`;
+        if (selectedCourseId) url += `&course_id=${selectedCourseId}`;
       } else {
-        url += `&date_range=last_month`;
-      }
-    }
-
-    const response = await axios.get(url, { withCredentials: true });
-    const data = response.data;
-
-    let csvContent = "";
-
-    if (isFullLength) {
-      const headers = [
-        "Student",
-        "Test Name",
-        "Course",
-        "Total Score",
-        "Math Score",
-        "Math Topic",
-        "Math Correct",
-        "English Score",
-        "English Topic",
-        "English Correct"
-      ];
-      csvContent += headers.join(",") + "\n";
-
-      data.forEach(entry => {
-        const mathTopics = entry.math_topics || [];
-        const englishTopics = entry.english_topics || [];
-        const maxRows = Math.max(mathTopics.length, englishTopics.length);
-
-        for (let i = 0; i < maxRows; i++) {
-          const row = [
-            i === 0 ? entry.student : "",
-            i === 0 ? entry.test_name : "",
-            i === 0 ? entry.course : "",
-            i === 0 ? (entry.math_score || 0) + (entry.english_score || 0) : "",
-            i === 0 ? entry.math_score : "",
-            mathTopics[i]?.topic || "",
-            fixExcelScore(mathTopics[i]?.score),
-            i === 0 ? entry.english_score : "",
-            englishTopics[i]?.topic || "",
-            fixExcelScore(englishTopics[i]?.score)
-          ];
-          csvContent += row.join(",") + "\n";
+        url = `${BASE_URL}/api/practice/test-performance-report/?course_id=${selectedCourseId || ""}`;
+        if (selectedFilter) {
+          url += `&date_range=${selectedFilter}`;
+        } else if (customStartDate && customEndDate) {
+          url += `&date_range=custom&start_date=${customStartDate}&end_date=${customEndDate}`;
+        } else {
+          url += `&date_range=last_month`;
         }
-      });
+      }
 
-    } else {
-      // 📌 Practice Test Export
-      // 📌 Practice Test Export
-const headers = [
-  "Student",
-  "Test Name",
-  "Course",
-  "Total Score",
-  "Total Questions",
-  "Attempted Questions",
-  "Subjects",
-  "Topic",
-  "Correct Questions count"
-];
-csvContent += headers.join(",") + "\n";
+      const response = await axios.get(url, { withCredentials: true });
+      const data = response.data;
 
-data.forEach(entry => {
-  if (Number(entry.attempted_questions) === 0) return;
-  console.log("DEBUG ENTRY:", entry); 
-  const cleanSubjectNames = [...new Set(entry.subject || [])].sort().join(" | ");
-  const topics = entry.topic || [];
+      let csvContent = "";
 
-  if (topics.length === 0) {
-    csvContent += [
-      entry.student,
-      entry.test_name,
-      entry.course,
-      fixExcelScore(entry.total_score),
-      entry.total_questions,
-      entry.attempted_questions,
-      cleanSubjectNames,
-      "",
-      ""
-    ].join(",") + "\n";
-  } else {
-    topics.forEach((topicEntry, i) => {
-      csvContent += [
-        i === 0 ? entry.student : "",
-        i === 0 ? entry.test_name : "",
-        i === 0 ? entry.course : "",
-        i === 0 ? fixExcelScore(entry.total_score) : "",
-        i === 0 ? entry.total_questions : "",
-        i === 0 ? entry.attempted_questions : "",
-        i === 0 ? cleanSubjectNames : "",
-        topicEntry.topic || "",
-        fixExcelScore(topicEntry.score)
-      ].join(",") + "\n";
-    });
-  }
-});
+      if (isFullLength) {
+        const headers = [
+          "Student",
+          "Test Name",
+          "Course",
+          "Total Score",
+          "Math Score",
+          "Math Topic",
+          "Math Correct",
+          "English Score",
+          "English Topic",
+          "English Correct"
+        ];
+        csvContent += headers.join(",") + "\n";
 
+        data.forEach(entry => {
+          const mathTopics = entry.math_topics || [];
+          const englishTopics = entry.english_topics || [];
+          const maxRows = Math.max(mathTopics.length, englishTopics.length);
+
+          for (let i = 0; i < maxRows; i++) {
+            const row = [
+              i === 0 ? entry.student : "",
+              i === 0 ? entry.test_name : "",
+              i === 0 ? entry.course : "",
+              i === 0 ? (entry.math_score || 0) + (entry.english_score || 0) : "",
+              i === 0 ? entry.math_score : "",
+              mathTopics[i]?.topic || "",
+              fixExcelScore(mathTopics[i]?.score),
+              i === 0 ? entry.english_score : "",
+              englishTopics[i]?.topic || "",
+              fixExcelScore(englishTopics[i]?.score)
+            ];
+            csvContent += row.join(",") + "\n";
+          }
+        });
+
+      } else {
+        // 📌 Practice Test Export
+        // 📌 Practice Test Export
+        const headers = [
+          "Student",
+          "Test Name",
+          "Course",
+          "Total Score",
+          "Total Questions",
+          "Attempted Questions",
+          "Subjects",
+          "Topic",
+          "Correct Questions count"
+        ];
+        csvContent += headers.join(",") + "\n";
+
+        data.forEach(entry => {
+          if (Number(entry.attempted_questions) === 0) return;
+          console.log("DEBUG ENTRY:", entry);
+          const cleanSubjectNames = [...new Set(entry.subject || [])].sort().join(" | ");
+          const topics = entry.topic || [];
+
+          if (topics.length === 0) {
+            csvContent += [
+              entry.student,
+              entry.test_name,
+              entry.course,
+              fixExcelScore(entry.total_score),
+              entry.total_questions,
+              entry.attempted_questions,
+              cleanSubjectNames,
+              "",
+              ""
+            ].join(",") + "\n";
+          } else {
+            topics.forEach((topicEntry, i) => {
+              csvContent += [
+                i === 0 ? entry.student : "",
+                i === 0 ? entry.test_name : "",
+                i === 0 ? entry.course : "",
+                i === 0 ? fixExcelScore(entry.total_score) : "",
+                i === 0 ? entry.total_questions : "",
+                i === 0 ? entry.attempted_questions : "",
+                i === 0 ? cleanSubjectNames : "",
+                topicEntry.topic || "",
+                fixExcelScore(topicEntry.score)
+              ].join(",") + "\n";
+            });
+          }
+        });
+
+      }
+
+      // 📥 Trigger download
+      const encodedUri = encodeURI("data:text/csv;charset=utf-8,\uFEFF" + csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", isFullLength ? "full_length_scores.csv" : "practice_test_scores.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to export CSV.");
     }
-
-    // 📥 Trigger download
-    const encodedUri = encodeURI("data:text/csv;charset=utf-8,\uFEFF" + csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", isFullLength ? "full_length_scores.csv" : "practice_test_scores.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-  } catch (error) {
-    console.error("Download error:", error);
-    alert("Failed to export CSV.");
-  }
-};
+  };
 
 
 
@@ -405,7 +405,7 @@ data.forEach(entry => {
           <button
             className="border border-gray-300 px-3 py-1 text-sm rounded-md text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleDownloadCSV}
-           // disabled={!labels.length || !scores.length}
+          // disabled={!labels.length || !scores.length}
           >
             Download
           </button>
