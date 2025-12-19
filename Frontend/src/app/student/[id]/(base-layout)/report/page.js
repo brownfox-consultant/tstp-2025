@@ -236,7 +236,11 @@ function Dashboard() {
 
 
       {activeReportTab === "score-analysis" && (
-        <ScoreAnalysis courseName={selectedCourseName} />
+        <ScoreAnalysis
+          student_id={studentId}
+              course_id={selectedCourse}
+              test_type={testType}
+        courseName={selectedCourseName} />
       )}
 
       {activeReportTab === "subject" && (

@@ -1,82 +1,166 @@
+# ==========================
+# Standard Library
+# ==========================
 import logging
 import random
-from collections import defaultdict
-from datetime import datetime, timedelta
-from django.http import HttpResponse
 import csv
+from collections import defaultdict
+from datetime import datetime, timedelta, time
 
+# ==========================
+# Django Core
+# ==========================
 from django.db import transaction
-from django.db.models import Avg, Q, Count
-from django.http import JsonResponse
+from django.db.models import (
+    Q, F, Avg, Sum, Count, Max
+)
+from django.db.models.functions import TruncDate
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status
-from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.decorators import permission_classes
-from rest_framework.permissions import IsAuthenticated
+from django.utils.timezone import make_aware, localtime
+from django.utils.dateparse import parse_date
+from django.core.exceptions import FieldError
+
+# ==========================
+# Django REST Framework
+# ==========================
+from rest_framework import status, viewsets
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAdminUser
+)
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+
+# ==========================
+# Filters & Pagination
+# ==========================
+from django_filters.rest_framework import DjangoFilterBackend
+
+# ==========================
+# Permissions
+# ==========================
+from sTest.permissions import (
+    IsAdmin,
+    IsStudent,
+    IsAdminOrMentorOrFaculty,
+    IsAdminOrMentorOrFacultyOrStudentOrParent
+)
+
+# ==========================
+# Utils
+# ==========================
+from sTest.utils import (
+    get_error_response,
+    get_error_response_for_serializer,
+    CustomPageNumberPagination
+)
+
+# ==========================
+# User & Auth
+# ==========================
+from user_manager.models import User, Role, StudentMetadata
+
+# ==========================
+# Course Manager
+# ==========================
+from course_manager.models import (
+    Course,
+    Subject,
+    CourseSubjects,
+    Topic,
+    SubTopic,
+    CombinedScore
+)
+from course_manager.filters import PracticeQuestionFilter
+
+# ==========================
+# Notification Manager
+# ==========================
+from notification_manager.models import Notification, NotificationTemplate
+from notification_manager.utils import (
+    send_notification,
+    mark_notification_as_read
+)
+
+# ==========================
+# Test Manager Models
+# ==========================
+from test_manager.models import (
+    Test,
+    Section,
+    TestSubmission,
+    Result,
+    PracticeTest,
+    PracticeTestResult,
+    TestFeedback,
+    QuestionAnswer,
+    PracticeQuestionAnswer,
+    SectionStats,
+    AnsweredQuestions,
+    SelectionHistory
+)
+
+# ==========================
+# Test Manager Serializers
+# ==========================
+from test_manager.serializers import (
+    TestSerializer,
+    TestListSerializer,
+    TestSubmissionSerializer,
+    PracticeTestListSerializer,
+    EligibleStudentSerializer,
+    SectionSerializer,
+    TestFeedbackSerializer,
+    ExistingStudentListSerializer
+)
+
+# ==========================
+# Test Manager Filters
+# ==========================
+from test_manager.filters import (
+    TestFilter,
+    TestSubmissionFilter,
+    PracticeTestFilter
+)
+
+# ==========================
+# Test Manager Utils
+# ==========================
+from test_manager.utils import calculate_total_questions_required
+
+from course_manager.models import Question
+
+from django.shortcuts import get_object_or_404
+from django.db.models import Sum, Count, Avg, Max, Q
+from django.db.models.functions import TruncDate
+from django.utils import timezone
+from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 
-from course_manager.filters import PracticeQuestionFilter
-from course_manager.models import Question, CourseSubjects, CombinedScore
-from notification_manager.models import NotificationTemplate, Notification
-from notification_manager.utils import send_notification, mark_notification_as_read
-from sTest.permissions import IsAdmin, IsAdminOrMentorOrFacultyOrStudentOrParent, \
-    IsAdminOrMentorOrFaculty, IsStudent
-from sTest.utils import get_error_response_for_serializer, get_error_response, CustomPageNumberPagination
-from test_manager.filters import TestSubmissionFilter, PracticeTestFilter, TestFilter
-from test_manager.models import Test, Section, TestSubmission, Result, PracticeTest, PracticeTestResult, \
-    AnsweredQuestions, TestFeedback, QuestionAnswer, SectionStats, PracticeQuestionAnswer,SelectionHistory
-from test_manager.serializers import TestSerializer, TestListSerializer, ExistingStudentListSerializer, \
-    TestSubmissionSerializer, PracticeTestListSerializer, EligibleStudentSerializer, SectionSerializer, \
-    TestFeedbackSerializer
-from test_manager.utils import calculate_total_questions_required
-from user_manager.models import User, Role, StudentMetadata
-from collections import defaultdict
 from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.db.models.functions import TruncDate
-from collections import defaultdict
-from datetime import timedelta
-from django.db.models.functions import TruncDate
-from django.db.models import Sum
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.utils import timezone
-from sTest.permissions import IsStudent
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from datetime import datetime,timedelta
-from django.utils import timezone
-from django.db.models import Sum, F
-from collections import defaultdict
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from test_manager.models import TestSubmission, Result
-from course_manager.models import CourseSubjects,Topic, SubTopic
+from rest_framework import status
+
+from test_manager.models import (
+    TestSubmission,
+    Result,
+    Section,
+    SectionStats,
+    QuestionAnswer,
+    PracticeTestResult
+)
+
+from course_manager.models import (
+    Course,
+    CourseSubjects,
+    CombinedScore
+)
+
 from user_manager.models import User
-from django.utils.dateparse import parse_date
-from django.utils.timezone import now
-from datetime import datetime, timedelta
-from django.utils.timezone import make_aware, now
-from collections import defaultdict
-from django.db.models import Prefetch
-from course_manager.models import Subject
-from django.core.exceptions import FieldError
-from django.utils.dateparse import parse_date
-from django.utils.timezone import make_aware, now
-from datetime import datetime, timedelta, time
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from collections import defaultdict
-from rest_framework.permissions import IsAdminUser
-from course_manager.models import Course, CourseSubjects
-from django.db.models import Sum, Max
 
 
 
@@ -3894,6 +3978,146 @@ class ResultViewSet(viewsets.ModelViewSet):
             "chartData": chart_data,
             "accordionData": accordion_data
         })
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="score-analysis"
+)
+    def score_analysis(self, request):
+
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+        test_type = request.GET.get("test_type")  # FULL_LENGTH | PRACTICE
+
+        if not student_id or not course_id or not test_type:
+            return Response(
+                {"error": "student_id, course_id and test_type are required"},
+                status=400
+            )
+
+        student = get_object_or_404(User, id=student_id)
+        course = get_object_or_404(Course, id=course_id)
+
+        response = {
+            "overall_score": 0,
+            "math_score": 0,
+            "english_score": 0,   # ✅ renamed
+            "highest_score": 0,
+            "improvement": 0,
+            "tests": []
+        }
+
+        # =====================================================
+        # ✅ FULL LENGTH TESTS (SAT / DSAT)
+        # =====================================================
+        if test_type == "FULL_LENGTH":
+
+            submissions = (
+                TestSubmission.objects
+                .filter(
+                    student=student,
+                    test__course=course,
+                    status=TestSubmission.COMPLETED
+                )
+                .select_related("test", "result")
+                .order_by("completion_date")
+            )
+
+            previous_overall = None
+
+            for submission in submissions:
+                result = getattr(submission, "result", None)
+                if not result:
+                    continue
+
+                test = submission.test
+
+                math_score = 0
+                english_score = 0
+
+                # -------------------------------------------------
+                # Count correct answers per section
+                # -------------------------------------------------
+                sections = Section.objects.filter(test=test)
+                section_correct = {}
+
+                for section in sections:
+                    cs = section.course_subject
+                    subject_name = cs.subject.name.lower()
+
+                    correct_count = QuestionAnswer.objects.filter(
+                        result=result,
+                        course_subject=cs,
+                        is_correct=True
+                    ).count()
+
+                    section_correct.setdefault(subject_name, []).append(correct_count)
+
+                # -------------------------------------------------
+                # Apply CombinedScore (SAT logic)
+                # -------------------------------------------------
+                for subject_name, correct_list in section_correct.items():
+
+                    section1 = correct_list[0] if len(correct_list) > 0 else 0
+                    section2 = correct_list[1] if len(correct_list) > 1 else 0
+
+                    score_row = CombinedScore.objects.filter(
+                        subject_name__iexact=subject_name,
+                        section1_correct=section1,
+                        section2_correct=section2
+                    ).first()
+
+                    if score_row:
+                        if subject_name == "math":
+                            math_score = score_row.total_score
+                        else:  # english / reading-writing
+                            english_score = score_row.total_score
+
+                overall = math_score + english_score
+
+                # -------------------------------------------------
+                # Aggregate response
+                # -------------------------------------------------
+                response["tests"].append({
+                    "test_submission_id": submission.id,
+                    "test_name": test.name,
+                    "math_score": math_score,
+                    "english_score": english_score,
+                    "overall_score": overall
+                })
+
+                response["highest_score"] = max(response["highest_score"], overall)
+
+                if previous_overall is not None:
+                    response["improvement"] = overall - previous_overall
+
+                previous_overall = overall
+                response["overall_score"] = overall
+                response["math_score"] = math_score
+                response["english_score"] = english_score
+
+        # =====================================================
+        # ✅ PRACTICE TEST (NO CombinedScore)
+        # =====================================================
+        elif test_type == "PRACTICE":
+
+            practice_results = (
+                PracticeTestResult.objects
+                .filter(
+                    practice_test__student=student,
+                    practice_test__course_subject__course=course
+                )
+                .order_by("created_at")
+            )
+
+            for r in practice_results:
+                response["overall_score"] += r.correct_answer_count
+
+        else:
+            return Response({"error": "Invalid test_type"}, status=400)
+
+        return Response(response)
 
 
 class PracticeTestViewSet(viewsets.ModelViewSet):

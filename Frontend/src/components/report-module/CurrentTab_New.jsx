@@ -179,7 +179,7 @@ const openReview = (questionObj, section) => {
         testId={reviewInfo.testId}
         questionsList={reviewInfo.questionsList}
   role={role}
-  testType={sections[selectedSection].test_type} 
+  testType={sections[selectedSection]?.test_type || "FULL_LENGTH_TEST"}
   testSubmissionId={testSubmissionId}
 />
 
