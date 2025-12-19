@@ -24,6 +24,9 @@ export default function PatternOfUsage({
   const [usageData, setUsageData] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [startIndex, setStartIndex] = useState(0);
+  
+  const ITEMS_PER_PAGE = 7;
 
   /* ================= FETCH API ================= */
   useEffect(() => {
@@ -57,6 +60,21 @@ export default function PatternOfUsage({
     } finally {
       setLoading(false);
     }
+  };
+
+  /* ================= PAGINATION ================= */
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, usageData.length);
+  const displayData = usageData.slice(startIndex, endIndex);
+  
+  const canGoLeft = startIndex > 0;
+  const canGoRight = endIndex < usageData.length;
+
+  const handlePrev = () => {
+    setStartIndex(Math.max(0, startIndex - ITEMS_PER_PAGE));
+  };
+
+  const handleNext = () => {
+    setStartIndex(Math.min(usageData.length - ITEMS_PER_PAGE, startIndex + ITEMS_PER_PAGE));
   };
 
   /* ================= UI HELPERS ================= */
@@ -123,7 +141,31 @@ export default function PatternOfUsage({
 
       {/* CHART CONTAINER */}
       <div className="max-w-7xl mx-auto px-4">
-        <div className="bg-white rounded-2xl shadow p-8 border">
+        <div className="bg-white rounded-2xl shadow p-8 border relative">
+
+          {/* Left Arrow */}
+          {canGoLeft && (
+            <button
+              onClick={handlePrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-400 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+              </svg>
+            </button>
+          )}
+
+          {/* Right Arrow */}
+          {canGoRight && (
+            <button
+              onClick={handleNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-400 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
+              </svg>
+            </button>
+          )}
 
           {/* LEGEND */}
           <div className="flex justify-center gap-8 mb-6">
@@ -138,12 +180,13 @@ export default function PatternOfUsage({
           </div>
 
           {/* BAR CHART */}
-          <div className="h-[420px] bg-gray-50 rounded-xl p-6">
+          <div className="h-[420px] bg-gray-50 rounded-xl p-6 mx-10">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={usageData}
+                data={displayData}
                 margin={{ top: 30, right: 30, left: 10, bottom: 20 }}
                 barCategoryGap="20%"
+                barGap={2}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
@@ -167,7 +210,7 @@ export default function PatternOfUsage({
                   onClick={handleBarClick}
                 >
                   <LabelList dataKey="time" content={renderLabel} />
-                  {usageData.map((_, index) => (
+                  {displayData.map((_, index) => (
                     <Cell key={`time-${index}`} className="cursor-pointer" />
                   ))}
                 </Bar>
@@ -180,13 +223,22 @@ export default function PatternOfUsage({
                   onClick={handleBarClick}
                 >
                   <LabelList dataKey="questions" content={renderLabel} />
-                  {usageData.map((_, index) => (
+                  {displayData.map((_, index) => (
                     <Cell key={`q-${index}`} className="cursor-pointer" />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Page Indicator */}
+          {usageData.length > ITEMS_PER_PAGE && (
+            <div className="flex justify-center items-center gap-2 mt-4">
+              <span className="text-sm text-gray-500">
+                Showing {startIndex + 1}-{endIndex} of {usageData.length} dates
+              </span>
+            </div>
+          )}
 
           {/* SELECTED DATE DETAILS */}
           {selectedDate && (

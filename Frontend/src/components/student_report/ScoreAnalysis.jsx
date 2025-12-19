@@ -1,26 +1,83 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 const data = [
-  {
-    name: 'Recent',
-    Overall: 500,
-    Math: 230,
-    Reading: 270,
-  },
+  { name: "Test 1",  Overall: 480, Math: 220, Reading: 260 },
+  { name: "Test 2",  Overall: 510, Math: 250, Reading: 260 },
+  { name: "Test 3",  Overall: 530, Math: 270, Reading: 260 },
+  { name: "Test 4",  Overall: 495, Math: 235, Reading: 260 },
+  { name: "Test 5",  Overall: 560, Math: 290, Reading: 270 },
+  { name: "Test 6",  Overall: 450, Math: 210, Reading: 240 },
+  { name: "Test 7",  Overall: 580, Math: 300, Reading: 280 },
+  { name: "Test 8",  Overall: 520, Math: 260, Reading: 260 },
+//   { name: "Test 9",  Overall: 490, Math: 230, Reading: 260 },
+//   { name: "Test 10", Overall: 600, Math: 320, Reading: 280 },
+//   { name: "Test 11", Overall: 540, Math: 280, Reading: 260 },
+//   { name: "Test 12", Overall: 470, Math: 215, Reading: 255 },
+//   { name: "Test 13", Overall: 610, Math: 330, Reading: 280 },
+//   { name: "Test 14", Overall: 525, Math: 265, Reading: 260 },
+//   { name: "Test 15", Overall: 505, Math: 245, Reading: 260 },
+//   { name: "Test 16", Overall: 590, Math: 310, Reading: 280 },
+//   { name: "Test 17", Overall: 460, Math: 200, Reading: 260 },
+//   { name: "Test 18", Overall: 550, Math: 285, Reading: 265 },
+//   { name: "Test 19", Overall: 575, Math: 295, Reading: 280 },
+//   { name: "Test 20", Overall: 500, Math: 240, Reading: 260 },
 ];
 
+const ITEMS_PER_PAGE = 7;
+
 export default function ScoreAnalysis({ courseName = "Course" }) {
+  const [startIndex, setStartIndex] = useState(0);
+  
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, data.length);
+  const displayData = data.slice(startIndex, endIndex);
+  
+  const canGoLeft = startIndex > 0;
+  const canGoRight = endIndex < data.length;
+
+  const handlePrev = () => {
+    setStartIndex(Math.max(0, startIndex - ITEMS_PER_PAGE));
+  };
+
+  const handleNext = () => {
+    setStartIndex(Math.min(data.length - ITEMS_PER_PAGE, startIndex + ITEMS_PER_PAGE));
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn mb-10">
        {/* Section 1: Score Trends (Bar Chart) */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative">
             <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">{courseName} Analysis</h3>
-            <div className="h-[400px] w-full flex justify-center">
+            
+            {/* Left Arrow */}
+            {canGoLeft && (
+                <button
+                    onClick={handlePrev}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-400 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                    </svg>
+                </button>
+            )}
+
+            {/* Right Arrow */}
+            {canGoRight && (
+                <button
+                    onClick={handleNext}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-400 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
+                    </svg>
+                </button>
+            )}
+
+            <div className="h-[400px] w-full flex justify-center px-12">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                        data={data}
+                        data={displayData}
                         margin={{
                             top: 20,
                             right: 30,
@@ -48,13 +105,18 @@ export default function ScoreAnalysis({ courseName = "Course" }) {
                             cursor={{ fill: 'transparent' }}
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                         />
-                        {/* <Legend iconType="circle" /> */}
-                        {/* Customized to look like the image: Blue, Light Blue/Purple, Green bars side by side */}
-                        <Bar dataKey="Overall" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={60} label={{ position: 'top', fill: '#3b82f6', fontSize: 14, fontWeight: 'bold' }} />
-                        <Bar dataKey="Math" fill="#818cf8" radius={[4, 4, 0, 0]} barSize={60} label={{ position: 'top', fill: '#818cf8', fontSize: 14, fontWeight: 'bold' }} />
-                        <Bar dataKey="Reading" fill="#10b981" radius={[4, 4, 0, 0]} barSize={60} label={{ position: 'top', fill: '#10b981', fontSize: 14, fontWeight: 'bold' }} />
+                        <Bar dataKey="Overall" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} label={{ position: 'top', fill: '#3b82f6', fontSize: 12, fontWeight: 'bold' }} />
+                        <Bar dataKey="Math" fill="#818cf8" radius={[4, 4, 0, 0]} barSize={40} label={{ position: 'top', fill: '#818cf8', fontSize: 12, fontWeight: 'bold' }} />
+                        <Bar dataKey="Reading" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} label={{ position: 'top', fill: '#10b981', fontSize: 12, fontWeight: 'bold' }} />
                     </BarChart>
                 </ResponsiveContainer>
+            </div>
+            
+            {/* Page Indicator */}
+            <div className="flex justify-center items-center gap-2 mt-4">
+                <span className="text-sm text-gray-500">
+                    Showing {startIndex + 1}-{endIndex} of {data.length} tests
+                </span>
             </div>
         </div>
 
