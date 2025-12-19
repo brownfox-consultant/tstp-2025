@@ -88,7 +88,7 @@ function DashboardLayout({ children }) {
   ];
 
   const isMobile = useMediaQuery({
-    query: "(max-width: 768px)",
+    query: "(max-width: 992px)",
   });
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -107,16 +107,17 @@ function DashboardLayout({ children }) {
 
   const { collapsed, setCollapsed } = useGlobalContext();
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     setLogoutLoading(true);
-    logoutService(csrfToken)
-      .then(() => {
-        window.location.href = "/login";
-        window.localStorage.clear();
-      })
-      .catch((err) => console.log(err))
-      .finally(() => setLogoutLoading(false));
-  }, [csrfToken]);
+    try {
+      await logoutService(csrfToken);
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      window.localStorage.clear();
+      router.replace("/login");
+    }
+  }, [csrfToken, router]);
 
   const handleProfileClick = useCallback(() => {
     const newPath = pathname.split("/");
@@ -148,7 +149,7 @@ function DashboardLayout({ children }) {
         setEmail(window.localStorage.getItem("email"));
         setName(window.localStorage.getItem("name"));
       } else {
-        window.location.href = "/login";
+        router.replace("/login");
       }
     }
   }, [handleLogout]);
@@ -219,7 +220,7 @@ function DashboardLayout({ children }) {
 
         {/* Logo Section */}
         <div className={`
-          flex items-center h-20 min-h-[80px] px-4
+          flex items-center h-20 min-h-[60px] px-4
           transition-all duration-300 ease-in-out
         `}>
           {collapsed && !isMobile ? (
@@ -307,67 +308,110 @@ function DashboardLayout({ children }) {
         </nav>
 
         <div className="mt-auto border-t border-gray-200 p-3">
-          <div
-            onClick={handleProfileClick}
-            className={`
-              flex items-center rounded-lg cursor-pointer p-2
-              hover:bg-gray-100 transition-colors duration-200
-              ${collapsed ? 'justify-center' : 'gap-3'}
-            `}
-            role="button"
-            tabIndex={0}
-            aria-label="View profile"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleProfileClick();
-              }
-            }}
-          >
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              <UserProfileIcon />
+          {/* When collapsed: Show Profile and Logout icons stacked */}
+          {collapsed && !isMobile ? (
+            <div className="flex flex-col items-center gap-2">
+              {/* Profile Icon */}
+              <Tooltip title="View Profile" placement="right" mouseEnterDelay={0.1}>
+                <div
+                  onClick={handleProfileClick}
+                  className="
+                    flex items-center justify-center rounded-lg cursor-pointer p-2
+                    hover:bg-gray-100 transition-colors duration-200
+                  "
+                  role="button"
+                  tabIndex={0}
+                  aria-label="View Profile"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleProfileClick();
+                    }
+                  }}
+                >
+                  <UserProfileIcon />
+                </div>
+              </Tooltip>
+
+              {/* Logout Icon */}
+              <Tooltip title="Logout" placement="right" mouseEnterDelay={0.1}>
+                <div
+                  onClick={handleLogout}
+                  className="
+                    flex items-center justify-center rounded-lg cursor-pointer p-2
+                    hover:bg-red-50 transition-colors duration-200
+                  "
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Logout"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleLogout();
+                    }
+                  }}
+                >
+                  <LogoutIcon />
+                </div>
+              </Tooltip>
             </div>
-            
-      
-            <div className={`
-              flex-1 min-w-0 overflow-hidden
-              transition-all duration-300 ease-in-out
-              ${collapsed && !isMobile ? 'w-0 opacity-0' : 'opacity-100'}
-            `}>
-              <div className="text-sm font-medium text-gray-900 truncate">
-                {name}
-              </div>
-              <div className="text-xs text-gray-500 truncate">
-                {email}
-              </div>
-            </div>
-            
+          ) : (
+            /* When expanded: Show full profile with logout */
             <div
-              onClick={(e) => {
-                e.stopPropagation();
-                handleLogout();
-              }}
-              className={`
-                flex items-center justify-center flex-shrink-0
-                w-8 h-8 rounded-md cursor-pointer
-                hover:bg-gray-200 transition-all duration-200
-                ${collapsed && !isMobile ? 'hidden' : 'block'}
-              `}
+              onClick={handleProfileClick}
+              className="
+                flex items-center rounded-lg cursor-pointer p-2
+                hover:bg-gray-100 transition-colors duration-200 gap-3
+              "
               role="button"
-              tabIndex={collapsed && !isMobile ? -1 : 0}
-              aria-label="Logout"
+              tabIndex={0}
+              aria-label="View profile"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  e.stopPropagation();
-                  handleLogout();
+                  handleProfileClick();
                 }
               }}
             >
-              <LogoutIcon />
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                <UserProfileIcon />
+              </div>
+              
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="text-sm font-medium text-gray-900 truncate">
+                  {name}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {email}
+                </div>
+              </div>
+              
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleLogout();
+                }}
+                className="
+                  flex items-center justify-center flex-shrink-0
+                  w-8 h-8 rounded-md cursor-pointer
+                  hover:bg-gray-200 transition-all duration-200
+                "
+                role="button"
+                tabIndex={0}
+                aria-label="Logout"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleLogout();
+                  }
+                }}
+              >
+                <LogoutIcon />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </aside>
 
