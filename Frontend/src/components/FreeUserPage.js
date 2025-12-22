@@ -64,10 +64,6 @@ export default function FreeUserPage() {
               <p className="text-white/80 text-sm">Only Scholarship Test is available</p>
             </div>
           </div>
-          <button className="px-6 py-3 bg-white text-orange-500 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2">
-            <StarIcon />
-            Upgrade to Premium
-          </button>
         </div>
       </div>
 
@@ -207,16 +203,6 @@ export default function FreeUserPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Contact Section */}
-      <div className="mt-8 text-center">
-        <p className="text-gray-500 text-sm">
-          Want to upgrade? Contact us at{" "}
-          <a href="tel:7574824766" className="text-orange-500 font-semibold hover:underline">
-            +91 7574824766
-          </a>
-        </p>
       </div>
     </div>
   );
