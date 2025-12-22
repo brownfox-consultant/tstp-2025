@@ -4400,41 +4400,90 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['POST'], permission_classes=[IsStudent], url_path='start-practice')
     def start_practice_test(self, request):
-        from test_manager.models import PracticeTest, PracticeTestResult, PracticeQuestionAnswer, CourseSubjects, Question  # ✅ correct imports
+        from test_manager.models import PracticeTest, PracticeTestResult, PracticeQuestionAnswer, CourseSubjects, Question  
 
         student = request.user
         course_subject_id = request.data.get('course_subject_id')
         if not course_subject_id:
             return get_error_response("course_subject_id is required")
 
+        # Base filters
         query_filters = Q(course_subject_id=course_subject_id, test_type=Question.SELF_PRACTICE_TEST_TYPE)
 
+        # Topic filter
         topic = request.data.get('topic', '')
         if topic:
-            query_filters &= Q(topic__in=topic.split(','))
+            query_filters &= Q(topic_id__in=topic.split(','))
 
+        # Sub topic filter
         sub_topic = request.data.get('sub_topic', '')
         if sub_topic:
-            query_filters &= Q(sub_topic__in=sub_topic.split(','))
+            query_filters &= Q(sub_topic_id__in=sub_topic.split(','))
 
+        # Difficulty filter
         difficulty = request.data.get('difficulty', '')
         if difficulty:
             query_filters &= Q(difficulty__in=difficulty.split(','))
 
+        # ===============================
+        # ⭐ NEW — FILTER BASED ON question_mode
+        # ===============================
+        question_mode = request.data.get("question_mode", "BOTH")
+
+        # All questions (before mode filter)
         questions = Question.objects.filter(query_filters)
+
+        # Exclude repeated questions for this student
+        previously_answered_ids = PracticeQuestionAnswer.objects.filter(
+            practice_test_result__practice_test__student=student
+        ).values_list("question_id", flat=True)
+
+        if question_mode == "UNANSWERED":
+            # return questions student has never answered
+            questions = questions.exclude(id__in=previously_answered_ids)
+
+        elif question_mode == "INCORRECT":
+            # return only previously answered incorrect questions
+            incorrect_ids = PracticeQuestionAnswer.objects.filter(
+                practice_test_result__practice_test__student=student,
+                is_correct=False,
+                is_skipped=False
+            ).values_list("question_id", flat=True)
+
+            questions = questions.filter(id__in=incorrect_ids)
+
+        elif question_mode == "BOTH":
+            incorrect_ids = PracticeQuestionAnswer.objects.filter(
+                practice_test_result__practice_test__student=student,
+                is_correct=False,
+                is_skipped=False
+            ).values_list("question_id", flat=True)
+
+            unanswered_ids = questions.exclude(id__in=previously_answered_ids).values_list("id", flat=True)
+
+            questions = questions.filter(
+                Q(id__in=incorrect_ids) | Q(id__in=unanswered_ids)
+            )
+
+
+        # ===============================
+        # END question_mode filter
+        # ===============================
+
         course_subject = get_object_or_404(CourseSubjects, id=course_subject_id)
 
+        # Create main practice test
         practice_test = PracticeTest.objects.create(student=student, course_subject=course_subject)
 
+        # Shuffle and apply no_of_questions
         question_ids = [q.id for q in questions]
         random.shuffle(question_ids)
 
-        # ✅ Handle no_of_questions
         no_of_questions = int(request.data.get('no_of_questions', 0))
         if no_of_questions > 0:
             question_ids = question_ids[:no_of_questions]
 
-        # 1️⃣ Create the result object
+        # Create test result
         practice_test_result = PracticeTestResult.objects.create(
             practice_test=practice_test,
             correct_answer_count=0,
@@ -4443,15 +4492,15 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             detailed_view={}
         )
 
-        # 2️⃣ Create placeholder PracticeQuestionAnswer objects with order preserved
+        # Create placeholder answers
         bulk_objs = []
         for idx, qid in enumerate(question_ids):
             bulk_objs.append(PracticeQuestionAnswer(
                 practice_test_result=practice_test_result,
                 question_id=qid,
-                order=idx,                     # preserve shuffled order
+                order=idx,
                 is_correct=False,
-                is_skipped=True,               # not answered yet
+                is_skipped=True,
                 time_taken=0,
                 selected_options=[],
                 times_visited=0,
