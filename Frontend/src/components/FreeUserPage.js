@@ -169,7 +169,7 @@ export default function FreeUserPage() {
       </div>
 
       {/* Premium Features Section */}
-      <div className="mt-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      {/* <div className="mt-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <CrownIcon />
           Premium Benefits
@@ -203,7 +203,7 @@ export default function FreeUserPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
