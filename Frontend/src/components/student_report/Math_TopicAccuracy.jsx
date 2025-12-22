@@ -2,18 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Bar } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
   Tooltip,
-  Legend,
-} from "chart.js";
+  ResponsiveContainer,
+  CartesianGrid,
+  Cell,
+} from "recharts";
 import { BASE_URL } from "@/app/constants/apiConstants";
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 export default function Math_TopicAccuracy({
   student_id,
@@ -38,7 +37,7 @@ export default function Math_TopicAccuracy({
         { withCredentials: true }
       );
 
-      // ✅ FILTER MATH SUBJECT
+      // Filter Math subject
       const mathBlock = res.data.find(
         (s) => s.subject.toLowerCase() === "math"
       );
@@ -54,70 +53,97 @@ export default function Math_TopicAccuracy({
 
   if (loading) return <div>Loading...</div>;
 
-  if (!topics.length) {
-    return (
-      <div className="data-card hover-card">
-        <h3 className="card-title">Topic Wise Accuracy — Math</h3>
+  // Prepare chart data
+  const colors = [
+    "#F59403",
+    "#FFD36A",
+    "#2E2725",
+    "#805B30",
+    "#0071BC",
+    "#70D9E4",
+  ];
+
+  const chartData = topics.map((t, i) => ({
+    topic: t.topic,
+    value: t.accuracy_percent || 0,
+    color: (t.accuracy_percent || 0) > 0 ? colors[i % colors.length] : "#E0E0E0",
+  }));
+
+  return (
+    <div className="data-card accuracy-card">
+      <h3 className="card-title">
+        Topic Wise Accuracy — Math
+      </h3>
+
+      {topics.length === 0 ? (
         <div style={{ textAlign: "center", color: "#777", marginTop: "20px" }}>
           No accuracy data available
         </div>
-      </div>
-    );
-  }
+      ) : (
+        <>
+          <div style={{ width: "100%", height: 315 }}>
+            <ResponsiveContainer>
+              <BarChart
+                data={chartData}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 0,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
 
-  const labels = topics.map((t) => t.topic);
-  const values = topics.map((t) => t.accuracy_percent || 0);
+                <XAxis
+                  dataKey="topic"
+                  tick={false}
+                  axisLine={{ stroke: "#333" }}
+                  tickLine={false}
+                />
 
-  // ❌ DO NOT CHANGE COLORS (same as your design)
-  const COLORS = ["#F59403", "#FFD36A", "#2E2725", "#805B30"];
+                <YAxis
+                  domain={[0, 100]}
+                  tick={{ fontSize: 12 }}
+                  axisLine={{ stroke: "#333" }}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}%`}
+                  ticks={[0, 20, 40, 60, 80, 100]}
+                />
 
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: "Accuracy %",
-        data: values,
-        backgroundColor: values.map(
-          (_, i) => COLORS[i % COLORS.length]
-        ),
-        borderRadius: 10,
-      },
-    ],
-  };
+                <Tooltip
+                  formatter={(value) => `${value}%`}
+                  cursor={{ fill: "rgba(0,0,0,0.05)" }}
+                />
 
-  const options = {
-    plugins: { legend: { display: false } },
-    scales: {
-      x: {
-        ticks: {
-          color: "#444",
-          font: { size: 12 },
-        },
-      },
-      y: {
-        beginAtZero: true,
-        max: 100,
-        ticks: {
-          stepSize: 10,
-          color: "#444",
-        },
-        grid: { color: "#ddd" },
-      },
-    },
-    maintainAspectRatio: false,
-  };
+                <Bar
+                  dataKey="value"
+                  isAnimationActive={true}
+                  barSize={40}
+                >
+                  {chartData.map((item, i) => (
+                    <Cell key={i} fill={item.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-  return (
-    <div className="data-card hover-card">
-      <h3 className="card-title">Topic Wise Accuracy — Math</h3>
-
-      <div style={{ width: "420px", height: "320px", margin: "0 auto" }}>
-        <Bar
-          key="math-accuracy"
-          data={data}
-          options={options}
-        />
-      </div>
+          {/* Legend at bottom */}
+          <div className="topic-accuracy-legend" style={{ marginTop: '8px' }}>
+            {chartData.map((item, i) => (
+              <div key={i} className="topic-legend-item">
+                <span 
+                  className="topic-legend-dot" 
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="topic-legend-text">
+                  {item.topic} <strong>{item.value.toFixed(0)}%</strong>
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
