@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Chart } from "react-chartjs-2";
-import "@/lib/chartjs";
 import { BASE_URL } from "@/app/constants/apiConstants";
-
-
 
 export default function Math_SubTopicPractice({
   student_id,
@@ -31,7 +27,7 @@ export default function Math_SubTopicPractice({
         { withCredentials: true }
       );
 
-      // ✅ FILTER MATH
+      // Filter Math
       const mathBlock = res.data.find(
         (s) => s.subject?.toLowerCase() === "math"
       );
@@ -45,156 +41,139 @@ export default function Math_SubTopicPractice({
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="py-10 text-center text-gray-500">Loading...</div>;
   if (!topics.length)
-    return <div style={{ color: "#777" }}>No math sub-topic data</div>;
+    return <div className="py-10 text-center text-gray-500">No math sub-topic data</div>;
 
   /* ---------------- UI ---------------- */
   return (
-    <div className="data-card hover-card">
-      <div className="big-title">Sub – Topic Wise Practice</div>
+    <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm">
+      {/* Legend */}
+      <div className="flex justify-center gap-4 md:gap-6 mb-6 flex-wrap">
+        <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-600">
+          <span className="w-3 h-3 rounded-full bg-[#F59403]"></span>
+          <span>Questions</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-600">
+          <span className="w-3 h-3 rounded-full bg-[#FFD36A]"></span>
+          <span>Time</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-600">
+          <span className="w-3 h-3 rounded-full bg-[#0071BC]"></span>
+          <span>Accuracy</span>
+        </div>
+      </div>
 
-      {topics.map((sec, i) => {
-        const labels = sec.subtopics.map((r) => r.subtopic);
-        const q = sec.subtopics.map((r) => r.practiced_questions || 0);
-        const t = sec.subtopics.map((r) => r.avg_time_seconds || 0);
-        const a = sec.subtopics.map((r) => r.accuracy_percent || 0);
+      {topics.map((sec, i) => (
+        <div key={i} className="mb-10">
+          {/* Topic Title */}
+          <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-5 pb-2 border-b-2 border-gray-100">
+            {sec.topic}
+          </h3>
 
-        const data = {
-          labels,
-          datasets: [
-            // ---- STICKS ----
-            {
-              type: "bar",
-              label: "Questions Stick",
-              data: q,
-              backgroundColor: "#F59403",
-              barThickness: 2,
-              order: 2,
-            },
-            {
-              type: "bar",
-              label: "Time Stick",
-              data: t,
-              backgroundColor: "#FFD36A",
-              barThickness: 2,
-              order: 2,
-            },
-            {
-              type: "bar",
-              label: "Accuracy Stick",
-              data: a,
-              backgroundColor: "#0071BC",
-              barThickness: 2,
-              order: 2,
-            },
+          {/* Subtopics Chart */}
+          <div className="relative pb-8">
+            {sec.subtopics.map((item, j) => {
+              const practicePercent = item.practice_percent || 0;
+              const avgTime = item.avg_time_seconds || 0;
+              const accuracyPercent = item.accuracy_percent || 0;
+              const practicedQuestions = item.practiced_questions || 0;
+              const totalQuestions = item.total_questions || 0;
+              const timePercent = Math.min(avgTime, 100);
 
-            // ---- DOTS ----
-            {
-              type: "line",
-              label: "Questions",
-              data: q,
-              backgroundColor: "#F59403",
-              borderColor: "#fff",
-              pointRadius: 6,
-              showLine: false,
-              order: 1,
-            },
-            {
-              type: "line",
-              label: "Time",
-              data: t,
-              backgroundColor: "#FFD36A",
-              borderColor: "#fff",
-              pointRadius: 6,
-              showLine: false,
-              order: 1,
-            },
-            {
-              type: "line",
-              label: "Accuracy",
-              data: a,
-              backgroundColor: "#0071BC",
-              borderColor: "#fff",
-              pointRadius: 6,
-              showLine: false,
-              order: 1,
-            },
-          ],
-        };
+              return (
+                <div key={j} className="flex flex-col md:flex-row items-start gap-2 md:gap-4 mb-5">
+                  {/* Label */}
+                  <div className="w-full md:w-56 md:min-w-56 text-[11px] md:text-xs font-medium text-gray-600 md:text-right leading-tight">
+                    {item.subtopic}
+                  </div>
+                  
+                  {/* Bars Container */}
+                  <div className="flex-1 relative flex flex-col gap-1.5 min-w-0 pr-12 md:pr-16">
+                    {/* Grid Lines */}
+                    <div className="absolute inset-0 right-12 md:right-16 pointer-events-none">
+                      {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((val) => (
+                        <div 
+                          key={val} 
+                          className="absolute top-0 bottom-0 w-px bg-gray-100"
+                          style={{ left: `${val}%` }}
+                        />
+                      ))}
+                    </div>
 
-        const options = {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: "top",
-              labels: {
-                filter: (item) => !item.text.includes("Stick"),
-                usePointStyle: true,
-                font: { size: 14, weight: "600" },
-              },
-            },
-            tooltip: {
-              filter: (item) => !item.dataset.label.includes("Stick"),
-            },
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              max: 100,
-              ticks: { callback: (v) => v + "%" },
-            },
-            y: {
-              ticks: { autoSkip: false, font: { size: 16 } },
-              grid: { display: false },
-            },
-          },
-        };
+                    {/* Questions Bar */}
+                    <div className="relative h-2">
+                      <div 
+                        className="h-full bg-[#F59403]"
+                        style={{ width: `${Math.max(practicePercent, 0.5)}%` }}
+                      />
+                      <div 
+                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#F59403] border-2 border-white shadow"
+                        style={{ left: `${practicePercent}%`, transform: 'translate(-50%, -50%)' }}
+                      />
+                      <span 
+                        className="absolute top-1/2 -translate-y-1/2 text-[10px] md:text-xs font-semibold text-gray-700 whitespace-nowrap"
+                        style={{ left: `calc(${practicePercent}% + 14px)` }}
+                      >
+                        {practicedQuestions}/{totalQuestions}
+                      </span>
+                    </div>
 
-        return (
-          <div key={i} className="section-wrapper">
-            <div className="topic-left-text">{sec.topic}</div>
+                    {/* Time Bar */}
+                    <div className="relative h-2">
+                      <div 
+                        className="h-full bg-[#FFD36A]"
+                        style={{ width: `${Math.max(timePercent, 0.5)}%` }}
+                      />
+                      <div 
+                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#FFD36A] border-2 border-white shadow"
+                        style={{ left: `${timePercent}%`, transform: 'translate(-50%, -50%)' }}
+                      />
+                      <span 
+                        className="absolute top-1/2 -translate-y-1/2 text-[10px] md:text-xs font-semibold text-gray-700 whitespace-nowrap"
+                        style={{ left: `calc(${timePercent}% + 14px)` }}
+                      >
+                        {avgTime > 0 ? `${avgTime.toFixed(1)}s` : '0s'}
+                      </span>
+                    </div>
 
-            <div className="chart-scroll-container">
-              <div className="chart-canvas-container">
-                <Chart type="bar" data={data} options={options} />
-              </div>
+                    {/* Accuracy Bar */}
+                    <div className="relative h-2">
+                      <div 
+                        className="h-full bg-[#0071BC]"
+                        style={{ width: `${Math.max(accuracyPercent, 0.5)}%` }}
+                      />
+                      <div 
+                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#0071BC] border-2 border-white shadow"
+                        style={{ left: `${accuracyPercent}%`, transform: 'translate(-50%, -50%)' }}
+                      />
+                      <span 
+                        className="absolute top-1/2 -translate-y-1/2 text-[10px] md:text-xs font-semibold text-gray-700 whitespace-nowrap"
+                        style={{ left: `calc(${accuracyPercent}% + 14px)` }}
+                      >
+                        {accuracyPercent.toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* X-Axis Labels */}
+            <div className="relative ml-0 md:ml-60 mr-12 md:mr-16 h-5 mt-2">
+              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((val) => (
+                <span 
+                  key={val} 
+                  className="absolute -translate-x-1/2 text-[9px] md:text-[10px] text-gray-400"
+                  style={{ left: `${val}%` }}
+                >
+                  {val}%
+                </span>
+              ))}
             </div>
           </div>
-        );
-      })}
-
-      <style jsx>{`
-        .big-title {
-          background: white;
-          padding: 8px 22px;
-          font-weight: 800;
-          border-radius: 12px;
-          display: inline-block;
-          margin-bottom: 30px;
-        }
-
-        .section-wrapper {
-          margin-top: 40px;
-        }
-
-        .topic-left-text {
-          font-size: 36px;
-          font-weight: 800;
-          margin-bottom: 15px;
-        }
-
-        .chart-scroll-container {
-          overflow-x: auto;
-        }
-
-        .chart-canvas-container {
-          height: 350px;
-          min-width: 700px;
-        }
-      `}</style>
+        </div>
+      ))}
     </div>
   );
 }
