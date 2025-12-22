@@ -22,6 +22,35 @@ export default function ScoreAnalysis({
   const [chartData, setChartData] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [startIndex, setStartIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(6);
+  const [hideButtons, setHideButtons] = useState(false);
+
+  /* ================= RESPONSIVE VISIBLE COUNT ================= */
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      const width = window.innerWidth;
+      
+      // Hide buttons below 500px
+      setHideButtons(width < 500);
+      
+      if (width < 640) {
+        setVisibleCount(2); // Small screen (mobile)
+      } else if (width < 1024) {
+        setVisibleCount(4); // Medium screen (tablet)
+      } else if (width < 1300) {
+        setVisibleCount(6); // Large screen
+      } else if (width < 1400) {
+        setVisibleCount(8); // XL screen (1300px+)
+      } else {
+        setVisibleCount(10); // XXL screen (1400px+)
+      }
+    };
+
+    updateVisibleCount();
+    window.addEventListener('resize', updateVisibleCount);
+    return () => window.removeEventListener('resize', updateVisibleCount);
+  }, []);
 
   /* ================= FETCH API ================= */
   useEffect(() => {
@@ -53,10 +82,82 @@ export default function ScoreAnalysis({
     /* ================= BUILD CHART DATA ================= */
     const chart = [
       {
+        name: "Test 1",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 2",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 3",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 4",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 5",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 6",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 7",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 8",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 9",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 10",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 11",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
+        name: "Test 12",
+        Overall: data.overall_score,
+        Math: data.math_score,
+        English: data.english_score,
+      },
+      {
         name: "Recent",
         Overall: data.overall_score,
         Math: data.math_score,
-        English: data.english_score, // ✅ FIX
+        English: data.english_score,
       },
     ];
 
@@ -70,7 +171,7 @@ export default function ScoreAnalysis({
     setSummary({
       overall_score: data.overall_score,
       math_score: data.math_score,
-      english_score: data.english_score, // ✅ FIX
+      english_score: data.english_score,
       highest_score: data.highest_score,
       improvement: data.improvement,
       percentage,
@@ -84,7 +185,22 @@ export default function ScoreAnalysis({
   }
 };
 
+  /* ================= NAVIGATION ================= */
+  const displayData = chartData.slice(startIndex, startIndex + visibleCount);
+  const canGoLeft = startIndex > 0;
+  const canGoRight = startIndex + visibleCount < chartData.length;
 
+  const handlePrev = () => {
+    if (canGoLeft) {
+      setStartIndex(prev => Math.max(0, prev - visibleCount));
+    }
+  };
+
+  const handleNext = () => {
+    if (canGoRight) {
+      setStartIndex(prev => Math.min(chartData.length - visibleCount, prev + visibleCount));
+    }
+  };
 
   /* ================= LOADING ================= */
   if (loading) {
@@ -107,43 +223,100 @@ export default function ScoreAnalysis({
           {courseName} Analysis
         </h3>
 
-        <div className="h-[400px] w-full flex justify-center">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} barGap={10}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                domain={[0, summary.max_score || 1600]}
-              />
-              <Tooltip />
+        {/* Chart with Navigation Arrows */}
+        <div className="relative flex items-center">
+          {/* Left Arrow */}
+          {!hideButtons && (
+            <button
+              onClick={handlePrev}
+              disabled={!canGoLeft}
+              className={`absolute left-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                canGoLeft 
+                  ? 'bg-cyan-500 text-white shadow-lg hover:bg-cyan-600 hover:scale-110 cursor-pointer' 
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+              style={{ left: '-5px' }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
 
-              <Bar
-                dataKey="Overall"
-                fill="#3b82f6"
-                radius={[4, 4, 0, 0]}
-                barSize={60}
-                label={{ position: "top", fill: "#3b82f6", fontWeight: "bold" }}
-              />
-              <Bar
-                dataKey="Math"
-                fill="#818cf8"
-                radius={[4, 4, 0, 0]}
-                barSize={60}
-                label={{ position: "top", fill: "#818cf8", fontWeight: "bold" }}
-              />
-             <Bar
-  dataKey="English"
-  fill="#10b981"
-  radius={[4, 4, 0, 0]}
-  barSize={60}
-  label={{ position: "top", fill: "#10b981", fontWeight: "bold" }}
-/>
+          {/* Chart */}
+          <div className={`h-[350px] w-full flex justify-center ${hideButtons ? 'px-2' : 'px-12'}`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={displayData} barGap={4} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  domain={[0, summary.max_score || 1600]}
+                  fontSize={11}
+                />
+                <Tooltip />
 
-            </BarChart>
-          </ResponsiveContainer>
+                <Bar
+                  dataKey="Overall"
+                  fill="#3b82f6"
+                  radius={[4, 4, 0, 0]}
+                  barSize={20}
+                  label={{ position: "top", fill: "#3b82f6", fontWeight: "bold", fontSize: 10 }}
+                />
+                <Bar
+                  dataKey="Math"
+                  fill="#818cf8"
+                  radius={[4, 4, 0, 0]}
+                  barSize={20}
+                  label={{ position: "top", fill: "#818cf8", fontWeight: "bold", fontSize: 10 }}
+                />
+                <Bar
+                  dataKey="English"
+                  fill="#10b981"
+                  radius={[4, 4, 0, 0]}
+                  barSize={20}
+                  label={{ position: "top", fill: "#10b981", fontWeight: "bold", fontSize: 10 }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Right Arrow */}
+          {!hideButtons && (
+            <button
+              onClick={handleNext}
+              disabled={!canGoRight}
+              className={`absolute right-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                canGoRight 
+                  ? 'bg-cyan-500 text-white shadow-lg hover:bg-cyan-600 hover:scale-110 cursor-pointer' 
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+              style={{ right: '-5px' }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
         </div>
+
+        {/* Page Indicator */}
+        {chartData.length > visibleCount && (
+          <div className="flex justify-center mt-4 gap-2">
+            {Array.from({ length: Math.ceil(chartData.length / visibleCount) }).map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setStartIndex(idx * visibleCount)}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
+                  Math.floor(startIndex / visibleCount) === idx 
+                    ? 'bg-cyan-500 w-6' 
+                    : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ================= SUMMARY CARDS ================= */}

@@ -263,7 +263,150 @@
 }
 
 /* ============================
-   RESPONSIVE
+   MOBILE DROPDOWN TABS
+   ============================ */
+.tabs-mobile-container {
+  position: relative;
+  width: 100%;
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 4px solid #fb923c;
+}
+
+.tabs-mobile-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #d97706;
+  margin-bottom: 8px;
+}
+
+.tabs-mobile-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.tabs-mobile-button:hover {
+  border-color: #fb923c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tabs-mobile-button.open {
+  border-color: #fb923c;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.1);
+}
+
+.tabs-mobile-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tabs-mobile-arrow {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+  transition: transform 0.3s ease;
+}
+
+.tabs-mobile-arrow.rotate {
+  transform: rotate(180deg);
+}
+
+.tabs-mobile-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 16px;
+  right: 16px;
+  background: white;
+  border: 2px solid #fb923c;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  max-height: 300px;
+  overflow-y: auto;
+  animation: dropdownSlide 0.2s ease;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tabs-mobile-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tabs-mobile-option:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.tabs-mobile-option:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.tabs-mobile-option:hover:not(.disabled):not(.active) {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.tabs-mobile-option.active {
+  background: linear-gradient(135deg, #fb923c, #fbbf24);
+  color: white;
+}
+
+.tabs-mobile-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tabs-mobile-check {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.tabs-mobile-option .tab-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+/* Hide default tabs on mobile when using dropdown */
+@media (max-width: 767px) {
+  .tabs {
+    display: none;
+  }
+}
+
+/* ============================
+   RESPONSIVE (Desktop adjustments)
    ============================ */
 @media (max-width: 1024px) {
   .dashboard-grid-2x2 {
@@ -271,59 +414,51 @@
   }
 }
 
-@media (max-width: 768px) {
-  .tabs {
-    /* Enable scrolling, disable wrapping */
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    justify-content: flex-start;
-    -webkit-overflow-scrolling: touch;
-    /* Hide scrollbar */
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  
-  .tabs::-webkit-scrollbar {
+@media (min-width: 768px) {
+  /* Hide mobile dropdown on desktop */
+  .tabs-mobile-container {
     display: none;
-  }
-  
-  .tab {
-    padding: 10px 16px;
-    font-size: 14px;
-    /* Allow tabs to take necessary width and not shrink */
-    flex: 0 0 auto;
-    min-width: fit-content;
-  }
-  
-  .tab-label {
-    font-size: 14px;
-  }
-  
-  .filter-tabs-container {
-    min-width: 100%;
-  }
-
-  .report-tabs {
-    padding: 4px;
-    /* Ensure scrolling on report tabs too if different class used */
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
   }
 }
 
 @media (max-width: 480px) {
-  .tab {
-    padding: 10px 14px;
-    font-size: 13px;
+  .tabs-mobile-container {
+    padding: 12px;
+    border-radius: 10px;
+    border-left-width: 3px;
   }
   
-  .tab-icon {
-    font-size: 16px;
+  .tabs-mobile-label {
+    font-size: 11px;
+    margin-bottom: 6px;
   }
-
-  .report-tabs {
-    padding: 4px;
+  
+  .tabs-mobile-button {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+    border-width: 1.5px;
+  }
+  
+  .tabs-mobile-arrow {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .tabs-mobile-dropdown {
+    left: 12px;
+    right: 12px;
+    border-radius: 8px;
+    max-height: 280px;
+  }
+  
+  .tabs-mobile-option {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .tabs-mobile-check {
+    width: 16px;
+    height: 16px;
   }
 }
