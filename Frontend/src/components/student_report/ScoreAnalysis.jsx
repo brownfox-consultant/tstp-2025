@@ -79,97 +79,26 @@ export default function ScoreAnalysis({
 
     const data = res.data;
 
-    /* ================= BUILD CHART DATA ================= */
-    const chart = [
-      {
-        name: "Test 1",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 2",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 3",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 4",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 5",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 6",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 7",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 8",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 9",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 10",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 11",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Test 12",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-      {
-        name: "Recent",
-        Overall: data.overall_score,
-        Math: data.math_score,
-        English: data.english_score,
-      },
-    ];
+    /* ================= BUILD CHART DATA DYNAMICALLY ================= */
+    // Map through the 'tests' array from your API response
+    const chart = data.tests.map((test, index) => ({
+      // Use the actual test name from the API, or a fallback label
+      name: test.test_name || `Test ${index + 1}`,
+      Overall: test.overall_score,
+      Math: test.math_score,
+      English: test.english_score,
+      id: test.test_submission_id
+    }));
 
     /* ================= BUILD SUMMARY ================= */
-    const maxScore = 1600;
-    const percentage = Math.round(
-      (data.overall_score / maxScore) * 100
-    );
+    const maxScore = 1600; 
+    // Usually, you'd want the percentage of the most recent test
+    const recentScore = chart.length > 0 ? chart[chart.length - 1].Overall : 0;
+    const percentage = Math.round((recentScore / maxScore) * 100);
 
     setChartData(chart);
     setSummary({
-      overall_score: data.overall_score,
+      overall_score: data.overall_score, // This seems to be the "latest" score from your API
       math_score: data.math_score,
       english_score: data.english_score,
       highest_score: data.highest_score,
