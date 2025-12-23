@@ -65,14 +65,14 @@ export default function Math_SubTopicPractice({
       </div>
 
       {topics.map((sec, i) => (
-        <div key={i} className="mb-10">
+        <div key={i} className="mb-6">
           {/* Topic Title */}
-          <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-5 pb-2 border-b-2 border-gray-100">
+          <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 pb-2 border-b-2 border-gray-100">
             {sec.topic}
           </h3>
 
           {/* Subtopics Chart */}
-          <div className="relative pb-8">
+          <div className="relative pb-4">
             {sec.subtopics.map((item, j) => {
               const practicePercent = item.practice_percent || 0;
               const avgTime = item.avg_time_seconds || 0;
@@ -82,14 +82,14 @@ export default function Math_SubTopicPractice({
               const timePercent = Math.min(avgTime, 100);
 
               return (
-                <div key={j} className="flex flex-col md:flex-row items-start gap-2 md:gap-4 mb-5">
+                <div key={j} className="flex flex-col md:flex-row items-start gap-1 md:gap-3 mb-3">
                   {/* Label */}
                   <div className="w-full md:w-56 md:min-w-56 text-[11px] md:text-xs font-medium text-gray-600 md:text-right leading-tight">
                     {item.subtopic}
                   </div>
                   
                   {/* Bars Container */}
-                  <div className="flex-1 relative flex flex-col gap-1.5 min-w-0 pr-12 md:pr-16">
+                  <div className="flex-1 relative flex flex-col gap-1 min-w-0 pr-10 md:pr-14">
                     {/* Grid Lines */}
                     <div className="absolute inset-0 right-12 md:right-16 pointer-events-none">
                       {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((val) => (

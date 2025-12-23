@@ -42,8 +42,37 @@ export default function Topic_Wise_Practice({
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (!topics.length) return <div>No data available</div>;
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="text-center py-16 text-gray-500 animate-pulse">
+          Loading topic wise practice...
+        </div>
+      </div>
+    );
+  }
+
+  if (!topics.length) {
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <h3 className="text-lg font-extrabold text-gray-800 mb-6">
+          Topic Wise Practice — {subject}
+        </h3>
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 rounded-xl border border-amber-200 p-10 text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
+            <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+            </svg>
+          </div>
+          <h4 className="text-lg font-bold text-gray-700 mb-2">No Practice Data</h4>
+          <p className="text-gray-500 text-sm max-w-xs leading-relaxed">
+            Start practicing {subject} topics to see your topic-wise practice distribution here!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const backgroundColors = [
     "#F59403",

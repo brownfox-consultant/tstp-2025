@@ -22,7 +22,7 @@ import TopicAccuracy from "@/components/student_report/TopicAccuracy";
 import SubTopicPracticeStyled from "@/components/student_report/SubTopicPracticeStyled";
 import Math_Topic_Wise_Practice from "@/components/student_report/Math_Topic_Wise_Practice";
 import Math_TopicAccuracy from "@/components/student_report/Math_TopicAccuracy";
-import Math_SubTopicPractice from "@/components/student_report/Math_SubTopicPractice"
+import Math_SubTopicPracticeStyled from "@/components/student_report/Math_SubTopicPracticeStyled"
 import Scoreboard from "@/components/student_report/Scoreboard";
 import SelfPractice from "@/components/student_report/SelfPractice";
 import StatusOfDoubts from "@/components/student_report/StatusOfDoubts";
@@ -252,25 +252,7 @@ function Dashboard() {
         </div>
       )}
 
-      {/* {activeReportTab === "english" && (
-        <>
-          <TopicWiseReport
-            practice={practice}
-            accuracy={accuracy}
-            timeMetrics={timeMetrics}
-            heatmapData={heatmapData}
-          />
-          <div className="data-grid-v1">
-            <Topic_Wise_Practice />
-            <TopicAccuracyDummy />
-          </div>
-
-          <div style={{ marginTop: "25px" }}>
-            <SubTopicPracticeStyled />
-          </div>
-        </>
-      )} */}
-
+     
       {activeReportTab === "english" && (
         <>
           <div className="grid grid-cols-2 gap-[25px] max-[1300px]:grid-cols-1">
@@ -320,7 +302,7 @@ function Dashboard() {
 
           {/* FULL WIDTH BELOW */}
           <div style={{ marginTop: "25px" }}>
-            <Math_SubTopicPractice
+            <Math_SubTopicPracticeStyled
               student_id={studentId}
               course_id={selectedCourse}
               test_type={testType}
@@ -345,7 +327,6 @@ function Dashboard() {
 
       {activeReportTab === "doubts" && (
         <StatusOfDoubts
-
           student_id={studentId}
           course_id={selectedCourse}
           test_type={testType}
@@ -363,7 +344,6 @@ function Dashboard() {
 
       {activeReportTab === "pattern" && (
         <PatternOfUsage
-
           student_id={studentId}
           course_id={selectedCourse}
           test_type={testType}
