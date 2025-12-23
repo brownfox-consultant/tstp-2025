@@ -134,6 +134,29 @@ export default function PatternOfUsage({
     );
   }
 
+  /* ================= EMPTY STATE ================= */
+  if (!usageData || usageData.length === 0) {
+    return (
+      <div className="w-full py-10">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-amber-100 rounded-2xl border border-orange-200 p-12 text-center shadow-sm">
+            <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+              <FaClock className="text-4xl text-orange-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-700 mb-2">No Usage Data Available</h3>
+            <p className="text-gray-500 max-w-md leading-relaxed">
+              Your pattern of usage data is not available yet. Start practicing to see your daily activity, time spent, and questions solved!
+            </p>
+            <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">
+              <FaQuestionCircle className="text-gray-400" />
+              <span>Your daily practice patterns will appear here once you start studying</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   /* ================= RENDER ================= */
 
   return (

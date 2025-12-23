@@ -47,6 +47,31 @@ export default function Scoreboard({ student_id, course_id }) {
     return <div className="text-center py-10">Loading scoreboard...</div>;
   }
 
+  /* ================= EMPTY STATE ================= */
+  if (!testData || testData.length === 0) {
+    return (
+      <div className="w-full py-10">
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
+          <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 mb-2">No Scoreboard Data</h3>
+          <p className="text-gray-500 max-w-md leading-relaxed">
+            Your scoreboard is empty! Complete a full-length test to see your scores, accuracy, and performance comparison here.
+          </p>
+          <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Your test results and scores will appear here after completing tests</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleKnowMore = () => {
     router.push(`/student/${student_id}/test/full`);
   };
