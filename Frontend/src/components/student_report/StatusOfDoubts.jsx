@@ -65,12 +65,26 @@ export default function StatusOfDoubts({
     );
   }
 
-  // const renderLabel = ({ x, y, width, value }) =>
-  //   value ? (
-  //     <text x={x + width / 2} y={y - 8} textAnchor="middle" fontSize="11" fontWeight="600" fill="#6B7280">
-  //       {value}
-  //     </text>
-  //   ) : null;
+  // Empty state when no doubts data
+  if (!doubtsData || doubtsData.length === 0 || summary.total_raised === 0) {
+    return (
+      <div className="w-full py-10">
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
+            <FaQuestionCircle className="text-4xl text-blue-400" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 mb-2">No Doubts Raised Yet</h3>
+          <p className="text-gray-500 max-w-md leading-relaxed">
+            You haven't raised any doubts for this course yet. When you have questions during your practice or exams, feel free to raise a doubt and our experts will help you!
+          </p>
+          <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">
+            <FaClock className="text-gray-400" />
+            <span>Your doubt analytics will appear here once you start raising doubts</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full py-6">

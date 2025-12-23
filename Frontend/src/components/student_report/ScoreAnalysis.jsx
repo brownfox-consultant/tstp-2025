@@ -35,15 +35,15 @@ export default function ScoreAnalysis({
       setHideButtons(width < 500);
       
       if (width < 640) {
-        setVisibleCount(2); // Small screen (mobile)
+        setVisibleCount(2);
       } else if (width < 1024) {
-        setVisibleCount(4); // Medium screen (tablet)
+        setVisibleCount(4);
       } else if (width < 1300) {
-        setVisibleCount(6); // Large screen
+        setVisibleCount(6);
       } else if (width < 1400) {
-        setVisibleCount(8); // XL screen (1300px+)
+        setVisibleCount(8); 
       } else {
-        setVisibleCount(10); // XXL screen (1400px+)
+        setVisibleCount(10); 
       }
     };
 
@@ -80,9 +80,7 @@ export default function ScoreAnalysis({
     const data = res.data;
 
     /* ================= BUILD CHART DATA DYNAMICALLY ================= */
-    // Map through the 'tests' array from your API response
     const chart = data.tests.map((test, index) => ({
-      // Use the actual test name from the API, or a fallback label
       name: test.test_name || `Test ${index + 1}`,
       Overall: test.overall_score,
       Math: test.math_score,
@@ -90,15 +88,13 @@ export default function ScoreAnalysis({
       id: test.test_submission_id
     }));
 
-    /* ================= BUILD SUMMARY ================= */
     const maxScore = 1600; 
-    // Usually, you'd want the percentage of the most recent test
     const recentScore = chart.length > 0 ? chart[chart.length - 1].Overall : 0;
     const percentage = Math.round((recentScore / maxScore) * 100);
 
     setChartData(chart);
     setSummary({
-      overall_score: data.overall_score, // This seems to be the "latest" score from your API
+      overall_score: data.overall_score,
       math_score: data.math_score,
       english_score: data.english_score,
       highest_score: data.highest_score,
@@ -118,6 +114,7 @@ export default function ScoreAnalysis({
   const displayData = chartData.slice(startIndex, startIndex + visibleCount);
   const canGoLeft = startIndex > 0;
   const canGoRight = startIndex + visibleCount < chartData.length;
+  const needsPagination = chartData.length > visibleCount;
 
   const handlePrev = () => {
     if (canGoLeft) {
@@ -140,6 +137,31 @@ export default function ScoreAnalysis({
     );
   }
 
+  /* ================= EMPTY STATE ================= */
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="py-10">
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+            <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 mb-2">No Test Data Available</h3>
+          <p className="text-gray-500 max-w-md leading-relaxed">
+            You haven't taken any tests for this course yet. Complete your first test to see your score analysis and track your performance over time!
+          </p>
+          <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <span>Your score trends and analytics will appear here after completing tests</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!summary) return null;
 
   /* ================= RENDER ================= */
@@ -154,16 +176,11 @@ export default function ScoreAnalysis({
 
         {/* Chart with Navigation Arrows */}
         <div className="relative flex items-center">
-          {/* Left Arrow */}
-          {!hideButtons && (
+          {/* Left Arrow - Only show when pagination is needed AND can go left */}
+          {!hideButtons && needsPagination && canGoLeft && (
             <button
               onClick={handlePrev}
-              disabled={!canGoLeft}
-              className={`absolute left-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
-                canGoLeft 
-                  ? 'bg-cyan-500 text-white shadow-lg hover:bg-cyan-600 hover:scale-110 cursor-pointer' 
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
+              className="absolute left-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-cyan-500 text-white shadow-lg hover:bg-cyan-600 hover:scale-110 cursor-pointer"
               style={{ left: '-5px' }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,16 +228,11 @@ export default function ScoreAnalysis({
             </ResponsiveContainer>
           </div>
 
-          {/* Right Arrow */}
-          {!hideButtons && (
+          {/* Right Arrow - Only show when pagination is needed AND can go right */}
+          {!hideButtons && needsPagination && canGoRight && (
             <button
               onClick={handleNext}
-              disabled={!canGoRight}
-              className={`absolute right-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
-                canGoRight 
-                  ? 'bg-cyan-500 text-white shadow-lg hover:bg-cyan-600 hover:scale-110 cursor-pointer' 
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
+              className="absolute right-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-cyan-500 text-white shadow-lg hover:bg-cyan-600 hover:scale-110 cursor-pointer"
               style={{ right: '-5px' }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
