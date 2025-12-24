@@ -17,7 +17,7 @@ import {
 import { usePathname, useRouter } from 'next/navigation';
 import Select from 'react-select';
 import { Col, Row } from 'antd';
-import { BASE_URL, GET_Courses } from '@/app/constants/apiConstants';
+import { BASE_URL } from '@/app/constants/apiConstants';
 import { getDashboardStats } from '@/app/services/authService';
 import { getTestsPerDay } from "@/app/services/authService";
 
@@ -102,23 +102,41 @@ export default function Dashbord() {
     { name: 'Objective', percent: 30 },
   ];
 
+
   useEffect(() => {
-    axios
-      .get(GET_Courses, { withCredentials: true })
-      .then((res) => {
-        setCourses(res.data);
-        if (res.data.length > 0 && !selectedCourseForScores) {
-          setSelectedCourseForScores(res.data[0].id); // default select first course for scores
-        }
-        if (res.data.length > 0 && !selectedCourseForTime) {
-          setSelectedCourseForTime(res.data[0].id); // default select first course for time
-        }
-        if (res.data.length > 0 && !selectedCourseForLine) {
-          setSelectedCourseForLine(res.data[0].id); // default select first course for line chart
-        }
-      })
-      .catch((err) => console.error('Courses fetch error:', err));
-  }, []);
+  if (!studentId) {
+    setCourses([]);
+    return;
+  }
+
+  const fetchStudentCourses = async () => {
+    try {
+      const res = await axios.get(
+        `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
+        { withCredentials: true }
+      );
+
+      const data = res.data || [];
+      setCourses(data);
+
+      // Auto-select defaults if not selected
+      if (data.length > 0) {
+        if (!selectedCourseForScores) setSelectedCourseForScores(data[0].id);
+        if (!selectedCourseForTime) setSelectedCourseForTime(data[0].id);
+        if (!selectedCourseForLine) setSelectedCourseForLine(data[0].id);
+      }
+    } catch (err) {
+      console.error('Student courses fetch error:', err);
+      setCourses([]);
+    }
+  };
+
+  fetchStudentCourses();
+}, [studentId]);
+
+
+
+  
 
   useEffect(() => {
     if (!selectedCourseForScores || !selectedSubjectForScores) {
@@ -408,14 +426,6 @@ export default function Dashbord() {
   }, [parentId, selectedCourseForTime, selectedSubjectForTime, selectedRange]);
 
 
-
-  // ─── Courses & Subjects for “Tests & Their Scores” ────────────
-  useEffect(() => {
-    axios
-      .get(GET_Courses, { withCredentials: true })
-      .then((res) => setCourses(res.data))
-      .catch((err) => console.error('Courses fetch error:', err));
-  }, []);
 
   useEffect(() => {
     if (!selectedCourseForScores) {
