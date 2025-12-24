@@ -26,22 +26,24 @@ export const resetPassword = (payload) => {
 };
 
 export const forgotPassword = (payload) => {
+  const csrfToken = typeof window !== "undefined" ? window.localStorage.getItem("csrfToken") : null;
   return axios
     .post(FORGOT_PASSWORD, payload, {
       withCredentials: true,
       headers: {
-        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+        "X-CSRFToken": csrfToken,
       },
     })
     .catch(handleAPIError);
 };
 
 export const verifyOtp = (payload) => {
+  const csrfToken = typeof window !== "undefined" ? window.localStorage.getItem("csrfToken") : null;
   return axios
     .post(VERIFY_OTP, payload, {
       withCredentials: true,
       headers: {
-        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+        "X-CSRFToken": csrfToken,
       },
     })
     .catch(handleAPIError);

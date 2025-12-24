@@ -3,7 +3,10 @@
 import { verifyOtp } from "@/app/services/registerStudent";
 import { Input, InputNumber, Modal } from "antd";
 import React, { useState } from "react";
-import OtpInput from "react-otp-input";
+import dynamic from "next/dynamic";
+
+// Dynamic import to prevent SSR hydration issues
+const OtpInput = dynamic(() => import("react-otp-input"), { ssr: false });
 
 function OtpModal({
   open,

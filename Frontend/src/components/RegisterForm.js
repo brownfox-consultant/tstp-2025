@@ -5,6 +5,7 @@ import {
   registerStudent,
 } from "@/app/services/registerStudent";
 import { Button, Col, Form, Input, Modal, Row, Select } from "antd";
+const { Option } = Select;
 import { useForm } from "antd/es/form/Form";
 import { useEffect, useRef } from "react";
 import { useState } from "react";
