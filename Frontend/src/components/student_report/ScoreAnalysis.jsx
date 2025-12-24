@@ -78,54 +78,24 @@ export default function ScoreAnalysis({
     );
 
     const data = res.data;
-    
-    // Debug: Log API response
-    console.log("Score Analysis API Response:", { test_type: apiTestType, data });
 
-    let chart = [];
-    
-    /* ================= HANDLE FULL LENGTH TESTS ================= */
-    if (apiTestType === "FULL_LENGTH" && Array.isArray(data.tests)) {
-      chart = data.tests.map((test, index) => ({
-        name: test.test_name || `Test ${index + 1}`,
-        Overall: test.overall_score ?? 0,
-        Math: test.math_score ?? 0,
-        English: test.english_score ?? 0,
-        id: test.test_submission_id
-      }));
-    }
-    
-    /* ================= HANDLE PRACTICE TESTS ================= */
-    // Note: Practice tests also come in data.tests according to the API
-    if (apiTestType === "PRACTICE" && Array.isArray(data.tests)) {
-      console.log("Practice tests array found:", data.tests);
-      
-      chart = data.tests.map((test, index) => {
-        const subjectName = test.subject?.toLowerCase() || '';
-        return {
-          name: test.test_name || test.name || `Practice ${index + 1}`,
-          Overall: 0,
-          Math: subjectName === 'math' ? (test.score ?? 0) : 0,
-          English: subjectName === 'english' || subjectName === 'reading & writing' ? (test.score ?? 0) : 0,
-          Score: test.score ?? 0,
-          subject: test.subject,
-          id: test.practice_test_id || test.id,
-          date: test.date
-        };
-      });
-    }
+    /* ================= BUILD CHART DATA DYNAMICALLY ================= */
+    const chart = data.tests.map((test, index) => ({
+      name: test.test_name || `Test ${index + 1}`,
+      Overall: test.overall_score,
+      Math: test.math_score,
+      English: test.english_score,
+      id: test.test_submission_id
+    }));
 
-    // For practice tests, use different max score (800 per subject instead of 1600)
-    const isPractice = apiTestType === "PRACTICE";
-    const maxScore = isPractice ? 800 : 1600;
+  const isPractice = apiTestType === "PRACTICE";
+    const maxScore = isPractice ? 90 : 1600;
     
     const recentScore = chart.length > 0 
       ? (isPractice ? (chart[chart.length - 1].Score || 0) : (chart[chart.length - 1].Overall || 0))
       : 0;
     const percentage = maxScore > 0 ? Math.round((recentScore / maxScore) * 100) : 0;
 
-    console.log("Chart Data after mapping:", chart);
-    console.log("Chart length:", chart.length);
 
     setChartData(chart);
     setSummary({

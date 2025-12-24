@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import Select from "react-select";
 import axios from "axios"; // Also make sure axios is imported
-import { GET_Courses, GET_Students,BASE_URL } from "@/app/constants/apiConstants";
+import { GET_Students, BASE_URL } from "@/app/constants/apiConstants";
 
 function StatCard({ title, value }) {
   const router = useRouter();
@@ -148,16 +148,44 @@ useEffect(() => {
 
 
   useEffect(() => {
-  const fetchCourses = async () => {
+  const fetchStudentCourses = async () => {
     try {
-      const response = await axios.get(GET_Courses, { withCredentials: true });
-      setCourses(response.data);
+      if (selectedStudent === "All students") {
+        setCourses([]);
+        return;
+      }
+
+      const studentObj = students.find(
+        (s) => s.name === selectedStudent
+      );
+
+      if (!studentObj) {
+        setCourses([]);
+        return;
+      }
+
+      const response = await axios.get(
+        `${BASE_URL}/api/course/student-courses/?user_id=${studentObj.id}`,
+        { withCredentials: true }
+      );
+
+      setCourses(response.data || []);
+
+      // auto-select first course
+      if (response.data.length > 0) {
+        setSelectedCourse(response.data[0].name);
+        setSelectedTimeCourse(response.data[0].name);
+      }
+
     } catch (error) {
-      console.error("Error fetching courses:", error);
+      console.error("Error fetching student courses:", error);
+      setCourses([]);
     }
   };
-  fetchCourses();
-}, []);
+
+  fetchStudentCourses();
+}, [selectedStudent, students]);
+
 
 useEffect(() => {
   const fetchStudentsByMentor = async () => {
