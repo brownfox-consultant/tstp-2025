@@ -60,28 +60,28 @@ function Dashboard() {
   // LOAD COURSES
   // ============================
   useEffect(() => {
-  if (!studentId) return;
+    if (!studentId) return;
 
-  async function loadCourses() {
-    try {
-      const res = await axios.get(
-        `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
-        { withCredentials: true }
-      );
+    async function loadCourses() {
+      try {
+        const res = await axios.get(
+          `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
+          { withCredentials: true }
+        );
 
-      setCoursesList(res.data);
+        setCoursesList(res.data);
 
-      // Auto-select first assigned course
-      if (res.data.length > 0) {
-        setSelectedCourse(res.data[0].id);
+        // Auto-select first assigned course
+        if (res.data.length > 0) {
+          setSelectedCourse(res.data[0].id);
+        }
+      } catch (error) {
+        console.error("Error fetching student courses:", error);
       }
-    } catch (error) {
-      console.error("Error fetching student courses:", error);
     }
-  }
 
-  loadCourses();
-}, [studentId]);
+    loadCourses();
+  }, [studentId]);
 
   const selectedCourseName = useMemo(() => {
     const course = coursesList.find(c => c.id == selectedCourse);
@@ -164,35 +164,35 @@ function Dashboard() {
     async function loadTopicData() {
       try {
         setTopicDataLoading(true);
-        
+
         // Fetch Topic Wise Practice
         const practiceRes = await axios.get(
           `${BASE_URL}/api/result/Topic_Wise_Practice/?student_id=${studentId}&course_id=${selectedCourse}&test_type=${testType}`,
           { withCredentials: true }
         );
-        
+
         // Fetch Topic Wise Accuracy
         const accuracyRes = await axios.get(
           `${BASE_URL}/api/result/Topic_Wise_Accuracy/?student_id=${studentId}&course_id=${selectedCourse}&test_type=${testType}`,
           { withCredentials: true }
         );
-        
+
         // Fetch SubTopic Wise Practice
         const subtopicRes = await axios.get(
           `${BASE_URL}/api/result/SubTopic_Wise_Practice/?student_id=${studentId}&course_id=${selectedCourse}&test_type=${testType}`,
           { withCredentials: true }
         );
-        
+
         // Extract English data
         const englishPractice = practiceRes.data.find(item => item.subject === "English")?.topics || [];
         const englishAccuracy = accuracyRes.data.find(s => s.subject?.toLowerCase() === "english")?.topics || [];
         const englishSubtopic = subtopicRes.data.find(s => s.subject?.toLowerCase() === "english")?.topics || [];
-        
+
         // Extract Math data
         const mathPractice = practiceRes.data.find(item => item.subject === "Math")?.topics || [];
         const mathAccuracy = accuracyRes.data.find(s => s.subject?.toLowerCase() === "math")?.topics || [];
         const mathSubtopic = subtopicRes.data.find(s => s.subject?.toLowerCase() === "math")?.topics || [];
-        
+
         setEnglishTopicData({ practice: englishPractice, accuracy: englishAccuracy, subtopic: englishSubtopic });
         setMathTopicData({ practice: mathPractice, accuracy: mathAccuracy, subtopic: mathSubtopic });
       } catch (error) {
@@ -210,7 +210,7 @@ function Dashboard() {
   const hasEnglishData = useMemo(() => {
     const hasPractice = englishTopicData.practice.some(t => (t.practice_percent || 0) > 0);
     const hasAccuracy = englishTopicData.accuracy.some(t => (t.accuracy_percent || 0) > 0);
-    const hasSubtopic = englishTopicData.subtopic.some(t => 
+    const hasSubtopic = englishTopicData.subtopic.some(t =>
       t.subtopics?.some(s => (s.practiced_questions || 0) > 0 || (s.accuracy_percent || 0) > 0)
     );
     return hasPractice || hasAccuracy || hasSubtopic;
@@ -220,7 +220,7 @@ function Dashboard() {
   const hasMathData = useMemo(() => {
     const hasPractice = mathTopicData.practice.some(t => (t.practice_percent || 0) > 0);
     const hasAccuracy = mathTopicData.accuracy.some(t => (t.accuracy_percent || 0) > 0);
-    const hasSubtopic = mathTopicData.subtopic.some(t => 
+    const hasSubtopic = mathTopicData.subtopic.some(t =>
       t.subtopics?.some(s => (s.practiced_questions || 0) > 0 || (s.accuracy_percent || 0) > 0)
     );
     return hasPractice || hasAccuracy || hasSubtopic;
@@ -320,9 +320,10 @@ function Dashboard() {
       {activeReportTab === "score-analysis" && (
         <ScoreAnalysis
           student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
-        courseName={selectedCourseName} />
+          course_id={selectedCourse}
+          test_type={testType}
+          courseName={selectedCourseName}
+        />
       )}
 
       {activeReportTab === "subject" && (
@@ -334,7 +335,7 @@ function Dashboard() {
         </div>
       )}
 
-     
+
       {activeReportTab === "english" && (
         <>
           {topicDataLoading ? (

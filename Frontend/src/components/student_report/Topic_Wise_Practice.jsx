@@ -36,7 +36,7 @@ export default function Topic_Wise_Practice({
 
       setTopics(subjectData?.topics || []);
     } catch (err) {
-      console.error("Topic Wise Practice API Error:", err);
+      // console.error("Topic Wise Practice API Error:", err);
     } finally {
       setLoading(false);
     }

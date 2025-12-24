@@ -78,29 +78,65 @@ export default function ScoreAnalysis({
     );
 
     const data = res.data;
+    
+    // Debug: Log API response
+    console.log("Score Analysis API Response:", { test_type: apiTestType, data });
 
-    /* ================= BUILD CHART DATA DYNAMICALLY ================= */
-    const chart = data.tests.map((test, index) => ({
-      name: test.test_name || `Test ${index + 1}`,
-      Overall: test.overall_score,
-      Math: test.math_score,
-      English: test.english_score,
-      id: test.test_submission_id
-    }));
+    let chart = [];
+    
+    /* ================= HANDLE FULL LENGTH TESTS ================= */
+    if (apiTestType === "FULL_LENGTH" && Array.isArray(data.tests)) {
+      chart = data.tests.map((test, index) => ({
+        name: test.test_name || `Test ${index + 1}`,
+        Overall: test.overall_score ?? 0,
+        Math: test.math_score ?? 0,
+        English: test.english_score ?? 0,
+        id: test.test_submission_id
+      }));
+    }
+    
+    /* ================= HANDLE PRACTICE TESTS ================= */
+    // Note: Practice tests also come in data.tests according to the API
+    if (apiTestType === "PRACTICE" && Array.isArray(data.tests)) {
+      console.log("Practice tests array found:", data.tests);
+      
+      chart = data.tests.map((test, index) => {
+        const subjectName = test.subject?.toLowerCase() || '';
+        return {
+          name: test.test_name || test.name || `Practice ${index + 1}`,
+          Overall: 0,
+          Math: subjectName === 'math' ? (test.score ?? 0) : 0,
+          English: subjectName === 'english' || subjectName === 'reading & writing' ? (test.score ?? 0) : 0,
+          Score: test.score ?? 0,
+          subject: test.subject,
+          id: test.practice_test_id || test.id,
+          date: test.date
+        };
+      });
+    }
 
-    const maxScore = 1600; 
-    const recentScore = chart.length > 0 ? chart[chart.length - 1].Overall : 0;
-    const percentage = Math.round((recentScore / maxScore) * 100);
+    // For practice tests, use different max score (800 per subject instead of 1600)
+    const isPractice = apiTestType === "PRACTICE";
+    const maxScore = isPractice ? 800 : 1600;
+    
+    const recentScore = chart.length > 0 
+      ? (isPractice ? (chart[chart.length - 1].Score || 0) : (chart[chart.length - 1].Overall || 0))
+      : 0;
+    const percentage = maxScore > 0 ? Math.round((recentScore / maxScore) * 100) : 0;
+
+    console.log("Chart Data after mapping:", chart);
+    console.log("Chart length:", chart.length);
 
     setChartData(chart);
     setSummary({
-      overall_score: data.overall_score,
-      math_score: data.math_score,
-      english_score: data.english_score,
-      highest_score: data.highest_score,
-      improvement: data.improvement,
-      percentage,
+      overall_score: data.overall_score ?? 0,
+      math_score: data.math_score ?? 0,
+      english_score: data.english_score ?? 0,
+      highest_score: data.highest_score ?? 0,
+      improvement: data.improvement ?? 0,
+      percentage: percentage || 0,
       max_score: maxScore,
+      isPractice: isPractice,
     });
 
   } catch (err) {
@@ -127,6 +163,18 @@ export default function ScoreAnalysis({
       setStartIndex(prev => Math.min(chartData.length - visibleCount, prev + visibleCount));
     }
   };
+
+  /* ================= LOADING STATE ================= */
+  if (loading) {
+    return (
+      <div className="py-10">
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
+          <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading score analysis...</p>
+        </div>
+      </div>
+    );
+  }
 
   /* ================= EMPTY STATE ================= */
   if (!chartData || chartData.length === 0) {
@@ -194,27 +242,41 @@ export default function ScoreAnalysis({
                 />
                 <Tooltip />
 
-                <Bar
-                  dataKey="Overall"
-                  fill="#3b82f6"
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                  label={{ position: "top", fill: "#3b82f6", fontWeight: "bold", fontSize: 10 }}
-                />
-                <Bar
-                  dataKey="Math"
-                  fill="#818cf8"
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                  label={{ position: "top", fill: "#818cf8", fontWeight: "bold", fontSize: 10 }}
-                />
-                <Bar
-                  dataKey="English"
-                  fill="#10b981"
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                  label={{ position: "top", fill: "#10b981", fontWeight: "bold", fontSize: 10 }}
-                />
+                {/* For Practice Tests - Show single Score bar */}
+                {summary.isPractice ? (
+                  <Bar
+                    dataKey="Score"
+                    fill="#f59e0b"
+                    radius={[4, 4, 0, 0]}
+                    barSize={30}
+                    label={{ position: "top", fill: "#f59e0b", fontWeight: "bold", fontSize: 11 }}
+                  />
+                ) : (
+                  /* For Full Length Tests - Show Overall, Math, English bars */
+                  <>
+                    <Bar
+                      dataKey="Overall"
+                      fill="#3b82f6"
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                      label={{ position: "top", fill: "#3b82f6", fontWeight: "bold", fontSize: 10 }}
+                    />
+                    <Bar
+                      dataKey="Math"
+                      fill="#818cf8"
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                      label={{ position: "top", fill: "#818cf8", fontWeight: "bold", fontSize: 10 }}
+                    />
+                    <Bar
+                      dataKey="English"
+                      fill="#10b981"
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                      label={{ position: "top", fill: "#10b981", fontWeight: "bold", fontSize: 10 }}
+                    />
+                  </>
+                )}
               </BarChart>
             </ResponsiveContainer>
           </div>
