@@ -89,8 +89,16 @@ export default function ScoreAnalysis({
     }));
 
     const maxScore = 1600; 
-    const recentScore = chart.length > 0 ? chart[chart.length - 1].Overall : 0;
-    const percentage = Math.round((recentScore / maxScore) * 100);
+
+const avgScore =
+  chart.length > 0
+    ? chart.reduce((sum, test) => sum + test.Overall, 0) / chart.length
+    : 0;
+
+const percentage = Math.round((avgScore / maxScore) * 100);
+
+
+    
 
     setChartData(chart);
     setSummary({
