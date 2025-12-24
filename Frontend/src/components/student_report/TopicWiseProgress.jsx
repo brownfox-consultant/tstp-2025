@@ -52,7 +52,7 @@ const CustomTooltip = ({ active, payload }) => {
 export default function TopicWiseProgress({
   student_id,
   course_id,
-  subject ,
+  subject,
   test_type, // fullLength | practiceTest
 }) {
 
@@ -81,50 +81,39 @@ export default function TopicWiseProgress({
         withCredentials: true,
       }
     )
-    .then(res => {
-      setChartData(res.data.chartData || []);
-      setAccordionData(
-        (res.data.accordionData || []).map(topic => ({
-          ...topic,
-          icon: ICON_MAP[topic.title] || FaRegFileAlt,
-          iconBg: topic.score >= 75
-            ? "bg-emerald-50 text-emerald-600"
-            : "bg-orange-50 text-orange-600"
-        }))
-      );
-    })
-    .catch(err => {
-      console.error("Topic-wise progress API error:", err);
-    })
-    .finally(() => setLoading(false));
+      .then(res => {
+        setChartData(res.data.chartData || []);
+        setAccordionData(
+          (res.data.accordionData || []).map(topic => ({
+            ...topic,
+            icon: ICON_MAP[topic.title] || FaRegFileAlt,
+            iconBg: topic.score >= 75
+              ? "bg-emerald-50 text-emerald-600"
+              : "bg-orange-50 text-orange-600"
+          }))
+        );
+      })
+      .catch(err => {
+        console.error("Topic-wise progress API error:", err);
+      })
+      .finally(() => setLoading(false));
 
   }, [student_id, course_id, subject, test_type]);
-
-  /* ================= LOADING ================= */
-  if (loading) {
-    return (
-      <div className="py-20 text-center text-gray-500 text-lg">
-        Loading topic-wise progress…
-      </div>
-    );
-  }
 
   /* ================= EMPTY STATE ================= */
   if ((!chartData || chartData.length === 0) && (!accordionData || accordionData.length === 0)) {
     return (
-      <div className="py-10">
-        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl border border-emerald-200 p-12 text-center shadow-sm">
-          <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
-            <FaChartLine className="text-4xl text-emerald-400" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-700 mb-2">No Topic Progress Data</h3>
-          <p className="text-gray-500 max-w-md leading-relaxed">
-            Topic-wise progress data is not available yet. Complete tests to see your performance breakdown by topics and subtopics!
-          </p>
-          <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">
-            <FaBookReader className="text-gray-400" />
-            <span>Your topic accuracy and skills overview will appear here after taking tests</span>
-          </div>
+      <div className="flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl border border-emerald-200 p-12 text-center shadow-sm">
+        <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+          <FaChartLine className="text-4xl text-emerald-400" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-700 mb-2">No Topic Progress Data</h3>
+        <p className="text-gray-500 max-w-md leading-relaxed">
+          Topic-wise progress data is not available yet. Complete tests to see your performance breakdown by topics and subtopics!
+        </p>
+        <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">
+          <FaBookReader className="text-gray-400" />
+          <span>Your topic accuracy and skills overview will appear here after taking tests</span>
         </div>
       </div>
     );

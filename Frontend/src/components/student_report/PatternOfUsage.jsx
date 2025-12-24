@@ -124,21 +124,13 @@ export default function PatternOfUsage({
     setSelectedDate(data);
   };
 
-  /* ================= LOADING ================= */
 
-  if (loading) {
-    return (
-      <div className="text-center py-20 text-gray-500 text-lg">
-        Loading pattern of usage...
-      </div>
-    );
-  }
 
   /* ================= EMPTY STATE ================= */
   if (!usageData || usageData.length === 0) {
     return (
-      <div className="w-full py-10">
-        <div className="max-w-2xl mx-auto">
+      <div className="w-full">
+        <div className="mx-auto">
           <div className="flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-amber-100 rounded-2xl border border-orange-200 p-12 text-center shadow-sm">
             <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
               <FaClock className="text-4xl text-orange-400" />

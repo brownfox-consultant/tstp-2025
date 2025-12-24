@@ -41,9 +41,34 @@ export default function Math_SubTopicPractice({
     }
   };
 
-  if (loading) return <div className="py-10 text-center text-gray-500">Loading...</div>;
-  if (!topics.length)
-    return <div className="py-10 text-center text-gray-500">No math sub-topic data</div>;
+  // Check if no topics OR all subtopics have 0 values
+  const hasNoData = !topics.length || topics.every((t) => 
+    !t.subtopics?.length || t.subtopics.every((s) => 
+      (s.practiced_questions || 0) === 0 && (s.accuracy_percent || 0) === 0
+    )
+  );
+
+  
+  if (hasNoData) {
+    return (
+      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm">
+        <h2 className="text-lg md:text-xl font-extrabold text-gray-800 mb-6">
+          Sub – Topic Wise Practice
+        </h2>
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-xl border border-gray-200 p-10 text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h4 className="text-lg font-bold text-gray-700 mb-2">No Data Available</h4>
+          <p className="text-gray-500 text-sm max-w-xs leading-relaxed">
+            Start practicing to see your sub-topic wise practice distribution here!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   /* ---------------- UI ---------------- */
   return (
