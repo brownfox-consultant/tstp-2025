@@ -11,29 +11,41 @@ import {
   Tooltip,
 } from "recharts";
 import { BASE_URL } from "@/app/constants/apiConstants";
+import { useParams } from "next/navigation";
+
 
 const TestReportsChart = ({ date }) => {
   const [activeTab, setActiveTab] = useState("full");
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [lineChartData, setLineChartData] = useState([]);
+  const params = useParams();
+const studentId = params.id;
+
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const response = await axios.get(`${BASE_URL}/api/course/list/`, {
-          withCredentials: true,
-        });
-        setCourses(response.data);
-        if (response.data.length > 0) {
-          setSelectedCourse(response.data[0].id);
-        }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
+  if (!studentId) return;
+
+  const fetchCourses = async () => {
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
+        { withCredentials: true }
+      );
+
+      setCourses(response.data);
+
+      // auto select first assigned course
+      if (response.data.length > 0) {
+        setSelectedCourse(response.data[0].id);
       }
-    };
-    fetchCourses();
-  }, []);
+    } catch (error) {
+      console.error("Error fetching student courses:", error);
+    }
+  };
+
+  fetchCourses();
+}, [studentId]);
 
   useEffect(() => {
     if (!selectedCourse) return;

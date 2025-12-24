@@ -68,6 +68,39 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[AllowAny],
+    url_path='student-courses'
+)
+    def get_student_courses(self, request):
+        """
+        GET /api/course/student-courses/?user_id=123
+        """
+
+        user_id = request.query_params.get('user_id')
+
+        if not user_id:
+            return Response(
+                {"error": "user_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get course IDs assigned to the student
+        course_ids = CourseEnrollment.objects.filter(
+            student_id=user_id
+        ).values_list('course_id', flat=True)
+
+        # Fetch active courses only
+        courses = Course.objects.filter(
+            id__in=course_ids,
+            is_active=True
+        ).order_by('id')
+
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['get'], url_path='constants')
     def get_question_constants(self, request):
         # Get choices from Question model

@@ -55,21 +55,28 @@ function Dashboard() {
   // LOAD COURSES
   // ============================
   useEffect(() => {
-    async function loadCourses() {
-      try {
-        const res = await axios.get(`${BASE_URL}/api/course/list/`, {
-          withCredentials: true,
-        });
-        setCoursesList(res.data);
-        if (res.data.length > 0) {
-          setSelectedCourse(res.data[0].id);
-        }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
+  if (!studentId) return;
+
+  async function loadCourses() {
+    try {
+      const res = await axios.get(
+        `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
+        { withCredentials: true }
+      );
+
+      setCoursesList(res.data);
+
+      // Auto-select first assigned course
+      if (res.data.length > 0) {
+        setSelectedCourse(res.data[0].id);
       }
+    } catch (error) {
+      console.error("Error fetching student courses:", error);
     }
-    loadCourses();
-  }, []);
+  }
+
+  loadCourses();
+}, [studentId]);
 
   const selectedCourseName = useMemo(() => {
     const course = coursesList.find(c => c.id == selectedCourse);

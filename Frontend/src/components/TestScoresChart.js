@@ -14,7 +14,7 @@ import {
 import Select from "react-select";
 import axios from "axios";
 import { usePathname } from "next/navigation";
-import { BASE_URL, GET_Courses } from "@/app/constants/apiConstants";
+import { BASE_URL } from "@/app/constants/apiConstants";
 
 const GET_Subjects = (courseId) =>
   `${BASE_URL}/api/course/${courseId}/subjects/`;
@@ -47,12 +47,19 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
   // Fetch courses
-  useEffect(() => {
-    axios
-      .get(GET_Courses, { withCredentials: true })
-      .then((res) => setCourses(res.data))
-      .catch((err) => console.error("Courses fetch error:", err));
-  }, []);
+ useEffect(() => {
+  if (!studentId) return;
+
+  axios
+    .get(
+      `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
+      { withCredentials: true }
+    )
+    .then((res) => setCourses(res.data))
+    .catch((err) =>
+      console.error("Student courses fetch error:", err)
+    );
+}, [studentId]);
 
   // Fetch subjects for selected course
   useEffect(() => {

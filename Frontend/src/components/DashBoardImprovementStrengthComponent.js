@@ -46,16 +46,25 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
 
   // Fetch courses
   useEffect(() => {
-    axios
-      .get(`${BASE_URL}/api/course/list/`, { withCredentials: true })
-      .then((res) => {
-        setCourses(res.data);
-        if (res.data.length > 0) {
-          setSelectedCourse(res.data[0].id);
-        }
-      })
-      .catch((err) => console.error("Error loading courses", err));
-  }, []);
+  if (!studentId) return;
+
+  axios
+    .get(
+      `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
+      { withCredentials: true }
+    )
+    .then((res) => {
+      setCourses(res.data);
+
+      // auto select first assigned course
+      if (res.data.length > 0) {
+        setSelectedCourse(res.data[0].id);
+      }
+    })
+    .catch((err) =>
+      console.error("Error loading student courses", err)
+    );
+}, [studentId]);
 
   // Fetch strengths and improvements
   useEffect(() => {
