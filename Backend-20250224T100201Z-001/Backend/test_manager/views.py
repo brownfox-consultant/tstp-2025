@@ -3833,13 +3833,13 @@ class ResultViewSet(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated],
     url_path="topic-wise-progress"
 )
-    def topic_wise_progress(self, request):
+    def topic_wise_progress_average(self, request):
 
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
         subject_name = request.GET.get("subject")        # ENGLISH / MATH
         test_type = request.GET.get("test_type")         # FULL_LENGTH / PRACTICE
-        
+
         if not all([student_id, course_id, subject_name, test_type]):
             return Response(
                 {"error": "student_id, course_id, subject and test_type are required"},
@@ -3863,68 +3863,59 @@ class ResultViewSet(viewsets.ModelViewSet):
         topic_map = {}
 
         # =====================================================
-        # 2️⃣ FULL LENGTH TEST LOGIC
+        # 2️⃣ FULL LENGTH — ALL TESTS
         # =====================================================
         if test_type == "FULL_LENGTH":
 
-            submission = (
+            submissions = (
                 TestSubmission.objects
                 .filter(
                     student=student,
                     test__course=course,
                     status=TestSubmission.COMPLETED
                 )
-                .select_related("test", "result")
-                .order_by("-completion_date")
-                .first()
+                .select_related("result")
             )
 
-            if not submission or not hasattr(submission, "result"):
+            if not submissions.exists():
                 return Response({"results": []})
 
             answers = QuestionAnswer.objects.filter(
-                result=submission.result,
+                result__in=submissions.values("result"),
                 course_subject=course_subject,
                 is_skipped=False
-            ).select_related("question", "question__topic")
+            ).select_related("question", "question__topic", "question__sub_topic")
+
 
         # =====================================================
-        # 3️⃣ PRACTICE TEST LOGIC
+        # 3️⃣ PRACTICE — ALL TESTS
         # =====================================================
         elif test_type == "PRACTICE":
 
-            practice_result = (
-                PracticeTestResult.objects
-                .filter(
-                    practice_test__student=student,
-                    practice_test__course_subject=course_subject
-                )
-                .order_by("-created_at")
-                .first()
+            practice_results = PracticeTestResult.objects.filter(
+                practice_test__student=student,
+                practice_test__course_subject=course_subject
             )
 
-            if not practice_result:
+            if not practice_results.exists():
                 return Response({"results": []})
 
             answers = PracticeQuestionAnswer.objects.filter(
-                practice_test_result=practice_result,
+                practice_test_result__in=practice_results,
                 is_skipped=False
-            ).select_related("question", "question__topic")
+            ).select_related("question", "question__topic", "question__sub_topic")
 
         else:
             return Response({"error": "Invalid test_type"}, status=400)
 
         # =====================================================
-        # 4️⃣ AGGREGATE TOPIC + SUBTOPIC
+        # 4️⃣ AGGREGATE TOPIC + SUBTOPIC (AVERAGE)
         # =====================================================
         for ans in answers:
 
-            topic = ans.question.topic.name if ans.question.topic else "General"
-            sub_topic = (
-                ans.question.sub_topic.name
-                if hasattr(ans.question, "sub_topic") and ans.question.sub_topic
-                else "General"
-            )
+            question = ans.question
+            topic = question.topic.name if question.topic else "General"
+            sub_topic = question.sub_topic.name if question.sub_topic else "General"
 
             topic_map.setdefault(topic, {
                 "correct": 0,
@@ -3936,14 +3927,14 @@ class ResultViewSet(viewsets.ModelViewSet):
             if ans.is_correct:
                 topic_map[topic]["correct"] += 1
 
-            st = topic_map[topic]["sub_topics"].setdefault(sub_topic, {
+            sub_map = topic_map[topic]["sub_topics"].setdefault(sub_topic, {
                 "correct": 0,
                 "total": 0
             })
 
-            st["total"] += 1
+            sub_map["total"] += 1
             if ans.is_correct:
-                st["correct"] += 1
+                sub_map["correct"] += 1
 
         # =====================================================
         # 5️⃣ FORMAT RESPONSE (FRONTEND READY)
@@ -3952,7 +3943,10 @@ class ResultViewSet(viewsets.ModelViewSet):
         accordion_data = []
 
         for topic, data in topic_map.items():
-            topic_score = round((data["correct"] / data["total"]) * 100) if data["total"] else 0
+
+            topic_score = round(
+                (data["correct"] / data["total"]) * 100
+            ) if data["total"] else 0
 
             chart_data.append({
                 "shortName": topic.split()[0],
@@ -3965,19 +3959,32 @@ class ResultViewSet(viewsets.ModelViewSet):
                 "score": topic_score,
                 "subTopics": [
                     {
-                        "name": sub,
-                        "score": round((v["correct"] / v["total"]) * 100) if v["total"] else 0,
-                        "status": "Strong" if (v["correct"] / v["total"]) >= 0.75 else "On Track"
+                        "name": sub_topic,
+                        "score": round(
+                            (v["correct"] / v["total"]) * 100
+                        ) if v["total"] else 0,
+                        "status": (
+                            "Strong" if (v["correct"] / v["total"]) >= 0.75
+                            else "On Track" if (v["correct"] / v["total"]) >= 0.5
+                            else "Needs Improvement"
+                        )
                     }
-                    for sub, v in data["sub_topics"].items()
+                    for sub_topic, v in data["sub_topics"].items()
                 ]
             })
 
         return Response({
+            "mode": "AVERAGE",
             "test_type": test_type,
+            "total_tests_considered": (
+                submissions.count() if test_type == "FULL_LENGTH"
+                else practice_results.count()
+            ),
             "chartData": chart_data,
             "accordionData": accordion_data
         })
+
+
     @action(
     detail=False,
     methods=["GET"],
@@ -4027,58 +4034,49 @@ class ResultViewSet(viewsets.ModelViewSet):
             previous_overall = None
 
             for submission in submissions:
-                result = getattr(submission, "result", None)
-                if not result:
-                    continue
-
                 test = submission.test
+                result = submission.result
 
                 math_score = 0
                 english_score = 0
 
-                # -------------------------------------------------
-                # Count correct answers per section
-                # -------------------------------------------------
-                sections = Section.objects.filter(test=test)
-                section_correct = {}
+                sections = Section.objects.filter(test=test).order_by("order")
 
                 for section in sections:
-                    cs = section.course_subject
-                    subject_name = cs.subject.name.lower()
+                    course_subject = section.course_subject
+                    subject_name = course_subject.subject.name.lower()
 
-                    correct_count = QuestionAnswer.objects.filter(
-                        result=result,
-                        course_subject=cs,
-                        is_correct=True
-                    ).count()
+                    # 👇 EXACT SAME AS details API
+                    section_1_correct = 0
+                    section_2_correct = 0
 
-                    section_correct.setdefault(subject_name, []).append(correct_count)
+                    for sub_section in section.sub_sections:
+                        correct_count = QuestionAnswer.objects.filter(
+                            result=result,
+                            course_subject=course_subject,
+                            section_id=sub_section["id"],
+                            is_correct=True
+                        ).count()
 
-                # -------------------------------------------------
-                # Apply CombinedScore (SAT logic)
-                # -------------------------------------------------
-                for subject_name, correct_list in section_correct.items():
+                        if sub_section["id"] == 1:
+                            section_1_correct = correct_count
+                        elif sub_section["id"] == 2:
+                            section_2_correct = correct_count
 
-                    section1 = correct_list[0] if len(correct_list) > 0 else 0
-                    section2 = correct_list[1] if len(correct_list) > 1 else 0
-
-                    score_row = CombinedScore.objects.filter(
+                    score_record = CombinedScore.objects.filter(
                         subject_name__iexact=subject_name,
-                        section1_correct=section1,
-                        section2_correct=section2
+                        section1_correct=section_1_correct,
+                        section2_correct=section_2_correct
                     ).first()
 
-                    if score_row:
+                    if score_record:
                         if subject_name == "math":
-                            math_score = score_row.total_score
-                        else:  # english / reading-writing
-                            english_score = score_row.total_score
+                            math_score = score_record.total_score
+                        else:
+                            english_score = score_record.total_score
 
                 overall = math_score + english_score
 
-                # -------------------------------------------------
-                # Aggregate response
-                # -------------------------------------------------
                 response["tests"].append({
                     "test_submission_id": submission.id,
                     "test_name": test.name,
@@ -4097,6 +4095,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                 response["math_score"] = math_score
                 response["english_score"] = english_score
 
+
         # =====================================================
         # ✅ PRACTICE TEST (NO CombinedScore)
         # =====================================================
@@ -4108,11 +4107,41 @@ class ResultViewSet(viewsets.ModelViewSet):
                     practice_test__student=student,
                     practice_test__course_subject__course=course
                 )
+                .select_related("practice_test", "practice_test__course_subject__subject")
                 .order_by("created_at")
             )
 
+            prev_score = None
+
             for r in practice_results:
+                subject_name = r.practice_test.course_subject.subject.name.lower()
+
+                # subject-wise score
+                if subject_name == "math":
+                    response["math_score"] += r.correct_answer_count
+                else:
+                    response["english_score"] += r.correct_answer_count
+
                 response["overall_score"] += r.correct_answer_count
+
+                # per-test history
+                response["tests"].append({
+                    "practice_test_id": r.practice_test.id,
+                    "subject": subject_name,
+                    "score": r.correct_answer_count,
+                    "date": r.created_at.date()
+                })
+
+                response["highest_score"] = max(
+                    response["highest_score"],
+                    r.correct_answer_count
+                )
+
+                if prev_score is not None:
+                    response["improvement"] = r.correct_answer_count - prev_score
+
+                prev_score = r.correct_answer_count
+
 
         else:
             return Response({"error": "Invalid test_type"}, status=400)
