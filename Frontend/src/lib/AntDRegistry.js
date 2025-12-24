@@ -5,7 +5,8 @@ import { createCache, extractStyle, StyleProvider } from "@ant-design/cssinjs";
 import { useServerInsertedHTML } from "next/navigation";
 
 const StyledComponentsRegistry = ({ children }) => {
-  const cache = React.useMemo(() => createCache());
+  const [cache] = React.useState(() => createCache());
+  
   useServerInsertedHTML(() => (
     <style
       id="antd"

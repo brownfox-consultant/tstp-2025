@@ -31,7 +31,8 @@ import UtilisationOfResources from "@/components/student_report/UtilisationOfRes
 import PatternOfUsage from "@/components/student_report/PatternOfUsage";
 // import DateWiseReport from "@/components/student_report/DateWiseReport";
 import TopicWiseProgress from "@/components/student_report/TopicWiseProgress";
-import ScoreAnalysis from "@/components/student_report/ScoreAnalysis";
+import ScoreAnalysis_FullLengthTest from "@/components/student_report/ScoreAnalysis_FullLengthTest";
+import ScoreAnalysis_PracticeTest from "@/components/student_report/ScoreAnalysis_PracticeTest";
 
 
 
@@ -318,12 +319,19 @@ function Dashboard() {
 
 
       {activeReportTab === "score-analysis" && (
-        <ScoreAnalysis
-          student_id={studentId}
-          course_id={selectedCourse}
-          test_type={testType}
-          courseName={selectedCourseName}
-        />
+        testType === "practiceTest" ? (
+          <ScoreAnalysis_PracticeTest
+            student_id={studentId}
+            course_id={selectedCourse}
+            courseName={selectedCourseName}
+          />
+        ) : (
+          <ScoreAnalysis_FullLengthTest
+            student_id={studentId}
+            course_id={selectedCourse}
+            courseName={selectedCourseName}
+          />
+        )
       )}
 
       {activeReportTab === "subject" && (

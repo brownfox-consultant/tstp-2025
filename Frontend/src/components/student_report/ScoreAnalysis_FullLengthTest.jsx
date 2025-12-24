@@ -10,13 +10,13 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 import { BASE_URL } from "@/app/constants/apiConstants";
 
-export default function ScoreAnalysis({
+export default function ScoreAnalysis_FullLengthTest({
   student_id,
   course_id,
-  test_type,   // fullLength | practiceTest
   courseName = "Course",
 }) {
   const [chartData, setChartData] = useState([]);
@@ -30,10 +30,10 @@ export default function ScoreAnalysis({
   useEffect(() => {
     const updateVisibleCount = () => {
       const width = window.innerWidth;
-
+      
       // Hide buttons below 500px
       setHideButtons(width < 500);
-
+      
       if (width < 640) {
         setVisibleCount(2);
       } else if (width < 1024) {
@@ -41,9 +41,9 @@ export default function ScoreAnalysis({
       } else if (width < 1300) {
         setVisibleCount(6);
       } else if (width < 1400) {
-        setVisibleCount(8);
+        setVisibleCount(8); 
       } else {
-        setVisibleCount(10);
+        setVisibleCount(10); 
       }
     };
 
@@ -54,16 +54,13 @@ export default function ScoreAnalysis({
 
   /* ================= FETCH API ================= */
   useEffect(() => {
-    if (!student_id || !course_id || !test_type) return;
+    if (!student_id || !course_id) return;
     fetchScoreAnalysis();
-  }, [student_id, course_id, test_type]);
+  }, [student_id, course_id]);
 
   const fetchScoreAnalysis = async () => {
     try {
       setLoading(true);
-
-      const apiTestType =
-        test_type === "fullLength" ? "FULL_LENGTH" : "PRACTICE";
 
       const res = await axios.get(
         `${BASE_URL}/api/result/score-analysis/`,
@@ -71,18 +68,18 @@ export default function ScoreAnalysis({
           params: {
             student_id,
             course_id,
-            test_type: apiTestType,
+            test_type: "FULL_LENGTH",
           },
           withCredentials: true,
         }
       );
 
       const data = res.data;
-
+      
       let chart = [];
-
+      
       /* ================= HANDLE FULL LENGTH TESTS ================= */
-      if (apiTestType === "FULL_LENGTH" && Array.isArray(data.tests)) {
+      if (Array.isArray(data.tests)) {
         chart = data.tests.map((test, index) => ({
           name: test.test_name || `Test ${index + 1}`,
           Overall: test.overall_score,
@@ -92,23 +89,12 @@ export default function ScoreAnalysis({
         }));
       }
 
- 
-
-      const isPractice = apiTestType === "PRACTICE";
       const maxScore = 1600;
-
-      const avgScore =
-        chart.length > 0
-          ? chart.reduce((sum, test) => sum + test.Overall, 0) / chart.length
-          : 0;
-
-      const percentage = Math.round((avgScore / maxScore) * 100);
-      const recentScore = chart.length > 0
-        ? (isPractice ? (chart[chart.length - 1].Score || 0) : (chart[chart.length - 1].Overall || 0))
+      
+      const recentScore = chart.length > 0 
+        ? (chart[chart.length - 1].Overall || 0)
         : 0;
-
-      console.log("Chart Data after mapping:", chart);
-      console.log("Chart length:", chart.length);
+      const percentage = maxScore > 0 ? Math.round((recentScore / maxScore) * 100) : 0;
 
       setChartData(chart);
       setSummary({
@@ -119,11 +105,10 @@ export default function ScoreAnalysis({
         improvement: data.improvement ?? 0,
         percentage: percentage || 0,
         max_score: maxScore,
-        isPractice: isPractice,
       });
 
     } catch (err) {
-      console.error("Score analysis API error:", err);
+      console.error("Full Length Test Score analysis API error:", err);
     } finally {
       setLoading(false);
     }
@@ -153,7 +138,7 @@ export default function ScoreAnalysis({
       <div className="py-10">
         <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
           <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading score analysis...</p>
+          <p className="text-gray-600 font-medium">Loading Full-Length Test score analysis...</p>
         </div>
       </div>
     );
@@ -169,16 +154,10 @@ export default function ScoreAnalysis({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-700 mb-2">No Test Data Available</h3>
+          <h3 className="text-xl font-bold text-gray-700 mb-2">No Full-Length Test Data Available</h3>
           <p className="text-gray-500 max-w-md leading-relaxed">
-            You haven't taken any tests for this course yet. Complete your first test to see your score analysis and track your performance over time!
+            You haven't taken any Full-Length tests for this course yet. Complete your first test to see your score analysis!
           </p>
-          <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            <span>Your score trends and analytics will appear here after completing tests</span>
-          </div>
         </div>
       </div>
     );
@@ -188,12 +167,12 @@ export default function ScoreAnalysis({
 
   /* ================= RENDER ================= */
   return (
-    <div className="space-y-8 animate-fadeIn mb-10">
+    <div className="space-y-8 animate-fadeIn">
 
       {/* ================= SCORE CHART ================= */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">
-          {courseName} Analysis
+          Full-Length Test - {courseName} Analysis
         </h3>
 
         {/* Chart with Navigation Arrows */}
@@ -202,7 +181,7 @@ export default function ScoreAnalysis({
           {!hideButtons && needsPagination && canGoLeft && (
             <button
               onClick={handlePrev}
-              className="absolute left-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-cyan-500 text-white shadow-lg hover:bg-cyan-600 hover:scale-110 cursor-pointer"
+              className="absolute left-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-blue-500 text-white shadow-lg hover:bg-blue-600 hover:scale-110 cursor-pointer"
               style={{ left: '-5px' }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,46 +199,34 @@ export default function ScoreAnalysis({
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  domain={[0, summary.max_score || 1600]}
+                  domain={[0, 1600]}
                   fontSize={11}
                 />
                 <Tooltip />
-
-                {/* For Practice Tests - Show single Score bar */}
-                {summary.isPractice ? (
-                  <Bar
-                    dataKey="Score"
-                    fill="#f59e0b"
-                    radius={[4, 4, 0, 0]}
-                    barSize={30}
-                    label={{ position: "top", fill: "#f59e0b", fontWeight: "bold", fontSize: 11 }}
-                  />
-                ) : (
-                  /* For Full Length Tests - Show Overall, Math, English bars */
-                  <>
-                    <Bar
-                      dataKey="Overall"
-                      fill="#3b82f6"
-                      radius={[4, 4, 0, 0]}
-                      barSize={20}
-                      label={{ position: "top", fill: "#3b82f6", fontWeight: "bold", fontSize: 10 }}
-                    />
-                    <Bar
-                      dataKey="Math"
-                      fill="#818cf8"
-                      radius={[4, 4, 0, 0]}
-                      barSize={20}
-                      label={{ position: "top", fill: "#818cf8", fontWeight: "bold", fontSize: 10 }}
-                    />
-                    <Bar
-                      dataKey="English"
-                      fill="#10b981"
-                      radius={[4, 4, 0, 0]}
-                      barSize={20}
-                      label={{ position: "top", fill: "#10b981", fontWeight: "bold", fontSize: 10 }}
-                    />
-                  </>
-                )}
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                
+                {/* Full Length Tests - Show Overall, Math, English bars */}
+                <Bar
+                  dataKey="Overall"
+                  fill="#3b82f6"
+                  radius={[4, 4, 0, 0]}
+                  barSize={20}
+                  name="Overall"
+                />
+                <Bar
+                  dataKey="Math"
+                  fill="#818cf8"
+                  radius={[4, 4, 0, 0]}
+                  barSize={20}
+                  name="Math"
+                />
+                <Bar
+                  dataKey="English"
+                  fill="#10b981"
+                  radius={[4, 4, 0, 0]}
+                  barSize={20}
+                  name="English"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -268,7 +235,7 @@ export default function ScoreAnalysis({
           {!hideButtons && needsPagination && canGoRight && (
             <button
               onClick={handleNext}
-              className="absolute right-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-cyan-500 text-white shadow-lg hover:bg-cyan-600 hover:scale-110 cursor-pointer"
+              className="absolute right-0 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-blue-500 text-white shadow-lg hover:bg-blue-600 hover:scale-110 cursor-pointer"
               style={{ right: '-5px' }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,10 +252,11 @@ export default function ScoreAnalysis({
               <button
                 key={idx}
                 onClick={() => setStartIndex(idx * visibleCount)}
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${Math.floor(startIndex / visibleCount) === idx
-                    ? 'bg-cyan-500 w-6'
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
+                  Math.floor(startIndex / visibleCount) === idx 
+                    ? 'bg-blue-500 w-6' 
                     : 'bg-gray-300 hover:bg-gray-400'
-                  }`}
+                }`}
               />
             ))}
           </div>
@@ -299,19 +267,19 @@ export default function ScoreAnalysis({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
         {/* Percentage */}
-        <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-[#FFF8EB] to-[#FFF0D4]">
-          <h4 className="text-sm font-semibold uppercase mb-2 text-[#805830]">
+        <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-[#EBF4FF] to-[#D4E4FF]">
+          <h4 className="text-sm font-semibold uppercase mb-2 text-[#1e40af]">
             {courseName} Percentage
           </h4>
-          <div className="text-5xl font-black text-[#F59403]">
+          <div className="text-5xl font-black text-[#3b82f6]">
             {summary.percentage}%
           </div>
-          <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+          <div className="mt-3 w-full bg-blue-100 rounded-full h-2">
             <div
               className="h-2 rounded-full"
               style={{
                 width: `${summary.percentage}%`,
-                background: "linear-gradient(90deg, #F59403, #FFD36A)",
+                background: "linear-gradient(90deg, #3b82f6, #60a5fa)",
               }}
             />
           </div>
@@ -331,14 +299,14 @@ export default function ScoreAnalysis({
         </div>
 
         {/* Improvement */}
-        <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-[#FAF5F0] to-[#F5EBE0]">
-          <h4 className="text-sm font-semibold uppercase mb-2 text-[#805830]">
+        <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]">
+          <h4 className="text-sm font-semibold uppercase mb-2 text-[#065f46]">
             Score Improvement
           </h4>
-          <div className="text-5xl font-black text-[#805830]">
-            {summary.improvement}
+          <div className="text-5xl font-black text-[#10b981]">
+            {summary.improvement > 0 ? `+${summary.improvement}` : summary.improvement}
           </div>
-          <p className="mt-2 text-xs text-[#2E2725]">
+          <p className="mt-2 text-xs text-[#047857]">
             Compared to last 2 tests
           </p>
         </div>

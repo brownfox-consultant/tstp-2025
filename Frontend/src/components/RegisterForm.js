@@ -48,8 +48,9 @@ function RegisterForm() {
   useEffect(() => {
   getCoursesOutsideAuth()
     .then((res) => {
-      const filtered = res.data.filter(
-        (course) => course.name === "DSAT - Scholarship Test"
+      const data = res?.data || [];
+      const filtered = data.filter(
+        (course) => course?.name === "DSAT - Scholarship Test"
       );
       setOptions(filtered);
     })

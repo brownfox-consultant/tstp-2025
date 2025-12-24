@@ -144,7 +144,7 @@ export default function TopicWiseProgress({
 const ChartsSection = ({ chartData }) => (
   <div className="flex flex-wrap gap-6">
 
-    {/* BAR CHART */}
+    {/* HORIZONTAL BAR CHART */}
     <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[300px]">
       <h3 className="font-bold mb-4">Topic Progress Comparison</h3>
 
@@ -172,24 +172,49 @@ const ChartsSection = ({ chartData }) => (
       </div>
     </div>
 
-    {/* RADAR CHART */}
+    {/* VERTICAL COLUMN BAR CHART (replaced Radar) */}
     <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[300px]">
       <h3 className="font-bold mb-4">Skills Overview</h3>
 
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={chartData}>
-            <PolarGrid />
-            <PolarAngleAxis dataKey="shortName" />
-            <PolarRadiusAxis domain={[0, 100]} />
-            <Radar
-              dataKey="value"
-              stroke={COLORS.orange}
-              fill={COLORS.orange}
-              fillOpacity={0.5}
+          <BarChart data={chartData} barGap={8} barCategoryGap="20%">
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+            <XAxis 
+              dataKey="shortName" 
+              axisLine={false} 
+              tickLine={false} 
+              fontSize={11}
+              angle={-20}
+              textAnchor="end"
+              height={60}
             />
-            <Legend />
-          </RadarChart>
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              domain={[0, 100]}
+              tickFormatter={v => `${v}%`}
+              fontSize={11}
+            />
+            <RechartsTooltip content={<CustomTooltip />} />
+            <Legend 
+              wrapperStyle={{ paddingTop: '10px' }}
+              formatter={() => 'Accuracy'}
+            />
+            <Bar 
+              dataKey="value" 
+              name="Accuracy"
+              radius={[6, 6, 0, 0]} 
+              barSize={40}
+            >
+              {chartData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry.value >= 75 ? COLORS.green : COLORS.orange}
+                />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
