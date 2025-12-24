@@ -98,6 +98,9 @@ function DashboardLayout({ children }) {
   const [logoutLoading, setLogoutLoading] = useState(false);
   const router = useRouter();
   const [csrfToken, setCsrfToken] = useState(undefined);
+  
+  // Ref to track if logout is in progress to prevent duplicate logout calls
+  const isLoggingOut = React.useRef(false);
 
   const { id } = useParams();
 
@@ -108,6 +111,10 @@ function DashboardLayout({ children }) {
   const { collapsed, setCollapsed } = useGlobalContext();
 
   const handleLogout = useCallback(async () => {
+    // Prevent duplicate logout calls
+    if (isLoggingOut.current) return;
+    isLoggingOut.current = true;
+    
     setLogoutLoading(true);
     try {
       await logoutService(csrfToken);
@@ -142,8 +149,14 @@ function DashboardLayout({ children }) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Skip if already logging out
+      if (isLoggingOut.current) return;
+      
       const storedName = window.localStorage.getItem("name");
-      if (storedName == null) handleLogout();
+      if (storedName == null) {
+        handleLogout();
+        return;
+      }
       if (window.localStorage.getItem("csrfToken")) {
         setCsrfToken(window.localStorage.getItem("csrfToken"));
         setEmail(window.localStorage.getItem("email"));
@@ -152,7 +165,7 @@ function DashboardLayout({ children }) {
         router.replace("/login");
       }
     }
-  }, [handleLogout]);
+  }, [handleLogout, router]);
 
   // Sidebar widths
   const sidebarWidth = collapsed ? 67 : 280;
