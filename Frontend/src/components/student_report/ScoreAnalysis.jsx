@@ -128,15 +128,6 @@ export default function ScoreAnalysis({
     }
   };
 
-  /* ================= LOADING ================= */
-  if (loading) {
-    return (
-      <div className="py-20 text-center text-gray-500">
-        Loading score analysis...
-      </div>
-    );
-  }
-
   /* ================= EMPTY STATE ================= */
   if (!chartData || chartData.length === 0) {
     return (

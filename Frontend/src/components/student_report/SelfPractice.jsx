@@ -43,10 +43,6 @@ export default function SelfPractice({ student_id, course_id }) {
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-10">Loading self practice scoreboard...</div>;
-  }
-
   const handleKnowMore = () => {
     router.push(`/student/${student_id}/test/practice`);
   };

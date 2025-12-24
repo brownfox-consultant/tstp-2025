@@ -15,24 +15,10 @@ import { BASE_URL } from "@/app/constants/apiConstants";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-// Wrap long labels
-const formatLabel = (str, maxLen = 14) => {
+// Return label as single line (no wrapping)
+const formatLabel = (str) => {
   if (!str) return "";
-  if (str.length <= maxLen) return str;
-  const words = str.split(" ");
-  const lines = [];
-  let current = words[0];
-
-  for (let i = 1; i < words.length; i++) {
-    if ((current + " " + words[i]).length <= maxLen) {
-      current += " " + words[i];
-    } else {
-      lines.push(current);
-      current = words[i];
-    }
-  }
-  lines.push(current);
-  return lines;
+  return str;
 };
 
 export default function SubTopicPracticeStyled({
@@ -74,7 +60,14 @@ export default function SubTopicPracticeStyled({
 
   if (loading) return <div>Loading...</div>;
 
-  if (!topics.length) {
+  // Check if no topics OR all subtopics have 0 values
+  const hasNoData = !topics.length || topics.every((t) => 
+    !t.subtopics?.length || t.subtopics.every((s) => 
+      (s.practiced_questions || 0) === 0 && (s.accuracy_percent || 0) === 0
+    )
+  );
+
+  if (hasNoData) {
     return (
       <div className="w-full py-6 px-4">
         <div className="bg-white rounded-xl px-4 py-2 inline-block mb-6 shadow-sm">
@@ -82,8 +75,16 @@ export default function SubTopicPracticeStyled({
             Sub – Topic Wise Practice
           </h2>
         </div>
-        <div className="text-center text-gray-500 mt-8">
-          No sub-topic data available
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-xl border border-gray-200 p-10 text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h4 className="text-lg font-bold text-gray-700 mb-2">No Data Available</h4>
+          <p className="text-gray-500 text-sm max-w-xs leading-relaxed">
+            Start practicing to see your sub-topic wise practice distribution here!
+          </p>
         </div>
       </div>
     );

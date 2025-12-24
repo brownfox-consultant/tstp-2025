@@ -48,6 +48,11 @@ function Dashboard() {
   const [timeData, setTimeData] = useState([]);
   const [dateWiseData, setDateWiseData] = useState([]);
 
+  // Topic wise data for English and Math sections
+  const [englishTopicData, setEnglishTopicData] = useState({ practice: [], accuracy: [], subtopic: [] });
+  const [mathTopicData, setMathTopicData] = useState({ practice: [], accuracy: [], subtopic: [] });
+  const [topicDataLoading, setTopicDataLoading] = useState(false);
+
   const params = useParams();
   const studentId = params.id;
 
@@ -150,6 +155,76 @@ function Dashboard() {
     }
     loadDateWise();
   }, [selectedCourse, testType, studentId]);
+
+  // ============================
+  // TOPIC WISE DATA (FOR ENGLISH & MATH)
+  // ============================
+  useEffect(() => {
+    if (!selectedCourse || !studentId) return;
+    async function loadTopicData() {
+      try {
+        setTopicDataLoading(true);
+        
+        // Fetch Topic Wise Practice
+        const practiceRes = await axios.get(
+          `${BASE_URL}/api/result/Topic_Wise_Practice/?student_id=${studentId}&course_id=${selectedCourse}&test_type=${testType}`,
+          { withCredentials: true }
+        );
+        
+        // Fetch Topic Wise Accuracy
+        const accuracyRes = await axios.get(
+          `${BASE_URL}/api/result/Topic_Wise_Accuracy/?student_id=${studentId}&course_id=${selectedCourse}&test_type=${testType}`,
+          { withCredentials: true }
+        );
+        
+        // Fetch SubTopic Wise Practice
+        const subtopicRes = await axios.get(
+          `${BASE_URL}/api/result/SubTopic_Wise_Practice/?student_id=${studentId}&course_id=${selectedCourse}&test_type=${testType}`,
+          { withCredentials: true }
+        );
+        
+        // Extract English data
+        const englishPractice = practiceRes.data.find(item => item.subject === "English")?.topics || [];
+        const englishAccuracy = accuracyRes.data.find(s => s.subject?.toLowerCase() === "english")?.topics || [];
+        const englishSubtopic = subtopicRes.data.find(s => s.subject?.toLowerCase() === "english")?.topics || [];
+        
+        // Extract Math data
+        const mathPractice = practiceRes.data.find(item => item.subject === "Math")?.topics || [];
+        const mathAccuracy = accuracyRes.data.find(s => s.subject?.toLowerCase() === "math")?.topics || [];
+        const mathSubtopic = subtopicRes.data.find(s => s.subject?.toLowerCase() === "math")?.topics || [];
+        
+        setEnglishTopicData({ practice: englishPractice, accuracy: englishAccuracy, subtopic: englishSubtopic });
+        setMathTopicData({ practice: mathPractice, accuracy: mathAccuracy, subtopic: mathSubtopic });
+      } catch (error) {
+        console.error("Error loading topic data:", error);
+        setEnglishTopicData({ practice: [], accuracy: [], subtopic: [] });
+        setMathTopicData({ practice: [], accuracy: [], subtopic: [] });
+      } finally {
+        setTopicDataLoading(false);
+      }
+    }
+    loadTopicData();
+  }, [selectedCourse, testType, studentId]);
+
+  // Check if English has any meaningful data
+  const hasEnglishData = useMemo(() => {
+    const hasPractice = englishTopicData.practice.some(t => (t.practice_percent || 0) > 0);
+    const hasAccuracy = englishTopicData.accuracy.some(t => (t.accuracy_percent || 0) > 0);
+    const hasSubtopic = englishTopicData.subtopic.some(t => 
+      t.subtopics?.some(s => (s.practiced_questions || 0) > 0 || (s.accuracy_percent || 0) > 0)
+    );
+    return hasPractice || hasAccuracy || hasSubtopic;
+  }, [englishTopicData]);
+
+  // Check if Math has any meaningful data
+  const hasMathData = useMemo(() => {
+    const hasPractice = mathTopicData.practice.some(t => (t.practice_percent || 0) > 0);
+    const hasAccuracy = mathTopicData.accuracy.some(t => (t.accuracy_percent || 0) > 0);
+    const hasSubtopic = mathTopicData.subtopic.some(t => 
+      t.subtopics?.some(s => (s.practiced_questions || 0) > 0 || (s.accuracy_percent || 0) > 0)
+    );
+    return hasPractice || hasAccuracy || hasSubtopic;
+  }, [mathTopicData]);
 
   // ============================
   // MEMO DATA
@@ -262,60 +337,94 @@ function Dashboard() {
      
       {activeReportTab === "english" && (
         <>
-          <div className="grid grid-cols-2 gap-[25px] max-[1300px]:grid-cols-1">
-            <Topic_Wise_Practice
-              student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
-              subject="English"
-            />
+          {topicDataLoading ? (
+            <div className="py-20 text-center text-gray-500 text-lg">Loading...</div>
+          ) : !hasEnglishData ? (
+            <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl border border-gray-200 p-12 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-700 mb-2">No Data Available</h3>
+              <p className="text-gray-500 text-sm max-w-md leading-relaxed">
+                Start practicing English topics to see your topic-wise practice, accuracy, and sub-topic distribution here!
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-[25px] max-[1300px]:grid-cols-1">
+                <Topic_Wise_Practice
+                  student_id={studentId}
+                  course_id={selectedCourse}
+                  test_type={testType}
+                  subject="English"
+                />
 
-            <TopicAccuracy
-              student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
-              subject="English"
-            />
-          </div>
+                <TopicAccuracy
+                  student_id={studentId}
+                  course_id={selectedCourse}
+                  test_type={testType}
+                  subject="English"
+                />
+              </div>
 
-          <div style={{ marginTop: "25px" }}>
-            <SubTopicPracticeStyled
-              student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
-              subject="English"
-            />
-          </div>
+              <div style={{ marginTop: "25px" }}>
+                <SubTopicPracticeStyled
+                  student_id={studentId}
+                  course_id={selectedCourse}
+                  test_type={testType}
+                  subject="English"
+                />
+              </div>
+            </>
+          )}
         </>
       )}
 
 
       {activeReportTab === "math" && (
         <>
-          {/* TOP ROW (2 COLUMNS) */}
-          <div className="data-grid-v1">
-            <Math_Topic_Wise_Practice
-              student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
-            />
-            <Math_TopicAccuracy
-              student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
-            />
+          {topicDataLoading ? (
+            <div className="py-20 text-center text-gray-500 text-lg">Loading...</div>
+          ) : !hasMathData ? (
+            <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl border border-gray-200 p-12 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-700 mb-2">No Data Available</h3>
+              <p className="text-gray-500 text-sm max-w-md leading-relaxed">
+                Start practicing Math topics to see your topic-wise practice, accuracy, and sub-topic distribution here!
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* TOP ROW (2 COLUMNS) */}
+              <div className="data-grid-v1">
+                <Math_Topic_Wise_Practice
+                  student_id={studentId}
+                  course_id={selectedCourse}
+                  test_type={testType}
+                />
+                <Math_TopicAccuracy
+                  student_id={studentId}
+                  course_id={selectedCourse}
+                  test_type={testType}
+                />
+              </div>
 
-          </div>
-
-          {/* FULL WIDTH BELOW */}
-          <div style={{ marginTop: "25px" }}>
-            <Math_SubTopicPracticeStyled
-              student_id={studentId}
-              course_id={selectedCourse}
-              test_type={testType}
-            />
-
-          </div>
+              {/* FULL WIDTH BELOW */}
+              <div style={{ marginTop: "25px" }}>
+                <Math_SubTopicPracticeStyled
+                  student_id={studentId}
+                  course_id={selectedCourse}
+                  test_type={testType}
+                />
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -325,7 +434,6 @@ function Dashboard() {
           course_id={selectedCourse}
           test_type={testType}
         /> : <Scoreboard
-
           student_id={studentId}
           course_id={selectedCourse}
           test_type={testType}
@@ -342,7 +450,6 @@ function Dashboard() {
 
       {activeReportTab === "resources" && (
         <UtilisationOfResources
-
           student_id={studentId}
           course_id={selectedCourse}
           test_type={testType}

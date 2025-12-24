@@ -9,7 +9,7 @@ export default function Scoreboard({ student_id, course_id }) {
   const [testData, setTestData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const router = useRouter(); // ✅ ADD THIS
+  const router = useRouter();
 
   useEffect(() => {
     if (!student_id || !course_id) return;
@@ -43,14 +43,10 @@ export default function Scoreboard({ student_id, course_id }) {
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-10">Loading scoreboard...</div>;
-  }
-
   /* ================= EMPTY STATE ================= */
   if (!testData || testData.length === 0) {
     return (
-      <div className="w-full py-10">
+      <div className="w-full">
         <div className="flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
           <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
             <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

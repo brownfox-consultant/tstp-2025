@@ -52,8 +52,6 @@ export default function TopicAccuracy({
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-
   // Prepare chart data
   const colors = [
     "#F59403",
@@ -77,15 +75,15 @@ export default function TopicAccuracy({
       </h3>
 
       {topics.length === 0 ? (
-        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-amber-100 rounded-xl border border-orange-200 p-8 text-center mt-4">
-          <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-amber-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
-            <svg className="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-xl border border-gray-200 p-8 text-center mt-4">
+          <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
+            <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h4 className="text-base font-bold text-gray-700 mb-1">No Accuracy Data</h4>
+          <h4 className="text-base font-bold text-gray-700 mb-1">No Data Available</h4>
           <p className="text-gray-500 text-sm max-w-xs">
-            Practice {subject} topics to see your topic-wise accuracy here!
+            Practice topics to see your topic-wise accuracy here!
           </p>
         </div>
       ) : (

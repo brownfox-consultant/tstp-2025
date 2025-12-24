@@ -57,18 +57,10 @@ export default function StatusOfDoubts({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="w-full flex items-center justify-center py-20">
-        <div className="text-gray-500 font-medium animate-pulse">Loading status of doubts...</div>
-      </div>
-    );
-  }
-
   // Empty state when no doubts data
   if (!doubtsData || doubtsData.length === 0 || summary.total_raised === 0) {
     return (
-      <div className="w-full py-10">
+      <div className="w-full">
         <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
           <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
             <FaQuestionCircle className="text-4xl text-blue-400" />
