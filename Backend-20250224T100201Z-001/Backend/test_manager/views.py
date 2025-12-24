@@ -4101,46 +4101,59 @@ class ResultViewSet(viewsets.ModelViewSet):
         # =====================================================
         elif test_type == "PRACTICE":
 
+            response["tests"] = []
+
             practice_results = (
                 PracticeTestResult.objects
                 .filter(
                     practice_test__student=student,
                     practice_test__course_subject__course=course
                 )
-                .select_related("practice_test", "practice_test__course_subject__subject")
-                .order_by("created_at")
+                .select_related(
+                    "practice_test",
+                    "practice_test__course_subject__subject"
+                )
+                .order_by("-created_at")
             )
 
-            prev_score = None
-
             for r in practice_results:
-                subject_name = r.practice_test.course_subject.subject.name.lower()
+                subject_name = r.practice_test.course_subject.subject.name.title()
 
-                # subject-wise score
-                if subject_name == "math":
-                    response["math_score"] += r.correct_answer_count
-                else:
-                    response["english_score"] += r.correct_answer_count
+                total_questions = PracticeQuestionAnswer.objects.filter(
+                    practice_test_result=r
+                ).count()
 
-                response["overall_score"] += r.correct_answer_count
+                correct = PracticeQuestionAnswer.objects.filter(
+                    practice_test_result=r,
+                    is_correct=True
+                ).count()
 
-                # per-test history
+                incorrect = PracticeQuestionAnswer.objects.filter(
+                    practice_test_result=r,
+                    is_correct=False,
+                    is_skipped=False
+                ).count()
+
+                accuracy = (
+                    round((correct / total_questions) * 100)
+                    if total_questions > 0 else 0
+                )
+
                 response["tests"].append({
                     "practice_test_id": r.practice_test.id,
                     "subject": subject_name,
-                    "score": r.correct_answer_count,
-                    "date": r.created_at.date()
+                    "total_questions": total_questions,
+                    "correct": correct,
+                    "incorrect": incorrect,
+                    "accuracy": accuracy,
+                    "date_time": r.created_at.strftime("%Y-%m-%d %H:%M"),
                 })
 
-                response["highest_score"] = max(
-                    response["highest_score"],
-                    r.correct_answer_count
-                )
-
-                if prev_score is not None:
-                    response["improvement"] = r.correct_answer_count - prev_score
-
-                prev_score = r.correct_answer_count
+            # Optional summary
+            response["overall_score"] = sum(t["correct"] for t in response["tests"])
+            response["highest_score"] = max(
+                (t["correct"] for t in response["tests"]), default=0
+            )
 
 
         else:
