@@ -1,14 +1,28 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { message } from "antd";
+import { message, Spin } from "antd";
 import { useState, useEffect } from "react";
 import { LockIcon, UnlockIcon, StarIcon, CrownIcon, FreeUserRocketIcon as RocketIcon } from "@/components/icons/free-user-icons";
+import { BASE_URL } from "@/app/constants/apiConstants";
+import axios from "axios";
 
 export default function FreeUserPage() {
   const router = useRouter();
   const { id } = useParams();
   const [name, setName] = useState("");
+  const [assignedCourseIds, setAssignedCourseIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Master list of all available courses
+  const allCourses = [
+    { id: 1, name: "SAT", description: "Complete SAT preparation", icon: "📚" },
+    { id: 2, name: "GRE", description: "Graduate exam prep", icon: "🎓" },
+    { id: 29, name: "Vocab Builder", description: "Expand your vocabulary", icon: "📖" },
+    { id: 30, name: "DSAT - Scholarship Test", description: "Free scholarship test", icon: "🏆" },
+    { id: 31, name: "DSAT - Math Only", description: "Math focused prep", icon: "🔢" },
+    { id: 32, name: "DSAT - English Only", description: "English focused prep", icon: "✍️" },
+  ];
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -16,14 +30,42 @@ export default function FreeUserPage() {
     }
   }, []);
 
-  const courses = [
-    { id: 1, name: "SAT", description: "Complete SAT preparation", icon: "📚" },
-    { id: 2, name: "GRE", description: "Graduate exam prep", icon: "🎓" },
-    { id: 29, name: "Vocab Builder", description: "Expand your vocabulary", icon: "📖" },
-    { id: 30, name: "DSAT - Scholarship Test", description: "Free scholarship test", icon: "🏆", freeAccess: true },
-    { id: 31, name: "DSAT - Math Only", description: "Math focused prep", icon: "🔢" },
-    { id: 32, name: "DSAT - English Only", description: "English focused prep", icon: "✍️" },
-  ];
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${BASE_URL}/api/course/student-courses/?user_id=${id}`,
+          {
+            headers: {
+              "ngrok-skip-browser-warning": "69420",
+            },
+          }
+        );
+        
+        const coursesData = response?.data || [];
+        
+        // Extract IDs of assigned courses
+        const assignedIds = coursesData.map(course => course.id);
+        setAssignedCourseIds(assignedIds);
+        
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        message.error("Failed to load courses. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchCourses();
+    }
+  }, [id]);
+
+  // Check if course is assigned to user
+  const isCourseAssigned = (courseId) => {
+    return assignedCourseIds.includes(courseId);
+  };
 
   function handleClick(course) {
     if (course.freeAccess) {
@@ -52,7 +94,7 @@ export default function FreeUserPage() {
         </div>
       </div>
 
-      {/* Free User Banner */}
+      {/* User Info Banner */}
       <div className="mb-8 bg-gradient-to-r from-orange-500 to-amber-400 rounded-2xl p-6 shadow-lg">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -60,8 +102,10 @@ export default function FreeUserPage() {
               <CrownIcon />
             </div>
             <div className="text-white">
-              <h3 className="font-bold text-lg">Free Plan</h3>
-              <p className="text-white/80 text-sm">Only Scholarship Test is available</p>
+              <h3 className="font-bold text-lg">Your Courses</h3>
+              <p className="text-white/80 text-sm">
+                {loading ? "Loading..." : `${assignedCourseIds.length} course${assignedCourseIds.length !== 1 ? 's' : ''} assigned to you`}
+              </p>
             </div>
           </div>
         </div>
@@ -76,10 +120,18 @@ export default function FreeUserPage() {
         <p className="text-gray-500 text-sm mt-1 ml-4">Select a course to begin your preparation journey</p>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-20">
+          <Spin size="large" />
+        </div>
+      )}
+
       {/* Courses Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map((course) => {
-          const isFree = course.freeAccess;
+      {!loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {allCourses.map((course) => {
+          const isAssigned = isCourseAssigned(course.id);
 
           return (
             <div
@@ -90,22 +142,22 @@ export default function FreeUserPage() {
                 bg-white rounded-2xl p-6
                 border-2 transition-all duration-300 cursor-pointer
                 hover:shadow-xl hover:-translate-y-1
-                ${isFree 
+                ${isAssigned 
                   ? "border-orange-400 shadow-lg shadow-orange-100" 
                   : "border-gray-100 hover:border-orange-200"
                 }
               `}
             >
-              {/* Free Badge */}
-              {isFree && (
+              {/* Assigned Badge */}
+              {isAssigned && (
                 <div className="absolute -top-3 -right-3 bg-gradient-to-r from-orange-500 to-amber-400 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1">
                   <RocketIcon className="w-3 h-3" />
-                  FREE ACCESS
+                  ASSIGNED
                 </div>
               )}
 
               {/* Locked Badge */}
-              {!isFree && (
+              {!isAssigned && (
                 <div className="absolute top-4 right-4 text-gray-300 group-hover:text-gray-400 transition-colors">
                   <LockIcon />
                 </div>
@@ -117,7 +169,7 @@ export default function FreeUserPage() {
                 <div className={`
                   w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4
                   transition-all duration-300
-                  ${isFree 
+                  ${isAssigned 
                     ? "bg-gradient-to-br from-orange-100 to-amber-50" 
                     : "bg-gray-50 group-hover:bg-orange-50"
                   }
@@ -128,7 +180,7 @@ export default function FreeUserPage() {
                 {/* Course Name */}
                 <h3 className={`
                   font-semibold text-lg mb-1
-                  ${isFree ? "text-orange-600" : "text-gray-800"}
+                  ${isAssigned ? "text-orange-600" : "text-gray-800"}
                 `}>
                   {course.name}
                 </h3>
@@ -140,12 +192,12 @@ export default function FreeUserPage() {
                 <div className={`
                   mt-4 px-4 py-2 rounded-lg text-sm font-medium
                   transition-all duration-300
-                  ${isFree 
+                  ${isAssigned 
                     ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md" 
                     : "bg-gray-100 text-gray-600 group-hover:bg-orange-100 group-hover:text-orange-600"
                   }
                 `}>
-                  {isFree ? (
+                  {isAssigned ? (
                     <span className="flex items-center gap-2">
                       <UnlockIcon />
                       Start Now
@@ -153,20 +205,21 @@ export default function FreeUserPage() {
                   ) : (
                     <span className="flex items-center gap-2">
                       <LockIcon />
-                      Upgrade to Access
+                      Not Assigned
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Bottom Accent for Free Course */}
-              {isFree && (
+              {/* Bottom Accent for Assigned Course */}
+              {isAssigned && (
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-500 to-amber-400 rounded-t-full"></div>
               )}
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Premium Features Section */}
       {/* <div className="mt-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
