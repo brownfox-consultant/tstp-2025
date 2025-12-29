@@ -1,4 +1,4 @@
-import { Modal, Checkbox, Divider, Tag, Input, Button,Radio } from "antd";
+import { Modal, Checkbox, Divider, Tag, Input, Button,Radio,Select  } from "antd";
 import { useEffect, useState } from "react";
 
 const keywordMap = [
@@ -13,6 +13,70 @@ const keywordMap = [
   { key: "srno", label: "Que. Id" },
   { key: "is_active", label: "Status" },
 ];
+
+function groupTopicsBySubject(topics) {
+  const subjectMap = {};
+
+  topics.forEach((topic) => {
+    topic.subtopics?.forEach((sub) => {
+      const subjectName = sub.subject?.name || "Other";
+
+      if (!subjectMap[subjectName]) {
+        subjectMap[subjectName] = {};
+      }
+
+      if (!subjectMap[subjectName][topic.name]) {
+        subjectMap[subjectName][topic.name] = [];
+      }
+
+      subjectMap[subjectName][topic.name].push(sub);
+    });
+  });
+  
+
+  // 🔤 Sort topics & subtopics alphabetically
+  Object.keys(subjectMap).forEach((subject) => {
+    Object.keys(subjectMap[subject]).forEach((topic) => {
+      subjectMap[subject][topic].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+    });
+  });
+
+  return subjectMap;
+}
+
+function groupTopicsOnlyBySubject(topics) {
+  const map = {};
+
+  topics.forEach((t) => {
+    const subjectName = t.subject?.name || "Other";
+
+    if (!map[subjectName]) {
+      map[subjectName] = [];
+    }
+
+    map[subjectName].push(t);
+  });
+
+  // sort topics alphabetically
+  Object.keys(map).forEach((s) => {
+    map[s].sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  return map;
+}
+
+
+ function getUniqueCourses(topics) {
+  const map = {};
+  topics.forEach((t) => {
+    if (t.course?.id) {
+      map[t.course.id] = t.course;
+    }
+  });
+  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
+}
 
 function mergeDuplicateTopics(topics) {
   const topicMap = {};
@@ -54,12 +118,64 @@ export default function AdvancedSearchModal({
 }) {
   const [activeCategory, setActiveCategory] = useState("difficulty");
   const [localFilters, setLocalFilters] = useState({});
+  const [selectedSubject, setSelectedSubject] = useState("ALL");
+  const [selectedCourse, setSelectedCourse] = useState("ALL");
+  const courseFilteredTopics =
+  selectedCourse === "ALL"
+    ? topics
+    : topics.filter((t) => t.course?.id === selectedCourse);
+
+
 
   useEffect(() => {
     setLocalFilters(currentFilters || {});
   }, [currentFilters, open]);
 
-  
+  useEffect(() => {
+  if (open) {
+    setSelectedSubject("ALL");
+  }
+}, [open]);
+useEffect(() => {
+  if (open) {
+    setSelectedCourse("ALL");
+  }
+}, [open]);
+
+
+const renderSubjectRadio = () => (
+  <Radio.Group
+    value={selectedSubject}
+    onChange={(e) => setSelectedSubject(e.target.value)}
+    style={{ marginBottom: 16 }}
+  >
+    <Radio value="ALL">All</Radio>
+    <Radio value="English">English</Radio>
+    <Radio value="Math">Math</Radio>
+  </Radio.Group>
+);
+
+const renderCourseDropdown = () => {
+  const courses = getUniqueCourses(topics);
+
+  return (
+    <Select
+      value={selectedCourse}
+      onChange={(val) => setSelectedCourse(val)}
+      style={{ width: "100%", marginBottom: 12 }}
+      placeholder="Select Course"
+    >
+      <Select.Option value="ALL">All Courses</Select.Option>
+      {courses.map((c) => (
+        <Select.Option key={c.id} value={c.id}>
+          {c.name}
+        </Select.Option>
+      ))}
+    </Select>
+  );
+};
+
+
 
   const handleCheckboxChange = (key, value) => {
     const isSelected = localFilters[key]?.includes(value);
@@ -103,31 +219,57 @@ export default function AdvancedSearchModal({
     </Checkbox.Group>
   );
 
-  const renderTopics = () => {
-    const mergedTopics = mergeDuplicateTopics(topics);
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {mergedTopics.map((topic) => (
-          <div key={topic.name} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <strong>{topic.name}</strong>
-            <Checkbox.Group
-              value={localFilters.sub_topic || []}
-              onChange={(vals) => setLocalFilters((prev) => ({ ...prev, sub_topic: vals }))}
-            >
-              <div style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-                {(topic.subtopics || []).map((sub) => (
-                  <Checkbox key={sub.id} value={sub.id}>
-                    {sub.name}
-                  </Checkbox>
-                ))}
-              </div>
-            </Checkbox.Group>
-            <Divider style={{ margin: "12px 0" }} />
-          </div>
-        ))}
-      </div>
-    );
-  };
+ const renderTopics = () => {
+  const filteredTopics =
+    selectedCourse === "ALL"
+      ? topics
+      : topics.filter((t) => t.course?.id === selectedCourse);
+
+  const grouped = groupTopicsBySubject(filteredTopics);
+
+  const subjectsToRender =
+    selectedSubject === "ALL"
+      ? Object.keys(grouped)
+      : Object.keys(grouped).filter((s) => s === selectedSubject);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {renderCourseDropdown()}
+      {renderSubjectRadio()}
+
+      {subjectsToRender.sort().map((subject) => (
+        <div key={subject}>
+          <h3 style={{ marginBottom: 12 }}>{subject}</h3>
+
+          {Object.keys(grouped[subject]).sort().map((topicName) => (
+            <div key={topicName} style={{ marginBottom: 16 }}>
+              <strong>{topicName}</strong>
+
+              <Checkbox.Group
+                value={localFilters.sub_topic || []}
+                onChange={(vals) =>
+                  setLocalFilters((prev) => ({ ...prev, sub_topic: vals }))
+                }
+              >
+                <div style={{ paddingLeft: 12, marginTop: 6 }}>
+                  {grouped[subject][topicName].map((sub) => (
+                    <Checkbox key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </Checkbox>
+                  ))}
+                </div>
+              </Checkbox.Group>
+            </div>
+          ))}
+
+          <Divider />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+
 
   const getFilterPane = () => {
     switch (activeCategory) {
@@ -151,11 +293,52 @@ export default function AdvancedSearchModal({
   );
       case "test_type":
         return renderCheckboxList("test_type", testTypeList);
-      case "topic":
-        return renderCheckboxList(
-          "topic",
-          topics.map((t) => ({ label: t.name, value: t.id }))
-        );
+    case "topic": {
+  const filtered =
+    selectedCourse === "ALL"
+      ? topics
+      : topics.filter((t) => t.course?.id === selectedCourse);
+
+  const grouped = groupTopicsOnlyBySubject(filtered);
+
+  const subjectsToRender =
+    selectedSubject === "ALL"
+      ? Object.keys(grouped)
+      : Object.keys(grouped).filter((s) => s === selectedSubject);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {renderCourseDropdown()}
+      {renderSubjectRadio()}
+
+      {subjectsToRender.sort().map((subject) => (
+        <div key={subject}>
+          <h3 style={{ marginBottom: 12 }}>{subject}</h3>
+
+          <Checkbox.Group
+            value={localFilters.topic || []}
+            onChange={(vals) =>
+              setLocalFilters((prev) => ({ ...prev, topic: vals }))
+            }
+          >
+            <div style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+              {grouped[subject].map((t) => (
+                <Checkbox key={t.id} value={t.id}>
+                  {t.name}
+                </Checkbox>
+              ))}
+            </div>
+          </Checkbox.Group>
+
+          <Divider />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+
       case "sub_topic":
         return renderTopics();
       case "option_text":

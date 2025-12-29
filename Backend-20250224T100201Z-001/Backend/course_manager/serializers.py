@@ -56,6 +56,16 @@ class SubjectSerializer(serializers.ModelSerializer):
         model = Subject
         fields = ['id', 'name']
 
+class SubjectMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
+        fields = ['id', 'name']
+
+class CourseMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['id', 'name']
+
 
 class CreateOptionSerializer(serializers.Serializer):
     def to_internal_value(self, data):
@@ -392,17 +402,38 @@ class MaterialDetailsSerializer(serializers.ModelSerializer):
 
 
 class SubTopicSerializer(serializers.ModelSerializer):
+    course = CourseMiniSerializer(
+        source='topic.course_subject.course',
+        read_only=True
+    )
+    subject = SubjectMiniSerializer(
+        source='topic.course_subject.subject',
+        read_only=True
+    )
+
     class Meta:
         model = SubTopic
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'course', 'subject']
+
+
 
 
 class TopicSerializer(serializers.ModelSerializer):
+    course = CourseMiniSerializer(
+        source='course_subject.course',
+        read_only=True
+    )
+    subject = SubjectMiniSerializer(
+        source='course_subject.subject',
+        read_only=True
+    )
     subtopics = SubTopicSerializer(many=True, read_only=True)
 
     class Meta:
         model = Topic
-        fields = ['id', 'name', 'subtopics']
+        fields = ['id', 'name', 'course', 'subject', 'subtopics']
+
+
 
 
 class CourseEnrollmentUpdateSerializer(serializers.ModelSerializer):

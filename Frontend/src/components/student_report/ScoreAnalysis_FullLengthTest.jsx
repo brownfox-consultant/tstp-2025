@@ -91,10 +91,18 @@ export default function ScoreAnalysis_FullLengthTest({
 
       const maxScore = 1600;
       
-      const recentScore = chart.length > 0 
-        ? (chart[chart.length - 1].Overall || 0)
-        : 0;
-      const percentage = maxScore > 0 ? Math.round((recentScore / maxScore) * 100) : 0;
+     const testScores = Array.isArray(data.tests)
+  ? data.tests.map(t => Number(t.overall_score) || 0)
+  : [];
+
+const totalScore = testScores.reduce((sum, s) => sum + s, 0);
+const avgScore = testScores.length > 0
+  ? totalScore / testScores.length
+  : 0;
+
+const percentage = maxScore > 0
+  ? Math.round((avgScore / maxScore) * 100)
+  : 0;
 
       setChartData(chart);
       setSummary({

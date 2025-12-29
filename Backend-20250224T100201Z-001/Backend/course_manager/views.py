@@ -117,7 +117,14 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 
         # If you also want topics:
-        topics = Topic.objects.all()
+        topics = (
+            Topic.objects
+            .select_related('course_subject__course', 'course_subject__subject')
+            .prefetch_related('subtopics__topic__course_subject__course',
+                            'subtopics__topic__course_subject__subject')
+        )
+
+
         serialized_topics = TopicSerializer(topics, many=True).data
 
         return Response({
