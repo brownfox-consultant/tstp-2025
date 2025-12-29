@@ -237,37 +237,50 @@ const renderCourseDropdown = () => {
       {renderCourseDropdown()}
       {renderSubjectRadio()}
 
-      {subjectsToRender.sort().map((subject) => (
-        <div key={subject}>
-          <h3 style={{ marginBottom: 12 }}>{subject}</h3>
+      {/* ✅ SINGLE Checkbox.Group */}
+      <Checkbox.Group
+        value={localFilters.sub_topic || []}
+        onChange={(vals) =>
+          setLocalFilters((prev) => ({ ...prev, sub_topic: vals }))
+        }
+      >
+        {subjectsToRender.sort().map((subject) => (
+          <div key={subject}>
+            <h3 style={{ marginBottom: 12 }}>{subject}</h3>
 
-          {Object.keys(grouped[subject]).sort().map((topicName) => (
-            <div key={topicName} style={{ marginBottom: 16 }}>
-              <strong>{topicName}</strong>
+            {Object.keys(grouped[subject]).sort().map((topicName) => (
+              <div key={topicName} style={{ marginBottom: 16 }}>
+                <strong>{topicName}</strong>
 
-              <Checkbox.Group
-                value={localFilters.sub_topic || []}
-                onChange={(vals) =>
-                  setLocalFilters((prev) => ({ ...prev, sub_topic: vals }))
-                }
-              >
-                <div style={{ paddingLeft: 12, marginTop: 6 }}>
+                <div
+                  style={{
+                    paddingLeft: 12,
+                    marginTop: 6,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                  }}
+                >
                   {grouped[subject][topicName].map((sub) => (
-                    <Checkbox key={sub.id} value={sub.id}>
+                    <Checkbox
+                      key={`sub-${sub.id}`}
+                      value={sub.id}
+                    >
                       {sub.name}
                     </Checkbox>
                   ))}
                 </div>
-              </Checkbox.Group>
-            </div>
-          ))}
+              </div>
+            ))}
 
-          <Divider />
-        </div>
-      ))}
+            <Divider />
+          </div>
+        ))}
+      </Checkbox.Group>
     </div>
   );
 };
+
 
 
 
