@@ -26,6 +26,7 @@ import {
   SyncOutlined,
   MenuUnfoldOutlined,
   CloseOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 
 const { Content } = Layout;
@@ -40,6 +41,11 @@ const FacultyMenuItems = [
     key: "students",
     icon: <UserOutlined />,
     label: "Students",
+  },
+  {
+    key: "report",
+    icon: <BarChartOutlined />,
+    label: "Reports",
   },
   {
     key: "questions",

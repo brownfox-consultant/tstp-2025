@@ -140,17 +140,6 @@ const percentage = maxScore > 0
     }
   };
 
-  /* ================= LOADING STATE ================= */
-  if (loading) {
-    return (
-      <div className="py-10">
-        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
-          <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading Full-Length Test score analysis...</p>
-        </div>
-      </div>
-    );
-  }
 
   /* ================= EMPTY STATE ================= */
   if (!chartData || chartData.length === 0) {

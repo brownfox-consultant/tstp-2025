@@ -3,29 +3,46 @@
 import React, { useState, useEffect } from "react";
 import { Select, Spin } from "antd";
 import axios from "axios";
-import { GET_Students } from "@/app/constants/apiConstants";
+import { GET_Students, BASE_URL } from "@/app/constants/apiConstants";
 import StudentReportDashboard from "@/components/student_report/StudentReportDashboard";
+import { useParams } from "next/navigation";
 
-export default function ReportPage() {
+export default function FacultyReportPage() {
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { id: facultyId } = useParams();
 
   useEffect(() => {
-    async function fetchStudents() {
+    async function fetchAssignedStudents() {
       setLoading(true);
       try {
-        const res = await axios.get(GET_Students, { withCredentials: true });
-        const studentList = res.data || [];
-        setStudents(studentList);
+        // 1. Fetch all students (needed for details)
+        const allStudentsRes = await axios.get(GET_Students, { withCredentials: true });
+        const allStudents = allStudentsRes.data || [];
+
+        // 2. Fetch assigned student IDs for this faculty
+        const assignedRes = await axios.get(
+          `${BASE_URL}/api/doubt/students-by-faculty/?faculty_id=${facultyId}`,
+          { withCredentials: true }
+        );
+        const assignedIds = assignedRes.data.student_ids || [];
+
+        // 3. Filter students
+        const filtered = allStudents.filter(s => assignedIds.includes(s.id));
+        setStudents(filtered);
+
       } catch (error) {
-        console.error("Error fetching students:", error);
+        console.error("Error fetching faculty students:", error);
       } finally {
         setLoading(false);
       }
     }
-    fetchStudents();
-  }, []);
+
+    if (facultyId) {
+      fetchAssignedStudents();
+    }
+  }, [facultyId]);
 
   const selectedStudent = students.find(s => s.id === selectedStudentId);
 

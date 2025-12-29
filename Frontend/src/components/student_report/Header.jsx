@@ -1,5 +1,5 @@
-export default function Header() {
-  const name = localStorage.getItem("name") || "Student";
+export default function Header({ studentName }) {
+  const name = studentName || localStorage.getItem("name") || "Student";
 
   return (
     <div className="header-section">
