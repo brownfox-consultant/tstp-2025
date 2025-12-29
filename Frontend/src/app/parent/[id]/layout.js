@@ -1,55 +1,32 @@
 "use client";
 
-import {
-  ConfigProvider,
-  Layout,
-  Menu,
-  Button,
-  theme as ThemeAntd,
-  Space,
-  Avatar,
-  Dropdown,
-  Modal,
-  DatePicker,
-} from "antd";
-import Icon, {
-  AppstoreOutlined,
-  ClockCircleOutlined,
-  CommentOutlined,
-  DashboardOutlined,
-  ExperimentOutlined,
-  FileUnknownOutlined,
-  FolderOpenOutlined,
-  FontSizeOutlined,
-  HistoryOutlined,
-  IssuesCloseOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  QuestionOutlined,
-  SwapOutlined,
-  TableOutlined,
-  UploadOutlined,
-  UserOutlined,
-  VideoCameraOutlined,
-} from "@ant-design/icons";
+import { Layout, theme as ThemeAntd, Tooltip } from "antd";
 import React, { Suspense } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { logoutService, scheduleMeeting } from "../../services/authService";
+import { logoutService } from "../../services/authService";
 import { useGlobalContext } from "@/context/store";
-// import logo from "../../../../public/logo.png";
 import logo from "../../../../public/logo_with_tagline.png";
-import Image from "next/image";
-import Loading from "./loading";
-import TextArea from "antd/es/input/TextArea";
-import dayjs from "dayjs";
-import { useMediaQuery } from "react-responsive";
 import justlogo from "../../../../public/tstp-just-logo.png";
+import Loading from "./loading";
+import { useMediaQuery } from "react-responsive";
+import Image from "next/image";
+import LogoutIcon from "@/components/icons/logout-icon";
+import UserProfileIcon from "@/components/icons/user-profile-icon";
+import OrangeSideBarIcon from "../../../../public/icons/orangesidebar.svg";
 
+import {
+  DashboardOutlined,
+  FontSizeOutlined,
+  SwapOutlined,
+  IssuesCloseOutlined,
+  CommentOutlined,
+  ClockCircleOutlined,
+  MenuUnfoldOutlined,
+  CloseOutlined,
+} from "@ant-design/icons";
 
-const { Header, Sider, Content } = Layout;
-
-
+const { Content } = Layout;
 
 const getParentMenuItems = (tab) => [
   {
@@ -96,162 +73,368 @@ const getParentMenuItems = (tab) => [
   },
 ];
 
-
 function DashboardLayout({ children }) {
-  const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
-  const isDesktopOrLaptop = useMediaQuery({ query: "(min-width: 1224px)" });
-  const [collapsed, setCollapsed] = useState(!isDesktopOrLaptop);
+  const pathname = usePathname();
+  const tab = pathname.split("/")[3];
+  const ParentMenuItems = getParentMenuItems(tab);
+
+  const isMobile = useMediaQuery({
+    query: "(max-width: 992px)",
+  });
+
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [logoutLoading, setLogoutLoading] = useState(false);
   const router = useRouter();
-  const tab = usePathname().split("/")[3];
-  const ParentMenuItems = getParentMenuItems(tab);// ✅ move this up
-  const pathname = usePathname();
-  const { userName, role, userId, testRunning } = useGlobalContext();
-  const [displayLetter, setDisplayLetter] = useState("");
   const [csrfToken, setCsrfToken] = useState(undefined);
+  
+  // Ref to track if logout is in progress to prevent duplicate logout calls
+  const isLoggingOut = React.useRef(false);
 
   const { id } = useParams();
-
-  const LogoIcon = () => (
-    <Image alt="logo" style={{ width: "220px" }} src={logo}></Image>
-  );
-  const JustLogoIcon = () => (
-      <Image alt="logo" style={{ width: "50px" }} src={justlogo}></Image>
-    );
-
-  const onClick = ({ key }) => {
-    if (key == 0) {
-      // router.push('')
-
-      let newPath = pathname.split("/");
-
-      router.push(`${newPath.slice(0, 3).join("/")}`);
-    }
-
-    if (key == 1) {
-      setLogoutLoading(true);
-      logoutService(csrfToken)
-        .then(() => {
-          // router.push("/login");
-          window.location.href = "/login";
-          window.localStorage.clear();
-        })
-        .catch((err) => console.log(err))
-        .finally(() => setLogoutLoading(false));
-    }
-
-    let newPath = pathname.split("/");
-
-    if (key == 2) {
-      setOpenModal(true);
-    }
-  };
-
-  const items = [
-    {
-      label: "Profile",
-      key: 0,
-    },
-    {
-      label: "Logout",
-      key: 1,
-    },
-  ];
 
   const {
     token: { colorBgContainer, borderRadius },
   } = ThemeAntd.useToken();
 
-  useEffect(() => {
-    // if (typeof window !== "undefined") {
-    if (window.localStorage.getItem("csrfToken")) {
-      setCsrfToken(window.localStorage.getItem("csrfToken"));
-      setDisplayLetter(window.localStorage.getItem("name")[0]);
-    } else {
-      window.location.href = "/login";
+  const handleLogout = useCallback(async () => {
+    // Prevent duplicate logout calls
+    if (isLoggingOut.current) return;
+    isLoggingOut.current = true;
+    
+    setLogoutLoading(true);
+    try {
+      await logoutService(csrfToken);
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      window.localStorage.clear();
+      router.replace("/login");
     }
-    // }
-  }, []);
+  }, [csrfToken, router]);
 
-  const currentTab = ParentMenuItems.find(({ key }) => key == tab);
+  const handleProfileClick = useCallback(() => {
+    const newPath = pathname.split("/");
+    router.push(`${newPath.slice(0, 3).join("/")}`);
+  }, [pathname, router]);
+
+  const handleToggle = useCallback(() => {
+    if (isMobile) {
+      setMobileMenuOpen(!mobileMenuOpen);
+    } else {
+      setCollapsed(!collapsed);
+    }
+  }, [isMobile, mobileMenuOpen, collapsed]);
+
+  const handleMenuClick = useCallback((key) => {
+    router.push(`/parent/${id}/${key}`);
+    if (isMobile) {
+      setMobileMenuOpen(false);
+    }
+  }, [router, id, isMobile]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Skip if already logging out
+      if (isLoggingOut.current) return;
+      
+      const storedName = window.localStorage.getItem("name");
+      if (storedName == null) {
+        handleLogout();
+        return;
+      }
+      if (window.localStorage.getItem("csrfToken")) {
+        setCsrfToken(window.localStorage.getItem("csrfToken"));
+        setEmail(window.localStorage.getItem("email"));
+        setName(window.localStorage.getItem("name"));
+      } else {
+        router.replace("/login");
+      }
+    }
+  }, [handleLogout, router]);
+
+  // Sidebar widths
+  const sidebarWidth = collapsed ? 67 : 280;
 
   return (
-    <Layout hasSider={true}>
-      <Sider
-        style={{
-          background: colorBgContainer,
-          
-        }}
-        width={isMobile ? "85vw" : 230}
-        collapsedWidth={isMobile ? "0px" : "50px"}
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        
-      >
-         <div className="demo-logo-vertical m-5 flex justify-end">
-          {collapsed ? <JustLogoIcon /> : <LogoIcon />}
-        </div>
-        <Menu
-          theme="light"
-          mode="inline"
-          selectedKeys={[tab]}
-          onClick={({ key }) => {
-            router.push(`/parent/${id}/${key}`);
-          }}
-          items={ParentMenuItems}
+    <Layout className="min-h-screen">
+      {isMobile && mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
         />
-      </Sider>
-      <Layout>
-        <Header
-          className="flex"
-          style={{
-            padding: 0,
-            background: colorBgContainer,
-          }}
-        >
-          <Button
-            className="flex-none"
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{
-              fontSize: "16px",
-              width: 64,
-              height: 64,
+      )}
+
+      <aside
+        className={`
+          fixed top-0 left-0 h-screen bg-white border-r border-gray-200 z-50
+          flex flex-col transition-all duration-300 ease-in-out
+          ${isMobile ? (mobileMenuOpen ? 'translate-x-0' : '-translate-x-full') : ''}
+        `}
+        style={{ width: isMobile ? 280 : sidebarWidth }}
+      >
+        {!isMobile && (
+          <button
+            onClick={handleToggle}
+            className={`
+              absolute top-5 z-50
+              w-8 h-8 rounded-full bg-white border border-gray-200
+              flex items-center justify-center cursor-pointer
+              shadow-md hover:shadow-lg hover:bg-gray-50
+              transition-all duration-300 ease-in-out
+              focus:outline-none focus:ring-2 focus:ring-primary-color focus:ring-opacity-50
+            `}
+            style={{ 
+              right: -16,
             }}
-          />
-          <div className="flex-grow font-semibold">{currentTab?.label}</div>
-          {/* <Button
-            shape="round"
-            className="flex-none mt-5 mr-5 border"
-            onClick={handleClick}
-            loading={logoutLoading}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {"A"}
-          </Button> */}
-          <div className="mr-5">
-            <Dropdown
-              trigger={["click", "hover"]}
-              menu={{ items: items, onClick }}
-            >
-              <Avatar
-                className="cursor-pointer"
-                style={{
-                  backgroundColor: "#f56a00",
-                  verticalAlign: "middle",
+            <Image
+              src={OrangeSideBarIcon}
+              alt="Toggle Sidebar"
+              width={16}
+              height={16}
+              className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
+            />
+          </button>
+        )}
+
+        {/* Close Button for Mobile */}
+        {isMobile && mobileMenuOpen && (
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="
+              absolute top-4 right-4 z-50
+              w-8 h-8 rounded-full bg-gray-100
+              flex items-center justify-center cursor-pointer
+              hover:bg-gray-200 transition-colors duration-200
+              focus:outline-none focus:ring-2 focus:ring-primary-color focus:ring-opacity-50
+            "
+            aria-label="Close menu"
+          >
+            <CloseOutlined className="text-gray-600 text-sm" />
+          </button>
+        )}
+
+        {/* Logo Section */}
+        <div className={`
+          flex items-center h-20 min-h-[60px] px-4
+          transition-all duration-300 ease-in-out
+        `}>
+          {collapsed && !isMobile ? (
+            <Image
+              alt="TSTP Logo"
+              src={justlogo}
+              className="transition-opacity duration-200"
+              priority
+              style={{ width: 40, height: 'auto' }}
+            />
+          ) : (
+            <Image
+              alt="TSTP Logo"
+              src={logo}
+              className="transition-opacity duration-200"
+              priority
+              style={{ width: 200, height: 'auto' }}
+            />
+          )}
+        </div>
+
+        {/* Menu Section */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2">
+          {ParentMenuItems.map((item) => {
+            const isActive = tab === item.key;
+            const menuItemContent = (
+              <div
+                key={item.key}
+                onClick={() => handleMenuClick(item.key)}
+                className={`
+                  flex items-center h-12 mb-1 rounded-lg cursor-pointer
+                  transition-all duration-200 ease-in-out
+                  ${isActive 
+                    ? 'bg-primary-light-color text-primary-color' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                  }
+                `}
+                role="menuitem"
+                tabIndex={0}
+                aria-current={isActive ? 'page' : undefined}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleMenuClick(item.key);
+                  }
                 }}
-                size="medium"
               >
-                {displayLetter}
-              </Avatar>
-            </Dropdown>
-          </div>
-        </Header>
+                <span className={`
+                  flex items-center justify-center flex-shrink-0
+                  w-12 h-12 text-lg
+                `}>
+                  {item.icon}
+                </span>
+       
+                <span className={`
+                  flex-1 text-sm font-medium whitespace-nowrap overflow-hidden
+                  transition-all duration-300 ease-in-out
+                  ${collapsed && !isMobile 
+                    ? 'w-0 opacity-0 ml-0' 
+                    : 'opacity-100 ml-1'
+                  }
+                `}>
+                  {item.label}
+                </span>
+              </div>
+            );
+
+            if (collapsed && !isMobile) {
+              return (
+                <Tooltip
+                  key={item.key}
+                  title={item.label}
+                  placement="right"
+                  mouseEnterDelay={0.1}
+                >
+                  {menuItemContent}
+                </Tooltip>
+              );
+            }
+
+            return menuItemContent;
+          })}
+        </nav>
+
+        <div className="mt-auto border-t border-gray-200 p-3">
+          {/* When collapsed: Show Profile and Logout icons stacked */}
+          {collapsed && !isMobile ? (
+            <div className="flex flex-col items-center gap-2">
+              {/* Profile Icon */}
+              <Tooltip title="View Profile" placement="right" mouseEnterDelay={0.1}>
+                <div
+                  onClick={handleProfileClick}
+                  className="
+                    flex items-center justify-center rounded-lg cursor-pointer p-2
+                    hover:bg-gray-100 transition-colors duration-200
+                  "
+                  role="button"
+                  tabIndex={0}
+                  aria-label="View Profile"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleProfileClick();
+                    }
+                  }}
+                >
+                  <UserProfileIcon />
+                </div>
+              </Tooltip>
+
+              {/* Logout Icon */}
+              <Tooltip title="Logout" placement="right" mouseEnterDelay={0.1}>
+                <div
+                  onClick={handleLogout}
+                  className="
+                    flex items-center justify-center rounded-lg cursor-pointer p-2
+                    hover:bg-red-50 transition-colors duration-200
+                  "
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Logout"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleLogout();
+                    }
+                  }}
+                >
+                  <LogoutIcon />
+                </div>
+              </Tooltip>
+            </div>
+          ) : (
+            /* When expanded: Show full profile with logout */
+            <div
+              onClick={handleProfileClick}
+              className="
+                flex items-center rounded-lg cursor-pointer p-2
+                hover:bg-gray-100 transition-colors duration-200 gap-3
+              "
+              role="button"
+              tabIndex={0}
+              aria-label="View profile"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleProfileClick();
+                }
+              }}
+            >
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                <UserProfileIcon />
+              </div>
+              
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="text-sm font-medium text-gray-900 truncate">
+                  {name}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {email}
+                </div>
+              </div>
+              
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleLogout();
+                }}
+                className="
+                  flex items-center justify-center flex-shrink-0
+                  w-8 h-8 rounded-md cursor-pointer
+                  hover:bg-gray-200 transition-all duration-200
+                "
+                role="button"
+                tabIndex={0}
+                aria-label="Logout"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleLogout();
+                  }
+                }}
+              >
+                <LogoutIcon />
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {isMobile && !mobileMenuOpen && (
+        <button
+          onClick={handleToggle}
+          className="fixed top-4 left-4 z-50 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center"
+          aria-label="Open menu"
+        >
+          <MenuUnfoldOutlined className="text-primary-color" />
+        </button>
+      )}
+
+      <Layout
+        className="transition-all duration-300 ease-in-out"
+        style={{
+          marginLeft: isMobile ? 0 : sidebarWidth,
+          minHeight: '100vh',
+        }}
+      >
         <Content
-         style={{
+          style={{
             padding: 24,
-            minHeight: "calc(100vh - 64px)", // Adjust based on Header height
+            minHeight: "calc(100vh - 48px)",
             background: colorBgContainer,
             borderRadius: borderRadius,
             overflowY: "auto",
