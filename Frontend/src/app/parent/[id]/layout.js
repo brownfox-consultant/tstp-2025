@@ -24,6 +24,7 @@ import {
   ClockCircleOutlined,
   MenuUnfoldOutlined,
   CloseOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 
 const { Content } = Layout;
@@ -38,6 +39,11 @@ const getParentMenuItems = (tab) => [
     key: "test",
     icon: <FontSizeOutlined />,
     label: "Test & Practice Questions",
+  },
+  {
+    key: "report",
+    icon: <BarChartOutlined />,
+    label: "Reports",
   },
   {
     key: "doubts",
