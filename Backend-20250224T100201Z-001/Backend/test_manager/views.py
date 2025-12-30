@@ -4103,6 +4103,10 @@ class ResultViewSet(viewsets.ModelViewSet):
 
             response["tests"] = []
 
+            total_correct = 0
+            total_incorrect = 0
+            total_questions = 0
+
             practice_results = (
                 PracticeTestResult.objects
                 .filter(
@@ -4113,47 +4117,72 @@ class ResultViewSet(viewsets.ModelViewSet):
                     "practice_test",
                     "practice_test__course_subject__subject"
                 )
-                .order_by("-created_at")
+                .order_by("created_at")
             )
 
-            for r in practice_results:
-                subject_name = r.practice_test.course_subject.subject.name.title()
+            previous_score = None
 
-                total_questions = PracticeQuestionAnswer.objects.filter(
+            for r in practice_results:
+                subject_name = r.practice_test.course_subject.subject.name.lower()
+
+                test_total_questions = PracticeQuestionAnswer.objects.filter(
                     practice_test_result=r
                 ).count()
 
-                correct = PracticeQuestionAnswer.objects.filter(
+                test_correct = PracticeQuestionAnswer.objects.filter(
                     practice_test_result=r,
                     is_correct=True
                 ).count()
 
-                incorrect = PracticeQuestionAnswer.objects.filter(
+                test_incorrect = PracticeQuestionAnswer.objects.filter(
                     practice_test_result=r,
                     is_correct=False,
                     is_skipped=False
                 ).count()
 
-                accuracy = (
-                    round((correct / total_questions) * 100)
-                    if total_questions > 0 else 0
-                )
+                accuracy = round(
+                    (test_correct / test_total_questions) * 100
+                ) if test_total_questions > 0 else 0
+
+                # ---- subject wise score ----
+                if subject_name == "math":
+                    response["math_score"] += test_correct
+                elif subject_name == "english":
+                    response["english_score"] += test_correct
+
+                # ---- highest & improvement ----
+                response["highest_score"] = max(response["highest_score"], test_correct)
+
+                if previous_score is not None:
+                    response["improvement"] = test_correct - previous_score
+
+                previous_score = test_correct
+
+                # ---- totals ----
+                total_correct += test_correct
+                total_incorrect += test_incorrect
+                total_questions += test_total_questions
 
                 response["tests"].append({
                     "practice_test_id": r.practice_test.id,
-                    "subject": subject_name,
-                    "total_questions": total_questions,
-                    "correct": correct,
-                    "incorrect": incorrect,
+                    "subject": subject_name.title(),
+                    "total_questions": test_total_questions,
+                    "correct": test_correct,
+                    "incorrect": test_incorrect,
                     "accuracy": accuracy,
-                    "date_time": r.created_at.strftime("%Y-%m-%d %H:%M"),
+                    "date": r.created_at.strftime("%Y-%m-%d"),
                 })
 
-            # Optional summary
-            response["overall_score"] = sum(t["correct"] for t in response["tests"])
-            response["highest_score"] = max(
-                (t["correct"] for t in response["tests"]), default=0
-            )
+            # ---- overall summary ----
+            response["overall_score"] = total_correct
+            response["total_practice_tests"] = len(response["tests"])
+            response["total_correct"] = total_correct
+            response["total_incorrect"] = total_incorrect
+
+            response["overall_accuracy"] = round(
+                (total_correct / total_questions) * 100
+            ) if total_questions > 0 else 0
+
 
 
         else:
