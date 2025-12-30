@@ -25,6 +25,7 @@ import {
   SyncOutlined,
   MenuUnfoldOutlined,
   CloseOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 
 const { Content } = Layout;
@@ -45,6 +46,12 @@ function DashboardLayout({ children }) {
       key: "students",
       icon: <UserOutlined />,
       label: "Students",
+      disabled: false,
+    },
+    {
+      key: "report",
+      icon: <BarChartOutlined />,
+      label: "Reports",
       disabled: false,
     },
     {
