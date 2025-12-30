@@ -18,6 +18,8 @@ export default function ReportPage() {
         const res = await axios.get(GET_Students, { withCredentials: true });
         const studentList = res.data || [];
         setStudents(studentList);
+        setSelectedStudentId(studentList[0].id);
+
       } catch (error) {
         console.error("Error fetching students:", error);
       } finally {
@@ -43,6 +45,7 @@ export default function ReportPage() {
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
           style={{ width: 300 }}
+          value={selectedStudentId}
           onChange={(value) => setSelectedStudentId(value)}
           options={students.map((s) => ({
             label: `${s.name} ${s.email ? `(${s.email})` : ''}`,
@@ -52,17 +55,12 @@ export default function ReportPage() {
         />
       </div>
 
-      {selectedStudentId ? (
-        <StudentReportDashboard 
-          studentIdProp={selectedStudentId} 
-          studentNameProp={selectedStudent?.name}
-          hideHeader={true}
-        />
-      ) : (
-        <div className="text-center py-20 bg-gray-50 rounded-lg border border-gray-200 text-gray-400">
-          Please select a student to view their detailed report.
-        </div>
-      )}
+      <StudentReportDashboard
+        studentIdProp={selectedStudentId}
+        studentNameProp={selectedStudent?.name}
+        hideHeader={true}
+      />
+
     </div>
   );
 }

@@ -85,7 +85,6 @@ export default function Math_SubTopicPracticeStyled({
       <div key={index} className="bg-white rounded-2xl p-4 md:p-6 shadow-lg border border-gray-100">
         {/* Section Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-2 h-8 bg-gradient-to-b from-orange-500 to-amber-400 rounded-full"></div>
           <h3 className="text-xl font-bold text-gray-800">{section.topic}</h3>
         </div>
 
@@ -116,24 +115,24 @@ export default function Math_SubTopicPracticeStyled({
               barCategoryGap="25%"
             >
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eee" />
-              <XAxis 
-                type="number" 
-                axisLine={false} 
+              <XAxis
+                type="number"
+                axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#666', fontSize: 14 }}
               />
-              <YAxis 
-                type="category" 
-                dataKey="name" 
-                axisLine={false} 
+              <YAxis
+                type="category"
+                dataKey="name"
+                axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#374151', fontSize: 13, fontWeight: 500 }}
                 width={180}
               />
-              <Tooltip 
-                contentStyle={{ 
-                  borderRadius: '12px', 
-                  border: 'none', 
+              <Tooltip
+                contentStyle={{
+                  borderRadius: '12px',
+                  border: 'none',
                   boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                   padding: '12px 16px'
                 }}
@@ -144,43 +143,43 @@ export default function Math_SubTopicPracticeStyled({
                   return [value, name];
                 }}
               />
-              
-              <Bar 
-                dataKey="accuracy" 
-                fill="#10b981" 
-                radius={[0, 4, 4, 0]} 
+
+              <Bar
+                dataKey="accuracy"
+                fill="#10b981"
+                radius={[0, 4, 4, 0]}
                 barSize={14}
               >
-                <LabelList 
-                  dataKey="accuracy" 
-                  position="right" 
+                <LabelList
+                  dataKey="accuracy"
+                  position="right"
                   formatter={(val) => `${val}%`}
                   style={{ fill: '#10b981', fontSize: 13, fontWeight: 600 }}
                 />
               </Bar>
-              
-              <Bar 
-                dataKey="questions" 
-                fill="#f97316" 
-                radius={[0, 4, 4, 0]} 
+
+              <Bar
+                dataKey="questions"
+                fill="#f97316"
+                radius={[0, 4, 4, 0]}
                 barSize={14}
               >
-                <LabelList 
-                  dataKey="questions" 
-                  position="right" 
+                <LabelList
+                  dataKey="questions"
+                  position="right"
                   style={{ fill: '#f97316', fontSize: 13, fontWeight: 600 }}
                 />
               </Bar>
-              
-              <Bar 
-                dataKey="avgTime" 
-                fill="#3b82f6" 
-                radius={[0, 4, 4, 0]} 
+
+              <Bar
+                dataKey="avgTime"
+                fill="#3b82f6"
+                radius={[0, 4, 4, 0]}
                 barSize={14}
               >
-                <LabelList 
-                  dataKey="avgTime" 
-                  position="right" 
+                <LabelList
+                  dataKey="avgTime"
+                  position="right"
                   formatter={(val) => `${val}s`}
                   style={{ fill: '#3b82f6', fontSize: 13, fontWeight: 600 }}
                 />
@@ -197,12 +196,12 @@ export default function Math_SubTopicPracticeStyled({
               { name: 'Questions', value: item.questions, fill: '#f97316' },
               { name: 'Avg Time', value: item.avgTime, fill: '#3b82f6' },
             ];
-            
+
             return (
               <div key={idx} className="border-b border-gray-100 pb-4 last:border-0">
                 {/* Subtopic Name */}
                 <p className="text-sm font-bold text-gray-800 mb-2 bg-gray-50 p-2 rounded-lg">{item.name}</p>
-                
+
                 {/* Bar Chart */}
                 <div style={{ height: 120 }}>
                   <ResponsiveContainer width="100%" height="100%">
@@ -213,8 +212,8 @@ export default function Math_SubTopicPracticeStyled({
                       barCategoryGap="20%"
                     >
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eee" />
-                      <XAxis 
-                        type="number" 
+                      <XAxis
+                        type="number"
                         domain={[0, 100]}
                         ticks={[0, 20, 40, 60, 80, 100]}
                         tickFormatter={(v) => `${v}%`}
@@ -222,25 +221,25 @@ export default function Math_SubTopicPracticeStyled({
                         axisLine={false}
                         tickLine={false}
                       />
-                      <YAxis 
-                        type="category" 
-                        dataKey="name" 
-                        axisLine={false} 
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#666', fontSize: 10, fontWeight: 500 }}
                         width={70}
                       />
-                      <Bar 
-                        dataKey="value" 
-                        radius={[0, 4, 4, 0]} 
+                      <Bar
+                        dataKey="value"
+                        radius={[0, 4, 4, 0]}
                         barSize={14}
                       >
                         {mobileData.map((entry, i) => (
                           <Cell key={i} fill={entry.fill} />
                         ))}
-                        <LabelList 
-                          dataKey="value" 
-                          position="right" 
+                        <LabelList
+                          dataKey="value"
+                          position="right"
                           formatter={(val, name, entry) => {
                             if (entry && entry.name === 'Accuracy') return `${val}%`;
                             if (entry && entry.name === 'Avg Time') return `${val}s`;
@@ -273,7 +272,7 @@ export default function Math_SubTopicPracticeStyled({
           </div>
           <h2 className="text-2xl font-extrabold text-gray-800">Sub–Topic Wise Practice</h2>
         </div>
-        
+
         {/* Topic Navigation Pills */}
         {topics.length > 1 && (
           <div className="flex gap-2 flex-wrap">
@@ -281,11 +280,10 @@ export default function Math_SubTopicPracticeStyled({
               <button
                 key={i}
                 onClick={() => setActiveSection(i)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
-                  activeSection === i
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${activeSection === i
                     ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {t.topic}
               </button>

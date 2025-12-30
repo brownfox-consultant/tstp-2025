@@ -76,6 +76,7 @@ export default function Math_Topic_Wise_Practice({
         data: topics.map((t) => Math.round(t.practice_percent)),
         backgroundColor: colors,
         borderWidth: 0,
+        color: "#fff",
       },
     ],
   };

@@ -166,13 +166,18 @@ const [selectedTest, setSelectedTest] = useState(null);
     });
 
     axios.get(GET_Students, { withCredentials: true }).then((res) => {
-  const studentList = res.data || [];
-  const allOption = { id: "", name: "All Students" }; // 👈 this is important
-  const updatedList = [allOption, ...studentList];
+      const studentList = res.data || [];
+      const allOption = { id: "", name: "All Students" };
+      const updatedList = [allOption, ...studentList];
 
-  setStudents(updatedList);
-  setSelectedStudent(""); // default to "All Students"
-});
+      setStudents(updatedList);
+      // Set the first student as default if available
+      if (studentList.length > 0) {
+        setSelectedStudent(studentList[0].id.toString());
+      } else {
+        setSelectedStudent(""); // fallback to "All Students" (empty string ID)
+      }
+    });
 
     getStudentCountByCourse().then(({ data }) => {
       const formatted = data.map((item) => ({

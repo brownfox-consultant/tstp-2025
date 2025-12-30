@@ -160,11 +160,11 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
 
               {/* Badges - Stacked */}
               <div className="flex flex-wrap gap-2">
-                <div className="inline-flex items-center gap-2 px-3 rounded-full text-xs font-semibold bg-gray-900 text-white w-fit">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-gray-900 text-white w-fit">
                   <UserIcon size={14} />
                   <span>{resultData?.studentName}</span>
                 </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 w-fit">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 w-fit">
                   <FileTextIcon size={14} />
                   <span>{resultData?.testName}</span>
                 </div>

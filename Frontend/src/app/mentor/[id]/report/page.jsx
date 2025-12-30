@@ -22,8 +22,8 @@ export default function MentorReportPage() {
         const allStudents = allStudentsRes.data || [];
 
         // 2. Fetch assigned student IDs for this mentor
-        const assignedRes = await axios.get(
-          `${BASE_URL}/api/doubt/students-by-faculty/?faculty_id=${mentorId}`,
+       const assignedRes = await axios.get(
+          `${BASE_URL}/api/doubt/students-by-mentor/?mentor_id=${mentorId}`,
           { withCredentials: true }
         );
         const assignedIds = assignedRes.data.student_ids || [];

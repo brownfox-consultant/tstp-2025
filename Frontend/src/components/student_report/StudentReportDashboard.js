@@ -21,7 +21,7 @@ import Topic_Wise_Practice from "@/components/student_report/Topic_Wise_Practice
 import TopicAccuracy from "@/components/student_report/TopicAccuracy";
 import SubTopicPracticeStyled from "@/components/student_report/SubTopicPracticeStyled";
 import Math_Topic_Wise_Practice from "@/components/student_report/Math_Topic_Wise_Practice";
-import Math_TopicAccuracy from "@/components/student_report/Math_TopicAccuracy";
+// import Math_TopicAccuracy from "@/components/student_report/Math_TopicAccuracy";
 import Math_SubTopicPracticeStyled from "@/components/student_report/Math_SubTopicPracticeStyled"
 import Scoreboard from "@/components/student_report/Scoreboard";
 import SelfPractice from "@/components/student_report/SelfPractice";
@@ -415,10 +415,11 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
                   course_id={selectedCourse}
                   test_type={testType}
                 />
-                <Math_TopicAccuracy
+                <TopicAccuracy
                   student_id={studentId}
                   course_id={selectedCourse}
                   test_type={testType}
+                  subject="Math"
                 />
               </div>
 
