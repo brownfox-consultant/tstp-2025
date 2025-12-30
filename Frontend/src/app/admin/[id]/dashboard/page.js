@@ -45,13 +45,12 @@ function DashboardPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-[#2E2725]">
               Welcome back, <span className="text-[#805830]">{username}</span>! 👋
             </h1>
-            <p className="text-[#805830] mt-2 text-sm md:text-base">
+            {/* <p className="text-[#805830] mt-2 text-sm md:text-base">
               Here&apos;s what&apos;s happening with your students today.
-            </p>
+            </p> */}
           </div>
           
-          <div className="flex items-center gap-3">
-            {/* Quick Action Buttons */}
+          {/* <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-4 py-2.5 bg-[#2E2725] text-white rounded-xl font-medium text-sm shadow-md hover:bg-[#805830] transition-all duration-300 hover:scale-105">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -64,7 +63,7 @@ function DashboardPage() {
               </svg>
               View Reports
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
