@@ -213,12 +213,13 @@ class UserViewSet(viewsets.ModelViewSet):
             return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
 
     @permission_classes([IsAdmin])
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        # ------------------------------
+        # --------------------------------------
         # 1) UPDATE BASIC USER FIELDS
-        # ------------------------------
+        # --------------------------------------
         user_serializer = UserUpdateSerializer(
             instance,
             data=request.data,
@@ -235,35 +236,40 @@ class UserViewSet(viewsets.ModelViewSet):
         user_serializer.save()
 
         # --------------------------------------
-        # 2) STUDENT EXTRA UPDATES (COURSES / PARENTS)
+        # 2) STUDENT-SPECIFIC UPDATES
         # --------------------------------------
         if instance.role.name == 'student':
-            student_metadata = StudentMetadata.objects.filter(student=instance).first()
 
-            # ---------------------------
-            # 2A) UPDATE COURSES / FACULTIES / MENTOR
-            # ---------------------------
+            # 🔒 ALWAYS re-fetch metadata (single source of truth)
+            student_metadata = StudentMetadata.objects.select_for_update().get(
+                student=instance
+            )
+
+            # ----------------------------------
+            # 2A) FACULTIES / MENTOR / COURSES
+            # ----------------------------------
             student_update_serializer = StudentUpdateSerializer(
                 instance,
                 data=request.data,
                 partial=True
             )
 
-            if student_update_serializer.is_valid():
-                student_update_serializer.update(
-                    instance,
-                    student_update_serializer.validated_data
-                )
-            else:
+            if not student_update_serializer.is_valid():
                 return get_error_response_for_serializer(
                     logger=self.logger,
                     serializer=student_update_serializer,
                     data=request.data
                 )
 
-            # --------------------------------------
+            # ✅ THIS handles mentor + faculties + courses
+            student_update_serializer.update(
+                instance,
+                student_update_serializer.validated_data
+            )
+
+            # ----------------------------------
             # 2B) FATHER UPDATE / CREATE
-            # --------------------------------------
+            # ----------------------------------
             if request.data.get("father_email"):
                 if student_metadata.father is None:
                     father_resp = self._create_parent_user(request.data, "father")
@@ -277,9 +283,9 @@ class UserViewSet(viewsets.ModelViewSet):
                     father.name = request.data.get("father_name")
                     father.save()
 
-            # --------------------------------------
+            # ----------------------------------
             # 2C) MOTHER UPDATE / CREATE
-            # --------------------------------------
+            # ----------------------------------
             if request.data.get("mother_email"):
                 if student_metadata.mother is None:
                     mother_resp = self._create_parent_user(request.data, "mother")
@@ -293,12 +299,13 @@ class UserViewSet(viewsets.ModelViewSet):
                     mother.name = request.data.get("mother_name")
                     mother.save()
 
-            student_metadata.save()
+            # ✅ SAVE ONLY PARENT CHANGES (mentor NOT touched here)
+            student_metadata.save(update_fields=["father", "mother"])
 
         # --------------------------------------
-        # RETURN RESPONSE
+        # 3) RETURN UPDATED USER
         # --------------------------------------
-        return Response(user_serializer.data)
+        return Response(UserSerializer(instance).data)
 
 
 

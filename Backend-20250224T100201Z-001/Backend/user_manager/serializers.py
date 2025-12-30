@@ -319,18 +319,24 @@ class StudentUpdateSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         student_metadata = instance.student_metadata
 
-        faculties = validated_data.get('faculties', None)
-        mentor = validated_data.get('mentor', None)
-
-        if faculties is not None:
-            faculty_users = User.objects.filter(id__in=faculties)
+        # ---------- FACULTIES ----------
+        if 'faculties' in validated_data:
+            faculty_users = User.objects.filter(id__in=validated_data['faculties'])
             student_metadata.faculties.set(faculty_users)
 
-        if mentor is not None:
-            student_metadata.mentor = User.objects.get(id=mentor) if mentor else None
+        # ---------- MENTOR (FIXED) ----------
+        if 'mentor' in validated_data:
+            mentor_id = validated_data['mentor']
+            print("Mentor ID:", mentor_id)
+            if mentor_id:
+                student_metadata.mentor = User.objects.get(id=mentor_id)
+                print("Assigned Mentor:", student_metadata.mentor)
+            else:
+                student_metadata.mentor = None  # explicitly remove mentor
 
         student_metadata.save()
 
+        # ---------- COURSES ----------
         if 'courses' in validated_data:
             CourseEnrollment.objects.filter(student=instance).delete()
             for enrollment_data in validated_data['courses']:
