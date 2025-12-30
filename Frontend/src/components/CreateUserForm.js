@@ -3,16 +3,13 @@ import {
   getRoles,
 } from "@/app/services/authService";
 import { getCoursesInsideAuth } from "@/app/services/courseService";
-import { LeftOutlined } from "@ant-design/icons";
+import { LeftOutlined, UserOutlined, PhoneOutlined, MailOutlined, HomeOutlined, CalendarOutlined, TeamOutlined } from "@ant-design/icons";
 import {
   Button,
-  Card,
-  Col,
   DatePicker,
   Form,
   Input,
   Modal,
-  Row,
   Select,
 } from "antd";
 import { useForm } from "antd/es/form/Form";
@@ -53,9 +50,8 @@ function CreateUserForm() {
 
   const handleSubmit = (formData) => {
     if (formData.dob) {
-      formData.dob = dayjs(formData.dob).format("YYYY-MM-DD"); // ✅ Correct format
+      formData.dob = dayjs(formData.dob).format("YYYY-MM-DD");
     }
-    console.log("SUBMIT DATA:", formData);
     setLoading(true);
 
     createUser(formData)
@@ -83,223 +79,252 @@ function CreateUserForm() {
   };
 
   const onFieldsChange = (_, allFields) => {
-  const hasErrors = allFields.some((field) => field.errors.length > 0);
-
-  // Only require required fields to be filled
-  const requiredFields = [
-    "name",
-    "email",
-    "phone_number",
-    "dob",
-    "address",
-    "role",
-  ];
-
-  const requiredFilled = requiredFields.every((name) => {
-    const field = allFields.find((f) => f.name[0] === name);
-    return field?.value !== undefined && field?.value !== "";
-  });
-
-  setIsSubmitDisabled(hasErrors || !requiredFilled);
-};
-
+    const hasErrors = allFields.some((field) => field.errors.length > 0);
+    const requiredFields = ["name", "email", "phone_number", "dob", "address", "role"];
+    const requiredFilled = requiredFields.every((name) => {
+      const field = allFields.find((f) => f.name[0] === name);
+      return field?.value !== undefined && field?.value !== "";
+    });
+    setIsSubmitDisabled(hasErrors || !requiredFilled);
+  };
 
   return (
-    <Form
-      form={form}
-      onFinish={handleSubmit}
-      onFieldsChange={onFieldsChange}
-      layout="vertical"
-    >
-      <div className="text-xl font-semibold mb-2 flex align-middle">
-        <LeftOutlined
-          onClick={() => router.back()}
-          className="mr-2 text-base hover:font-extrabold cursor-pointer"
-        />
-        Create User
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 p-6">
+      {/* Header */}
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center gap-4 mb-8 justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Create New User</h1>
+            <p className="text-sm text-gray-500">Fill in the details to create a new user account</p>
+          </div>
+          <button 
+            onClick={() => router.back()}
+            className="px-5 py-3 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 shadow  transition-all duration-300 hover:scale-105"
+          >
+           Back
+          </button>
+        </div>
 
-      <Card title="Personal details" className="mb-6 border-dashed border-blue-400">
-        <Row gutter={[24, 16]}>
-          <Col span={8}>
-            <Form.Item label="User name" name="name" rules={[{ required: true }]}>
-              <Input placeholder="Full name" />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              label="Email"
-              name="email"
-              rules={[{ required: true }, { type: "email" }]}
-            >
-              <Input placeholder="Enter email" />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              label="Contact number"
-              name="phone_number"
-              rules={[{ required: true }, { pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
-            >
-              <Input
-                addonBefore="+91"
-                maxLength={10}
-                onChange={(e) => handlePhoneNumberChange(e, "phone_number")}
-                placeholder="Enter number"
-              />
-            </Form.Item>
-          </Col>
-
-          <Col span={8}>
-            <Form.Item
-              label="Alternative number"
-              name="alternative_number"
-              rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
-            >
-              <Input
-                addonBefore="+91"
-                maxLength={10}
-                onChange={(e) => handlePhoneNumberChange(e, "alternative_number")}
-                placeholder="Enter alternative number"
-              />
-            </Form.Item>
-          </Col>
-
-          <Col span={8}>
-            <Form.Item label="Date of birth" name="dob" rules={[{ required: true }]}>
-              <DatePicker className="w-full" format="YYYY-MM-DD" />
-            </Form.Item>
-          </Col>
-
-          <Col span={8}>
-            <Form.Item label="Blood group" name="blood_group" >
-              <Select placeholder="Select blood group">
-                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((group) => (
-                  <Option key={group} value={group}>
-                    {group}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col span={8}>
-            <Form.Item label="Address" name="address" rules={[{ required: true }]}>
-              <Input placeholder="Add address" />
-            </Form.Item>
-          </Col>
-
-          <Col span={8}>
-            <Form.Item label="Role" name="role" rules={[{ required: true }]}>
-              <Select placeholder="Select Role" value={roleState} onChange={handleRoleChange}>
-                {options &&
-                  options
-                    .filter(({ name }) => name !== "parent")
-                    .map(({ id, name, label }) => (
-                      <Option key={id} value={id}>
-                        {label}
-                      </Option>
-                    ))}
-              </Select>
-            </Form.Item>
-          </Col>
-
-          {roleName === "student" && (
-            <Col span={8}>
-              <Form.Item
-                label="Course"
-                name="courses"
-                rules={[{ required: true, message: "Please select a Course!" }]}
-              >
-                <Select mode="multiple" placeholder="Select Course">
-                  {courseOptions.map(({ id, name }) => (
-                    <Option key={id} value={name}>
-                      {name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          )}
-        </Row>
-      </Card>
-
-      {roleName === "student1899" && (
-        <>
-          <Card title="Father Details" className="mb-6">
-            <Row gutter={[24, 16]}>
-              <Col span={8}>
-                <Form.Item label="Name" name="father_name">
-                  <Input placeholder="Name" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item label="Email" name="father_email" rules={[{ type: "email" }]}>
-                  <Input placeholder="Enter Email" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  label="Contact Number"
-                  name="father_phone_number"
-                  rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
-                >
-                  <Input
-                    placeholder="Enter Contact Number"
-                    maxLength={10}
-                    onChange={(e) => handlePhoneNumberChange(e, "father_phone_number")}
-                    addonBefore="+91"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
-
-          <Card title="Mother Details" className="mb-6">
-            <Row gutter={[24, 16]}>
-              <Col span={8}>
-                <Form.Item label="Name" name="mother_name">
-                  <Input placeholder="Name" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item label="Email" name="mother_email" rules={[{ type: "email" }]}>
-                  <Input placeholder="Enter Email" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  label="Contact Number"
-                  name="mother_phone_number"
-                  rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
-                >
-                  <Input
-                    placeholder="Enter Contact Number"
-                    maxLength={10}
-                    onChange={(e) => handlePhoneNumberChange(e, "mother_phone_number")}
-                    addonBefore="+91"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
-        </>
-      )}
-
-      <Row justify="center" className="mt-5">
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          disabled={isSubmitDisabled}
+        <Form
+          form={form}
+          onFinish={handleSubmit}
+          onFieldsChange={onFieldsChange}
+          layout="vertical"
+          className="space-y-6"
         >
-          Submit
-        </Button>
-        <Button className="ml-5" onClick={() => router.back()}>
-          Cancel
-        </Button>
-      </Row>
-    </Form>
+          {/* Global style for consistent input heights */}
+          <style jsx global>{`
+            .ant-input, 
+            .ant-input-affix-wrapper,
+            .ant-picker,
+            .ant-select-selector {
+              min-height: 44px !important;
+              height: 44px !important;
+              display: flex !important;
+              align-items: center !important;
+            }
+            .ant-input-affix-wrapper .ant-input {
+              height: auto !important;
+              min-height: auto !important;
+            }
+            .ant-input-affix-wrapper .ant-input-prefix {
+              display: flex;
+              align-items: center;
+              margin-right: 8px;
+            }
+            .ant-select-selection-search-input {
+              height: 42px !important;
+            }
+            .ant-select-multiple .ant-select-selector {
+              min-height: 44px !important;
+              height: auto !important;
+            }
+            .ant-select-single .ant-select-selector .ant-select-selection-item,
+            .ant-select-single .ant-select-selector .ant-select-selection-placeholder {
+              line-height: 42px !important;
+            }
+            .ant-picker-input > input {
+              height: auto !important;
+            }
+            .ant-select-arrow {
+              display: flex !important;
+              align-items: center !important;
+              height: 100% !important;
+              top: 0 !important;
+              margin-top: 8px !important;
+              transition:transform 0.3s ease !important;
+            }
+            .ant-select-open .ant-select-arrow {
+              transform: rotate(180deg) !important;
+            }
+          `}</style>
+          {/* Personal Details Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-[#0071BC] text-white px-6 py-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <UserOutlined />
+                Personal Details
+              </h2>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Name */}
+                <Form.Item 
+                  label={<span className="font-medium text-gray-700">Full Name</span>} 
+                  name="name" 
+                  rules={[{ required: true, message: "Please enter name" }]}
+                >
+                  <Input 
+                    prefix={<UserOutlined className="text-gray-400" />}
+                    placeholder="Enter full name" 
+                    className="h-11 rounded-lg"
+                  />
+                </Form.Item>
+
+                {/* Email */}
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Email Address</span>}
+                  name="email"
+                  rules={[{ required: true }, { type: "email", message: "Please enter valid email" }]}
+                >
+                  <Input 
+                    prefix={<MailOutlined className="text-gray-400" />}
+                    placeholder="Enter email address" 
+                    className="h-11 rounded-lg"
+                  />
+                </Form.Item>
+
+                {/* Contact Number */}
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Contact Number</span>}
+                  name="phone_number"
+                  rules={[{ required: true }, { pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
+                >
+                  <Input
+                    addonBefore={<span className="text-gray-500">+91</span>}
+                    maxLength={10}
+                    onChange={(e) => handlePhoneNumberChange(e, "phone_number")}
+                    placeholder="Enter 10 digit number"
+                    className="h-11 rounded-lg"
+                  />
+                </Form.Item>
+
+                {/* Alternative Number */}
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Alternative Number</span>}
+                  name="alternative_number"
+                  rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
+                >
+                  <Input
+                    addonBefore={<span className="text-gray-500">+91</span>}
+                    maxLength={10}
+                    onChange={(e) => handlePhoneNumberChange(e, "alternative_number")}
+                    placeholder="Enter alternative number"
+                    className="h-11 rounded-lg"
+                  />
+                </Form.Item>
+
+                {/* Date of Birth */}
+                <Form.Item 
+                  label={<span className="font-medium text-gray-700">Date of Birth</span>} 
+                  name="dob" 
+                  rules={[{ required: true, message: "Please select date" }]}
+                >
+                  <DatePicker 
+                    className="w-full h-11 rounded-lg" 
+                    format="YYYY-MM-DD" 
+                    placeholder="Select date"
+                    disabledDate={(current) => current && current > dayjs().endOf('day')}
+                  />
+                </Form.Item>
+
+                {/* Blood Group */}
+                <Form.Item 
+                  label={<span className="font-medium text-gray-700">Blood Group</span>} 
+                  name="blood_group"
+                >
+                  <Select placeholder="Select blood group" className="h-11">
+                    {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((group) => (
+                      <Option key={group} value={group}>{group}</Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                {/* Address */}
+                <Form.Item 
+                  label={<span className="font-medium text-gray-700">Address</span>} 
+                  name="address" 
+                  rules={[{ required: true, message: "Please enter address" }]}
+                  className="md:col-span-2 lg:col-span-1"
+                >
+                  <Input 
+                    prefix={<HomeOutlined className="text-gray-400" />}
+                    placeholder="Enter address" 
+                    className="h-11 rounded-lg"
+                  />
+                </Form.Item>
+
+                {/* Role */}
+                <Form.Item 
+                  label={<span className="font-medium text-gray-700">Role</span>} 
+                  name="role" 
+                  rules={[{ required: true, message: "Please select role" }]}
+                >
+                  <Select 
+                    placeholder="Select Role" 
+                    value={roleState} 
+                    onChange={handleRoleChange}
+                    className="h-11"
+                  >
+                    {options &&
+                      options
+                        .filter(({ name }) => name !== "parent")
+                        .map(({ id, name, label }) => (
+                          <Option key={id} value={id}>{label}</Option>
+                        ))}
+                  </Select>
+                </Form.Item>
+
+                {/* Course - Only for students */}
+                {roleName === "student" && (
+                  <Form.Item
+                    label={<span className="font-medium text-gray-700">Course</span>}
+                    name="courses"
+                    rules={[{ required: true, message: "Please select course" }]}
+                  >
+                    <Select mode="multiple" placeholder="Select Course" className="min-h-11">
+                      {courseOptions.map(({ id, name }) => (
+                        <Option key={id} value={name}>{name}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-center gap-4 pt-6 pb-4">
+            <button 
+              className="h-12 px-8 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-300" 
+              onClick={() => router.back()}
+            >
+              Cancel
+            </button>
+            <button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              disabled={isSubmitDisabled}
+              className="h-12 px-10 rounded-xl font-semibold shadow-lg bg-[#0071bc] hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 text-white"
+            >
+              Submit
+            </button>
+          </div>
+        </Form>
+      </div>
+    </div>
   );
 }
 
