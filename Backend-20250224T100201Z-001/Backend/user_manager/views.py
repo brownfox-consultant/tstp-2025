@@ -17,6 +17,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from user_manager.models import User
+from django.db.models import Case, When, Value, CharField, Exists, OuterRef
+from course_manager.models import CourseEnrollment
 
 from course_manager.models import Course, CourseEnrollment
 from notification_manager.models import Notification, NotificationTemplate
@@ -405,6 +407,21 @@ class UserViewSet(viewsets.ModelViewSet):
 
         filtered_users = filterset.qs
 
+
+        paid_enrollment_qs = CourseEnrollment.objects.filter(
+        student=OuterRef('pk'),
+        subscription_type=CourseEnrollment.PAID
+         )
+
+        filtered_users = filtered_users.annotate(
+            user_type=Case(
+                When(Exists(paid_enrollment_qs), then=Value('PAID')),
+                default=Value('FREE'),
+                output_field=CharField()
+            )
+        )
+
+
         # Safe ordering mapping
         ORDERING_MAP = {
         "name": "name",
@@ -413,6 +430,7 @@ class UserViewSet(viewsets.ModelViewSet):
         "role_label": "role__name",
         "is_active": "is_active",
         "subscription_type": "course_enrollments__subscription_type", 
+        "user_type": "user_type",
 
     }
 

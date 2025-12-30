@@ -18,12 +18,13 @@ class UserSerializer(serializers.ModelSerializer):
     faculty_details = serializers.SerializerMethodField()
     mentor_details = serializers.SerializerMethodField()
     course = serializers.SerializerMethodField()
+    user_type = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'email', 'phone_number', 'name',
-            'role','course', 'role_name', 'role_label', 'created_at', 'updated_at',
+            'role','course', 'role_name','user_type', 'role_label', 'created_at', 'updated_at',
             'course_details', 'parent_details', 'faculty_details', 'mentor_details',
             'is_active'
         ]
@@ -284,21 +285,29 @@ class LoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'phone_number', 'name',
-            'role', 'role_name', 'csrf_token', 'change_password',
-            'subscription_type'
+            'id',
+            'email', 
+            'phone_number',
+            'name',
+            'role',
+            'role_name',
+            'csrf_token',
+            'change_password',
+            'subscription_type',
         ]
 
     def get_subscription_type(self, obj):
-        # Only for students
-        if obj.role.name.lower() == "student":
-            enrollment = CourseEnrollment.objects.filter(student=obj)\
-                        .order_by("-subscription_end_date")\
-                        .first()
+        if obj.role.name.lower() != "student":
+            return None
 
-            if enrollment:
-                return enrollment.subscription_type  # returns FREE / PAID
-        return None
+        return (
+            "PAID"
+            if CourseEnrollment.objects.filter(
+                student=obj,
+                subscription_type="PAID"
+            ).exists()
+            else "FREE"
+        )
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:

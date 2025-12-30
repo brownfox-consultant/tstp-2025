@@ -144,15 +144,15 @@ function AllUsersTable({ tabKey, api }) {
     setLoading(false);
   }
  };
-  const FIELD_MAP = {
-  role_label: "role_label", // backend maps to role__name
+ const FIELD_MAP = {
+  role_label: "role_label",
   name: "name",
   email: "email",
   phone_number: "phone_number",
   is_active: "is_active",
-  user_type: "subscription_type",
-  
+  user_type: "user_type", // ✅ FIXED
 };
+
 
  const handleTableChange = (pagination, filters, sorter) => {
   let order = "";
@@ -465,20 +465,27 @@ function AllUsersTable({ tabKey, api }) {
     </div>
   ),
   key: "user_type",
-  dataIndex: "user_type", 
+  dataIndex: "user_type",
   width: 120,
-  sorter: true, 
-  render: (_, record) => {
-    const courseDetails = record.course_details || [];
-    if (courseDetails.length === 0) return <Tag color="default">N/A</Tag>;
+  sorter: true,
+  render: (userType, record) => {
+    // ✅ Only students have user_type
+    if (record.role_name !== "student") {
+      return <Tag color="default">N/A</Tag>;
+    }
 
-    const isPaid = courseDetails.some(course => course.subscription_type === "PAID");
+    if (!userType) {
+      return <Tag color="default">N/A</Tag>;
+    }
 
-    return isPaid
-      ? <Tag color="gold">PAID</Tag>
-      : <Tag color="blue">FREE</Tag>;
+    return userType === "FREE" ? (
+      <Tag color="blue">FREE</Tag>
+    ) : (
+      <Tag color="gold">PAID</Tag>
+    );
   },
 },
+
 
 
     {
