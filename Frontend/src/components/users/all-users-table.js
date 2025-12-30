@@ -469,12 +469,14 @@ function AllUsersTable({ tabKey, api }) {
   width: 120,
   sorter: true, 
   render: (_, record) => {
-    const subscriptionType = record.course_details?.[0]?.subscription_type;
-    if (!subscriptionType) return <Tag color="default">N/A</Tag>;
+    const courseDetails = record.course_details || [];
+    if (courseDetails.length === 0) return <Tag color="default">N/A</Tag>;
 
-    return subscriptionType === "FREE"
-      ? <Tag color="blue">FREE</Tag>
-      : <Tag color="gold">PAID</Tag>;
+    const isPaid = courseDetails.some(course => course.subscription_type === "PAID");
+
+    return isPaid
+      ? <Tag color="gold">PAID</Tag>
+      : <Tag color="blue">FREE</Tag>;
   },
 },
 

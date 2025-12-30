@@ -41,7 +41,7 @@ function LoginForm({ handleNext }) {
     );
     window.localStorage.setItem("change_password", change_password);
     window.localStorage.setItem("csrfToken", csrf_token);
-     window.localStorage.setItem("subscription_type", subscription_type);
+    window.localStorage.setItem("subscription_type", subscription_type);
   }
 
   useEffect(() => {
