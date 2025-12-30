@@ -16,12 +16,6 @@ export default function ReportPage() {
       setLoading(true);
       try {
         const res = await axios.get(GET_Students, { withCredentials: true });
-<<<<<<< HEAD
-        const studentList = res.data || [];
-        setStudents(studentList);
-        setSelectedStudentId(studentList[0].id);
-
-=======
 
         // ✅ Sort students alphabetically by name
         const sortedStudents = (res.data || []).sort((a, b) =>
@@ -34,7 +28,6 @@ export default function ReportPage() {
         if (sortedStudents.length > 0) {
           setSelectedStudentId(sortedStudents[0].id);
         }
->>>>>>> 67f4f5acdafb675d4f5ae075281f10484353a869
       } catch (error) {
         console.error("Error fetching students:", error);
       } finally {
@@ -67,15 +60,9 @@ export default function ReportPage() {
           filterOption={(input, option) =>
             option?.label?.toLowerCase().includes(input.toLowerCase())
           }
-<<<<<<< HEAD
-          style={{ width: 300 }}
-          value={selectedStudentId}
-          onChange={(value) => setSelectedStudentId(value)}
-=======
           style={{ width: 320 }}
           value={selectedStudentId}   // ✅ controlled value
           onChange={setSelectedStudentId}
->>>>>>> 67f4f5acdafb675d4f5ae075281f10484353a869
           options={students.map((s) => ({
             label: `${s.name}${s.email ? ` (${s.email})` : ""}`,
             value: s.id,
@@ -84,14 +71,6 @@ export default function ReportPage() {
         />
       </div>
 
-<<<<<<< HEAD
-      <StudentReportDashboard
-        studentIdProp={selectedStudentId}
-        studentNameProp={selectedStudent?.name}
-        hideHeader={true}
-      />
-
-=======
       {selectedStudentId && (
         <StudentReportDashboard
           studentIdProp={selectedStudentId}
@@ -99,7 +78,6 @@ export default function ReportPage() {
           hideHeader={true}
         />
       )}
->>>>>>> 67f4f5acdafb675d4f5ae075281f10484353a869
     </div>
   );
 }
