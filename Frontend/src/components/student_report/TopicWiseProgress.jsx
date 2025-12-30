@@ -152,7 +152,7 @@ const ChartsSection = ({ chartData }) => (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart layout="vertical" data={chartData}>
             <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-            <YAxis dataKey="shortName" type="category" />
+            <YAxis dataKey="shortName" type="category" width={150} tick={{ width: 150 }} />
             <XAxis
               type="number"
               domain={[0, 100]}

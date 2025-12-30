@@ -30,7 +30,7 @@ export default function ReportPage() {
   const selectedStudent = students.find(s => s.id === selectedStudentId);
 
   return (
-    <div className="p-6">
+    <div>
       <div className="text-2xl font-bold mb-4 text-black">Student Reports</div>
 
       <div className="mb-6 flex items-center gap-4">

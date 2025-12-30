@@ -266,7 +266,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
   }, [timeData]);
 
   return (
-    <div className="dashboard-container">
+    <div >
       {!hideHeader && <Header studentName={studentNameProp} />}
 
       {/* INLINE DROPDOWNS - Course & Test Type */}
