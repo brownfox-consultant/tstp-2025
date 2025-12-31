@@ -9,7 +9,7 @@ import { BASE_URL } from "@/app/constants/apiConstants";
 export default function UtilisationOfResources({
   student_id,
   course_id,
-  test_type ,
+  test_type,
 }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,18 +37,30 @@ export default function UtilisationOfResources({
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-10">Loading utilisation...</div>;
+  if (!data || Object.keys(data).length === 0) {
+    return (
+      <div className="py-10">
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+            <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-700 mb-2">No Full-Length Test Data Available</h3>
+          <p className="text-gray-500 max-w-md leading-relaxed">
+            You haven't taken any Full-Length tests for this course yet. Complete your first test to see your score analysis!
+          </p>
+        </div>
+      </div>
+    );
   }
-
-  if (!data) return null;
 
   /* ================= CARD ================= */
 
   const ChartCard = ({ title, icon: Icon, answered, unanswered, color }) => {
     const total = answered + unanswered;
-    const answeredPercentage = (answered / total) * 100;
-    const unansweredPercentage = (unanswered / total) * 100;
+    const answeredPercentage = total > 0 ? (answered / total) * 100 : 0;
+    const unansweredPercentage = total > 0 ? (unanswered / total) * 100 : 0;
 
     return (
       <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] p-8 border border-gray-100 hover:shadow-[0_12px_40px_rgba(0,0,0,0.12)] transition-all">

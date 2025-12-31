@@ -86,8 +86,6 @@ export default function ScoreAnalysis_PracticeTest({
       filteredTests = filteredTests.filter(t => t.subject === selectedSubject);
     }
     
-    // Sort by date (oldest first or newest first? usually charts show chronological left-to-right)
-    // Assuming API returns chronological or we sort. Let's sort by date ascending for chart.
     const sortedTests = [...filteredTests].sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
 
     return sortedTests.map(t => ({
@@ -97,7 +95,6 @@ export default function ScoreAnalysis_PracticeTest({
         Incorrect: t.incorrect,
         subject: t.subject,
         date: t.date_time,
-        // formattedDate: new Date(t.date_time).toLocaleDateString() // Optional for tooltip
     }));
   }, [apiData, selectedSubject]);
 
@@ -265,7 +262,7 @@ export default function ScoreAnalysis_PracticeTest({
                     domain={[0, 'auto']}
                     fontSize={11}
                   />
-                  <Tooltip />
+                  <Tooltip cursor={{ fill: 'transparent' }} />
                   <Legend wrapperStyle={{ paddingTop: '10px' }} />
                   
                   {/* Grouped Bars: Total, Correct, Incorrect */}

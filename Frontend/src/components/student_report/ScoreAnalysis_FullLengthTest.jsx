@@ -30,10 +30,10 @@ export default function ScoreAnalysis_FullLengthTest({
   useEffect(() => {
     const updateVisibleCount = () => {
       const width = window.innerWidth;
-      
+
       // Hide buttons below 500px
       setHideButtons(width < 500);
-      
+
       if (width < 640) {
         setVisibleCount(2);
       } else if (width < 1024) {
@@ -41,9 +41,9 @@ export default function ScoreAnalysis_FullLengthTest({
       } else if (width < 1300) {
         setVisibleCount(6);
       } else if (width < 1400) {
-        setVisibleCount(8); 
+        setVisibleCount(8);
       } else {
-        setVisibleCount(10); 
+        setVisibleCount(10);
       }
     };
 
@@ -75,9 +75,9 @@ export default function ScoreAnalysis_FullLengthTest({
       );
 
       const data = res.data;
-      
+
       let chart = [];
-      
+
       /* ================= HANDLE FULL LENGTH TESTS ================= */
       if (Array.isArray(data.tests)) {
         chart = data.tests.map((test, index) => ({
@@ -90,19 +90,19 @@ export default function ScoreAnalysis_FullLengthTest({
       }
 
       const maxScore = 1600;
-      
-     const testScores = Array.isArray(data.tests)
-  ? data.tests.map(t => Number(t.overall_score) || 0)
-  : [];
 
-const totalScore = testScores.reduce((sum, s) => sum + s, 0);
-const avgScore = testScores.length > 0
-  ? totalScore / testScores.length
-  : 0;
+      const testScores = Array.isArray(data.tests)
+        ? data.tests.map(t => Number(t.overall_score) || 0)
+        : [];
 
-const percentage = maxScore > 0
-  ? Math.round((avgScore / maxScore) * 100)
-  : 0;
+      const totalScore = testScores.reduce((sum, s) => sum + s, 0);
+      const avgScore = testScores.length > 0
+        ? totalScore / testScores.length
+        : 0;
+
+      const percentage = maxScore > 0
+        ? Math.round((avgScore / maxScore) * 100)
+        : 0;
 
       setChartData(chart);
       setSummary({
@@ -116,7 +116,6 @@ const percentage = maxScore > 0
       });
 
     } catch (err) {
-      console.error("Full Length Test Score analysis API error:", err);
     } finally {
       setLoading(false);
     }
@@ -199,9 +198,9 @@ const percentage = maxScore > 0
                   domain={[0, 1600]}
                   fontSize={11}
                 />
-                <Tooltip />
+                <Tooltip cursor={{ fill: 'transparent' }} />
                 <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                
+
                 {/* Full Length Tests - Show Overall, Math, English bars */}
                 <Bar
                   dataKey="Overall"
@@ -249,11 +248,10 @@ const percentage = maxScore > 0
               <button
                 key={idx}
                 onClick={() => setStartIndex(idx * visibleCount)}
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
-                  Math.floor(startIndex / visibleCount) === idx 
-                    ? 'bg-blue-500 w-6' 
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${Math.floor(startIndex / visibleCount) === idx
+                    ? 'bg-blue-500 w-6'
                     : 'bg-gray-300 hover:bg-gray-400'
-                }`}
+                  }`}
               />
             ))}
           </div>
