@@ -10,6 +10,10 @@ import {
   LeftOutlined,
   SearchOutlined,
   WarningTwoTone,
+  FileTextOutlined,
+  CheckCircleOutlined,
+  ArrowLeftOutlined,
+  SaveOutlined,
 } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import QuestionEditModal from "./QuestionEditModal";
@@ -309,53 +313,102 @@ function EmptyTableComponent({
       dataSource={dataSource}
       columns={columns}
       hideSelectAll={false}
-      title={() => (
-        <div className="font-bold flex justify-between">
-          <div>
-            {" "}
-            <LeftOutlined
-              className="mr-2"
-              onClick={() => {
-                setDescSearch("");
-                setDataSource([]);
-                setSelectedSection("none");
-              }}
-            />
-            {sectionDetails.section_name}
-          </div>
-          <div
-            className={
-              selectedRowKeys.length !== no_of_questions && `text-red-600`
-            }
-          >
-            {selectedRowKeys.length}/{no_of_questions}
-          </div>
-        </div>
-      )}
-      footer={() => (
-        <div className="flex justify-center">
-          <Button
-            type="default"
-            className="mr-2"
-            onClick={() => setSelectedSection("none")}
-          >
-            Back
-          </Button>
+      title={() => {
+        const isComplete = selectedRowKeys.length === no_of_questions;
+        const progress = Math.round((selectedRowKeys.length / no_of_questions) * 100);
+        
+        return (
+          <div className="-mx-4 -mt-4 mb-2">
+            {/* Gradient Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 rounded-t-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                {/* Left: Back & Section Name */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setDescSearch("");
+                      setDataSource([]);
+                      setSelectedSection("none");
+                    }}
+                    className="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
+                  >
+                    <ArrowLeftOutlined className="text-white" />
+                  </button>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">{sectionDetails.section_name}</h3>
+                    <p className="text-white/80 text-sm">{sectionDetails.subject_name}</p>
+                  </div>
+                </div>
 
-          <Button
-            type="primary"
-            disabled={selectedRowKeys.length !== no_of_questions}
-            onClick={handleUpdateClick}
-          >
-            Update
-          </Button>
-          {selectedRowKeys.length > no_of_questions && (
-            <div className="inline-block ml-2 text-xs text-red-600 uppercase h-5 mt-2">
-              (Number of questions exceed the section limit.)
+                {/* Right: Stats */}
+                <div className="flex items-center gap-3">
+                  <div className={`px-4 py-2 rounded-lg backdrop-blur-sm flex items-center gap-2 ${isComplete ? 'bg-green-500/30' : 'bg-white/20'}`}>
+                    <FileTextOutlined className="text-white" />
+                    <span className="text-white font-bold">{selectedRowKeys.length}</span>
+                    <span className="text-white/70">/ {no_of_questions}</span>
+                  </div>
+                  {isComplete && (
+                    <div className="px-3 py-2 rounded-lg bg-green-500 flex items-center gap-2">
+                      <CheckCircleOutlined className="text-white" />
+                      <span className="text-white text-sm font-medium">Complete</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-white/80 mb-1">
+                  <span>Selection Progress</span>
+                  <span className="font-medium">{progress}%</span>
+                </div>
+                <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${isComplete ? 'bg-green-400' : 'bg-white'}`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        );
+      }}
+      footer={() => {
+        const isComplete = selectedRowKeys.length === no_of_questions;
+        const isExceeded = selectedRowKeys.length > no_of_questions;
+        
+        return (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 py-2">
+            {isExceeded && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+                <WarningTwoTone twoToneColor="#dc2626" />
+                Number of questions exceed the section limit
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedSection("none")}
+                className="h-11 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-medium bg-white hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 flex items-center gap-2"
+              >
+                <ArrowLeftOutlined />
+                Back
+              </button>
+              <button
+                disabled={!isComplete}
+                onClick={handleUpdateClick}
+                className={`h-11 px-8 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                  isComplete
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg hover:shadow-xl hover:shadow-blue-500/30'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <SaveOutlined />
+                Update Questions
+              </button>
+            </div>
+          </div>
+        );
+      }}
       expandable={{
         expandedRowRender: (record) => {
           return (

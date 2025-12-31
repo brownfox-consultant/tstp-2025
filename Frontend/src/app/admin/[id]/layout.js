@@ -460,8 +460,6 @@ function DashboardLayout({ children }) {
           style={{
             padding: 24,
             minHeight: "calc(100vh - 48px)",
-            background: colorBgContainer,
-            borderRadius: borderRadius,
             overflowY: "auto",
           }}
         >

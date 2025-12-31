@@ -10,6 +10,11 @@ import {
   LeftOutlined,
   SearchOutlined,
   WarningTwoTone,
+  FileTextOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ArrowLeftOutlined,
+  SaveOutlined,
 } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import QuestionEditModal from "./QuestionEditModal";
@@ -305,53 +310,43 @@ function TableComponent({
       dataSource={dataSource}
       columns={columns}
       hideSelectAll={false}
-      title={() => (
-        <div className="font-bold flex justify-between">
-          <div>
-            {" "}
-            <LeftOutlined
-              className="mr-2"
-              onClick={() => {
-                setDescSearch("");
-                setDataSource([]);
-                setSelectedSection("none");
-              }}
-            />
-            {sectionDetails.section_name}
-          </div>
-          <div
-            className={
-              selectedRowKeys.length !== no_of_questions && `text-red-600`
-            }
-          >
-            {selectedRowKeys.length}/{no_of_questions}
-          </div>
-        </div>
-      )}
-      footer={() => (
-        <div className="flex justify-center">
-          <Button
-            type="default"
-            className="mr-2"
-            onClick={() => setSelectedSection("none")}
-          >
-            Back
-          </Button>
 
-          <Button
-            type="primary"
-            disabled={selectedRowKeys.length !== no_of_questions}
-            onClick={handleUpdateClick}
-          >
-            Update
-          </Button>
-          {selectedRowKeys.length > no_of_questions && (
-            <div className="inline-block ml-2 text-xs text-red-600 uppercase h-5 mt-2">
-              (Number of questions exceed the section limit.)
+      footer={() => {
+        const isComplete = selectedRowKeys.length === no_of_questions;
+        const isExceeded = selectedRowKeys.length > no_of_questions;
+        
+        return (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 py-2">
+            {isExceeded && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+                <WarningTwoTone twoToneColor="#dc2626" />
+                Number of questions exceed the section limit
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedSection("none")}
+                className="h-11 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-medium bg-white hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 flex items-center gap-2"
+              >
+                <ArrowLeftOutlined />
+                Back
+              </button>
+              <button
+                disabled={!isComplete}
+                onClick={handleUpdateClick}
+                className={`h-11 px-8 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                  isComplete
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg hover:shadow-xl hover:shadow-blue-500/30'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <SaveOutlined />
+                Update Questions
+              </button>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        );
+      }}
       expandable={{
         expandedRowRender: (record) => {
           return (

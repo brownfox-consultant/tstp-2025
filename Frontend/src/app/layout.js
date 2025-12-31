@@ -44,7 +44,7 @@ function RootLayout({ children }) {
           src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.js"
         />
       </head>
-      <body>
+      <body className="bg-gray-100">
         <StoreProvider>
           <StyledComponentsRegistry>
             <ConfigProvider
