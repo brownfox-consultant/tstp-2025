@@ -68,6 +68,17 @@ function PracticeTestsList() {
   };
 
   const studentCols = [
+
+     {
+    key: "test_name",
+    title: "Test Name",
+    dataIndex: "test_name",
+    align: "center",
+    width: 120,
+    sorter: false,
+    render: (text) => <>{text}</>,
+  },
+
     {
       key: "course",
       title: "Course name",
@@ -118,6 +129,15 @@ function PracticeTestsList() {
       sorter: true,
       sorter: { multiple: 5 },
     },
+     {
+    key: "total_questions",
+    title: "Total Que. Count",
+    dataIndex: "total_questions",
+    align: "center",
+    width: 160,
+    sorter: false,
+    render: (val) => (val ?? "-"),
+  },
     {
       key: "time_taken",
       title: "Duration",

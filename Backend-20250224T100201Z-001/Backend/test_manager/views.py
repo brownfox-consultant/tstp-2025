@@ -3785,7 +3785,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                     "test_id": submission.test.id,
                     "test_type": "FULL_LENGTH",
                     "date": submission.completion_date.strftime("%Y-%m-%d"),
-                    "time": round(total_time_seconds / 60),
+                    "time": round(total_time_seconds / 60, 2),
                     "questions": total_questions,
                     "details": f"Full Length Test - {submission.test.name}"
                 })
@@ -3811,7 +3811,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                     "test_id": None,
                     "test_type": "PRACTICE",
                     "date": r.created_at.strftime("%Y-%m-%d"),
-                    "time": round((r.time_taken or 0) / 60),
+                    "time": round((r.time_taken or 0) / 60, 2),
                     "questions": r.question_answers.count(),
                     "details": "Practice Test Activity"
                 })

@@ -75,15 +75,15 @@ class DoubtViewSet(viewsets.ModelViewSet):
     logger = logging.getLogger('Doubts')
 
     @action(
-    detail=False,
-    methods=["GET"],
-    permission_classes=[IsAuthenticated],
-    url_path="status-of-doubts"
-)
+        detail=False,
+        methods=["GET"],
+        permission_classes=[IsAuthenticated],
+        url_path="status-of-doubts"
+    )
     def status_of_doubts(self, request):
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type")  # ✅ NEW
+        test_type = request.GET.get("test_type")  # EXAM | PRACTICE
 
         if not student_id or not course_id:
             return Response(
@@ -95,20 +95,28 @@ class DoubtViewSet(viewsets.ModelViewSet):
         course = get_object_or_404(Course, id=course_id)
 
         # ==================================================
-        # BASE QUERY
+        # ✅ BASE QUERY (WORKS FOR EXAM + PRACTICE)
         # ==================================================
         doubts_qs = Doubt.objects.filter(
-            student=student,
-            course_subject__course=course
+            student=student
+        ).filter(
+            Q(course_subject__course=course) |
+            Q(question__course_subject__course=course)
         )
 
         # ==================================================
-        # ✅ FILTER BY TEST TYPE (OPTIONAL)
+        # ✅ TEST TYPE FILTER
         # ==================================================
         if test_type:
-            doubts_qs = doubts_qs.filter(
-                test__test_type=test_type
-            )
+            if test_type == "PRACTICE":
+                doubts_qs = doubts_qs.filter(
+                    Q(test__test_type="PRACTICE") |
+                    Q(question__test_type="SELF_PRACTICE_TEST")
+                )
+            else:
+                doubts_qs = doubts_qs.filter(
+                    test__test_type=test_type
+                )
 
         # ==================================================
         # 1️⃣ MONTH-WISE RAISED vs SOLVED
@@ -134,7 +142,7 @@ class DoubtViewSet(viewsets.ModelViewSet):
         ]
 
         # ==================================================
-        # 2️⃣ TOTALS
+        # 2️⃣ SUMMARY
         # ==================================================
         total_raised = doubts_qs.count()
         total_solved = doubts_qs.filter(status=Doubt.RESOLVED).count()
@@ -165,7 +173,7 @@ class DoubtViewSet(viewsets.ModelViewSet):
         ) if avg_resolution else 0
 
         # ==================================================
-        # FINAL RESPONSE
+        # ✅ FINAL RESPONSE
         # ==================================================
         return Response({
             "filters": {
