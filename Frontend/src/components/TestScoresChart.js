@@ -11,10 +11,25 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import Select from "react-select";
+import Select, { components } from "react-select";
 import axios from "axios";
 import { usePathname } from "next/navigation";
 import { BASE_URL } from "@/app/constants/apiConstants";
+import { ChevronIcon } from "@/components/icons/dashboard-icons";
+
+// Custom Dropdown Indicator Component
+const CustomDropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+    </components.DropdownIndicator>
+  );
+};
+
+// Custom Select Components
+const customSelectComponents = {
+  DropdownIndicator: CustomDropdownIndicator,
+};
 
 const GET_Subjects = (courseId) =>
   `${BASE_URL}/api/course/${courseId}/subjects/`;
@@ -33,33 +48,33 @@ export default function TestScoresChart({ dateRange }) {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [testScoreData, setTestScoreData] = useState([]);
   // inside TestScoresChart.jsx (above return)
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-white border border-gray-300 p-3 rounded-md shadow-md text-sm">
-        <p className="font-semibold text-gray-700">{data.test}</p>
-        <p className="text-yellow-600">Score: {data.score}</p>
-      </div>
-    );
-  }
-  return null;
-};
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white border border-gray-300 p-3 rounded-md shadow-md text-sm">
+          <p className="font-semibold text-gray-700">{data.test}</p>
+          <p className="text-yellow-600">Score: {data.score}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Fetch courses
- useEffect(() => {
-  if (!studentId) return;
+  useEffect(() => {
+    if (!studentId) return;
 
-  axios
-    .get(
-      `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
-      { withCredentials: true }
-    )
-    .then((res) => setCourses(res.data))
-    .catch((err) =>
-      console.error("Student courses fetch error:", err)
-    );
-}, [studentId]);
+    axios
+      .get(
+        `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
+        { withCredentials: true }
+      )
+      .then((res) => setCourses(res.data))
+      .catch((err) =>
+        console.error("Student courses fetch error:", err)
+      );
+  }, [studentId]);
 
   // Fetch subjects for selected course
   useEffect(() => {
@@ -115,7 +130,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   }, [courses]);
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md mt-8 mx-4">
+    <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between flex-wrap items-center mb-4">
         <h2 className="text-xl font-semibold mb-2 md:mb-0">Test Scores</h2>
         <div className="flex gap-4 flex-wrap">
@@ -124,14 +139,15 @@ const CustomTooltip = ({ active, payload, label }) => {
             <Select
               placeholder="Select Course"
               options={courses.map((c) => ({ label: c.name, value: c.id }))}
+              components={customSelectComponents}
               value={
                 selectedCourseForScores
                   ? {
-                      label: courses.find(
-                        (c) => c.id === selectedCourseForScores
-                      )?.name,
-                      value: selectedCourseForScores,
-                    }
+                    label: courses.find(
+                      (c) => c.id === selectedCourseForScores
+                    )?.name,
+                    value: selectedCourseForScores,
+                  }
                   : null
               }
               onChange={(option) => {
@@ -154,6 +170,7 @@ const CustomTooltip = ({ active, payload, label }) => {
                   value: subj.name,
                 })),
               ]}
+              components={customSelectComponents}
               value={
                 selectedSubject
                   ? { label: selectedSubject, value: selectedSubject }
@@ -168,15 +185,15 @@ const CustomTooltip = ({ active, payload, label }) => {
       </div>
 
       <ResponsiveContainer width="100%" height={350}>
-  <BarChart data={testScoreData} barSize={40} barCategoryGap="20%">
-    <CartesianGrid strokeDasharray="3 3" />
-    <XAxis dataKey="test" />
-    <YAxis />
-    <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
-    <Legend />
-    <Bar dataKey="score" fill="#fbbf24" />
-  </BarChart>
-</ResponsiveContainer>
+        <BarChart data={testScoreData} barSize={40} barCategoryGap="20%">
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="test" />
+          <YAxis />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+          <Legend />
+          <Bar dataKey="score" fill="#fbbf24" />
+        </BarChart>
+      </ResponsiveContainer>
 
     </div>
   );

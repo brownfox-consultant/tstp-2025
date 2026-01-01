@@ -67,7 +67,7 @@ function FullLengthPracticeTestBar({ date, start_date, end_date }) {
   return (
     <div>
       {chartData.length > 0 ? (
-        <div className="w-[97%] h-[400px] pt-2 p-5 bg-white border border-gray-300 rounded-lg shadow-md ml-4">
+        <div className="h-[400px] pt-2 p-5 bg-white rounded-lg shadow-lg">
           <ResponsiveContainer width="100%" height="90%" className="mt-4">
 
             <BarChart
@@ -100,15 +100,15 @@ function FullLengthPracticeTestBar({ date, start_date, end_date }) {
               <Bar
                 dataKey="fullLengthTest"
                 fill="#FB923C" 
-                radius={[6, 6, 0, 0]}
-                barSize={24}
+                radius={[4, 4, 0, 0]}
+                barSize={30}
               />
 
               <Bar
                 dataKey="practiceTest"
                 fill="#FDE68A"
-                radius={[6, 6, 0, 0]}
-                barSize={24}
+                radius={[4, 4, 0, 0]}
+                barSize={30}
               />
             </BarChart>
 
