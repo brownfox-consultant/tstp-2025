@@ -141,20 +141,19 @@ export default function ScoreAnalysis_FullLengthTest({
 
 
   /* ================= EMPTY STATE ================= */
+  if (loading) return null;
   if (!chartData || chartData.length === 0) {
     return (
-      <div className="py-10">
-        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
-            <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-bold text-gray-700 mb-2">No Full-Length Test Data Available</h3>
-          <p className="text-gray-500 max-w-md leading-relaxed">
-            You haven't taken any Full-Length tests for this course yet. Complete your first test to see your score analysis!
-          </p>
+      <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
+        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+          <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
         </div>
+        <h3 className="text-xl font-bold text-gray-700 mb-2">No Full-Length Test Data Available</h3>
+        <p className="text-gray-500 max-w-md leading-relaxed">
+          You haven't taken any Full-Length tests for this course yet. Complete your first test to see your score analysis!
+        </p>
       </div>
     );
   }
@@ -167,7 +166,7 @@ export default function ScoreAnalysis_FullLengthTest({
 
       {/* ================= SCORE CHART ================= */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">
+        <h3 className="text-xl font-bold text-gray-800 mb-6">
           Full-Length Test - {courseName} Analysis
         </h3>
 
@@ -249,8 +248,8 @@ export default function ScoreAnalysis_FullLengthTest({
                 key={idx}
                 onClick={() => setStartIndex(idx * visibleCount)}
                 className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${Math.floor(startIndex / visibleCount) === idx
-                    ? 'bg-blue-500 w-6'
-                    : 'bg-gray-300 hover:bg-gray-400'
+                  ? 'bg-blue-500 w-6'
+                  : 'bg-gray-300 hover:bg-gray-400'
                   }`}
               />
             ))}

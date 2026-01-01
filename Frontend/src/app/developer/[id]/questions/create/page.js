@@ -1,8 +1,8 @@
 "use client";
 
-import "react-quill/dist/quill.snow.css";
 import React from "react";
 import { LeftOutlined } from "@ant-design/icons";
+
 import { useRouter } from "next/navigation";
 import QuestionForm from "@/components/QuestionForm";
 
@@ -13,141 +13,28 @@ function page() {
   };
 
   return (
-    <>
-      <div className="text-xl font-bold mb-5 flex align-middle">
-        <LeftOutlined
-          className="mr-2 text-base hover:font-extrabold cursor-pointer"
-          onClick={() => handleBack()}
-        />{" "}
-        Create a new question
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-black tracking-tight">
+          Create New Question
+        </h1>
+
+        <button
+          onClick={handleBack}
+          className="group flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-gray-300 hover:border-[#F59405] bg-white hover:bg-gradient-to-r hover:from-orange-50 hover:to-yellow-50 transition-all duration-300 shadow-sm hover:shadow-md"
+        >
+          <LeftOutlined className="text-base text-gray-600 group-hover:text-[#F59405] transition-colors duration-300" />
+          <span className="font-semibold text-gray-700 group-hover:text-[#F59405] transition-colors duration-300">
+            Back
+          </span>
+        </button>
       </div>
-      <QuestionForm />
-    </>
+
+      <div className="w-full">
+        <QuestionForm />
+      </div>
+    </div>
   );
 }
-
-const CustomToolbar = () => (
-  <div id="toolbar">
-    {toobarFormats.map((classes) => {
-      return (
-        <span className="ql-formats">
-          {classes.map((formatData) => {
-            return formatData.options
-              ? renderOptions(formatData)
-              : renderSingle(formatData);
-          })}
-        </span>
-      );
-    })}
-  </div>
-);
-
-const colors = ["red", "green", "blue", "orange", "violet"];
-
-const toobarFormats = [
-  [
-    // {
-    //   className: "ql-font",
-    //   options: ["serif", "monospace"],
-    // },
-    {
-      className: "ql-size",
-      options: ["small", "large", "huge"],
-    },
-  ],
-  [
-    { className: "ql-bold" },
-    { className: "ql-italic" },
-    { className: "ql-underline" },
-  ],
-  [
-    {
-      className: "ql-color",
-      options: colors,
-    },
-    {
-      className: "ql-background",
-      options: colors,
-    },
-  ],
-  [
-    {
-      className: "ql-script",
-      value: "sub",
-    },
-    {
-      className: "ql-script",
-      value: "super",
-    },
-  ],
-  [
-    {
-      className: "ql-blockquote",
-    },
-  ],
-  [
-    {
-      className: "ql-list",
-      value: "ordered",
-    },
-    {
-      className: "ql-list",
-      value: "bullet",
-    },
-  ],
-  [
-    {
-      className: "ql-align",
-      options: ["right", "center", "justify"],
-    },
-  ],
-  [
-    { className: "ql-link" },
-    { className: "ql-image" },
-    { className: "ql-formula" },
-  ],
-];
-
-const formats = [
-  "font",
-  "size",
-  "bold",
-  "italic",
-  "underline",
-  "color",
-  "background",
-  "script",
-  "header",
-  "blockquote",
-  "indent",
-  "list",
-  "align",
-  "link",
-  "image",
-  "formula",
-];
-
-const modules = {
-  toolbar: {
-    container: "#toolbar",
-  },
-};
-
-const renderOptions = (formatData) => {
-  const { className, options } = formatData;
-  return (
-    <select className={className}>
-      <option selected="selected"></option>
-      {options.map((value) => {
-        return <option value={value}></option>;
-      })}
-    </select>
-  );
-};
-
-const renderSingle = (formatData) => {
-  const { className, value } = formatData;
-  return <button className={className} value={value}></button>;
-};
 
 export default page;

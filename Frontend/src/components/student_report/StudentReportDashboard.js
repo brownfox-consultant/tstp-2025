@@ -274,7 +274,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-auto">
 
           {/* COURSE CARD */}
-          <div className="bg-gray-100 rounded-xl p-5 border-l-4 border-orange-400">
+          <div className="bg-white rounded-xl p-5 border-l-4 border-orange-400 shadow-md">
             <CourseDropdown
               coursesList={coursesList}
               selectedCourse={selectedCourse}
@@ -283,7 +283,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
           </div>
 
           {/* TEST TYPE CARD */}
-          <div className="bg-gray-100 rounded-xl p-5 border-l-4 border-orange-400">
+          <div className="bg-white rounded-xl p-5 border-l-4 border-orange-400 shadow-md">
             <TestTypeDropdown
               testType={testType}
               setTestType={setTestType}

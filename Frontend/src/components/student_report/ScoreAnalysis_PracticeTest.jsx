@@ -153,6 +153,24 @@ export default function ScoreAnalysis_PracticeTest({
   const totalIncorrect = chartData.reduce((sum, d) => sum + d.Incorrect, 0);
   const overallAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
 
+  /* ================= EMPTY STATE ================= */
+  if (loading) return null;
+  if (!apiData || !apiData.tests || apiData.tests.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 rounded-2xl border border-amber-200 p-12 text-center shadow-sm">
+        <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+          <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-bold text-gray-700 mb-2">No Practice Test Data Available</h3>
+        <p className="text-gray-500 max-w-md leading-relaxed">
+          You haven't taken any Practice tests for this course yet. Complete your first test to see your score analysis!
+        </p>
+      </div>
+    );
+  }
+
   /* ================= RENDER ================= */
   return (
     <div className="space-y-8 animate-fadeIn mb-10">
@@ -221,17 +239,15 @@ export default function ScoreAnalysis_PracticeTest({
 
         {/* Chart Area */}
         {chartData.length === 0 ? (
-          <div className="h-[350px] w-full flex flex-col items-center justify-center text-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
-             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="h-[350px] w-full flex flex-col items-center justify-center text-center bg-gradient-to-br from-gray-50 to-amber-50 rounded-xl border border-dashed border-amber-300 p-6">
+             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
              </div>
-             <h4 className="text-lg font-semibold text-gray-700">No Data Available</h4>
-             <p className="text-sm text-gray-500 mt-1">
-               {selectedSubject !== "All" 
-                 ? `No practice tests found for ${selectedSubject}.` 
-                 : "No practice tests data available yet."}
+             <h4 className="text-lg font-bold text-gray-700">No Tests Found</h4>
+             <p className="text-sm text-gray-500 mt-1 max-w-sm font-medium">
+               {`There are no practice tests recorded for ${selectedSubject}. Try selecting a different subject or reset filters.`}
              </p>
           </div>
         ) : (

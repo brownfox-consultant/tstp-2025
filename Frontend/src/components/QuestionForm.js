@@ -417,567 +417,591 @@ function QuestionForm({
   };
   return (
     <>
-    <Form
-      form={form}
-      onFinish={onSubmit}
-      layout="vertical"
-      initialValues={initialValues}
-      // onFieldsChange={onFieldsChange}
-    >
-      <Row gutter={[16]}>
-        <Col span={24} sm={5}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Question Type</div>}
-            name="question_type"
-            required
-            rules={[
-              {
-                required: true,
-                message: "Please select a question type",
-              },
-            ]}
+      <div className="min-h-screen">
+        <div className="w-full">
+          <Form
+            form={form}
+            onFinish={onSubmit}
+            layout="vertical"
+            initialValues={initialValues}
+            className="space-y-6"
           >
-            <Select
-              placeholder="Select Question Type"
-              options={questionTypeOptions}
-              value={selectedSubQuestionType}
-              onChange={(value) => {
-                setSelectedQuestionType(value);
-                setSelectedSubQuestionType(undefined);
-                form.setFieldValue("question_subtype", undefined);
-              }}
-            ></Select>
-          </Form.Item>
-        </Col>
-        <Col span={24} sm={5}>
-          <Form.Item
-            label={
-              <div className="text-base font-semibold">Sub Question Type</div>
-            }
-            dependencies={["question_type"]}
-            name="question_subtype"
-            required
-            rules={[
-              {
-                required: true,
-                message: "Please select a sub question type",
-              },
-            ]}
-          >
-            <Select
-              placeholder="Select Sub Question Type"
-              options={subQuestionTypeOptions}
-              value={selectedSubQuestionType}
-              onChange={setSelectedSubQuestionType}
-            ></Select>
-          </Form.Item>
-        </Col>
-      </Row>
-
-      {selectedSubQuestionType == "READING_COMPREHENSION" &&
-        selectedQuestionType == "MCQ" && (
-          <Row gutter={[8, 8]}>
-            <Col md={12} sm={24}>
-              <Form.Item
-                label={
-                  <div className="text-base font-semibold">Reading Passage</div>
-                }
-                name="reading_comprehension_passage"
-                required
-                rules={[
-                  {
-                    required: true,
-                    message: "Please add a reading passage",
-                  },
-                ]}
-              >
-                <RichTextEditor />
-              </Form.Item>
-            </Col>
-            {/* <Col md={12} sm={24}>
-              <Form.Item
-                label={<div className="text-base font-semibold">Question</div>}
-                name="description"
-                required
-                rules={[
-                  {
-                    required: true,
-                    message: "Please add question description",
-                  },
-                ]}
-              >
-                <RichTextEditor />
-              </Form.Item>
-            </Col> */}
-          </Row>
-        )}
-      {/* {selectedQuestionType == "MCQ" &&
-        selectedSubQuestionType !== "READING_COMPREHENSION" && (
-          <Row gutter={[8, 8]}>
-            <Col md={19} sm={24}>
-              <Form.Item
-                label={<div className="text-base font-semibold">Question</div>}
-                name="description"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please add question description",
-                  },
-                ]}
-                required
-              >
-                <RichTextEditor />
-              </Form.Item>
-            </Col>
-          </Row>
-        )} */}
-
-      <Row gutter={[8, 8]}>
-        {/* <Col md={12} sm={24}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Directions</div>}
-            name="directions"
-          >
-            <RichTextEditor />
-          </Form.Item>
-        </Col> */}
-           <Col md={12} sm={24}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Explanation</div>}
-            name="explanation"
-          >
-            <RichTextEditor />
-          </Form.Item>
-        </Col>
-        <Col md={12} sm={24}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Question</div>}
-            name="description"
-            required
-            rules={[
-              {
-                required: true,
-                message: "Please add question description",
-              },
-            ]}
-          >
-            <RichTextEditor />
-          </Form.Item>
-        </Col>
-      </Row>
-
-      {selectedQuestionType == "MCQ" && (
-        <div className="border-gray-300 border-2 rounded-md p-5">
-          <div className="mb-3 text-base font-semibold">Options</div>
-          <span className=" text-sm text-grey-400 italic">
-            Tick the checkbox of the correct option
-          </span>
-          <Divider className="my-4" />
-          <Form.List name="options" initialValue={Array(4).fill({})}>
-            {(fields, { add, remove }) => (
-              <Row gutter={[16, 8]}>
-                {selectedSubQuestionType == "MULTI_CHOICE" ? (
-                  fields.map(({ key, name, ...restField }, index) => (
-                    <Col lg={12} sm={24}>
-                      <Row
-                        key={key}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          marginBottom: 2,
-                        }}
-                      >
-                        <Row className="flex justify-between align-middle">
-                          <Col span={6}>
-                            <Form.Item
-                              {...restField}
-                              labelAlign="left"
-                              name={[name, "is_correct"]}
-                              valuePropName="checked"
-                              initialValue={false}
-                              className="mb-0"
-                              wrapperCol={{ span: 24 }}
-                            >
-                              <Checkbox className="w-max">
-                                Option {index + 1}
-                              </Checkbox>
-                            </Form.Item>
-                          </Col>
-                          {fields.length > 1 ? (
-                            <CloseOutlined
-                              className="dynamic-delete-button mb-2 mr-1"
-                              onClick={() => remove(name)}
-                            />
-                          ) : null}
-                        </Row>
-                        <Form.Item
-                          {...restField}
-                          name={[name, "description"]}
-                          rules={[
-                            {
-                              required: true,
-                              message: "Missing option",
-                            },
-                          ]}
-                        >
-                          <RichTextEditor />
-                        </Form.Item>
-                      </Row>
-                    </Col>
-                  ))
-                ) : (
-                  <Radio.Group className="w-full" onChange={handleRadioChange}>
-                    <Row gutter={[16, 0]}>
-                      {fields.map(({ key, name, ...restField }, index) => (
-                        <Col span={24} lg={12}>
-                          <Row
-                            key={key}
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              marginBottom: 2,
-                            }}
-                          >
-                            <Row className="flex justify-between align-middle">
-                              <Col span={24} lg={12}>
-                                <Form.Item
-                                  {...restField}
-                                  labelAlign="left"
-                                  name={[name, "is_correct"]}
-                                  valuePropName="checked"
-                                  className="mb-0"
-                                  wrapperCol={{ span: 24 }}
-                                >
-                                  <Radio value={index} className="w-max">
-                                    Option {index + 1}
-                                  </Radio>
-                                </Form.Item>
-                              </Col>
-                              {fields.length > 1 ? (
-                                <CloseOutlined
-                                  className="dynamic-delete-button mb-2 mr-1"
-                                  onClick={() => remove(name)}
-                                />
-                              ) : null}
-                            </Row>
-                            <Form.Item
-                              {...restField}
-                              name={[name, "description"]}
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Missing option",
-                                },
-                              ]}
-                            >
-                              <RichTextEditor />
-                            </Form.Item>
-                          </Row>
-                        </Col>
-                      ))}
-                    </Row>
-                  </Radio.Group>
-                )}
-
-                {fields.length <= 5 && (
-                  <Form.Item className="w-full flex justify-center">
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Option
-                    </Button>
+            {/* Question Type Selection Card */}
+            <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-[#F59405]">
+                  Question Type Configuration
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">Select the type and subtype for your question</p>
+              </div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label={<div className="text-base font-semibold text-gray-700">Question Type</div>}
+                    name="question_type"
+                    required
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select a question type",
+                      },
+                    ]}
+                  >
+                    <Select
+                      placeholder="Select Question Type"
+                      options={questionTypeOptions}
+                      value={selectedSubQuestionType}
+                      onChange={(value) => {
+                        setSelectedQuestionType(value);
+                        setSelectedSubQuestionType(undefined);
+                        form.setFieldValue("question_subtype", undefined);
+                      }}
+                      size="large"
+                      className="[&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!h-12"
+                    />
                   </Form.Item>
-                )}
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label={<div className="text-base font-semibold text-gray-700">Sub Question Type</div>}
+                    dependencies={["question_type"]}
+                    name="question_subtype"
+                    required
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select a sub question type",
+                      },
+                    ]}
+                  >
+                    <Select
+                      placeholder="Select Sub Question Type"
+                      options={subQuestionTypeOptions}
+                      value={selectedSubQuestionType}
+                      onChange={setSelectedSubQuestionType}
+                      size="large"
+                      className="[&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!h-12"
+                    />
+                  </Form.Item>
+                </Col>
               </Row>
-            )}
-          </Form.List>
-        </div>
-      )}
+            </div>
 
-      {selectedQuestionType == "GRIDIN" && (
-        <>
-          {["SINGLE_ANSWER", "MULTI_ANSWER"].includes(
-            selectedSubQuestionType
-          ) && (
-            <Form.List
-              name="options"
-              initialValue={Array(1).fill({ value: 1 })}
-            >
-              {(fields, { add, remove }) => (
-                <Row gutter={[16, 8]}>
-                  {fields.map(({ key, name, ...restField }, index) => (
-                    <Col span={3}>
-                      <Space>
-                        <Form.Item
-                          label={
-                            <div className="text-base font-semibold">
-                              Answer
-                            </div>
-                          }
-                          {...restField}
-                          name={[name]}
-                          rules={[
-                            {
-                              required: true,
-                              message: "Missing answer",
-                            },
-                          ]}
-                        >
-                          <Input
-                            value={form.getFieldValue([name])}
-                            onChange={(e) => handleInputNumber(e, name)}
-                            placeholder="Enter value"
-                            onKeyDown={(e) => {
-                              handleKeyDown(e, add);
-                              handleKeyDownLengthCheck(e);
-                            }}
-                          ></Input>
-                        </Form.Item>
-                        {selectedSubQuestionType == "MULTI_ANSWER" && (
-                          <Popover content={`Add more answer`}>
-                            <Button
-                              shape="circle"
-                              icon={<PlusOutlined />}
-                              onClick={() => add()}
-                              type="primary"
-                            ></Button>
-                          </Popover>
-                        )}
-                        {index > 0 && (
-                          <MinusCircleOutlined onClick={() => remove(name)} />
-                        )}
-                      </Space>
-                    </Col>
-                  ))}
-                </Row>
-              )}
-            </Form.List>
-          )}
-          {selectedSubQuestionType == "RANGE_BASED_ANSWER" && (
-            <div>
-              <div className="my-2 text-base font-semibold">Answer Range</div>
-              <Select
-                placeholder="Select type"
-                className="w-40"
-                style={{ marginRight: "1rem" }}
-                value={selectedRange}
-                onChange={setSelectedRange}
-                options={[
-                  { label: "CLOSED RANGE", value: "CLOSED RANGE" },
-                  { label: "OPEN RANGE", value: "OPEN RANGE" },
-                ]}
-              ></Select>
-              {selectedRange == "CLOSED RANGE" ? (
-                <Space className="" align="baseline">
-                  <Form.Item
-                    name="value1"
-                    required
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please add a value",
-                      },
-                    ]}
-                  >
-                    <Input
-                      name="value1"
-                      value={formState.value1}
-                      onKeyDown={(e) => handleKeyDownLengthCheck(e)}
-                      onChange={(e) =>
-                        handleInputChange("value1", e.target.value)
-                      }
-                    />
-                  </Form.Item>
-                  <Form.Item>
-                    <Select
-                      name="operator1"
-                      value={formState.operator1}
-                      onChange={(value) =>
-                        handleSelectChange("operator1", value)
-                      }
-                    >
-                      <Option value="<">&lt;</Option>
-                      <Option value="<=">&lt;=</Option>
-                      <Option value=">">&gt;</Option>
-                      <Option value=">=">&gt;=</Option>
-                      <Option value="==">==</Option>
-                    </Select>
-                  </Form.Item>
-                  <Form.Item>
-                    <InputNumber
-                      className="font-bold"
-                      disabled
-                      placeholder="ANS"
-                    />
-                  </Form.Item>
-
-                  <Form.Item>
-                    <Select
-                      name="operator2"
-                      value={formState.operator2}
-                      onChange={(value) =>
-                        handleSelectChange("operator2", value)
-                      }
-                    >
-                      <Option value="<">&lt;</Option>
-                      <Option value="<=">&lt;=</Option>
-                      <Option value=">">&gt;</Option>
-                      <Option value=">=">&gt;=</Option>
-                      <Option value="=">=</Option>
-                    </Select>
-                  </Form.Item>
-                  <Form.Item
-                    name="value2"
-                    required
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please add a value",
-                      },
-                    ]}
-                  >
-                    <Input
-                      onKeyDown={(e) => handleKeyDownLengthCheck(e)}
-                      name="value2"
-                      value={formState.value2}
-                      onChange={(e) =>
-                        handleInputChange("value2", e.target.value)
-                      }
-                    />
-                  </Form.Item>
-                </Space>
-              ) : (
-                <>
-                  {expressions.map((expression, index) => (
-                    <Space className="mr-1" key={index} align="baseline">
-                      {index > 0 && (
-                        <span className=" mx-2 font-semibold">OR</span>
-                      )}
-                      <Form.Item>
-                        <Input
-                          disabled
-                          className="font-bold"
-                          value={expression.variable}
-                        />
-                      </Form.Item>
-                      <Form.Item required>
-                        <Select
-                          value={expression.operator}
-                          onChange={(value) =>
-                            handleExpChange(index, "operator", value)
-                          }
-                        >
-                          <Option value="<">&lt;</Option>
-                          <Option value="<=">&lt;=</Option>
-                          <Option value=">">&gt;</Option>
-                          <Option value=">=">&gt;=</Option>
-                          <Option value="=">=</Option>
-                        </Select>
-                      </Form.Item>
+            {/* Reading Comprehension Card */}
+            {selectedSubQuestionType == "READING_COMPREHENSION" &&
+              selectedQuestionType == "MCQ" && (
+                <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-[#007FBC]">
+                      Reading Comprehension Passage
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">Add the reading passage for comprehension questions</p>
+                  </div>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24}>
                       <Form.Item
-                        name={`value_${index}`}
+                        label={<div className="text-base font-semibold text-gray-700">Reading Passage</div>}
+                        name="reading_comprehension_passage"
                         required
                         rules={[
-                          { required: true, message: "Please add a value" },
+                          {
+                            required: true,
+                            message: "Please add a reading passage",
+                          },
                         ]}
                       >
-                        <Input
-                          onKeyDown={(e) => handleKeyDownLengthCheck(e)}
-                          value={expression.value}
-                          onChange={(e) =>
-                            handleExpChange(index, "value", e.target.value)
-                          }
-                        />
+                        <RichTextEditor />
                       </Form.Item>
-                      {expressions.length == 2 && index == 1 && (
-                        <MinusCircleFilled
-                          onClick={() => removeExpression(index)}
-                        />
-                      )}
-                      {expressions.length == 1 && (
-                        <PlusCircleFilled onClick={addExpression} />
-                      )}
-                    </Space>
-                  ))}
-                </>
+                    </Col>
+                  </Row>
+                </div>
               )}
-            </div>
-          )}
-        </>
-      )}
 
-      <Row className="my-2" gutter={[8, 8]}>
-        {/* <Col md={12} sm={24}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Explanation</div>}
-            name="explanation"
-          >
-            <RichTextEditor />
-          </Form.Item>
-        </Col> */}
-      </Row>
-
-      <div className="border-gray-300 border-2 rounded-md p-5 my-5">
-        <div className="mb-3 text-base font-semibold">Course Details</div>
-        <span className=" text-sm text-grey-400 italic">
-          Add courses and other information for the question
-        </span>
-        <Divider className="my-4" />
-        <Form.List name="questions_data" initialValue={Array(1).fill({})}>
-          {(fields, { add, remove }) => (
-            <Row gutter={[16, 8]}>
-              {fields.map(({ key, name, ...restField }, index) => (
-                <Col span={24}>
-                  <QuestionMetaDataCard
-                    key={key}
-                    index={index}
-                    name={name}
-                    fields={fields}
-                    courses={courses}
-                    restField={restField}
-                    add={add}
-                    remove={remove}
-                  />
-                </Col>
-              ))}
-
-              {fields.length <= 5 && (
-                <Col span={24}>
-                  <Form.Item className="flex justify-center">
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add this question in another course
-                    </Button>
+            {/* Question and Explanation Card */}
+            <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-[#F59405]">
+                  Question Details
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">Provide the question description and explanation</p>
+              </div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    label={<div className="text-base font-semibold text-gray-700">Question</div>}
+                    name="description"
+                    required
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please add question description",
+                      },
+                    ]}
+                  >
+                    <RichTextEditor />
                   </Form.Item>
                 </Col>
-              )}
-            </Row>
-          )}
-        </Form.List>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    label={<div className="text-base font-semibold text-gray-700">Explanation</div>}
+                    name="explanation"
+                  >
+                    <RichTextEditor />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </div>
+
+            {/* MCQ Options Card */}
+            {selectedQuestionType == "MCQ" && (
+              <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-[#F59405]">
+                    Answer Options
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 italic">
+                    {selectedSubQuestionType == "MULTI_CHOICE" 
+                      ? "Check all correct options" 
+                      : "Select the correct option"}
+                  </p>
+                </div>
+                <Divider className="my-4 border-gray-200" />
+                <Form.List name="options" initialValue={Array(4).fill({})}>
+                  {(fields, { add, remove }) => (
+                    <Row gutter={[16, 16]}>
+                      {selectedSubQuestionType == "MULTI_CHOICE" ? (
+                        fields.map(({ key, name, ...restField }, index) => (
+                          <Col lg={12} xs={24} key={key}>
+                            <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-200 hover:border-[#F59405] transition-all duration-300 hover:shadow-md">
+                              <Row className="flex justify-between items-center mb-3">
+                                <Col>
+                                  <Form.Item
+                                    {...restField}
+                                    labelAlign="left"
+                                    name={[name, "is_correct"]}
+                                    valuePropName="checked"
+                                    initialValue={false}
+                                    className="mb-0"
+                                  >
+                                    <Checkbox className="text-base font-medium text-gray-700">
+                                      Option {index + 1}
+                                    </Checkbox>
+                                  </Form.Item>
+                                </Col>
+                                {fields.length > 1 && (
+                                  <Col>
+                                    <CloseOutlined
+                                      className="text-red-500 hover:text-red-700 cursor-pointer transition-colors duration-200"
+                                      onClick={() => remove(name)}
+                                    />
+                                  </Col>
+                                )}
+                              </Row>
+                              <Form.Item
+                                {...restField}
+                                name={[name, "description"]}
+                                rules={[
+                                  {
+                                    required: true,
+                                    message: "Missing option",
+                                  },
+                                ]}
+                                className="mb-0"
+                              >
+                                <RichTextEditor />
+                              </Form.Item>
+                            </div>
+                          </Col>
+                        ))
+                      ) : (
+                        <Radio.Group className="w-full" onChange={handleRadioChange}>
+                          <Row gutter={[16, 16]}>
+                            {fields.map(({ key, name, ...restField }, index) => (
+                              <Col xs={24} lg={12} key={key}>
+                                <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-200 hover:border-[#F59405] transition-all duration-300 hover:shadow-md">
+                                  <Row className="flex justify-between items-center mb-3">
+                                    <Col>
+                                      <Form.Item
+                                        {...restField}
+                                        labelAlign="left"
+                                        name={[name, "is_correct"]}
+                                        valuePropName="checked"
+                                        className="mb-0"
+                                      >
+                                        <Radio value={index} className="text-base font-medium text-gray-700">
+                                          Option {index + 1}
+                                        </Radio>
+                                      </Form.Item>
+                                    </Col>
+                                    {fields.length > 1 && (
+                                      <Col>
+                                        <CloseOutlined
+                                          className="text-red-500 hover:text-red-700 cursor-pointer transition-colors duration-200"
+                                          onClick={() => remove(name)}
+                                        />
+                                      </Col>
+                                    )}
+                                  </Row>
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, "description"]}
+                                    rules={[
+                                      {
+                                        required: true,
+                                        message: "Missing option",
+                                      },
+                                    ]}
+                                    className="mb-0"
+                                  >
+                                    <RichTextEditor />
+                                  </Form.Item>
+                                </div>
+                              </Col>
+                            ))}
+                          </Row>
+                        </Radio.Group>
+                      )}
+
+                      {fields.length <= 5 && (
+                        <Col xs={24}>
+                          <Form.Item className="flex justify-center mb-0">
+                            <Button
+                              type="dashed"
+                              onClick={() => add()}
+                              block
+                              icon={<PlusOutlined />}
+                              className="h-12 rounded-xl border-2 border-dashed border-[#FFD46A] hover:border-[#F59405] hover:text-[#F59405] transition-all duration-300 font-medium"
+                            >
+                              Add Option
+                            </Button>
+                          </Form.Item>
+                        </Col>
+                      )}
+                    </Row>
+                  )}
+                </Form.List>
+              </div>
+            )}
+
+            {/* Grid-In Answers Card */}
+            {selectedQuestionType == "GRIDIN" && (
+              <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-[#007FBC]">
+                    Grid-In Answers
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">Define the correct answer(s) or range</p>
+                </div>
+                
+                {["SINGLE_ANSWER", "MULTI_ANSWER"].includes(selectedSubQuestionType) && (
+                  <Form.List name="options" initialValue={Array(1).fill({ value: 1 })}>
+                    {(fields, { add, remove }) => (
+                      <Row gutter={[16, 16]}>
+                        {fields.map(({ key, name, ...restField }, index) => (
+                          <Col xs={24} sm={12} md={8} key={key}>
+                            <Space direction="vertical" className="w-full">
+                              <Form.Item
+                                label={<div className="text-base font-semibold text-gray-700">Answer {index + 1}</div>}
+                                {...restField}
+                                name={[name]}
+                                rules={[
+                                  {
+                                    required: true,
+                                    message: "Missing answer",
+                                  },
+                                ]}
+                                className="mb-0"
+                              >
+                                <Input
+                                  value={form.getFieldValue([name])}
+                                  onChange={(e) => handleInputNumber(e, name)}
+                                  placeholder="Enter value"
+                                  onKeyDown={(e) => {
+                                    handleKeyDown(e, add);
+                                    handleKeyDownLengthCheck(e);
+                                  }}
+                                  size="large"
+                                  className="!rounded-lg !h-12"
+                                />
+                              </Form.Item>
+                              <div className="flex gap-2">
+                                {selectedSubQuestionType == "MULTI_ANSWER" && (
+                                  <Popover content="Add more answer">
+                                    <Button
+                                      shape="circle"
+                                      icon={<PlusOutlined />}
+                                      onClick={() => add()}
+                                      className="bg-[#007FBC] text-white border-0 hover:bg-[#006BA3]"
+                                    />
+                                  </Popover>
+                                )}
+                                {index > 0 && (
+                                  <Button
+                                    shape="circle"
+                                    icon={<MinusCircleOutlined />}
+                                    onClick={() => remove(name)}
+                                    danger
+                                  />
+                                )}
+                              </div>
+                            </Space>
+                          </Col>
+                        ))}
+                      </Row>
+                    )}
+                  </Form.List>
+                )}
+
+                {selectedSubQuestionType == "RANGE_BASED_ANSWER" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="text-base font-semibold text-gray-700">Range Type:</div>
+                      <Select
+                        placeholder="Select type"
+                        className="w-48 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!h-12"
+                        value={selectedRange}
+                        onChange={setSelectedRange}
+                        options={[
+                          { label: "CLOSED RANGE", value: "CLOSED RANGE" },
+                          { label: "OPEN RANGE", value: "OPEN RANGE" },
+                        ]}
+                        size="large"
+                      />
+                    </div>
+
+                    {selectedRange == "CLOSED RANGE" ? (
+                      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-xl border border-[#FFD46A]">
+                        <Space wrap align="baseline" size="middle">
+                          <Form.Item
+                            name="value1"
+                            required
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please add a value",
+                              },
+                            ]}
+                            className="mb-0"
+                          >
+                            <Input
+                              name="value1"
+                              value={formState.value1}
+                              onKeyDown={(e) => handleKeyDownLengthCheck(e)}
+                              onChange={(e) => handleInputChange("value1", e.target.value)}
+                              size="large"
+                              className="w-32 !rounded-lg !h-12"
+                              placeholder="Value 1"
+                            />
+                          </Form.Item>
+                          <Form.Item className="mb-0">
+                            <Select
+                              name="operator1"
+                              value={formState.operator1}
+                              onChange={(value) => handleSelectChange("operator1", value)}
+                              size="large"
+                              className="w-24 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!h-12"
+                            >
+                              <Select.Option value="<">&lt;</Select.Option>
+                              <Select.Option value="<=">&lt;=</Select.Option>
+                              <Select.Option value=">">&gt;</Select.Option>
+                              <Select.Option value=">=">&gt;=</Select.Option>
+                              <Select.Option value="==">==</Select.Option>
+                            </Select>
+                          </Form.Item>
+                          <Form.Item className="mb-0">
+                            <InputNumber
+                              className="font-bold w-24 !rounded-lg !h-12"
+                              disabled
+                              placeholder="ANS"
+                              size="large"
+                            />
+                          </Form.Item>
+                          <Form.Item className="mb-0">
+                            <Select
+                              name="operator2"
+                              value={formState.operator2}
+                              onChange={(value) => handleSelectChange("operator2", value)}
+                              size="large"
+                              className="w-24 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!h-12"
+                            >
+                              <Select.Option value="<">&lt;</Select.Option>
+                              <Select.Option value="<=">&lt;=</Select.Option>
+                              <Select.Option value=">">&gt;</Select.Option>
+                              <Select.Option value=">=">&gt;=</Select.Option>
+                              <Select.Option value="=">=</Select.Option>
+                            </Select>
+                          </Form.Item>
+                          <Form.Item
+                            name="value2"
+                            required
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please add a value",
+                              },
+                            ]}
+                            className="mb-0"
+                          >
+                            <Input
+                              onKeyDown={(e) => handleKeyDownLengthCheck(e)}
+                              name="value2"
+                              value={formState.value2}
+                              onChange={(e) => handleInputChange("value2", e.target.value)}
+                              size="large"
+                              className="w-32 !rounded-lg !h-12"
+                              placeholder="Value 2"
+                            />
+                          </Form.Item>
+                        </Space>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {expressions.map((expression, index) => (
+                          <div key={index} className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 rounded-xl border border-[#70D9E4]">
+                            <Space wrap align="baseline" size="middle">
+                              {index > 0 && <span className="px-3 py-1 bg-[#007FBC] text-white rounded-lg font-semibold text-sm">OR</span>}
+                              <Form.Item className="mb-0">
+                                <Input
+                                  disabled
+                                  className="font-bold w-24 !rounded-lg !h-12"
+                                  value={expression.variable}
+                                  size="large"
+                                />
+                              </Form.Item>
+                              <Form.Item required className="mb-0">
+                                <Select
+                                  value={expression.operator}
+                                  onChange={(value) => handleExpChange(index, "operator", value)}
+                                  size="large"
+                                  className="w-24 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!h-12"
+                                >
+                                  <Select.Option value="<">&lt;</Select.Option>
+                                  <Select.Option value="<=">&lt;=</Select.Option>
+                                  <Select.Option value=">">&gt;</Select.Option>
+                                  <Select.Option value=">=">&gt;=</Select.Option>
+                                  <Select.Option value="=">=</Select.Option>
+                                </Select>
+                              </Form.Item>
+                              <Form.Item
+                                name={`value_${index}`}
+                                required
+                                rules={[{ required: true, message: "Please add a value" }]}
+                                className="mb-0"
+                              >
+                                <Input
+                                  onKeyDown={(e) => handleKeyDownLengthCheck(e)}
+                                  value={expression.value}
+                                  onChange={(e) => handleExpChange(index, "value", e.target.value)}
+                                  size="large"
+                                  className="w-32 !rounded-lg !h-12"
+                                  placeholder="Value"
+                                />
+                              </Form.Item>
+                              {expressions.length == 2 && index == 1 && (
+                                <Button
+                                  shape="circle"
+                                  icon={<MinusCircleFilled />}
+                                  onClick={() => removeExpression(index)}
+                                  danger
+                                />
+                              )}
+                              {expressions.length == 1 && (
+                                <Button
+                                  shape="circle"
+                                  icon={<PlusCircleFilled />}
+                                  onClick={addExpression}
+                                  className="bg-[#F59405] text-white border-0 hover:bg-[#E08904]"
+                                />
+                              )}
+                            </Space>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Course Details Card */}
+            <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-[#F59405]">
+                  Course Details
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">Add course information and metadata for this question</p>
+              </div>
+              <Divider className="my-4 border-gray-200" />
+              <Form.List name="questions_data" initialValue={Array(1).fill({})}>
+                {(fields, { add, remove }) => (
+                  <div className="space-y-4">
+                    {fields.map(({ key, name, ...restField }, index) => (
+                      <div key={key}>
+                        <QuestionMetaDataCard
+                          index={index}
+                          name={name}
+                          fields={fields}
+                          courses={courses}
+                          restField={restField}
+                          add={add}
+                          remove={remove}
+                        />
+                      </div>
+                    ))}
+
+                    {fields.length <= 5 && (
+                      <Form.Item className="flex justify-center mb-0">
+                        <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          block
+                          icon={<PlusOutlined />}
+                          className="h-12 rounded-xl border-2 border-dashed border-[#FFD46A] hover:border-[#F59405] hover:text-[#F59405] transition-all duration-300 font-medium"
+                        >
+                          Add this question in another course
+                        </Button>
+                      </Form.Item>
+                    )}
+                  </div>
+                )}
+              </Form.List>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
+              <Form.Item className="flex justify-center mb-0">
+                <Space size="middle" wrap>
+                  <Button
+                    onClick={openPreview}
+                    size="large"
+                    className="h-12 px-8 rounded-xl border-2 border-[#007FBC] text-[#007FBC] hover:bg-blue-50 font-semibold transition-all duration-300"
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={submitLoader}
+                    size="large"
+                    className="h-12 px-8 rounded-xl bg-[#F59405] border-0 hover:bg-[#E08904] font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    Submit Question
+                  </Button>
+                  <Button
+                    onClick={() => router.back()}
+                    size="large"
+                    className="h-12 px-8 rounded-xl border-2 border-gray-300 hover:border-gray-400 font-semibold transition-all duration-300"
+                  >
+                    Cancel
+                  </Button>
+                </Space>
+              </Form.Item>
+            </div>
+          </Form>
+        </div>
       </div>
 
-        <Form.Item className="flex justify-center">
-          <Button type="default" className="mr-3" onClick={openPreview}>
-            Preview
-          </Button>
-          <Button type="primary" htmlType="submit" loading={submitLoader}>
-            Submit
-          </Button>
-          <Button className="ml-5" onClick={() => router.back()}>
-            Cancel
-        </Button>
-        
-        </Form.Item>
-    </Form>
-
-    {/* Preview Modal */}
+      {/* Preview Modal */}
       {previewData && (
         <PreviewQuestionModal
           visible={previewVisible}

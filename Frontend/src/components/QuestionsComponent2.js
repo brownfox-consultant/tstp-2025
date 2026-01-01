@@ -1,14 +1,18 @@
 import { Input, Tabs, Button, Spin } from "antd";
-import { LoadingOutlined } from "@ant-design/icons";
+import { 
+  LoadingOutlined, 
+  DownloadOutlined, 
+  CopyOutlined, 
+  HistoryOutlined,
+  SearchOutlined, 
+  FilterOutlined
+} from "@ant-design/icons";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { SearchOutlined, FilterOutlined } from "@ant-design/icons";
 import SubjectQuestionnaire2 from "./SubjectQuestionnaire2";
 import AdvancedSearchModal from "./AdvancedSearchModal";
 import axios from "axios";
 import { BASE_URL } from "@/app/constants/apiConstants";
-//const BASE_URL = "http://localhost:8000"; // or your actual base URL
-
 
 function QuestionsComponent2({ courses }) {
   const router = useRouter();
@@ -194,79 +198,93 @@ function QuestionsComponent2({ courses }) {
   setShowAdvanced(false);
 };
 
-
-
-
-
   return (
-    <>
-      {/* 🔍 Search Bar + Filter Button */}
-     {/* 🔍 Search Bar + Filter Button */}
-<div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-  <Input
-    placeholder="Search by name, email, ..."
-    allowClear
-    prefix={<SearchOutlined />}
-    value={searchQuery}
-    onChange={handleSearch}
-    style={{ width: 300 }}
-  />
-  <Button icon={<FilterOutlined />} onClick={() => setShowAdvanced(true)}>
-    Advanced Search 
-  </Button>
+    <div className="space-y-6">
+      {/* 🔍 Search & Actions Card */}
+      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          {/* Left Side: Search & Filter */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-2xl">
+            <Input
+              placeholder="Search by name, email, etc..."
+              allowClear
+              prefix={<SearchOutlined className="text-gray-400" />}
+              value={searchQuery}
+              onChange={handleSearch}
+              className="h-11 rounded-lg border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm"
+              style={{ width: '100%' }}
+            />
+            <Button 
+              icon={<FilterOutlined />} 
+              onClick={() => setShowAdvanced(true)}
+              className="h-11 px-5 rounded-lg border-gray-200 hover:border-blue-400 hover:text-blue-600 font-medium flex items-center gap-2"
+            >
+              Advanced Search 
+            </Button>
+          </div>
 
-  {role === "admin" && (
-    <>
-      <Button
-        type="primary"
-        onClick={handleDownload}
-        icon={loading ? <LoadingOutlined /> : null}
-        disabled={loading}
-      >
-        {loading ? "Downloading..." : "Download"}
-      </Button>
+          {/* Right Side: Action Buttons */}
+          {role === "admin" && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="primary"
+                onClick={handleDownload}
+                icon={loading ? <LoadingOutlined /> : <DownloadOutlined />}
+                disabled={loading}
+                className="h-11 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 font-medium shadow-sm border-none flex items-center gap-2"
+              >
+                {loading ? "Downloading..." : "Download Report"}
+              </Button>
 
-      <Button
-        type="default"
-        onClick={() => {
-          router.push(`${pathname}/logs`);
-        }}
-      >
-        Questions Log
-      </Button>
+              <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100">
+                <Button
+                  type="text"
+                  icon={<HistoryOutlined />}
+                  onClick={() => router.push(`${pathname}/logs`)}
+                  className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
+                  title="View Questions Log"
+                >
+                  Log
+                </Button>
 
-      <Button
-        type="default"
-        onClick={async () => {
-          try {
-            setLoading(true);
-            const response = await axios.get(
-              `${BASE_URL}/api/question/duplicates/?export=csv`,
-              { responseType: "blob", withCredentials: true }
-            );
+                <div className="w-px h-6 bg-gray-200"></div>
 
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement("a");
-            link.href = url;
-            link.setAttribute("download", "duplicate_questions.csv");
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-          } catch (error) {
-            console.error("Error downloading duplicate questions:", error);
-          } finally {
-            setLoading(false);
-          }
-        }}
-        icon={loading ? <LoadingOutlined /> : null}
-        disabled={loading}
-      >
-        {loading ? "Downloading..." : "Duplicate Questions"}
-      </Button>
-    </>
-  )}
-</div>
+                <Button
+                  type="text"
+                  icon={loading ? <LoadingOutlined /> : <CopyOutlined />}
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      const response = await axios.get(
+                        `${BASE_URL}/api/question/duplicates/?export=csv`,
+                        { responseType: "blob", withCredentials: true }
+                      );
 
+                      const url = window.URL.createObjectURL(new Blob([response.data]));
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.setAttribute("download", "duplicate_questions.csv");
+                      document.body.appendChild(link);
+                      link.click();
+                      link.remove();
+                    } catch (error) {
+                      console.error("Error downloading duplicate questions:", error);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
+                  title="Export Duplicate Questions"
+                >
+                  Duplicates
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* 🧠 Advanced Search Modal */}
       <AdvancedSearchModal
@@ -274,20 +292,19 @@ function QuestionsComponent2({ courses }) {
         onClose={() => setShowAdvanced(false)}
         onApply={handleApplyAdvanced}
         currentFilters={{
-  difficulty: searchParams.get("difficulty")?.split(",") || [],
-  question_type: searchParams.get("question_type")?.split(",") || [],
-  test_type: searchParams.get("test_type")?.split(",") || [],
-  topic: getArrayParam("topic"),
-  sub_topic: getArrayParam("sub_topic"),
-  question_subtype: searchParams.get("question_subtype")?.split(",") || [], 
-  option_text: searchParams.get("option_text") || "",
-  question_text: searchParams.get("question_text") || "",
-  srno: searchParams.get("srno") || "",
-  is_active: searchParams.get("is_active")
-   ? [searchParams.get("is_active") === "true" ? true : false]
-   : [],
-}}
-
+          difficulty: searchParams.get("difficulty")?.split(",") || [],
+          question_type: searchParams.get("question_type")?.split(",") || [],
+          test_type: searchParams.get("test_type")?.split(",") || [],
+          topic: getArrayParam("topic"),
+          sub_topic: getArrayParam("sub_topic"),
+          question_subtype: searchParams.get("question_subtype")?.split(",") || [], 
+          option_text: searchParams.get("option_text") || "",
+          question_text: searchParams.get("question_text") || "",
+          srno: searchParams.get("srno") || "",
+          is_active: searchParams.get("is_active")
+           ? [searchParams.get("is_active") === "true" ? true : false]
+           : [],
+        }}
         topics={topics}
         difficultyList={difficultyList}
         questionTypeList={questionTypeList}
@@ -296,13 +313,43 @@ function QuestionsComponent2({ courses }) {
       />
 
       {/* 📚 Course Tabs */}
-      <Tabs
-        activeKey={calculateCurrentKey()}
-        items={tabItems}
-        onChange={handleTabChange}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-2 pt-2">
+          <Tabs
+            activeKey={calculateCurrentKey()}
+            items={tabItems}
+            onChange={handleTabChange}
+            type="card"
+            className="custom-tabs"
+            tabBarStyle={{ margin: 0, borderBottom: '1px solid #f0f0f0' }}
+          />
+        </div>
+      </div>
       
-      />
-    </>
+      {/* Custom Tabs Styling */}
+      <style jsx global>{`
+        .custom-tabs .ant-tabs-nav .ant-tabs-tab {
+          border-radius: 8px 8px 0 0 !important;
+          border: 1px solid transparent !important;
+          background: transparent !important;
+          margin-right: 4px !important;
+          transition: all 0.2s;
+        }
+        .custom-tabs .ant-tabs-nav .ant-tabs-tab:hover {
+          color: #2563eb !important;
+        }
+        .custom-tabs .ant-tabs-nav .ant-tabs-tab-active {
+          background: #fff !important;
+          border-color: #f0f0f0 !important;
+          border-bottom-color: #fff !important;
+          font-weight: 600 !important;
+          color: #2563eb !important;
+        }
+        .custom-tabs .ant-tabs-content {
+          padding: 2px 0 0 0;
+        }
+      `}</style>
+    </div>
   );
 }
 

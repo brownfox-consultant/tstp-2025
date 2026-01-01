@@ -45,15 +45,6 @@ const DropdownIndicator = (props) => {
   );
 };
 
-// Icon mapping for different stat types
-const STAT_ICONS = {
-  CONCERN: <ConcernIcon />,
-  DOUBT: <DoubtIcon />,
-  MEETING: <MeetingIcon />,
-  ISSUE: <IssueIcon />,
-  SUGGESTION: <SuggestionIcon />,
-};
-
 function StatCard({ title, value, selectedFilter, customStartDate, customEndDate, apiKey, routeName, gradientClass }) {
   const router = useRouter();
   const { id } = useParams();

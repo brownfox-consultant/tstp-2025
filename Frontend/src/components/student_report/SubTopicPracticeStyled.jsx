@@ -175,9 +175,27 @@ export default function SubTopicPracticeStyled({
 
           return (
             <div key={i} className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100">
-              <h3 className="text-xl font-extrabold text-gray-800 mb-3">
-                {topicBlock.topic}
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                <h3 className="text-xl font-extrabold text-gray-800">
+                  {topicBlock.topic}
+                </h3>
+
+                {/* Legend at Top Right */}
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-md" style={{ backgroundColor: "#F59403" }}></span>
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Questions</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-md" style={{ backgroundColor: "#FFD36A" }}></span>
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Time</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-md" style={{ backgroundColor: "#0071BC" }}></span>
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Accuracy %</span>
+                  </div>
+                </div>
+              </div>
 
               <div className="overflow-x-auto pb-2">
                 <div className="h-[300px] md:h-[340px] w-full max-w-[700px]">
