@@ -1,10 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Select, Spin } from "antd";
+import Select, { components } from "react-select";
 import axios from "axios";
 import { GET_Students } from "@/app/constants/apiConstants";
 import StudentReportDashboard from "@/components/student_report/StudentReportDashboard";
+import { ChevronIcon } from "@/components/icons/dashboard-icons";
+
+// Custom Dropdown Indicator with rotating arrow
+const DropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+    </components.DropdownIndicator>
+  );
+};
 
 export default function ReportPage() {
   const [students, setStudents] = useState([]);
@@ -54,20 +64,48 @@ export default function ReportPage() {
         </span>
 
         <Select
-          showSearch
+          className="w-80 text-sm"
           placeholder="Search by name or email"
-          optionFilterProp="label"
-          filterOption={(input, option) =>
-            option?.label?.toLowerCase().includes(input.toLowerCase())
-          }
-          style={{ width: 320 }}
-          value={selectedStudentId}   // ✅ controlled value
-          onChange={setSelectedStudentId}
-          options={students.map((s) => ({
-            label: `${s.name}${s.email ? ` (${s.email})` : ""}`,
-            value: s.id,
-          }))}
-          notFoundContent={loading ? <Spin size="small" /> : null}
+          value={students.find((s) => s.id === selectedStudentId)}
+          onChange={(opt) => setSelectedStudentId(opt?.id)}
+          options={students}
+          getOptionLabel={(s) => `${s.name}${s.email ? ` (${s.email})` : ""}`}
+          getOptionValue={(s) => s.id}
+          components={{ DropdownIndicator }}
+          isLoading={loading}
+          isSearchable
+          styles={{
+            menu: (base) => ({ ...base, zIndex: 9999 }),
+            control: (base, state) => ({
+              ...base,
+              borderColor: state.isFocused ? "#F59403" : "#e5e7eb",
+              boxShadow: state.isFocused ? "0 0 0 1px #F59403" : "none",
+              "&:hover": {
+                borderColor: "#F59403",
+              },
+              borderRadius: "0.5rem",
+              padding: "2px",
+            }),
+            option: (base, state) => ({
+              ...base,
+              backgroundColor: state.isSelected
+                ? "#F59403"
+                : state.isFocused
+                ? "#FFF8F0"
+                : "transparent",
+              color: state.isSelected ? "white" : "#2E2725",
+              "&:active": {
+                backgroundColor: "#F59403",
+                color: "white",
+              },
+              cursor: "pointer",
+            }),
+            singleValue: (base) => ({
+              ...base,
+              color: "#2E2725",
+              fontWeight: 500,
+            }),
+          }}
         />
       </div>
 

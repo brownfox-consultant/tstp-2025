@@ -4,8 +4,13 @@
   import { useParams, useRouter } from "next/navigation";
   import axios from "axios";
   import { BASE_URL } from "@/app/constants/apiConstants";
+import DashboardHeader from "@/components/DashboardHeader";
+import {
+  LightbulbIcon,
+  QuestionIcon,
+} from "@/components/icons/dashboard-icons";
 
-function StatCard({ title, value }) {
+function StatCard({ title, value, icon: Icon, gradientClass }) {
   const router = useRouter();
   const { id } = useParams();
 
@@ -24,31 +29,53 @@ function StatCard({ title, value }) {
   const isQuestions = title === "Questions" && typeof value === "object";
 
   return (
-    <div className="rounded-xl border p-4 shadow-md bg-white">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium text-gray-500">{title}</span>
-        <button
-          onClick={handleViewAll}
-          className="text-xs text-orange-500 font-medium"
-        >
-          View all
-        </button>
+    <div
+      className="group relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer bg-white shadow-lg m-0 border border-gray-100"
+      onClick={handleViewAll}
+    >
+      {/* Gradient accent bar */}
+      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientClass}`} />
+
+      <div className="relative flex items-start justify-between mb-4">
+        <div>
+          <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+          {isQuestions ? (
+            <div className="space-y-0.5 mt-1">
+              <div className="text-sm text-emerald-600 font-semibold flex items-center gap-1.5 line-height-tight">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Active: <span className="text-lg">{value.active}</span>
+              </div>
+              <div className="text-sm text-rose-500 font-semibold flex items-center gap-1.5 line-height-tight">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                Inactive: <span className="text-lg">{value.inactive}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-4xl font-bold text-gray-900">{value}</p>
+          )}
+        </div>
+
+        <div className="p-3 bg-gray-50 rounded-lg text-orange-500 group-hover:scale-110 transition-transform">
+          {Icon && <Icon className="w-6 h-6" />}
+        </div>
       </div>
 
-      {isQuestions ? (
-        <div className="space-y-1 text-sm text-gray-700">
-          <div><strong>Active:</strong> {value.active}</div>
-          <div><strong>Inactive:</strong> {value.inactive}</div>
-        </div>
-      ) : (
-        <div className="text-2xl font-bold text-gray-900">{value}</div>
-      )}
+      <button
+        className="text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleViewAll();
+        }}
+      >
+        View all →
+      </button>
     </div>
   );
 }
 
 
   export default function Dashboard() {
+    const [name, setName] = useState("");
     const [notificationSummary, setNotificationSummary] = useState({
     Questions: 0,
     Suggestions: 0,
@@ -58,17 +85,33 @@ function StatCard({ title, value }) {
 const activeQuestions = notificationSummary.Questions - notificationSummary.Questions_Not_Active_total;
 
 const summaryData = [
-  { title: "Suggestion", value: notificationSummary.Suggestions },
+  { 
+    title: "Suggestion", 
+    value: notificationSummary.Suggestions,
+    icon: LightbulbIcon,
+    gradient: "from-orange-500 to-amber-400"
+  },
   {
     title: "Questions",
     value: {
       active: activeQuestions,
       inactive: notificationSummary.Questions_Not_Active_total,
     },
+    icon: QuestionIcon,
+    gradient: "from-blue-500 to-cyan-400"
   },
 ];
 
-    useEffect(() => {
+  const handleRefresh = () => {
+    // Refresh logic here
+    window.location.reload();
+  };
+
+  useEffect(() => {
+    // Set user name
+    if (typeof window !== "undefined") {
+      setName(window.localStorage.getItem("name") || "Developer");
+    }
     const fetchNotificationSummary = async () => {
       try {
         const response = await axios.get(
@@ -90,10 +133,17 @@ const summaryData = [
 
 
     return (
-      <div className="p-4 grid gap-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="space-y-6">
+        <DashboardHeader name={name}/>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {summaryData.map((item, index) => (
-            <StatCard key={index} title={item.title} value={item.value} />
+            <StatCard 
+              key={index} 
+              title={item.title} 
+              value={item.value} 
+              icon={item.icon}
+              gradientClass={item.gradient}
+            />
           ))}
         </div>
       </div>

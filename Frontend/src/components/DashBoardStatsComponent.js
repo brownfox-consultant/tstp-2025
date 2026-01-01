@@ -56,14 +56,10 @@ function DashBoardStatsComponent({ date }) {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 ">
       {stats.map((stat, index) => (
-        <div
-          key={index}
-          className="relative bg-white rounded-2xl p-6 border-2 border-gray-50 shadow-sm hover:shadow-lg overflow-hidden group"
-        >
-          
-          {/* Header */}
+        <div key={index} className="relative bg-white rounded-lg p-6 border-2 border-gray-50 shadow-md hover:shadow-lg overflow-hidden group">
+          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.gradientClass}`} />
           <div className="flex justify-between items-start mb-4 ">
             <p className="text-sm font-medium text-gray-500">{stat.title}</p>
             {stat.link && (
@@ -78,10 +74,10 @@ function DashBoardStatsComponent({ date }) {
           
           {/* Value and Change */}
           <div className="flex justify-between items-end">
-            <div className="text-4xl font-bold text-gray-800">
+            <div className={`text-4xl font-bold ${stat.textClass}`}>
               {stat.isPercentage ? `${stat.count}%` : stat.count}
             </div>
-            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold">
+            <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold ${stat.bgClass} ${stat.textClass}`}>
               <span>{stat.result > 0 ? "↑" : "↓"}</span>
               {Math.abs(stat.result)}%
             </div>

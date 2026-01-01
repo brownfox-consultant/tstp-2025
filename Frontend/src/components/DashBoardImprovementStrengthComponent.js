@@ -3,36 +3,25 @@ import axios from "axios";
 import { Row, Col, Progress, Spin } from "antd";
 import { usePathname } from "next/navigation";
 import { BASE_URL } from "@/app/constants/apiConstants";
-import Select from "react-select";
+import Select, { components } from "react-select";
+import { ChevronIcon } from "@/components/icons/dashboard-icons";
 import { EnglishIcon, MathIcon, NoDataIcon } from "@/components/icons/improvement-strength-icons";
 
-const customSelectStyles = {
-  control: (provided, state) => ({
-    ...provided,
-    borderRadius: '12px',
-    border: state.isFocused ? '2px solid #f97316' : '1px solid #e5e7eb',
-    boxShadow: state.isFocused ? '0 0 0 3px rgba(249, 115, 22, 0.1)' : 'none',
-    padding: '4px 8px',
-    minHeight: '44px',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      borderColor: '#f97316',
-    },
-  }),
-  option: (provided, state) => ({
-    ...provided,
-    backgroundColor: state.isSelected ? '#f97316' : state.isFocused ? 'rgba(249, 115, 22, 0.1)' : 'white',
-    color: state.isSelected ? 'white' : '#374151',
-    padding: '12px 16px',
-    cursor: 'pointer',
-  }),
-  menu: (provided) => ({
-    ...provided,
-    borderRadius: '12px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-    overflow: 'hidden',
-  }),
+// Custom Dropdown Indicator Component
+const CustomDropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+    </components.DropdownIndicator>
+  );
 };
+
+// Custom Select Components
+const customSelectComponents = {
+  DropdownIndicator: CustomDropdownIndicator,
+};
+
+
 
 const DashBoardImprovementStrengthComponent = ({ date }) => {
   const pathname = usePathname();
@@ -100,18 +89,17 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
   }, [selectedCourse, studentId, date]);
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+    <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100">
       {/* Header with Course Dropdown */}
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-2">
         <div className="flex items-center gap-2">
-          <span className="w-1 h-5 bg-gradient-to-b from-blue-500 to-cyan-400 rounded-full"></span>
           <h3 className="text-lg font-semibold text-gray-800">
             Topic-wise Performance
           </h3>
         </div>
         <div className="w-full sm:w-52">
           <Select
-            styles={customSelectStyles}
+            components={customSelectComponents}
             value={courses.find((c) => c.id === selectedCourse)}
             onChange={(option) => setSelectedCourse(option.id)}
             options={courses}
@@ -131,11 +119,8 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
         <Row gutter={[24, 24]}>
           {/* English Section */}
           <Col xs={24} md={12}>
-            <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 border border-blue-100 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
-                  <EnglishIcon />
-                </div>
+            <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 border border-blue-100 rounded-md p-3">
+              <div className="flex items-center gap-3 mb-2">
                 <h4 className="text-lg font-semibold text-blue-600">English</h4>
               </div>
               
@@ -145,10 +130,10 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
                   <p className="text-sm">No data available</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-1">
                   {improvements.map((item, index) => (
                     <div key={index}>
-                      <div className="flex justify-between mb-2">
+                      <div className="flex justify-between">
                         <span className="text-sm font-medium text-gray-600">{item.topic}</span>
                         <span className={`text-sm font-semibold ${item.score >= 50 ? 'text-emerald-500' : 'text-red-500'}`}>
                           {item.score}%
@@ -170,11 +155,8 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
 
           {/* Math Section */}
           <Col xs={24} md={12}>
-            <div className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 border border-orange-100 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
-                  <MathIcon />
-                </div>
+            <div className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 border border-orange-100 rounded-md p-3">
+              <div className="flex items-center gap-3 mb-2">
                 <h4 className="text-lg font-semibold text-orange-500">Math</h4>
               </div>
               
@@ -187,7 +169,7 @@ const DashBoardImprovementStrengthComponent = ({ date }) => {
                 <div className="space-y-4">
                   {strengths.map((item, index) => (
                     <div key={index}>
-                      <div className="flex justify-between mb-2">
+                      <div className="flex justify-between">
                         <span className="text-sm font-medium text-gray-600">{item.topic}</span>
                         <span className="text-sm font-semibold">
                           {item.score}%

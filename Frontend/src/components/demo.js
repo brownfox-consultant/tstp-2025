@@ -1,6 +1,9 @@
 "use client";
 
+import "@/app/Dashboard.css";
 import React, { useState, useEffect, useMemo } from "react";
+import { DatePicker, ConfigProvider, Progress } from "antd";
+import dayjs from "dayjs";
 import {
   BarChart,
   Bar,
@@ -21,19 +24,28 @@ import {
   DoubtIcon,
   MeetingIcon,
   IssueIcon,
-  SuggestionIcon
+  SuggestionIcon,
+  ArrowRightIcon,
+  CalendarIcon,
+  ClipboardIcon,
+  NoDataChartIcon,
+  NoDataClockIcon,
+  BadgeCheckIcon,
+  ChevronIcon
 } from "./icons/dashboard-icons";
-
-// Icon mapping for different stat types
-const STAT_ICONS = {
-  CONCERN: <ConcernIcon />,
-  DOUBT: <DoubtIcon />,
-  MEETING: <MeetingIcon />,
-  ISSUE: <IssueIcon />,
-  SUGGESTION: <SuggestionIcon />,
+import { NoDataIcon } from "@/components/icons/improvement-strength-icons";
+import { components } from "react-select";
+import { Row, Col } from "antd";
+// Custom Dropdown Indicator with rotating arrow
+const DropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+    </components.DropdownIndicator>
+  );
 };
 
-function StatCard({ title, value, selectedFilter, customStartDate, customEndDate, apiKey, routeName }) {
+function StatCard({ title, value, selectedFilter, customStartDate, customEndDate, apiKey, routeName, gradientClass }) {
   const router = useRouter();
   const { id } = useParams();
 
@@ -50,28 +62,20 @@ function StatCard({ title, value, selectedFilter, customStartDate, customEndDate
   };
 
   return (
-    <div className="group bg-white rounded-2xl border-2 border-gray-200 shadow-sm hover:shadow-lg hover:border-[#0071BC] transition-all duration-300 p-5">
-      {/* Header Row */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#0071BC] to-[#0071BC] flex items-center justify-center shadow-md text-white">
-          {STAT_ICONS[apiKey] || STAT_ICONS.CONCERN}
-        </div>
+    <div
+      onClick={handleViewAll}
+      className="relative bg-white rounded-lg p-6 border-2 border-gray-50 shadow-md hover:shadow-lg overflow-hidden group cursor-pointer"
+    >
+      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientClass}`} />
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-sm font-medium text-gray-500">{title}</p>
         <button
-          onClick={handleViewAll}
-          className="text-xs font-semibold text-[#0071BC] hover:text-[#805830] transition-colors flex items-center gap-1 opacity-70 group-hover:opacity-100 bg-transparent"
+          className="text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent"
         >
-          View all
-          <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          View all →
         </button>
       </div>
-
-      {/* Value */}
-      <div className="text-4xl font-bold text-[#2E2725] mb-1 tracking-tight">{value}</div>
-
-      {/* Title */}
-      <span className="text-sm font-medium text-[#805830]/80">{title}</span>
+      <div className="text-4xl font-bold text-gray-900">{value}</div>
     </div>
   );
 }
@@ -84,6 +88,7 @@ export default function Dashboard() {
   const [customEndDate, setCustomEndDate] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const datePickerRef = React.useRef(null);
 
@@ -111,11 +116,11 @@ export default function Dashboard() {
   const [loadingKeyStrengths, setLoadingKeyStrengths] = useState(false);
   const [questionCounts, setQuestionCounts] = useState([]);
   const SECTIONS = [
-    { display: "Concerns", key: "CONCERN", route: "concerns" },
-    { display: "Doubts", key: "DOUBT", route: "doubts" },
-    { display: "Meetings", key: "MEETING", route: "meetings" },
-    { display: "Issues", key: "ISSUE", route: "issues" },
-    { display: "Suggestions", key: "SUGGESTION", route: "suggestions" },
+    { display: "Concerns", key: "CONCERN", route: "concerns", gradient: "from-orange-500 to-amber-400" },
+    { display: "Doubts", key: "DOUBT", route: "doubts", gradient: "from-blue-500 to-cyan-400" },
+    { display: "Meetings", key: "MEETING", route: "meetings", gradient: "from-emerald-500 to-teal-400" },
+    { display: "Issues", key: "ISSUE", route: "issues", gradient: "from-rose-500 to-pink-400" },
+    { display: "Suggestions", key: "SUGGESTION", route: "suggestions", gradient: "from-indigo-500 to-purple-400" },
   ];
   const [tests, setTests] = useState([]);
   const [selectedTest, setSelectedTest] = useState(null);
@@ -201,7 +206,7 @@ export default function Dashboard() {
               end_date: customEndDate,
             };
           } else {
-            return; // 🔁 Don't run if both dates aren't selected
+            return;
           }
         } else {
           params = {
@@ -274,25 +279,34 @@ export default function Dashboard() {
       });
   }, [selectedCourse, selectedStudent, finalDateParams, selectedTest]);
 
+  const handleFilterChange = (val) => {
+    if (val === selectedFilter) return;
+    setIsLoading(true);
+    setSelectedFilter(val);
+    setCustomStartDate("");
+    setCustomEndDate("");
+    setShowDatePicker(false);
+
+    // Simulate refresh for UX consistency
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+  };
+
   return (
     <div className="grid gap-6">
       {/* Global Filters */}
-      <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-100">
+      <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100">
         <div className="flex flex-wrap items-center gap-3">
           {/* Time Filter Pills */}
           <div className="flex items-center bg-gray-50 rounded-xl p-1 gap-1">
             {["last_month", "last_week", "today"].map((val) => (
               <button
                 key={val}
-                onClick={() => {
-                  setSelectedFilter(val);
-                  setCustomStartDate("");
-                  setCustomEndDate("");
-                  setShowDatePicker(false);
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${selectedFilter === val
-                    ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
-                    : "text-[#805830] hover:bg-gray-100"
+                onClick={() => handleFilterChange(val)}
+                className={`dashboard-tab-button ${selectedFilter === val
+                  ? "dashboard-tab-active"
+                  : "dashboard-tab-inactive"
                   }`}
               >
                 {val === "last_month" ? "This Month" : val === "last_week" ? "This Week" : "Today"}
@@ -307,39 +321,50 @@ export default function Dashboard() {
                   setSelectedFilter("custom");
                 }}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${selectedFilter === "custom"
-                    ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
-                    : "text-[#805830] hover:bg-gray-100"
+                  ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
+                  : "text-[#805830] hover:bg-gray-100"
                   }`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                <CalendarIcon className="w-4 h-4" />
                 Custom
               </button>
 
               {showDatePicker && (
-                <div className="absolute z-50 mt-2 w-80 bg-white border border-[#FFD36A]/30 shadow-2xl rounded-2xl p-5 space-y-4 right-0 md:left-0">
+                <div className="absolute z-50 mt-2 w-80 bg-gradient-to-br from-white to-[#FFF8F0] border border-gray-200 shadow-md rounded-md p-5 space-y-4 right-0 md:left-0">
                   <h4 className="font-semibold text-[#2E2725]">Select Date Range</h4>
-                  <div>
-                    <label className="text-sm text-[#805830] font-medium">Start Date</label>
-                    <input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                      className="w-full border border-gray-200 rounded-xl p-2.5 mt-1 focus:ring-2 focus:ring-[#F59403] focus:border-transparent transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-[#805830] font-medium">End Date</label>
-                    <input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                      className="w-full border border-gray-200 rounded-xl p-2.5 mt-1 focus:ring-2 focus:ring-[#F59403] focus:border-transparent transition-all"
-                    />
-                  </div>
+                  <ConfigProvider
+                    theme={{
+                      token: {
+                        colorPrimary: '#F59403',
+                        borderRadius: 8,
+                      },
+                    }}
+                  >
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm text-[#805830] font-medium block mb-1">Start Date</label>
+                        <DatePicker
+                          value={customStartDate ? dayjs(customStartDate) : null}
+                          onChange={(date, dateString) => setCustomStartDate(dateString)}
+                          className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
+                          format="YYYY-MM-DD"
+                          placeholder="Select start date"
+                          getPopupContainer={trigger => trigger.parentNode}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-[#805830] font-medium block mb-1">End Date</label>
+                        <DatePicker
+                          value={customEndDate ? dayjs(customEndDate) : null}
+                          onChange={(date, dateString) => setCustomEndDate(dateString)}
+                          className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
+                          format="YYYY-MM-DD"
+                          placeholder="Select end date"
+                          getPopupContainer={trigger => trigger.parentNode}
+                        />
+                      </div>
+                    </div>
+                  </ConfigProvider>
                   <div className="flex justify-between pt-2">
                     <button
                       onClick={() => {
@@ -369,237 +394,298 @@ export default function Dashboard() {
 
           {/* Course & Student Selectors */}
           <Select
-            className="w-56 text-sm"
+            className="w-52 text-sm"
             value={courses.find((c) => c.id.toString() === selectedCourse)}
             onChange={(opt) => setSelectedCourse(opt?.id.toString())}
             options={courses}
             getOptionLabel={(e) => e.name}
             getOptionValue={(e) => e.id.toString()}
             placeholder="Select Course"
+            components={{ DropdownIndicator }}
           />
+
+          {/* Test Scores */}
           <Select
-            className="w-56 text-sm"
+            className="w-48 text-sm"
             value={students.find((s) => s.id.toString() === selectedStudent)}
             onChange={(opt) => setSelectedStudent(opt?.id.toString())}
             options={students}
             getOptionLabel={(e) => e.name}
             getOptionValue={(e) => e.id.toString()}
             placeholder="Select Student"
+            components={{ DropdownIndicator }}
           />
+
+          {/* Test Selector */}
           <Select
-            className="w-64 text-sm"
+            className="w-48 text-sm"
             value={tests.find((t) => t.id.toString() === selectedTest)}
             onChange={(opt) => setSelectedTest(opt?.id.toString())}
             options={[{ id: "", name: "All Tests" }, ...tests]}
             getOptionLabel={(e) => e.name}
             getOptionValue={(e) => e.id.toString()}
             placeholder="Select Test"
+            components={{ DropdownIndicator }}
           />
         </div>
       </div>
 
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        {SECTIONS.map(({ display, key, route }) => (
-          <StatCard
-            key={display}
-            title={display}
-            apiKey={key}
-            routeName={route}
-            value={notificationCounts[key]?.unread_count ?? 0}
-            selectedFilter={selectedFilter}
-            customStartDate={customStartDate}
-            customEndDate={customEndDate}
-          />
-        ))}
-      </div>
 
-      {/* Question Count Table */}
-      <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
-        <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-[#2E2725] to-[#805830]">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Question Count by Course & Subject
-          </h3>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-10 h-10 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin"></div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Course</th>
-                <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Subject</th>
-                <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Total</th>
-                <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Active</th>
-                <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Inactive</th>
-                <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Practice</th>
-                <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Full Length</th>
-              </tr>
-            </thead>
-            <tbody>
-              {questionCounts.length > 0 ? (
-                questionCounts.map((item, i) => (
-                  <tr key={i} className="border-b border-gray-50 hover:bg-[#FFD36A]/10 transition-colors">
-                    <td className="px-5 py-4 font-medium text-[#2E2725]">{item.course}</td>
-                    <td className="px-5 py-4 text-[#805830]">{item.subject}</td>
-                    <td className="px-5 py-4">
-                      <span className="px-2.5 py-1 bg-[#0071BC]/10 text-[#0071BC] rounded-full font-semibold text-xs">
-                        {item.total_questions}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-full font-semibold text-xs">
-                        {item.active_questions}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="px-2.5 py-1 bg-red-100 text-red-600 rounded-full font-semibold text-xs">
-                        {item.inactive_questions}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-[#805830]">{item.total_self_practice_questions}</td>
-                    <td className="px-5 py-4 text-[#805830]">{item.total_full_length_questions}</td>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+            {SECTIONS.map(({ display, key, route, gradient }) => (
+              <StatCard
+                key={display}
+                title={display}
+                apiKey={key}
+                routeName={route}
+                value={notificationCounts[key]?.unread_count ?? 0}
+                selectedFilter={selectedFilter}
+                customStartDate={customStartDate}
+                customEndDate={customEndDate}
+                gradientClass={gradient}
+              />
+            ))}
+          </div>
+
+          {/* Question Count Table */}
+          <div className="bg-white shadow-md rounded-xl">
+            <div className="p-5 border-b border-white bg-gradient-to-r from-[#2E2725] to-[#805830] rounded-t-xl">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <ClipboardIcon className="w-5 h-5" />
+                Question Count by Course & Subject
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Course</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Subject</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Total</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Active</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Inactive</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Practice</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Full Length</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="text-center py-8 text-gray-400">
-                    <div className="flex flex-col items-center gap-2">
-                      <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                      No question data available
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-sm text-[#805830]">
-            Showing {questionCounts.length} records
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Student Count Chart */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-[#2E2725]">Student Count by Course</h3>
-            <div className="w-8 h-8 rounded-lg bg-[#FFD36A]/20 flex items-center justify-center">
-              <svg className="w-4 h-4 text-[#F59403]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={courseChartData} barSize={40}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#805830', fontSize: 12 }} />
-              <Tooltip cursor={{ fill: 'rgba(245, 148, 3, 0.1)' }} />
-              <Bar dataKey="value" fill="#F59403" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Test Scores Chart */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-[#2E2725]">Test Scores</h3>
-            <div className="w-8 h-8 rounded-lg bg-[#70D9E4]/20 flex items-center justify-center">
-              <svg className="w-4 h-4 text-[#0071BC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={barPercentData} barSize={40}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
-              <YAxis domain={[0, 100]} tick={{ fill: '#805830', fontSize: 12 }} />
-              <Tooltip cursor={{ fill: 'rgba(112, 217, 228, 0.1)' }} />
-              <Bar dataKey="value" fill="#70D9E4" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Time Spent Chart */}
-      <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-[#2E2725]">Time Spent vs Score</h3>
-          <div className="flex gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#F59403]"></div>
-              <span className="text-sm text-[#805830]">Score</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#0071BC]"></div>
-              <span className="text-sm text-[#805830]">Minutes</span>
-            </div>
-          </div>
-        </div>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={timeSpentData} barSize={30}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
-            <YAxis tick={{ fill: '#805830', fontSize: 12 }} />
-            <Tooltip cursor={{ fill: 'rgba(245, 148, 3, 0.1)' }} />
-            <Legend />
-            <Bar dataKey="score" fill="#F59403" name="Score" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="time_taken_minutes" fill="#0071BC" name="Minutes" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Key Strengths Section */}
-      <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5">
-        <div className="flex items-center gap-2 mb-5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F59403] to-[#FFD36A] flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-bold text-[#2E2725]">Key Strengths by Subject</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[{ label: "English", data: englishTopics, color: "#0071BC" }, { label: "Math", data: mathTopics, color: "#F59403" }].map(
-            ({ label, data, color }) => (
-              <div key={label} className="bg-gray-50 rounded-xl p-4">
-                <h4 className="text-md font-semibold text-[#2E2725] mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></span>
-                  {label}
-                </h4>
-                {loadingKeyStrengths ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="w-6 h-6 border-2 border-[#F59403] border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                ) : data.length > 0 ? (
-                  data.map((item, i) => (
-                    <div key={i} className="mb-3">
-                      <div className="flex justify-between text-sm mb-1.5">
-                        <span className="text-[#805830] font-medium">{item.topic}</span>
-                        <span className="font-semibold text-[#2E2725]">{item.score}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
-                        <div
-                          className="h-2.5 rounded-full transition-all duration-500"
-                          style={{ width: `${item.score}%`, backgroundColor: color }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-400 text-sm py-4 text-center">No data available</p>
-                )}
+                </thead>
+                <tbody>
+                  {questionCounts.length > 0 ? (
+                    questionCounts.map((item, i) => (
+                      <tr key={i} className="border-b border-gray-50 hover:bg-[#FFD36A]/10 transition-colors">
+                        <td className="px-5 py-4 font-medium text-[#2E2725]">{item.course}</td>
+                        <td className="px-5 py-4 text-[#805830]">{item.subject}</td>
+                        <td className="px-5 py-4">
+                          <span className="px-2.5 py-1 bg-[#0071BC]/10 text-[#0071BC] rounded-full font-semibold text-xs">
+                            {item.total_questions}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-full font-semibold text-xs">
+                            {item.active_questions}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="px-2.5 py-1 bg-red-100 text-red-600 rounded-full font-semibold text-xs">
+                            {item.inactive_questions}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-[#805830]">{item.total_self_practice_questions}</td>
+                        <td className="px-5 py-4 text-[#805830]">{item.total_full_length_questions}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="text-center py-8 text-gray-400">
+                        <div className="flex flex-col items-center gap-2">
+                          <ClipboardIcon className="w-10 h-10 text-gray-300" />
+                          No question data available
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-sm text-[#805830] rounded-xl">
+                Showing {questionCounts.length} records
               </div>
-            )
-          )}
-        </div>
-      </div>
+            </div>
+          </div>
+
+          {/* Charts Grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Student Count Chart */}
+            <div className="bg-white shadow-md rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-[#2E2725]">Student Count by Course</h3>
+              </div>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={courseChartData} barSize={40}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" interval={0} angle={-15} textAnchor="end" tick={{ fill: '#000000', fontSize: 13, dy: 2, fontWeight: 'bold' }} height={60} />
+                  <YAxis tick={{ fill: '#000000', fontSize: 12 }} />
+                  <Tooltip cursor={{ fill: 'transparent' }} />
+                  <Bar dataKey="value" fill="#F59403" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Test Scores Chart */}
+            <div className="bg-white shadow-md rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-[#2E2725]">Test Scores</h3>
+              </div>
+              {barPercentData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={barPercentData} barSize={40}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
+                    <YAxis domain={[0, 100]} tick={{ fill: '#805830', fontSize: 12 }} />
+                    <Tooltip cursor={{ fill: 'transparent' }} />
+                    <Bar dataKey="value" fill="#70D9E4" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[280px] text-gray-400">
+                  <NoDataChartIcon className="w-12 h-12 mb-3 text-gray-300" />
+                  <span className="text-sm font-medium">No data available</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Time Spent Chart */}
+          <div className="bg-white shadow-md rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-[#2E2725]">Time Spent vs Score</h3>
+              {timeSpentData.length > 0 && (
+                <div className="flex gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#F59403]"></div>
+                    <span className="text-sm text-[#805830]">Score</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#0071BC]"></div>
+                    <span className="text-sm text-[#805830]">Minutes</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            {timeSpentData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={timeSpentData} barSize={30}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#805830', fontSize: 12 }} />
+                  <Tooltip cursor={{ fill: 'transparent' }} />
+                  <Legend />
+                  <Bar dataKey="score" fill="#F59403" name="Score" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="time_taken_minutes" fill="#0071BC" name="Minutes" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                <NoDataClockIcon className="w-12 h-12 mb-3 text-gray-300" />
+                <span className="text-sm font-medium">No data available</span>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-lg font-bold text-[#2E2725]">Topic-wise Performance</h3>
+            </div>
+
+            <Row gutter={[24, 24]} className="flex">
+              <Col xs={24} md={12}>
+                <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 border border-blue-100 rounded-md p-3 h-full flex flex-col">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h4 className="text-lg font-semibold text-blue-600">English</h4>
+                  </div>
+
+                  {loadingKeyStrengths ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : englishTopics.length === 0 ? (
+                    <div className="text-center py-6 text-gray-400 flex-1 flex flex-col items-center justify-center">
+                      <NoDataIcon />
+                      <p className="text-sm">No data available</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {englishTopics.map((item, i) => (
+                        <div key={i}>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-600">{item.topic}</span>
+                            <span className={`text-sm font-semibold ${item.score >= 50 ? 'text-emerald-500' : 'text-red-500'}`}>
+                              {item.score}%
+                            </span>
+                          </div>
+                          <Progress
+                            percent={item.score}
+                            strokeColor="#0071BC"
+                            trailColor="#e5e7eb"
+                            showInfo={false}
+                            strokeWidth={8}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Col>
+
+              {/* Math Section */}
+              <Col xs={24} md={12}>
+                <div className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 border border-orange-100 rounded-md p-3 h-full flex flex-col">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h4 className="text-lg font-semibold text-orange-500">Math</h4>
+                  </div>
+
+                  {loadingKeyStrengths ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : mathTopics.length === 0 ? (
+                    <div className="text-center py-6 text-gray-400 flex-1 flex flex-col items-center justify-center">
+                      <NoDataIcon />
+                      <p className="text-sm">No data available</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {mathTopics.map((item, i) => (
+                        <div key={i}>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-600">{item.topic}</span>
+                            <span className="text-sm font-semibold text-[#805830]">
+                              {item.score}%
+                            </span>
+                          </div>
+                          <Progress
+                            percent={item.score}
+                            strokeColor="#F59403"
+                            trailColor="#e5e7eb"
+                            showInfo={false}
+                            strokeWidth={8}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Col>
+            </Row>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }

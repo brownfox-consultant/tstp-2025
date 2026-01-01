@@ -3,6 +3,8 @@
 @tailwind components;
 @tailwind utilities;
 
+
+
 @media print {
   html,
   body {
@@ -394,4 +396,30 @@ body.fullscreen-mode footer {
 .editor-focused .tox-tinymce {
   border-color: #1677ff !important;
   box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+}
+
+/* Custom Scrollbar - Slim */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) #f1f1f1;
 }
