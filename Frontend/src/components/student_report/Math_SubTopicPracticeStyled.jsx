@@ -82,7 +82,7 @@ export default function Math_SubTopicPracticeStyled({
     const chartHeight = Math.max(300, chartData.length * 70);
 
     return (
-      <div key={index} className="bg-white rounded-2xl p-4 md:p-6 shadow-lg border border-gray-100">
+      <div key={index} className="card-layout">
         {/* Section Header */}
         <div className="flex items-center gap-3 mb-6">
           <h3 className="text-xl font-bold text-gray-800">{section.topic}</h3>
@@ -282,7 +282,7 @@ export default function Math_SubTopicPracticeStyled({
                 onClick={() => setActiveSection(i)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${activeSection === i
                     ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-white text-black hover:bg-gray-200'
                   }`}
               >
                 {t.topic}

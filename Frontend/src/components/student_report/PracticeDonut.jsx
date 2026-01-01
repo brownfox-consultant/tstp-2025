@@ -13,7 +13,7 @@ export default function PracticeDonut({ practice }) {
   const displayData = practice && practice.length > 0 ? practice : defaultPractice;
 
   return (
-    <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] p-6 border-[1px] border-[#E5E5E5]">
+    <div className="card-layout">
       {/* TITLE */}
       <h3 className="text-[18px] font-bold text-[#333] mb-5">
         Subject Practice Progress

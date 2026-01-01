@@ -13,8 +13,8 @@ import {
 
 export default function AccuracyChart({ accuracy }) {
   return (
-    <div className="data-card accuracy-card">
-      <h3 className="card-title">
+    <div className="card-layout">
+      <h3 className="text-[18px] font-bold text-[#333] mb-5">
         Subject Wise Accuracy
       </h3>
 

@@ -92,10 +92,28 @@ export default function SubTopicPracticeStyled({
 
   return (
     <div className="w-full">
-      <div className="bg-white px-4 py-2 inline-block mb-6 border-b">
-        <h2 className="text-lg md:text-xl font-extrabold text-gray-800">
-          Sub – Topic Wise Practice — {subject}
-        </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+        <div className="bg-white px-4 py-2 inline-block border-b">
+          <h2 className="text-lg md:text-xl font-extrabold text-gray-800">
+            Sub – Topic Wise Practice — {subject}
+          </h2>
+        </div>
+
+        {/* Global Legend */}
+        <div className="flex flex-wrap gap-6 bg-white px-6 py-3 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-md shadow-sm" style={{ backgroundColor: "#F59403" }}></span>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Questions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-md shadow-sm" style={{ backgroundColor: "#FFD36A" }}></span>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Time</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-md shadow-sm" style={{ backgroundColor: "#0071BC" }}></span>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Accuracy %</span>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-[25px] max-[1300px]:grid-cols-1">
@@ -174,27 +192,11 @@ export default function SubTopicPracticeStyled({
           };
 
           return (
-            <div key={i} className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+            <div key={i} className="card-layout">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                 <h3 className="text-xl font-extrabold text-gray-800">
                   {topicBlock.topic}
                 </h3>
-
-                {/* Legend at Top Right */}
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-md" style={{ backgroundColor: "#F59403" }}></span>
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Questions</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-md" style={{ backgroundColor: "#FFD36A" }}></span>
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Time</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-md" style={{ backgroundColor: "#0071BC" }}></span>
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Accuracy %</span>
-                  </div>
-                </div>
               </div>
 
               <div className="overflow-x-auto pb-2">

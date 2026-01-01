@@ -45,7 +45,7 @@ const FacultyMenuItems = [
   {
     key: "report",
     icon: <BarChartOutlined />,
-    label: "Reports",
+    label: "Students Report",
   },
   {
     key: "questions",

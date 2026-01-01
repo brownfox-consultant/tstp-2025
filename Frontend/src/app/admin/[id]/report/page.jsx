@@ -65,7 +65,7 @@ export default function ReportPage() {
 
         <Select
           className="w-80 text-sm"
-          placeholder="Search by name or email"
+          placeholder="Search by name or email "
           value={students.find((s) => s.id === selectedStudentId)}
           onChange={(opt) => setSelectedStudentId(opt?.id)}
           options={students}
@@ -76,35 +76,6 @@ export default function ReportPage() {
           isSearchable
           styles={{
             menu: (base) => ({ ...base, zIndex: 9999 }),
-            control: (base, state) => ({
-              ...base,
-              borderColor: state.isFocused ? "#F59403" : "#e5e7eb",
-              boxShadow: state.isFocused ? "0 0 0 1px #F59403" : "none",
-              "&:hover": {
-                borderColor: "#F59403",
-              },
-              borderRadius: "0.5rem",
-              padding: "2px",
-            }),
-            option: (base, state) => ({
-              ...base,
-              backgroundColor: state.isSelected
-                ? "#F59403"
-                : state.isFocused
-                ? "#FFF8F0"
-                : "transparent",
-              color: state.isSelected ? "white" : "#2E2725",
-              "&:active": {
-                backgroundColor: "#F59403",
-                color: "white",
-              },
-              cursor: "pointer",
-            }),
-            singleValue: (base) => ({
-              ...base,
-              color: "#2E2725",
-              fontWeight: 500,
-            }),
           }}
         />
       </div>

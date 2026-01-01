@@ -87,7 +87,7 @@ export default function Heatmap({ dateWise = [] }) {
   const isCurrentMonth = monthOffset === 0;
 
   return (
-    <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border-[1px] border-[#E5E5E5]">
+    <div className="card-layout">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <button 

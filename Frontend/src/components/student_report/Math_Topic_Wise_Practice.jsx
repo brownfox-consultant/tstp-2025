@@ -82,7 +82,7 @@ export default function Math_Topic_Wise_Practice({
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+    <div className="card-layout">
       <h3 className="text-xl font-extrabold text-gray-800 mb-6 text-center">Topic Wise Practice</h3>
 
       {/* PIE */}

@@ -165,7 +165,7 @@ export default function ScoreAnalysis_FullLengthTest({
     <div className="space-y-8 animate-fadeIn">
 
       {/* ================= SCORE CHART ================= */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <div className="card-layout">
         <h3 className="text-xl font-bold text-gray-800 mb-6">
           Full-Length Test - {courseName} Analysis
         </h3>

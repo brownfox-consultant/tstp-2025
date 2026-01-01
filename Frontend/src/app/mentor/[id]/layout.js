@@ -51,7 +51,7 @@ function DashboardLayout({ children }) {
     {
       key: "report",
       icon: <BarChartOutlined />,
-      label: "Reports",
+      label: "Students Report",
       disabled: false,
     },
     {

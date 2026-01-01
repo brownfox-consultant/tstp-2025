@@ -385,8 +385,8 @@ function Dashboard() {
 
      
 
-<div className="data-card accuracy-card">
-  <h3 className="card-title" style={{ textAlign: "center" }}>
+<div className="card-layout">
+  <h3 className="text-[18px] font-bold text-[#333] mb-5" style={{ textAlign: "center" }}>
     Subject Wise Accuracy
   </h3>
 

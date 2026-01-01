@@ -44,7 +44,7 @@ const AdminMenuItems = [
   {
     key: "report",
     icon: <BarChartOutlined />,
-    label: "Reports",
+    label: "Students Report",
   },
   { key: "users", icon: <UserOutlined />, label: "Users" },
   {

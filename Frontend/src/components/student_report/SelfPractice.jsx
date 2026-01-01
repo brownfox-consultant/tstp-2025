@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";   // ✅ ADD
+import { useRouter, usePathname } from "next/navigation";   // ✅ ADD
 import { BASE_URL } from "@/app/constants/apiConstants";
 
 export default function SelfPractice({ student_id, course_id }) {
@@ -10,6 +10,7 @@ export default function SelfPractice({ student_id, course_id }) {
   const [loading, setLoading] = useState(true);
 
   const router = useRouter();   // ✅ ADD
+  const pathname = usePathname();   // ✅ ADD
 
   useEffect(() => {
     if (!student_id || !course_id) return;
@@ -44,7 +45,20 @@ export default function SelfPractice({ student_id, course_id }) {
   };
 
   const handleKnowMore = () => {
-    router.push(`/student/${student_id}/test/practice`);
+    const portal = pathname.split("/")[1];
+    const id = pathname.split("/")[2];
+
+    if (portal === "faculty" || portal === "mentor") {
+      router.push(`/${portal}/${id}/practice`);
+    } else if (portal === "admin") {
+      router.push(`/admin/${id}/tests`);
+    } else if (portal === "parent") {
+      router.push(`/parent/${id}/test`);
+    } else if (portal === "student") {
+      router.push(`/student/${id}/test/practice`);
+    } else {
+      router.push(`/student/${student_id}/test/practice`);
+    }
   };
 
   /* ================= TABLE ================= */

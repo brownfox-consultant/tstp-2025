@@ -69,8 +69,8 @@ export default function TopicAccuracy({
   }));
 
   return (
-    <div className="data-card accuracy-card">
-      <h3 className="card-title">
+    <div className="card-layout">
+      <h3 className="text-[18px] font-bold text-[#333] mb-5">
         Topic Wise Accuracy — {subject}
       </h3>
 

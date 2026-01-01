@@ -1,11 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Select, Spin } from "antd";
+import { Spin } from "antd";
 import axios from "axios";
+import Select, { components } from "react-select";
 import { GET_Students, BASE_URL } from "@/app/constants/apiConstants";
 import StudentReportDashboard from "@/components/student_report/StudentReportDashboard";
 import { useParams } from "next/navigation";
+import { ChevronIcon } from "@/components/icons/dashboard-icons";
+
+// Custom Dropdown Indicator with rotating arrow
+const DropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+    </components.DropdownIndicator>
+  );
+};
 
 export default function MentorReportPage() {
   const [students, setStudents] = useState([]);
@@ -22,15 +33,23 @@ export default function MentorReportPage() {
         const allStudents = allStudentsRes.data || [];
 
         // 2. Fetch assigned student IDs for this mentor
-       const assignedRes = await axios.get(
+        const assignedRes = await axios.get(
           `${BASE_URL}/api/doubt/students-by-mentor/?mentor_id=${mentorId}`,
           { withCredentials: true }
         );
         const assignedIds = assignedRes.data.student_ids || [];
 
-        // 3. Filter students
-        const filtered = allStudents.filter(s => assignedIds.includes(s.id));
+        // 3. Filter and sort students alphabetically
+        const filtered = allStudents
+          .filter(s => assignedIds.map(String).includes(String(s.id)))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
         setStudents(filtered);
+
+        // 4. Set default student (alphabetical first)
+        if (filtered.length > 0 && !selectedStudentId) {
+          setSelectedStudentId(filtered[0].id);
+        }
 
       } catch (error) {
         console.error("Error fetching mentor students:", error);
@@ -47,31 +66,31 @@ export default function MentorReportPage() {
   const selectedStudent = students.find(s => s.id === selectedStudentId);
 
   return (
-    <div className="p-6">
+    <div>
       <div className="text-2xl font-bold mb-4 text-black">Student Reports</div>
 
       <div className="mb-6 flex items-center gap-4">
         <span className="font-semibold text-gray-700">Select Student:</span>
         <Select
-          showSearch
+          className="w-[350px] text-sm"
           placeholder="Search by name or email"
-          optionFilterProp="label"
-          filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-          }
-          style={{ width: 300 }}
-          onChange={(value) => setSelectedStudentId(value)}
-          options={students.map((s) => ({
-            label: `${s.name} ${s.email ? `(${s.email})` : ''}`,
-            value: s.id,
-          }))}
-          notFoundContent={loading ? <Spin size="small" /> : null}
+          value={students.find(s => s.id === selectedStudentId)}
+          onChange={(opt) => setSelectedStudentId(opt?.id)}
+          options={students}
+          getOptionLabel={(s) => `${s.name} ${s.email ? `(${s.email})` : ''}`}
+          getOptionValue={(s) => s.id}
+          isSearchable={true}
+          components={{ DropdownIndicator }}
+          noOptionsMessage={() => loading ? "Loading students..." : "No students found"}
+          styles={{
+            menu: (base) => ({ ...base, zIndex: 9999 }),
+          }}
         />
       </div>
 
       {selectedStudentId ? (
-        <StudentReportDashboard 
-          studentIdProp={selectedStudentId} 
+        <StudentReportDashboard
+          studentIdProp={selectedStudentId}
           studentNameProp={selectedStudent?.name}
           hideHeader={true}
         />

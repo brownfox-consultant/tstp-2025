@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { BASE_URL } from "@/app/constants/apiConstants";
 
 export default function Scoreboard({ student_id, course_id }) {
@@ -10,6 +10,7 @@ export default function Scoreboard({ student_id, course_id }) {
   const [loading, setLoading] = useState(true);
 
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!student_id || !course_id) return;
@@ -69,7 +70,18 @@ export default function Scoreboard({ student_id, course_id }) {
   }
 
   const handleKnowMore = () => {
-    router.push(`/student/${student_id}/test/full`);
+    const portal = pathname.split("/")[1];
+    const id = pathname.split("/")[2];
+
+    if (portal === "admin" || portal === "faculty" || portal === "mentor") {
+      router.push(`/${portal}/${id}/tests`);
+    } else if (portal === "parent") {
+      router.push(`/parent/${id}/test`);
+    } else if (portal === "student") {
+      router.push(`/student/${id}/test/full`);
+    } else {
+      router.push(`/student/${student_id}/test/full`);
+    }
   };
 
   /* ================= TABLE ================= */

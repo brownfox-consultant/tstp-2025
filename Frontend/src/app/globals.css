@@ -423,3 +423,8 @@ body.fullscreen-mode footer {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.3) #f1f1f1;
 }
+
+
+.card-layout {
+  @apply bg-white p-6 rounded-lg shadow-md border border-gray-200;
+}

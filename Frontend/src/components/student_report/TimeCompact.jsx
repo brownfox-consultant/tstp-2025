@@ -9,7 +9,7 @@ import {
 
 export default function TimeCompact({ timeMetrics }) {
   return (
-    <div className="data-card time-compact-card">
+    <div className="card-layout">
       <h3 className="card-title">
         
         Avg. Time & Total Time
