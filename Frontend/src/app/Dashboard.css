@@ -1,0 +1,80 @@
+.dashboard-card {
+  @apply mb-8 bg-white p-4 rounded-xl shadow-md;
+}
+
+.dashboard-section-title {
+  @apply text-lg font-semibold text-gray-800 mb-5 flex items-center gap-3;
+}
+
+.dashboard-section-indicator {
+  @apply w-1 h-5 bg-gradient-to-b from-orange-500 to-amber-400 rounded-full;
+}
+
+.dashboard-action-button {
+  @apply flex items-center gap-2.5 px-5 py-3 rounded-xl font-medium bg-white shadow-md hover:shadow-lg hover:text-white hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-400 transition-all duration-300;
+}
+
+.dashboard-tab-button {
+  @apply px-4 md:px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300;
+}
+
+.dashboard-tab-active {
+  @apply bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md;
+}
+
+.dashboard-tab-inactive {
+  @apply text-gray-500 hover:text-gray-800 hover:bg-gray-50 bg-transparent h-max;
+}
+
+/* Dashboard Header Common Styles */
+.dashboard-header-gradient {
+  @apply bg-gradient-to-r from-[#F59403] via-[#FFD36A] to-[#F59403] rounded-2xl p-6 mb-6 shadow-lg relative overflow-hidden;
+}
+
+.dashboard-header-circle-1 {
+  @apply absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2;
+}
+
+.dashboard-header-circle-2 {
+  @apply absolute bottom-0 left-20 w-24 h-24 bg-white/10 rounded-full translate-y-1/2;
+}
+
+.dashboard-header-content {
+  @apply relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4;
+}
+
+.dashboard-welcome-text {
+  @apply text-2xl md:text-3xl font-bold text-[#2E2725];
+}
+
+.dashboard-username-text {
+  @apply text-[#805830];
+}
+
+.dashboard-date-wrapper {
+  @apply flex items-center gap-4 font-medium;
+}
+
+.dashboard-date-text {
+  @apply text-[#ffffff] text-sm font-medium;
+}
+
+/* Refresh Button Styles */
+.dashboard-refresh-button {
+  @apply p-2 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 text-[#805830] transition-all duration-300 shadow-sm border border-white/20 cursor-pointer;
+}
+
+.dashboard-refresh-icon {
+  @apply w-5 h-5;
+}
+
+.dashboard-refresh-loading {
+  @apply animate-spin text-[#2E2725];
+}
+
+
+
+
+.dashboard-content {
+  @apply p-6 bg-[#ffffff];
+}
