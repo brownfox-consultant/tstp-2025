@@ -15,11 +15,21 @@ import {
   Legend,
 } from 'recharts';
 import { usePathname, useRouter } from 'next/navigation';
-import Select from 'react-select';
+import Select, { components } from 'react-select';
+import { ChevronIcon } from '@/components/icons/dashboard-icons';
+
+const DropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+    </components.DropdownIndicator>
+  );
+};
 import { Col, Row } from 'antd';
 import { BASE_URL } from '@/app/constants/apiConstants';
 import { getDashboardStats } from '@/app/services/authService';
 import { getTestsPerDay } from "@/app/services/authService";
+import DashboardHeader from "@/components/DashboardHeader";
 
 
 
@@ -44,6 +54,7 @@ export default function Dashbord() {
   const pathname = usePathname();
   const router = useRouter();
   const parentId = pathname.split('/')[2];
+  const [name, setName] = useState("");
 
   // === Student & Stats ===
   const [studentId, setStudentId] = useState();
@@ -387,16 +398,19 @@ export default function Dashbord() {
             title: 'Full length tests',
             count: res.data.full_length_tests.count,
             result: res.data.full_length_tests.change_percentage,
+            gradient: "from-orange-500 to-amber-400"
           },
           {
             title: 'Practice Questions',
             count: res.data.practice_tests.count,
             result: res.data.practice_tests.change_percentage,
+            gradient: "from-blue-500 to-cyan-400"
           },
           {
             title: 'Avg score of all the tests',
             count: res.data.overall_average_percentage.average_percentage,
             result: res.data.overall_average_percentage.change_percentage,
+            gradient: "from-emerald-500 to-teal-400"
           },
         ]);
       })
@@ -477,7 +491,8 @@ export default function Dashbord() {
 
 
   return (
-    <div className="p-6 space-y-6  min-h-screen">
+    <div className="space-y-6">
+      <DashboardHeader name={name}/>
       {/* ─── Date Range Buttons ───────────────────────────────────── */}
       <div className="flex space-x-2 mb-4">
         {['last_six_month', 'last_month', 'last_week', 'today'].map((range) => (
@@ -497,20 +512,23 @@ export default function Dashbord() {
         <Row gutter={[16, 16]}>
           {stats.map((stat, i) => (
             <Col xs={24} sm={12} md={8} key={i}>
-              <div className="border bg-white border-gray-300 rounded-lg p-5 bg-white p-6 rounded-xl shadow-md w-full">
+              <div className="relative group overflow-hidden rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer bg-white shadow-lg m-0 border border-gray-100">
+                {/* Gradient accent bar */}
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.gradient}`} />
+                
                 <div className="flex justify-between items-center mb-8">
-                  <span className="text-base font-semibold">{stat.title}</span>
+                  <span className="text-base font-semibold text-gray-700">{stat.title}</span>
                   {stat.title === "Full length tests" && (
                     <button
                       onClick={() => router.push(`/parent/${parentId}/test`)}
-                      className="text-xs text-orange-500 font-medium"
+                      className="text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent"
                     >
-                      View all
+                      View all →
                     </button>
                   )}
                 </div>
                 <div className="flex justify-between items-center text-2xl mb-2">
-                  <div className="text-left font-bold">{stat.count}</div>
+                  <div className="text-left font-bold text-gray-900">{stat.count}</div>
                   <div className="text-gray-500 text-sm ml-auto font-semibold">
                     Result{' '}
                     <span
@@ -545,6 +563,7 @@ export default function Dashbord() {
                 }
                 onChange={(opt) => setSelectedCourseForTime(opt?.value || null)}
                 isClearable
+                components={{ DropdownIndicator }}
               />
             </div>
             {/* <div className="w-64 text-sm">
@@ -598,6 +617,7 @@ export default function Dashbord() {
                 }
                 onChange={(opt) => setSelectedCourseForScores(opt?.value || null)}
                 isClearable
+                components={{ DropdownIndicator }}
               />
             </div>
             <div className="w-64 text-sm">
@@ -612,6 +632,7 @@ export default function Dashbord() {
                 onChange={(opt) => setSelectedSubjectForScores(opt?.value || null)}
                 isClearable
                 isDisabled={!selectedCourseForScores}
+                components={{ DropdownIndicator }}
               />
             </div>
 
@@ -622,6 +643,7 @@ export default function Dashbord() {
                 value={selectedTopic ? { label: topics.find((t) => t.id === selectedTopic)?.name, value: selectedTopic } : null}
                 onChange={(opt) => setSelectedTopic(opt?.value || null)}
                 isClearable
+                components={{ DropdownIndicator }}
               />
             </div>
 
@@ -633,6 +655,7 @@ export default function Dashbord() {
                 onChange={(opt) => setSelectedSubtopic(opt?.value || null)}
                 isClearable
                 isDisabled={!selectedTopic}
+                components={{ DropdownIndicator }}
               />
             </div>
           </div>
@@ -683,6 +706,7 @@ export default function Dashbord() {
                 }
                 onChange={(opt) => setSelectedCourseForLine(opt?.value || null)}
                 isClearable
+                components={{ DropdownIndicator }}
               />
             </div>
 
@@ -698,6 +722,7 @@ export default function Dashbord() {
                 onChange={(opt) => setSelectedSubjectForLine(opt?.value || null)}
                 isClearable
                 isDisabled={!selectedCourseForLine}
+                components={{ DropdownIndicator }}
               />
             </div>
 

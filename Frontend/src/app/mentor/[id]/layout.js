@@ -441,13 +441,14 @@ function DashboardLayout({ children }) {
         style={{
           marginLeft: isMobile ? 0 : sidebarWidth,
           minHeight: '100vh',
+          backgroundColor: "#FAFAFA",
         }}
       >
         <Content
           style={{
             padding: 24,
             minHeight: "calc(100vh - 48px)",
-            background: colorBgContainer,
+            background: "#f5f5f5",
             borderRadius: borderRadius,
             overflowY: "auto",
           }}

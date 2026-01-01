@@ -8,7 +8,7 @@ function DashboardPage() {
   const change_password_flag = window.localStorage.getItem("change_password");
 
   return (
-    <div>
+    <div className=" min-h-screen">
       <ChangePasswordModal
         buttonVisible={false}
         changePasswordFlag={change_password_flag == "true"}
