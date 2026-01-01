@@ -29,6 +29,8 @@ export default function ScoreAnalysis_PracticeTest({
   const [apiData, setApiData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+
 
   const subjectOptions = useMemo(() => {
     const baseOptions = [{ value: "All", label: "All" }];
@@ -89,8 +91,9 @@ export default function ScoreAnalysis_PracticeTest({
     const sortedTests = [...filteredTests].sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
 
     return sortedTests.map(t => ({
-        name: `T-${t.practice_test_id}`, // Label for X-axis
-        Total: t.total_questions,
+        name: `PT-${t.practice_test_id}`, // top line
+        dateLabel: t.date,
+        Total: t.total_questions,               // bottom line
         Correct: t.correct,
         Incorrect: t.incorrect,
         subject: t.subject,
@@ -271,7 +274,46 @@ export default function ScoreAnalysis_PracticeTest({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={displayData} barGap={2} barCategoryGap="15%">
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />
+     <XAxis
+  dataKey="name"
+  interval={0}
+  height={65}
+  axisLine={false}
+  tickLine={false}
+  tick={({ x, y, payload }) => {
+    const data = displayData[payload.index];
+
+    if (!data) return null;
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        {/* PT-40 */}
+        <text
+          dy={14}
+          textAnchor="middle"
+          fontSize={12}
+          fontWeight={600}
+          fill="#374151"
+        >
+          {data.name}
+        </text>
+
+        {/* Date */}
+        <text
+          dy={30}
+          textAnchor="middle"
+          fontSize={10}
+          fill="#9ca3af"
+        >
+          {data.dateLabel}
+        </text>
+      </g>
+    );
+  }}
+/>
+
+
+
                   <YAxis
                     axisLine={false}
                     tickLine={false}
