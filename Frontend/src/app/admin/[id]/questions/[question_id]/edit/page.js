@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { LeftOutlined } from "@ant-design/icons";
+// import { LeftOutlined } from "@ant-design/icons";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import EditQuestionForm from "@/components/EditQuestionForm";
 import { getQuestionDetails } from "@/app/services/authService";
@@ -51,14 +51,6 @@ export default function Page() {
 
   return (
     <>
-      <div className="text-xl font-bold mb-5 flex align-middle">
-        <LeftOutlined
-          className="mr-2 text-base hover:font-extrabold cursor-pointer"
-          onClick={handleBack}
-        />
-        Edit question
-      </div>
-
       <EditQuestionForm
         action="edit"
         initialValues={questionDetails}
@@ -67,6 +59,7 @@ export default function Page() {
         subTopicOptionsParam={subtopics}
         page={finalPage}
         courseSubjectId={finalCourseSubjectId}
+        isHead={true}
       />
     </>
   );

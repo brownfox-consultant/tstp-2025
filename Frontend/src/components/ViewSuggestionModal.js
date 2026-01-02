@@ -43,7 +43,6 @@ function ViewSuggestionModal({
           title: "Suggestion rejected",
           onOk: () => {
             setOpen(false);
-            // setSuggestionData({});
           },
         });
       })
@@ -66,71 +65,77 @@ function ViewSuggestionModal({
   }, [open, data]);
 
   function handleClose() {
-    // setSuggestionData({});
     setOpen(false);
   }
 
   return (
     <>
-      {/* <button onClick={() => setOpen(true)}>{icon}</button> */}
-      {React.cloneElement(icon, { onClick: () => setOpen(true) })}
-      <icon onClick={() => setOpen(true)} />
+      {React.cloneElement(icon, { onClick: () => setOpen(true), className: "cursor-pointer" })}
       <Modal
         width={1400}
-        // style={{ top: 10}}
+        className="top-5"
         onCancel={handleClose}
         open={open}
         title={
-          <div className="w-4/6">
-            <div className="text-xl flex align-middle">
-              <p>Status: </p>
-              <p className="ml-2">
-                <SuggestionStatusTag status={suggestionData?.status} />
-              </p>
-            </div>
+          <div className="flex items-center gap-3 pb-2">
+            <span className="text-base font-medium text-gray-700">
+              Status:
+            </span>
+            <SuggestionStatusTag status={suggestionData?.status} />
           </div>
         }
         footer={null}
       >
         {suggestionData && (
           <Skeleton loading={Object.keys(suggestionData).length == 0}>
-            <Row gutter={[16, 16]}>
-              <Col lg={12}>
+            {/* Side by Side Comparison */}
+            <Row gutter={[20, 20]}>
+              <Col xs={24} lg={12}>
                 <SuggestionComponent
                   title="Question"
                   data={suggestionData.question}
                 />
               </Col>
-              <Col lg={12}>
+              <Col xs={24} lg={12}>
                 <SuggestionComponent
                   title="Suggestion"
                   data={suggestionData.suggestion}
-                
                 />
               </Col>
             </Row>
-            {suggestionData?.status == "IN_REVIEW" && role == "admin" ? (
-              <Row className="mt-10">
-                <div className="w-full flex justify-center mt-3">
+
+            {/* Action Buttons */}
+            <div className="flex justify-center mt-6 pt-4">
+              {suggestionData?.status == "IN_REVIEW" && role == "admin" ? (
+                <div className="flex gap-3">
                   <Button
                     onClick={handleApprove}
-                    className="mr-3"
                     type="primary"
+                    size="large"
+                    className="min-w-[120px] h-11 rounded-lg font-medium bg-green-500 border-green-500 hover:bg-green-600 hover:border-green-600"
                   >
                     Approve
                   </Button>
-                  <Button onClick={handleReject} danger>
+                  <Button
+                    onClick={handleReject}
+                    danger
+                    size="large"
+                    className="min-w-[120px] h-11 rounded-lg font-medium"
+                  >
                     Reject
                   </Button>
                 </div>
-              </Row>
-            ) : (
-              <Row justify="center" className="mt-3">
-                <Button onClick={() => setOpen(false)} type="primary">
+              ) : (
+                <Button
+                  onClick={() => setOpen(false)}
+                  type="primary"
+                  size="large"
+                  className="min-w-[100px] h-11 rounded-lg font-medium bg-amber-500 border-amber-500 hover:bg-amber-600 hover:border-amber-600"
+                >
                   Ok
                 </Button>
-              </Row>
-            )}
+              )}
+            </div>
           </Skeleton>
         )}
       </Modal>

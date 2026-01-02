@@ -25,90 +25,204 @@ function SuggestionComponent({ title, data }) {
     show_calculator,
     explanation,
   } = data || "";
-  console.log("data", question_type, question_subtype, data.options);
+
+  // Determine if this is the "Suggestion" side (to show explanation)
+  const isSuggestion = title === "Suggestion";
 
   return (
-    <div className="border-2 border-r-4 p-2 rounded-sm">
-      <Row className="text-lg font-semibold">{title}</Row>
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: "8px",
+        padding: "16px",
+        height: "100%",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        border: "1px solid #e8e8e8",
+      }}
+    >
+      {/* Title Header */}
+      <h3
+        style={{
+          fontSize: "18px",
+          fontWeight: 600,
+          color: "#333",
+          marginBottom: "16px",
+          paddingBottom: "8px",
+          borderBottom: "2px solid #f0f0f0",
+        }}
+      >
+        {title}
+      </h3>
+
+      {/* Reading Passage Section */}
       {question_subtype == "READING_COMPREHENSION" && (
-        <>
-          {" "}
-          <div className="font-bold mb-2">Reading Passage:</div>
-          <div className="bg-white border-2 p-2 rounded-md max-h-80 overflow-auto mb-3">
-            <MathContent cls={"p-2"} content={reading_comprehension_passage} />
+        <div style={{ marginBottom: "16px" }}>
+          <div
+            style={{
+              fontWeight: 600,
+              color: "#333",
+              marginBottom: "8px",
+              fontSize: "14px",
+            }}
+          >
+            Reading Passage:
           </div>
-        </>
-      )}
-      <div className="font-bold ">Description:</div>
-      <Row className="my-2">
-        <MathContent content={description} />
-      </Row>
-      {/* <div className="font-bold mb-2">Options:</div>
-      <Options options={options} /> */}
-      {question_type == "GRIDIN" ? (
-        <GridInOptions question={data} />
-      ) : (
-        <McqOptions question={data} />
+          <div
+            style={{
+              background: "#f9f9f9",
+              border: "1px solid #e8e8e8",
+              borderRadius: "6px",
+              padding: "12px",
+              maxHeight: "200px",
+              overflow: "auto",
+              fontSize: "13px",
+              lineHeight: "1.6",
+              color: "#555",
+            }}
+          >
+            <MathContent content={reading_comprehension_passage} />
+          </div>
+        </div>
       )}
 
+      {/* Description Section */}
+      <div style={{ marginBottom: "16px" }}>
+        <div
+          style={{
+            fontWeight: 600,
+            color: "#333",
+            marginBottom: "8px",
+            fontSize: "14px",
+          }}
+        >
+          Description:
+        </div>
+        <div
+          style={{
+            fontSize: "13px",
+            lineHeight: "1.6",
+            color: "#555",
+          }}
+        >
+          <MathContent content={description} />
+        </div>
+      </div>
+
+      {/* Options Section */}
+      <div style={{ marginBottom: "16px" }}>
+        <div
+          style={{
+            fontWeight: 600,
+            color: "#333",
+            marginBottom: "8px",
+            fontSize: "14px",
+          }}
+        >
+          Options:
+        </div>
+        {question_type == "GRIDIN" ? (
+          <GridInOptions question={data} />
+        ) : (
+          <McqOptions question={data} />
+        )}
+      </div>
+
+      {/* Explanation Section (only for Suggestion side) */}
       {explanation && (
-        <>
-          {" "}
-          <div className="font-bold mb-2">Explanation:</div>
-          <div className="bg-white border-2 p-2 rounded-md max-h-80 overflow-auto mb-3">
-            <MathContent cls={"p-2"} content={explanation} />
+        <div style={{ marginBottom: "16px" }}>
+          <div
+            style={{
+              fontWeight: 600,
+              color: "#333",
+              marginBottom: "8px",
+              fontSize: "14px",
+            }}
+          >
+            Explanation:
           </div>
-        </>
+          <div
+            style={{
+              background: "#f9f9f9",
+              border: "1px solid #e8e8e8",
+              borderRadius: "6px",
+              padding: "12px",
+              maxHeight: "120px",
+              overflow: "auto",
+              fontSize: "13px",
+              lineHeight: "1.6",
+              color: "#555",
+            }}
+          >
+            <MathContent content={explanation} />
+          </div>
+        </div>
       )}
-      <Row className="mt-2" gutter={[16, 16]}>
-        <Col sm={24} md={12} lg={12}>
-          <Row className="flex justify-between">
-            <p className="text-black font-bold">Question Type:</p>
-            <p>{questionTypeMap[question_type]}</p>
-          </Row>
-        </Col>
 
-        <Col sm={24} md={12} lg={12}>
-          <Row className="flex justify-between">
-            <p className="text-black font-bold">Question Subtype:</p>
-            <p>{questionSubTypeMap?.[question_subtype] || question_subtype || "-"}</p>
+      {/* Question Metadata */}
+      <div
+        style={{
+          borderTop: "1px solid #f0f0f0",
+          paddingTop: "12px",
+          marginTop: "8px",
+        }}
+      >
+        <Row gutter={[8, 8]}>
+          {/* Question Type */}
+          <Col span={12}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+              <span style={{ fontWeight: 600, color: "#333" }}>Question Type:</span>
+              <span style={{ color: "#666" }}>{questionTypeMap[question_type]}</span>
+            </div>
+          </Col>
 
-          </Row>
-        </Col>
+          {/* Question Subtype */}
+          <Col span={12}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+              <span style={{ fontWeight: 600, color: "#333" }}>Question Subtype:</span>
+              <span style={{ color: "#666" }}>
+                {questionSubTypeMap?.[question_subtype] || question_subtype || "-"}
+              </span>
+            </div>
+          </Col>
 
-        <Col sm={24} md={12} lg={12}>
-          <Row className="flex justify-between">
-            <p className="text-black font-bold">Question Difficulty:</p>
-            <p>
-              {" "}
-              <Tag color={difficultyTagsMap[difficulty]?.color}>
+          {/* Question Difficulty */}
+          <Col span={12}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
+              <span style={{ fontWeight: 600, color: "#333" }}>Question Difficulty:</span>
+              <Tag
+                color={difficultyTagsMap[difficulty]?.color}
+                style={{ margin: 0, fontSize: "12px" }}
+              >
                 {difficultyTagsMap[difficulty]?.label}
               </Tag>
-            </p>
-          </Row>
-        </Col>
+            </div>
+          </Col>
 
-        <Col sm={24} md={12} lg={12}>
-          <Row className="flex justify-between">
-            <p className="text-black font-bold">Topic:</p>
-            <p className="mr-2">{topic}</p>
-          </Row>
-        </Col>
+          {/* Topic */}
+          <Col span={12}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+              <span style={{ fontWeight: 600, color: "#333" }}>Topic:</span>
+              <span style={{ color: "#666", textAlign: "right" }}>{topic}</span>
+            </div>
+          </Col>
 
-        <Col sm={24} md={12} lg={12}>
-          <Row className="flex justify-between">
-            <p className="text-black font-bold"> Sub Topic:</p>
-            <p className="mr-2">{sub_topic ? sub_topic : "-"}</p>
-          </Row>
-        </Col>
+          {/* Sub Topic */}
+          <Col span={12}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+              <span style={{ fontWeight: 600, color: "#333" }}>Sub Topic:</span>
+              <span style={{ color: "#666" }}>{sub_topic ? sub_topic : "-"}</span>
+            </div>
+          </Col>
 
-        <Col sm={24} md={12} lg={12}>
-          <Row className="flex justify-between">
-            <p className="text-black font-bold"> Show Calculator:</p>
-            <p className="mr-2">{showCalculatorOptionsMap[show_calculator]}</p>
-          </Row>
-        </Col>
-      </Row>
+          {/* Show Calculator */}
+          <Col span={12}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+              <span style={{ fontWeight: 600, color: "#333" }}>Show Calculator:</span>
+              <span style={{ color: "#666" }}>{showCalculatorOptionsMap[show_calculator]}</span>
+            </div>
+          </Col>
+        </Row>
+      </div>
     </div>
   );
 }

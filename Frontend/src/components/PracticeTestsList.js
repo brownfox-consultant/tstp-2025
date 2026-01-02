@@ -1,12 +1,13 @@
 "use client";
 
-import { getPracticeTests } from "@/app/services/authService";
+import { getPracticeTests, getUserDetails } from "@/app/services/authService";
 import { convertSecondsToTime } from "@/utils/utils";
-import { Button, Table, Pagination, Input } from "antd";
+import { Button, Table, Pagination, Input, Card, Tag, Tooltip, Select } from "antd";
+import { SearchOutlined, PlusOutlined, UnorderedListOutlined, FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
-import PracticeTestForm from "@/components/PracticeTestForm"; // ✅ IMPORTANT: Import PracticeTestForm
+import PracticeTestForm from "@/components/PracticeTestForm";
 import PracticeTestReportComponent from "./PracticeTestReportComponent.js";
 import EyeIcon from "../../public/icons/eye.svg";
 import Image from "next/image";
@@ -20,7 +21,7 @@ function PracticeTestsList() {
   const [totalPages, setTotalPages] = useState(0);
   const [practiceTestReport, setPracticeTestReport] = useState(false);
   const [practiceTestId, setPracticeTestId] = useState();
-  const [createTest, setCreateTest] = useState(false); // ✅ NEW STATE FOR CREATE TEST
+  const [createTest, setCreateTest] = useState(false);
   const pathname = usePathname();
   const [sortParams, setSortParams] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,7 +29,22 @@ function PracticeTestsList() {
   const debounceTimeoutRef = useRef(null);
 
   const role = pathname.split("/")[1];
-  console.log("role",role)
+
+  const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+
+  useEffect(() => {
+    // Fetch user details to get available courses
+    if (role === "student") {
+      const userId = pathname.split("/")[2];
+      getUserDetails(userId)
+        .then((res) => {
+          setCourses(res.data.course_details.map(c => c.course));
+        })
+        .catch(console.error);
+    }
+  }, []);
+
   useEffect(() => {
     const params = {
       page: current,
@@ -41,6 +57,14 @@ function PracticeTestsList() {
     if (debouncedSearchTerm) {
       params.search = debouncedSearchTerm;
     }
+
+    // Add course filter
+    if (selectedCourse) {
+      params.course = selectedCourse; // Assuming API accepts 'course' parameter with course name or ID. Based on PracticeTestForm which uses course name often.
+      // Wait, let's verify if the API expects Name or ID. PracticeTestForm uses name for dropdown value.
+      // Let's assume name for now as existing "Course" column shows name.
+    }
+
     setTableLoading(true);
     getPracticeTests(params)
       .then((res) => {
@@ -51,7 +75,7 @@ function PracticeTestsList() {
         setTotalPages(total_pages);
       })
       .finally(() => setTableLoading(false));
-  }, [current, sortParams, debouncedSearchTerm]);
+  }, [current, sortParams, debouncedSearchTerm, selectedCourse]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -68,23 +92,21 @@ function PracticeTestsList() {
   };
 
   const studentCols = [
-
-     {
-    key: "test_name",
-    title: "Test Name",
-    dataIndex: "test_name",
-    align: "center",
-    width: 120,
-    sorter: false,
-    render: (text) => <>{text}</>,
-  },
-
+    {
+      key: "test_name",
+      title: "Test Name",
+      dataIndex: "test_name",
+      align: "left",
+      width: 180,
+      sorter: false,
+      render: (text) => <span className="font-semibold text-gray-800">{text || "-"}</span>,
+    },
     {
       key: "course",
-      title: "Course name",
+      title: "Course",
       dataIndex: "course",
       align: "center",
-      render: (text) => <>{text}</>,
+      render: (text) => <Tag color="blue">{text}</Tag>,
       width: 150,
       sorter: true,
       sorter: { multiple: 1 },
@@ -94,104 +116,91 @@ function PracticeTestsList() {
       title: "Subject",
       dataIndex: "subject",
       align: "center",
-      render: (text) => <>{text}</>,
+      render: (text) => <Tag color="cyan">{text}</Tag>,
       width: 150,
       sorter: true,
       sorter: { multiple: 2 },
     },
     {
       key: "created_at",
-      title: "Test taken on",
+      title: "Taken On",
       dataIndex: "created_at",
       align: "center",
-      render: (text) => <>{dayjs(text).format("MMM D, YYYY h:mm A")}</>,
-      width: 250,
+      render: (text) => <span className="text-gray-600">{dayjs(text).format("MMM D, YYYY h:mm A")}</span>,
+      width: 200,
       sorter: true,
       sorter: { multiple: 3 },
     },
     {
-      key: "correct_count",
-      title: "Correct Count",
-      dataIndex: "correct_count",
+      key: "score_summary",
+      title: "Performance",
       align: "center",
-      render: (_, record) => <>{record.correct_count ?? "-"}</>,
-      width: 150,
-      sorter: true,
-      sorter: { multiple: 4 },
+      width: 250,
+      render: (_, record) => (
+        <div className="flex justify-center gap-4 text-xs font-medium">
+          <div className="flex flex-col items-center">
+            <span className="text-gray-400 mb-1">Total</span>
+            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded w-10 text-center">{record.total_questions ?? "-"}</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-green-500 mb-1">Correct</span>
+            <span className="bg-green-50 text-green-700 px-2 py-1 rounded w-10 text-center">{record.correct_count ?? "-"}</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-red-500 mb-1">Incorrect</span>
+            <span className="bg-red-50 text-red-700 px-2 py-1 rounded w-10 text-center">{record.incorrect_count ?? "-"}</span>
+          </div>
+        </div>
+      )
     },
-    {
-      key: "incorrect_count",
-      title: "Incorrect Count",
-      dataIndex: "incorrect_count",
-      align: "center",
-      render: (_, record) => <>{record.incorrect_count ?? "-"}</>,
-      width: 180,
-      sorter: true,
-      sorter: { multiple: 5 },
-    },
-     {
-    key: "total_questions",
-    title: "Total Que. Count",
-    dataIndex: "total_questions",
-    align: "center",
-    width: 160,
-    sorter: false,
-    render: (val) => (val ?? "-"),
-  },
     {
       key: "time_taken",
       title: "Duration",
       dataIndex: "time_taken",
       align: "center",
-      render: (_, record) => <>{convertSecondsToTime(record.time_taken)}</>,
-      width: 130,
+      render: (_, record) => <span className="text-gray-600 font-mono">{convertSecondsToTime(record.time_taken)}</span>,
+      width: 120,
       sorter: true,
       sorter: { multiple: 6 },
     },
     {
       key: "action",
-      title: "",
+      title: "Action",
       dataIndex: "action",
       align: "center",
-     render: (_, record) => {
-  const { id } = record;
-  const userId = pathname.split("/")[2]; // extract ID from URL
+      width: 120,
+      render: (_, record) => {
+        const { id } = record;
+        const userId = pathname.split("/")[2];
 
-       return (
-      
-    <Button
-      type="link"
-           onClick={() => {
-             if (role == "student") {
-              router.push(`/${role}/${userId}/test/practice/${id}/result`);
-             }
-             else {
-               router.push(`/${role}/${userId}/practice/${id}/result`);
-             }
-        
-      }}
-      style={{ display: "flex", alignItems: "center" }}
-    >
-      <Image
-        src={EyeIcon}
-        alt="View Result Icon"
-        width={20}
-        height={20}
-        style={{ marginRight: "8px", verticalAlign: "middle" }}
-      />
-      <span style={{ verticalAlign: "middle" }}>View Result</span>
-    </Button>
-  );
-}
+        return (
+          <Tooltip title="View Detailed Report">
+            <Button
+              type="text"
+              shape="circle"
+              icon={<Image src={EyeIcon} alt="view" width={18} height={18} />}
+              className="hover:bg-blue-50 flex items-center justify-center mx-auto"
+              onClick={() => {
+                if (role == "student") {
+                  router.push(`/${role}/${userId}/test/practice/${id}/result`);
+                } else {
+                  router.push(`/${role}/${userId}/practice/${id}/result`);
+                }
+              }}
+            />
+          </Tooltip>
+        );
+      }
     },
   ];
 
   const facultyMentorCols = [
     {
       key: "student",
-      title: "Student",
+      title: "Student Name",
       dataIndex: "student",
-      render: (text) => <>{text}</>,
+      render: (text) => <span className="font-medium text-gray-800">{text}</span>,
+      width: 150,
     },
     ...studentCols,
   ];
@@ -203,30 +212,22 @@ function PracticeTestsList() {
   };
 
   const itemRender = (_, type, originalElement) => {
-    if (type === "prev") return <a>Previous</a>;
-    if (type === "next") return <a>Next</a>;
+    if (type === "prev") return <a className="text-blue-600 font-medium hover:text-blue-800">Previous</a>;
+    if (type === "next") return <a className="text-blue-600 font-medium hover:text-blue-800">Next</a>;
     return originalElement;
   };
 
   const handleTableChange = (pagination, filters, sorter) => {
     let sortObj = {};
-
     if (Array.isArray(sorter)) {
       sorter.forEach((s) => {
-        if (s.order === "ascend") {
-          sortObj[s.field] = "asc";
-        } else if (s.order === "descend") {
-          sortObj[s.field] = "desc";
-        }
+        if (s.order === "ascend") sortObj[s.field] = "asc";
+        else if (s.order === "descend") sortObj[s.field] = "desc";
       });
     } else {
-      if (sorter.order === "ascend") {
-        sortObj[sorter.field] = "asc";
-      } else if (sorter.order === "descend") {
-        sortObj[sorter.field] = "desc";
-      }
+      if (sorter.order === "ascend") sortObj[sorter.field] = "asc";
+      else if (sorter.order === "descend") sortObj[sorter.field] = "desc";
     }
-
     setSortParams(sortObj);
   };
 
@@ -234,67 +235,89 @@ function PracticeTestsList() {
     <>
       {practiceTestReport ? (
         <PracticeTestReportComponent practice_test_id={practiceTestId} />
-      ) : createTest ? ( // ✅ When createTest true, show PracticeTestForm
-        <PracticeTestForm />
+      ) : createTest ? (
+        <PracticeTestForm onBack={() => setCreateTest(false)} />
       ) : (
-        <>
-          <div className="flex justify-between items-center mb-5 mt-4">
-            <Input
-              placeholder="Search"
-              onChange={handleSearchChange}
-              style={{
-                marginBottom: 8,
-                height: "40px",
-                fontSize: "18px",
-                backgroundImage: `url('/icons/search.svg')`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "10px center",
-                paddingLeft: "40px",
-                backgroundSize: "20px",
-                width: "25%",
-              }}
-            />
-            {role === "student" && (
-              <Button
-                type="primary"
-                onClick={() => {
-                  setCreateTest(true); // ✅ Start Practice Test
-                }}
-              >
-                Start Practice Questions
-              </Button>
-            )}
-          </div>
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                Practice Tests History
+              </h1>
+            </div>
 
-          <Table
-            footer={() => (
-              <div className="footer-container">
-                <div className="flex justify-end mr-5">
-                  Page {current} of {totalPages} (Total: {total} records)
-                </div>
-                <Pagination
-                  className="size-changer"
-                  current={current}
-                  pageSize={10}
-                  total={total}
-                  itemRender={itemRender}
-                  onChange={(page) => setCurrent(page)}
-                  showSizeChanger={false}
+            <div className="flex items-center gap-4">
+              <div className="w-full sm:w-64">
+                <Input
+                  placeholder="Search by test name..."
+                  onChange={handleSearchChange}
+                  prefix={<SearchOutlined className="text-gray-400" />}
+                  className="w-full sm:w-64 rounded-lg border-gray-300 hover:border-blue-400 focus:border-blue-500 h-10 text-base"
                 />
               </div>
+
+              {(role === "student") && (
+                <Button
+                  type="primary"
+                  onClick={() => setCreateTest(true)}
+                  icon={<PlusOutlined />}
+                  size="large"
+                  className="rounded-full shadow-md bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 h-10 px-6 font-semibold flex items-center"
+                >
+                  Create New Practice
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* <div>
+            {courses.length > 0 && (
+              <Select
+                placeholder={
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <FilterOutlined />
+                    <span>Filter by Course</span>
+                  </div>
+                }
+                allowClear
+                className="w-full sm:w-64 h-10"
+                onChange={(value) => setSelectedCourse(value)}
+                options={courses.map(course => ({ label: course.name, value: course.name }))}
+                suffixIcon={<FilterOutlined className="text-gray-400" />}
+              />
             )}
-            loading={tableLoading}
-            dataSource={data}
-            columns={colsMap[role]}
-            pagination={false}
-            rowClassName={(record, index) =>
-              index % 2 === 0 ? "even-row" : "odd-row"
-            }
-            className="tablestyles mt-4"
-            scroll={{ x: "max-content", y: 550 }}
-            onChange={handleTableChange}
-          />
-        </>
+          </div> */}
+
+          <Card className="shadow-sm border border-gray-100 rounded-xl overflow-hidden" bodyStyle={{ padding: 0 }}>
+
+            <div className="overflow-x-auto">
+              <Table
+                loading={tableLoading}
+                dataSource={data}
+                columns={colsMap[role]}
+                pagination={false}
+                rowClassName="hover:bg-blue-50/30 transition-colors duration-200"
+                onChange={handleTableChange}
+                size="middle"
+              />
+            </div>
+
+            <div className="px-6 py-4 flex items-center justify-between border-t border-gray-100 bg-white">
+              <span className="text-sm text-gray-500">
+                Showing {((current - 1) * 10) + 1} to {Math.min(current * 10, total)} of {total} entries
+              </span>
+              <Pagination
+                current={current}
+                pageSize={10}
+                total={total}
+                itemRender={itemRender}
+                onChange={(page) => setCurrent(page)}
+                showSizeChanger={false}
+                className="custom-pagination"
+              />
+            </div>
+          </Card>
+        </div>
       )}
     </>
   );

@@ -93,10 +93,10 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
 
   // Subject colors for variety
   const subjectColors = [
-    { gradient: 'from-blue-500 to-blue-600', bg: 'bg-blue-500' },
-    { gradient: 'from-purple-500 to-purple-600', bg: 'bg-purple-500' },
-    { gradient: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-500' },
-    { gradient: 'from-orange-500 to-orange-600', bg: 'bg-orange-500' },
+    { gradient: 'from-blue-300 to-blue-500', bg: 'bg-blue-400' },
+    { gradient: 'from-purple-300 to-purple-500', bg: 'bg-purple-400' },
+    { gradient: 'from-emerald-300 to-emerald-500', bg: 'bg-emerald-400' },
+    { gradient: 'from-orange-300 to-orange-500', bg: 'bg-orange-400' },
   ];
 
   // Professional Subject Header Component

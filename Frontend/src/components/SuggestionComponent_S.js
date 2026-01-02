@@ -56,7 +56,7 @@ function SuggestionComponent_S({ title, data, data1 }) {
     
 
   return (
-    <div className="border-2 border-r-4 p-2 rounded-sm">
+    <div className="border-2 p-2 rounded-sm">
       <Row className="text-lg font-semibold">{title}</Row>
 
       {/* Reading Passage */}

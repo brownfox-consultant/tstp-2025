@@ -428,3 +428,53 @@ body.fullscreen-mode footer {
 .card-layout {
   @apply bg-white p-6 rounded-lg shadow-md border border-gray-200;
 }
+
+/* Custom Select Dropdown Styling */
+.custom-select-dropdown {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.custom-select-dropdown .ant-select-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin: 2px 4px;
+  transition: all 0.2s ease;
+}
+
+.custom-select-dropdown .ant-select-item:hover {
+  background-color: #f0f5ff;
+}
+
+.custom-select-dropdown .ant-select-item-option-selected {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%) !important;
+  color: white !important;
+  font-weight: 500;
+}
+
+.custom-select-dropdown .ant-select-item-option-selected:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%) !important;
+}
+
+.custom-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-selected) {
+  background-color: #e6f7ff;
+}
+
+/* Searchable select input styling */
+.ant-select-show-search .ant-select-selector {
+  cursor: text !important;
+}
+
+.ant-select-dropdown .ant-select-item-option-content {
+  font-size: 14px;
+}
+
+/* Arrow rotation on open */
+.ant-select-open .ant-select-arrow {
+  transform: rotate(180deg);
+  transition: transform 0.3s ease;
+}
+
+.ant-select-arrow {
+  transition: transform 0.3s ease;
+}

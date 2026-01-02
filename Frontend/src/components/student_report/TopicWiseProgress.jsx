@@ -158,7 +158,7 @@ const ChartsSection = ({ chartData }) => (
               domain={[0, 100]}
               tickFormatter={v => `${v}%`}
             />
-            <RechartsTooltip content={<CustomTooltip />} />
+            <RechartsTooltip content={<CustomTooltip />}  cursor={{ fill: 'transparent' }}  />
             <Bar dataKey="value" barSize={22}>
               {chartData.map((e, i) => (
                 <Cell
@@ -196,7 +196,7 @@ const ChartsSection = ({ chartData }) => (
               tickFormatter={v => `${v}%`}
               fontSize={11}
             />
-            <RechartsTooltip content={<CustomTooltip />} />
+            <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
             <Legend 
               wrapperStyle={{ paddingTop: '10px' }}
               formatter={() => 'Accuracy'}

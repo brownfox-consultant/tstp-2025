@@ -48,7 +48,7 @@ export default function AccuracyChart({ accuracy }) {
 
             <Tooltip
               formatter={(value) => `${value}%`}
-              cursor={{ fill: "rgba(0,0,0,0.05)" }}
+              cursor={{ fill: 'transparent' }}
             />
 
             <Bar

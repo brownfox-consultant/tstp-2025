@@ -130,18 +130,13 @@ export default function Math_SubTopicPracticeStyled({
                 width={180}
               />
               <Tooltip
-                contentStyle={{
-                  borderRadius: '12px',
-                  border: 'none',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                  padding: '12px 16px'
-                }}
                 formatter={(value, name) => {
                   if (name === 'accuracy') return [`${value}%`, 'Accuracy'];
                   if (name === 'questions') return [value, 'Questions'];
                   if (name === 'avgTime') return [`${value}s`, 'Avg Time'];
                   return [value, name];
                 }}
+                 cursor={{ fill: 'transparent' }} 
               />
 
               <Bar

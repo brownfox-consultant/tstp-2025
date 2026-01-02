@@ -20,15 +20,10 @@ function PreviewQuestionModal({ visible, onClose, questionData }) {
       open={visible}
       onCancel={onClose}
       footer={null}
-      width="65%" // ✅ reduced modal width
-      bodyStyle={{
-        backgroundColor: "#f8fafc",
-        maxHeight: "85vh",
-        overflowY: "auto",
-        padding: "2rem",
-      }}
+      width={1200}
+      style={{ paddingInline:"2%" }}
     >
-      <div className="max-w-3xl mx-auto bg-white shadow-sm border border-gray-200 rounded-xl p-8 text-gray-900">
+      <div className="max-w-6xl mx-auto bg-gray-100 shadow-sm border border-gray-200 rounded-xl p-4 md:p-8 text-gray-900">
         {/* Reading Passage */}
         {reading_comprehension_passage && (
           <div className="mb-8">

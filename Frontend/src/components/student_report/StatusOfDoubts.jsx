@@ -123,8 +123,8 @@ export default function StatusOfDoubts({
                    tick={{ fill: '#888', fontSize: 12 }} 
                 />
                 <Tooltip 
-                    cursor={{ fill: 'rgba(0,0,0,0.05)' }} 
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '8px' }}
+                     cursor={{ fill: 'transparent' }} 
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
                     itemStyle={{ color: '#000' }}
                     labelStyle={{ color: '#000', marginBottom: '0.5rem' }}
                 />

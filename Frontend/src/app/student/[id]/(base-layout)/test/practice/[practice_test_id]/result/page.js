@@ -1,11 +1,11 @@
 "use client";
 
-import PracticeTestReport from "@/components/report-module/practice-test-report";
+import PracticeTestResult from "@/components/PracticeTestResult";
 
 import React, { useEffect, useState } from "react";
 
 function page() {
-  return <PracticeTestReport />;
+  return <PracticeTestResult />;
 }
 
 export default page;

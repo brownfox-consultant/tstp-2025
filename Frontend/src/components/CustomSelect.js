@@ -1,32 +1,26 @@
 import { MinusOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Input, Popover, Select } from "antd";
+import { Button, Input, Popover } from "antd";
 import { useState } from "react";
+import FormSelect from "./FormSelect";
 
-const CustomSelect = ({ options = [], fieldName, ...props }) => {
+const CustomSelect = ({ options = [], fieldName, className = "", ...props }) => {
   const [showInput, setShowInput] = useState(false);
 
   return (
     <>
       {showInput ? (
         <div className="flex justify-normal space-x-2">
-          <Input {...props} placeholder={`${fieldName} Name`} />
-          {/* <Popover content="Show Dropdown">
-            <Button
-              shape="circle"
-              icon={<MinusOutlined />}
-              onClick={() => setShowInput(false)}
-              type="primary"
-            ></Button>
-          </Popover> */}
+          <Input 
+            {...props} 
+            placeholder={`${fieldName} Name`}
+            size="large"
+            className="!rounded-lg !h-12"
+          />
         </div>
       ) : (
-        <div className="flex justify-normal space-x-2">
-          <Select
+        <div className="flex justify-normal space-x-2 w-full">
+          <FormSelect
             {...props}
-            showSearch
-            filterOption={(input, option) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
             placeholder={`Select ${fieldName}`}
             options={options.map((item) => {
               if (typeof item === "object" && item !== null) {
@@ -35,18 +29,10 @@ const CustomSelect = ({ options = [], fieldName, ...props }) => {
                   label: item.name,
                 };
               }
-
               return { value: item, label: item };
             })}
-          ></Select>
-          {/*  <Popover content={`Add ${fieldName}`}>
-            <Button
-              shape="circle"
-              icon={<PlusOutlined />}
-              onClick={() => setShowInput(true)}
-              type="primary"
-            ></Button>
-          </Popover> */}
+            className={`w-full ${className}`}
+          />
         </div>
       )}
     </>

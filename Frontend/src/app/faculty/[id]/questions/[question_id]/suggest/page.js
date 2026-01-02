@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { LeftOutlined } from "@ant-design/icons";
+// import { LeftOutlined } from "@ant-design/icons"; // Removed as unused
 
 import { useParams, useRouter } from "next/navigation";
 import QuestionForm from "@/components/QuestionForm";
@@ -33,13 +33,6 @@ export default function page() {
 
   return (
     <>
-      <div className="text-xl font-bold mb-5 flex align-middle">
-        <LeftOutlined
-          className="mr-2 text-base hover:font-extrabold cursor-pointer"
-          onClick={() => handleBack()}
-        />{" "}
-        Suggest changes to question
-      </div>
       {Object.keys(questionDetails).length == 0 ? (
         <Loading />
       ) : (
@@ -49,6 +42,7 @@ export default function page() {
           courseSubId={questionDetails.course_subject}
           topicOptionsParam={topics}
           subTopicOptionsParam={subtopics}
+          isHead={true}
         />
       )}
     </>

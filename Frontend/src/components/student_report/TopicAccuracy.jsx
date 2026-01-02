@@ -119,7 +119,7 @@ export default function TopicAccuracy({
 
                 <Tooltip
                   formatter={(value) => `${value}%`}
-                  cursor={{ fill: "rgba(0,0,0,0.05)" }}
+                  cursor={{ fill: 'transparent' }}
                 />
 
                 <Bar
@@ -139,8 +139,8 @@ export default function TopicAccuracy({
           <div className="topic-accuracy-legend" style={{ marginTop: '8px' }}>
             {chartData.map((item, i) => (
               <div key={i} className="topic-legend-item">
-                <span 
-                  className="topic-legend-dot" 
+                <span
+                  className="topic-legend-dot"
                   style={{ backgroundColor: item.color }}
                 />
                 <span className="topic-legend-text">

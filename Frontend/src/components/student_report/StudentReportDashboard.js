@@ -104,9 +104,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
     loadPractice();
   }, [selectedCourse, testType, studentId]);
 
-  // ============================
-  // SUBJECT WISE ACCURACY
-  // ============================
+
   useEffect(() => {
     if (!selectedCourse || !studentId) return;
     async function loadAccuracy() {
@@ -170,7 +168,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
           { withCredentials: true }
         );
 
-        // Fetch Topic Wise Accuracy
+
         const accuracyRes = await axios.get(
           `${BASE_URL}/api/result/Topic_Wise_Accuracy/?student_id=${studentId}&course_id=${selectedCourse}&test_type=${testType}`,
           { withCredentials: true }

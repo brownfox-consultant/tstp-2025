@@ -190,10 +190,11 @@ export const getSubjectQuestions = ({
   page = 1,
   description = null,
   params,
+  page_size = 15,
 }) => {
   return axios
     .get(`${GET_SUBJECT_ENTITIES}/${courseSubId}/questions/`, {
-      params: { page: page, description, ...params },
+      params: { page: page, description, size: page_size, ...params },
       withCredentials: true,
       headers: {
         "ngrok-skip-browser-warning": "69420",

@@ -89,7 +89,7 @@ function CreateUserForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 p-6">
+    <div className="min-h-screen ">
       {/* Header */}
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-4 mb-8 justify-between">

@@ -432,7 +432,7 @@ function QuestionsList({
     pageSize: currentSize,
     showSizeChanger: true, // ✅ Enable size changer
     showQuickJumper: true, // ✅ Enable quick jumper
-    pageSizeOptions: ['10', '20', '50', '100', '2000000'], // ✅ Options
+    pageSizeOptions: ['10', '20', '50', '100'], // ✅ Options
     position: ["bottomRight"],
     className: "custom-pagination px-4 pb-4",
     showTotal: (total, range) => (
@@ -442,17 +442,10 @@ function QuestionsList({
            </span>
        </div>
     ),
-     // ✅ Handle "All" option display
     onShowSizeChange: (current, size) => {
         // Handled via handleTableChange usually, but good to have if needed
     }
   };
-  
-  // Custom locale to show 'All' instead of 2000000
-  // Note: AntD doesn't support custom labels for pageSizeOptions directly in all versions, 
-  // but showing 2000000 is often understood or we can try to hack it. 
-  // For standard usage, 10, 20, 50, 100, 200 (All) is better if data is small, 
-  // but for 'All', a large number is standard practice if the backend supports it.
 
   return (
     <>

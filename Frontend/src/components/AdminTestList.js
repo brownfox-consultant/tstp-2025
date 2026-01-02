@@ -148,7 +148,7 @@ function AdminTestList() {
 
   useEffect(() => {
     setTableLoading(true);
-    getTestsList({ page: current, search: searchText || globalSearch, page_size: pageSize, ...params })
+    getTestsList({ page: current, search: searchText || globalSearch, size: pageSize, ...params })
       .then((res) => {
         setTestsData(res.data.results);
         setCurrent(res.data.current_page);
@@ -156,7 +156,7 @@ function AdminTestList() {
         setTotalPages(res.data.total_pages);
       })
       .finally(() => setTableLoading(false));
-  }, [updated, current, searchText, globalSearch, params]);
+  }, [updated, current, pageSize, searchText, globalSearch, params]);
 
   const deleteConfirm = (id) => {
     setConfirmLoading(true);
@@ -272,9 +272,6 @@ function AdminTestList() {
       }),
       render: (text) => (
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-            <AppstoreOutlined className="text-blue-600 text-sm" />
-          </div>
           <span className="font-medium text-gray-700">{text}</span>
         </div>
       ),
@@ -288,7 +285,7 @@ function AdminTestList() {
         return (
           <button
             onClick={() => router.push(`${pathname}/edit/${record.id}`)}
-            className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-all"
+            className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-all bg-transparent"
           >
             {(searchedColumn === "name" && searchText) || globalSearch ? (
               <Highlighter

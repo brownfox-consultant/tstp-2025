@@ -215,7 +215,7 @@ export default function PatternOfUsage({
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip />}  cursor={{ fill: 'transparent' }} />
 
                 <Bar
                   dataKey="time"
