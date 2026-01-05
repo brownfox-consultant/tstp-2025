@@ -1156,28 +1156,28 @@ function EditQuestionForm({
             <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
               <Form.Item className="flex justify-center mb-0">
                 <Space size="middle" wrap>
-                  <Button
+                  <button
                     onClick={handlePreview}
                     size="large"
                     className="h-12 px-8 rounded-xl border-2 border-[#007FBC] text-[#007FBC] hover:bg-blue-50 font-semibold transition-all duration-300"
                   >
                     Preview Question
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="primary"
                     htmlType="submit"
                     size="large"
                     className="h-12 px-8 rounded-xl bg-[#F59405] border-0 hover:bg-[#E08904] font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     {pathname.includes("admin") ? "Update" : "Suggest"}
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     onClick={() => router.back()}
                     size="large"
                     className="h-12 px-8 rounded-xl border-2 border-gray-300 hover:border-gray-400 font-semibold transition-all duration-300"
                   >
                     Cancel
-                  </Button>
+                  </button>
                 </Space>
               </Form.Item>
             </div>

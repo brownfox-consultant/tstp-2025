@@ -3,7 +3,7 @@ import { Button, Input, Popover } from "antd";
 import { useState } from "react";
 import FormSelect from "./FormSelect";
 
-const CustomSelect = ({ options = [], fieldName, className = "", ...props }) => {
+const CustomSelect = ({ options = [], fieldName, className = "", hideAddButton = false, ...props }) => {
   const [showInput, setShowInput] = useState(false);
 
   return (
@@ -15,6 +15,12 @@ const CustomSelect = ({ options = [], fieldName, className = "", ...props }) => 
             placeholder={`${fieldName} Name`}
             size="large"
             className="!rounded-lg !h-12"
+          />
+          <Button
+            shape="circle"
+            icon={<MinusOutlined />}
+            onClick={() => setShowInput(false)}
+            className="flex-shrink-0 mt-1"
           />
         </div>
       ) : (
@@ -33,6 +39,14 @@ const CustomSelect = ({ options = [], fieldName, className = "", ...props }) => 
             })}
             className={`w-full ${className}`}
           />
+          {!hideAddButton && (
+            <Button
+              shape="circle"
+              icon={<PlusOutlined />}
+              onClick={() => setShowInput(true)}
+              className="flex-shrink-0 mt-1"
+            />
+          )}
         </div>
       )}
     </>

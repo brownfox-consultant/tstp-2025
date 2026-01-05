@@ -14,7 +14,7 @@ function page() {
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold text-black tracking-tight">
           Create New Question
         </h1>
