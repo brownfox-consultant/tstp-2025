@@ -36,25 +36,12 @@ function TestList() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const debounceTimeoutRef = useRef(null);
 
-  // Highlight function to highlight search term
-  const highlightText = (text, search) => {
-    if (!search || !text) return text;
-    
-    const parts = String(text).split(new RegExp(`(${search})`, 'gi'));
-    return (
-      <>
-        {parts.map((part, index) =>
-          part.toLowerCase() === search.toLowerCase() ? (
-            <span key={index} style={{ backgroundColor: '#fff59d', fontWeight: '600' }}>
-              {part}
-            </span>
-          ) : (
-            part
-          )
-        )}
-      </>
-    );
-  };
+
+  const subscriptionType =
+  typeof window !== "undefined"
+    ? localStorage.getItem("subscription_type")
+    : null;
+
 
   useEffect(() => {
     setTestRunning(false);
@@ -76,21 +63,39 @@ function TestList() {
       params.search = debouncedSearchTerm;
     }
     getTestsList(params)
-     .then((res) => {
-  const sortedResults = res.data.results
-      
-    .map((test, index) => ({ ...test, key: index }));
+    .then((res) => {
+  let results = res.data.results;
+
+  // ✅ FREE subscription → show only 2 tests total
+  if (subscriptionType === "FREE") {
+    results = results.slice(0, 2);
+  }
+
+  const sortedResults = results.map((test, index) => ({
+    ...test,
+    key: index,
+  }));
 
   setTestsData(sortedResults);
-  setCurrent(res.data.current_page);
-  setTotal(res.data.count);
-  setTotalPages(res.data.total_pages);
 
+  // ✅ Fix pagination numbers
+  if (subscriptionType === "FREE") {
+    setCurrent(1);
+    setTotal(results.length);
+    setTotalPages(1);
+  } else {
+    setCurrent(res.data.current_page);
+    setTotal(res.data.count);
+    setTotalPages(res.data.total_pages);
+  }
+
+  // Cleanup session
   window.sessionStorage.removeItem("course_subject_index");
   window.sessionStorage.removeItem("section_index");
   window.sessionStorage.removeItem("question_index");
   window.sessionStorage.removeItem("remaining_time");
 })
+
       .finally(() => setTableLoading(false));
   }, [current, sortParams, debouncedSearchTerm]);
 
@@ -117,7 +122,7 @@ function TestList() {
       ),
       key: "name",
       dataIndex: "name",
-      render: (text) => <>{highlightText(text, debouncedSearchTerm)}</>,
+      render: (text) => <>{text}</>,
       sorter: true,
       width: 100,
       align: "center",
@@ -132,7 +137,6 @@ function TestList() {
       key: "course_name",
       dataIndex: "course_name",
       align: "center",
-      render: (text) => <>{highlightText(text, debouncedSearchTerm)}</>,
       sorter: true,
       width: 100,
       sorter: { multiple: 2 },
@@ -313,17 +317,19 @@ function TestList() {
                 <div className="flex justify-end mr-5">
                   Page {current} of {totalPages} (Total: {total} records)
                 </div>
-                <Pagination
-                  className="size-changer"
-                  current={current}
-                  pageSize={pageSize}
-                  total={total}
-                  itemRender={itemRender}
-                  onChange={(page, size) => {
-                    setCurrent(page);
-                    //handlePageSizeChange(page, size); // Update page size
-                  }}
-                />
+               {subscriptionType !== "FREE" && (
+  <Pagination
+    className="size-changer"
+    current={current}
+    pageSize={pageSize}
+    total={total}
+    itemRender={itemRender}
+    onChange={(page) => {
+      setCurrent(page);
+    }}
+  />
+)}
+
               </div>
             )}
             dataSource={testsData}

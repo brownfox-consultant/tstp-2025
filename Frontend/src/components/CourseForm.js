@@ -65,22 +65,22 @@ function CourseForm({ courseData = {}, isEdit = false }) {
 
 
   const handleDeleteSubject = (removeFn, fieldName) => {
-    Modal.confirm({
-      title: "Are you sure you want to delete this subject?",
-      content:
-        "Deleting this subject will remove all related questions, tests, and results permanently.",
-      okText: "Yes, Delete",
-      okType: "danger",
-      cancelText: "Cancel",
-      onOk() {
-        removeFn(fieldName);
-        notification.success({
-          message: "Deleted",
-          description: "Subject and its related data have been deleted.",
-        });
-      },
-    });
-  };
+  Modal.confirm({
+    title: "Are you sure you want to delete this subject?",
+    content:
+      "Deleting this subject will remove all related questions, tests, and results permanently.",
+    okText: "Yes, Delete",
+    okType: "danger",
+    cancelText: "Cancel",
+    onOk() {
+      removeFn(fieldName);
+      notification.success({
+        message: "Deleted",
+        description: "Subject and its related data have been deleted.",
+      });
+    },
+  });
+};
 
   const openNotification = () => {
     notification.success({
@@ -101,55 +101,55 @@ function CourseForm({ courseData = {}, isEdit = false }) {
   };
 
   const onFinish = (values) => {
-    console.log("Came Here", values);
+  console.log("Came Here", values);
 
-    // ✅ Manual validation: check each subject has at least one section
-    const hasEmptySections = (values.subjects || []).some((subject, index) => {
-      if (!subject.sections || subject.sections.length === 0) {
-        notification.error({
-          message: `Validation Error`,
-          description: `Subject ${index + 1}: Section is required.`,
-          placement: "topRight",
-        });
-        return true;
-      }
-      return false;
-    });
-
-    if (hasEmptySections) {
-      return; // ❌ Stop if validation fails
+  // ✅ Manual validation: check each subject has at least one section
+  const hasEmptySections = (values.subjects || []).some((subject, index) => {
+    if (!subject.sections || subject.sections.length === 0) {
+      notification.error({
+        message: `Validation Error`,
+        description: `Subject ${index + 1}: Section is required.`,
+        placement: "topRight",
+      });
+      return true;
     }
+    return false;
+  });
 
-    setLoading(true);
+  if (hasEmptySections) {
+    return; // ❌ Stop if validation fails
+  }
 
-    const request = isEdit ? editCourse(courseId, values) : createCourse(values);
+  setLoading(true);
 
-    request
-      .then(({ data }) => {
-        Modal.success({
-          title: data.detail,
-          onOk: () => router.back(),
-        });
-        notification.success({
-          message: "Success",
-          description: data.detail,
-          icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
-        });
-      })
-      .catch((err) => {
-        const msg =
-          err?.response?.data?.msg ||
-          err?.response?.data?.detail ||
-          "Something went wrong";
-        notification.error({
-          message: "Error",
-          description: msg,
-          placement: "topRight",
-        });
-        console.log("err", err);
-      })
-      .finally(() => setLoading(false));
-  };
+  const request = isEdit ? editCourse(courseId, values) : createCourse(values);
+
+  request
+    .then(({ data }) => {
+      Modal.success({
+        title: data.detail,
+        onOk: () => router.back(),
+      });
+      notification.success({
+        message: "Success",
+        description: data.detail,
+        icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
+      });
+    })
+    .catch((err) => {
+      const msg =
+        err?.response?.data?.msg ||
+        err?.response?.data?.detail ||
+        "Something went wrong";
+      notification.error({
+        message: "Error",
+        description: msg,
+        placement: "topRight",
+      });
+      console.log("err", err);
+    })
+    .finally(() => setLoading(false));
+};
 
 
   const onFieldsChange = (_, allFields) => {
@@ -179,7 +179,7 @@ function CourseForm({ courseData = {}, isEdit = false }) {
   };
 
   return (
-    <div className="h-[80vh] bg-white shadow-sm border border-gray-200 mt-4 rounded-xl overflow-hidden">
+    <div className="h-[78vh] border border-gray-300 mt-8 rounded-lg">
       <Form
         form={form}
         name="course_form"
@@ -187,292 +187,557 @@ function CourseForm({ courseData = {}, isEdit = false }) {
         initialValues={courseData}
         onFinish={onFinish}
         className="h-full flex flex-col"
-        layout="vertical"
       >
         <div className="flex h-full">
-          {/* Left Panel: Navigation/Subject List */}
-          <div className="w-1/3 flex flex-col p-6 border-r border-gray-100 bg-gray-50/50">
-            <div>
+          <div className="w-1/2 flex p-6 border-r border-gray-300 relative">
+            <div className="flex flex-col w-full">
               <Form.Item
-                label={<span className="font-semibold text-gray-700">Course Name</span>}
+                label={<div className="">Course Name</div>}
+                wrapperCol={{
+                  span: 8,
+                }}
                 name="name"
-                required
-                className="mb-0"
+                labelAlign="left"
+                 rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
               >
-                <Input
-                  placeholder="Enter Course Name"
-                  className="rounded-lg border-gray-300 h-11"
-                />
+                <Input placeholder="Course Name"></Input>
               </Form.Item>
-            </div>
-
-            <div className="flex items-center justify-between my-5">
-              <h3 className="text-gray-900 font-semibold text-lg">Subjects</h3>
-              {showSubjectForm && (
-                <button
-                  type="text"
-                  icon={<PlusOutlined className="text-[#F28C28]" />}
-                  onClick={handleAddSubjectClick}
-                  className="bg-[#F28C28] hover:bg-[#d4761f] border-none px-2 py-1 rounded-md font-semibold flex items-center gap-1"
-                >
-                  <PlusOutlined/>
-                  Add Subject
-                </button>
-              )}
-            </div>
-
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {showSubjectForm && (
-                <Form.List name="subjects">
-                  {(fields, { remove }) => (
-                    <div className="space-y-3">
-                      {fields.map((field, index) => {
-                        const subjectName = form.getFieldValue(['subjects', field.name, 'name']) || `Subject ${index + 1}`;
-                        return (
-                          <div
-                            key={field.key}
-                            className="group relative flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:border-orange-300 hover:shadow-sm transition-all duration-200 cursor-pointer"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-[#F28C28] font-bold text-sm">
-                                {index + 1}
-                              </div>
-                              <span className="font-medium text-gray-700 truncate max-w-[150px]">
-                                {subjectName}
-                              </span>
-                            </div>
-
-                            <Button
-                              type="text"
-                              size="small"
-                              className="text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                              icon={<DeleteOutlined />}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteSubject(remove, field.name);
-                              }}
-                            />
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </Form.List>
-              )}
-
-              {!showSubjectForm && (
-                <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl bg-white">
-                  <span className="text-gray-400 mb-2">No subjects added yet</span>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
+              <div className="flex items-center justify-between mt-4">
+                <h3 className="text-left text-lg font-bold">Add Subject</h3>
+                {showSubjectForm ? (
+                  <div
+                    className="flex items-center cursor-pointer"
+                    /* onClick={() => add()} */
                     onClick={handleAddSubjectClick}
-                    className="bg-[#F28C28] hover:bg-[#d4761f] border-none"
                   >
-                    Add First Subject
-                  </Button>
-                </div>
-              )}
+                    <Image
+                      src={plusIcon}
+                      alt="Add Subject"
+                      width={20} // Adjust the size as per your need
+                      height={20}
+                    />
+                    <span
+                      className="ml-2 font-semibold"
+                      style={{ color: "#f59403" }}
+                    >
+                      Add Subject
+                    </span>
+                  </div>
+                ) : null}
+              </div>
             </div>
+            {showSubjectForm && (
+              <Form.List name="subjects">
+                {(fields, { remove }) => (
+                  <div className="absolute left-5 right-5 mt-32">
+                    {fields.map((field) => (
+                      <div
+                        key={field.key}
+                        className="w-full border border-orange-300 bg-orange-50 text-orange-500 p-4 rounded-lg mb-2 group"
+                        style={{
+                          position: "relative",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        {`Subject ${field.name + 1}`}
+
+                        <Image
+  className="cursor-pointer hidden group-hover:block"
+  src={deleteIcon}
+  alt="delete"
+  width={20}
+  height={20}
+  onClick={() => handleDeleteSubject(remove, field.name)} // confirmation before delete
+/>
+
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Form.List>
+            )}
+
+            {!showSubjectForm && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Button type="dashed" onClick={handleAddSubjectClick}>
+                  + Add Subject
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Right Panel: Content/Details */}
-          <div className="w-2/3 flex flex-col h-full bg-white">
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-              {showSubjectForm && (
+          <div
+            className="w-1/2 flex overflow-y-auto h-full m-2"
+            style={{ maxHeight: "calc(87vh - 100px)", overflowY: "auto" }}
+          >
+            {showSubjectForm && (
+              <Form.Item  rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]} className="w-full">
                 <Form.List name="subjects" ref={subjectListRef}>
                   {(fields, { add, remove }) => (
-                    <div className="space-y-4">
-                      {fields.map((field, index) => (
-                        <div key={field.key} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                          <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            Subject {index + 1} Details
+                    <Row gutter={8} className="w-full">
+                      {fields.map((field) => (
+                        <Col className="mt-3 w-full" key={field.key}>
+                          <h3 className="font-semibold text-xl mb-2">
+                            Subject {field.name + 1}
                           </h3>
-
-                          <div className="space-y-4">
-                            {/* Subject Name Selection */}
-                            <Form.Item className="mb-0">
-                              <Radio.Group
-                                onChange={handleOptionChange}
-                                value={selectedOption}
-                                className="hidden"
-                              >
-                              </Radio.Group>
-                              <div className="bg-gray-100 p-2 rounded-lg inline-flex w-full mb-4">
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedOption("select_existing")}
-                                  className={`flex-1 ${selectedOption === "select_existing" ? "bg-white text-[#F28C28] shadow-sm py-2 rounded-md" : "text-gray-500 hover:text-gray-700 bg-transparent"
-                                    }`}
-                                >
-                                  Select Existing Subject
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedOption("add_new")}
-                                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${selectedOption === "add_new" ? "bg-white text-[#F28C28] shadow-sm py-2 rounded-md" : "text-gray-500 hover:text-gray-700 bg-transparent"
-                                    }`}
-                                >
-                                  Create New Subject
-                                </button>
-                              </div>
-
-                              {selectedOption === "select_existing" ? (
+                          <Card
+                            hoverable
+                            size="small"
+                            className="mx-2 bg-gray-50 rounded-lg m-4"
+                            /* extra={
+                              <CloseOutlined
+                                onClick={() => {
+                                  remove(field.name);
+                                  setAddSubjectCount(addSubjectCount - 1);
+                                }}
+                              />
+                            } */
+                          >
+                            <Row gutter={16}>
+                              <Col span={24}>
                                 <Form.Item
-                                  name={[field.name, "name"]}
-                                  required
-                                  label="Subject Name"
-                                  className="mb-0 font-semibold"
+                                  label={
+                                    <p
+                                      style={{
+                                        fontSize: "16px",
+                                        fontWeight: 500,
+                                        color: "#344054",
+                                      }}
+                                    >
+                                      Subject name
+                                    </p>
+                                  }
+                                  //label="Subject Name"
+                                   rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
+                                  labelCol={{ span: 24 }}
+                                  wrapperCol={{ span: 24 }}
+                                  labelStyle={{
+                                    fontSize: "0.875rem",
+                                    fontWeight: 500,
+                                    color: "#344054",
+                                  }}
                                 >
-                                  <CustomSelect
-                                    fieldName="Subject"
-                                    options={subjectOptions}
-                                    style={{ width: "100%", height: "44px" }}
-                                  />
+                                  <Radio.Group
+                                    onChange={handleOptionChange}
+                                    value={selectedOption}
+                                    className="flex justify-between w-full"
+                                  >
+                                    <div
+                                      className={`flex-1 border border-gray-300 rounded-md p-2 mr-2 ${
+                                        selectedOption === "select_existing"
+                                          ? "bg-orange-50 border-orange-300"
+                                          : ""
+                                      }`}
+                                    >
+                                      <Radio
+                                        value="select_existing"
+                                        className={`w-full text-center ${
+                                          selectedOption === "select_existing"
+                                            ? "text-orange-500"
+                                            : ""
+                                        }`}
+                                      >
+                                        <p
+                                          style={{
+                                            fontSize: "16px",
+                                            fontWeight: 500,
+                                            color: "#344054",
+                                          }}
+                                        >
+                                          Select from existing
+                                        </p>
+                                      </Radio>
+                                    </div>
+                                    <div
+                                      className={`flex-1 border border-gray-300 rounded-md p-2 ${
+                                        selectedOption === "add_new"
+                                          ? "bg-orange-50 text-orange-500 border-orange-300"
+                                          : ""
+                                      }`}
+                                    >
+                                      <Radio
+                                        value="add_new"
+                                        className={`w-full text-center ${
+                                          selectedOption === "add_new"
+                                            ? "text-orange-500"
+                                            : ""
+                                        }`}
+                                      >
+                                        <p
+                                          style={{
+                                            fontSize: "16px",
+                                            fontWeight: 500,
+                                            color:
+                                              selectedOption === "add_new"
+                                                ? "#f59403"
+                                                : "#344054",
+                                          }}
+                                        >
+                                          Add new
+                                        </p>
+                                      </Radio>
+                                    </div>
+                                  </Radio.Group>
                                 </Form.Item>
-                              ) : (
-                                <Form.Item
-                                  name={[field.name, "name"]}
-                                  required
-                                  label="Subject Name"
-                                  rules={[{ required: true, message: "Please enter a new subject" }]}
-                                  className="mb-0 font-semibold"
-                                >
-                                  <Input placeholder="Enter Subject Name" className="rounded-lg h-11" />
-                                </Form.Item>
-                              )}
-                            </Form.Item>
 
-                            {/* Marks & Order Grid */}
-                            <div className="grid grid-cols-3 gap-4">
-                              <Form.Item
-                                label="Marks (Correct)"
-                                name={[field.name, "correct_answer_marks"]}
-                                required
-                                className="mb-0 font-semibold"
-                              >
-                                <InputNumber min={0} className="w-full h-11 rounded-lg flex items-center" placeholder="e.g. 4" />
-                              </Form.Item>
-                              <Form.Item
-                                label="Marks (Incorrect)"
-                                name={[field.name, "incorrect_answer_marks"]}
-                                required
-                                className="mb-0 font-semibold"
-                              >
-                                <InputNumber min={0} className="w-full h-11 rounded-lg flex items-center" placeholder="e.g. -1" />
-                              </Form.Item>
-                              <Form.Item
-                                label="Order"
-                                name={[field.name, "order"]}
-                                required
-                                className="mb-0 font-semibold"
-                              >
-                                <InputNumber min={1} className="w-full h-11 rounded-lg flex items-center" placeholder="Seq. No." />
-                              </Form.Item>
-                            </div>
-                          </div>
+                                {selectedOption === "select_existing" ? (
+                                  <Form.Item
+                                    name={[field.name, "name"]} // Keep the name consistent
+                                     rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
+                                  >
+                                    <CustomSelect
+                                      fieldName="Subject"
+                                      options={subjectOptions}
+                                      style={{
+                                        width: "100%",
+                                        marginBottom: "6px",
+                                      }}
+                                      selectStyle={{
+                                        fontSize: "18px", // Font size
+                                        fontWeight: 400, // Font weight
+                                      }}
+                                    />
+                                  </Form.Item>
+                                ) : (
+                                  <Form.Item
+                                    name={[field.name, "name"]} // Use the same name for new subjects
+                                    required
+                                    rules={[
+                                      {
+                                        required: true,
+                                        message: "Please enter a new subject",
+                                      },
+                                    ]}
+                                  >
+                                    <Input style={{ width: "100%" }} />
+                                  </Form.Item>
+                                )}
 
-                          <Divider className="my-3" />
-
-                          {/* Sections */}
+                                <Row gutter={16}>
+                                  <Col span={24} md={8}>
+                                    <div
+                                      className="label"
+                                      style={{
+                                        fontSize: "16px",
+                                        fontWeight: 500,
+                                        color: "#344054",
+                                      }}
+                                    >
+                                      Marks on Correct
+                                    </div>
+                                  </Col>
+                                  <Col span={24} md={8}>
+                                    <div
+                                      className="label"
+                                      style={{
+                                        fontSize: "16px",
+                                        fontWeight: 500,
+                                        color: "#344054",
+                                      }}
+                                    >
+                                      Marks on Incorrect
+                                    </div>
+                                  </Col>
+                                  <Col span={24} md={8}>
+                                    <div
+                                      className="label"
+                                      style={{
+                                        fontSize: "16px",
+                                        fontWeight: 500,
+                                        color: "#344054",
+                                      }}
+                                    >
+                                      Order
+                                    </div>
+                                  </Col>
+                                </Row>
+                                <Row gutter={16}>
+                                  <Col span={24} md={8}>
+                                    <Form.Item
+                                      wrapperCol={{ span: 24 }}
+                                      className="w-full"
+                                       rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
+                                      name={[
+                                        field.name,
+                                        "correct_answer_marks",
+                                      ]}
+                                    >
+                                      <InputNumber
+                                        min={0}
+                                        className="input-number w-full"
+                                      />
+                                    </Form.Item>
+                                  </Col>
+                                  <Col span={24} md={8}>
+                                    <Form.Item
+                                      wrapperCol={{ span: 24 }}
+                                      className="w-full"
+                                       rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
+                                      name={[
+                                        field.name,
+                                        "incorrect_answer_marks",
+                                      ]}
+                                    >
+                                      <InputNumber
+                                        min={0}
+                                        className="input-number w-full"
+                                      />
+                                    </Form.Item>
+                                  </Col>
+                                  <Col span={24} md={8}>
+                                    <Form.Item
+                                      wrapperCol={{ span: 24 }}
+                                      className="w-full"
+                                       rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
+                                      name={[field.name, "order"]}
+                                    >
+                                      <InputNumber
+                                        min={1}
+                                        className="input-number w-full"
+                                      />
+                                    </Form.Item>
+                                  </Col>
+                                </Row>
+                              </Col>
+                            </Row>
+                          </Card>
                           <Form.List name={[field.name, "sections"]}>
                             {(subFields, subOpt) => (
-                              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <div className="flex items-center justify-between mb-4">
-                                  <h4 className="text-gray-700 font-bold flex items-center gap-2">
-                                    <span className="bg-gray-200 text-gray-600 w-6 h-6 rounded-full flex items-center justify-center text-xs">S</span>
+                              <>
+                                {/* Conditional Button rendering */}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <h3 className="font-semibold text-xl mt-2 mb-2">
                                     Sections
-                                  </h4>
-                                  <Button
-                                    type="dashed"
-                                    size="small"
-                                    onClick={() => subOpt.add()}
-                                    className="border-orange-300 text-orange-500 bg-white hover:border-orange-500 hover:text-orange-600"
-                                    icon={<PlusOutlined />}
-                                  >
-                                    Add Section
-                                  </Button>
-                                </div>
+                                  </h3>
 
-                                <div className="space-y-3">
-                                  {subFields.length === 0 && (
-                                    <div className="text-center py-6 text-gray-400 text-sm">
-                                      No sections added. Click "Add Section" to start.
+                                  {/* Render "Add Section" next to the header only if subFields.length > 0 */}
+                                  {subFields.length > 0 && (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                      }}
+                                    >
+                                      <Image
+                                        src={plusIcon}
+                                        alt="Add section"
+                                        width={20}
+                                        height={20}
+                                        onClick={() => subOpt.add()} // Add section on click
+                                      />
+                                      <span
+                                        className="ml-1 font-semibold mr-2"
+                                        style={{
+                                          color: "#f59403",
+                                          cursor: "pointer",
+                                        }}
+                                        onClick={() => subOpt.add()} // Add section on click
+                                      >
+                                        Add section
+                                      </span>
                                     </div>
                                   )}
-
-                                  {subFields.map((subField) => (
-                                    <div key={subField.key} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative group">
-                                      <Button
-                                        type="text"
-                                        size="small"
-                                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100"
-                                        icon={<DeleteOutlined />}
-                                        onClick={() => subOpt.remove(subField.name)}
-                                      />
-
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Form.Item
-                                          name={[subField.name, "name"]}
-                                          required
-                                          label="Section Name"
-                                          className="mb-0 col-span-2"
-                                        >
-                                          <Input placeholder="e.g. Logical Reasoning" className="rounded-lg h-10" />
-                                        </Form.Item>
-
-                                        <Form.Item
-                                          name={[subField.name, "no_of_questions"]}
-                                          required
-                                          label="Questions"
-                                          className="mb-0"
-                                        >
-                                          <InputNumber className="w-full h-10 rounded-lg flex items-center" placeholder="Count" />
-                                        </Form.Item>
-
-                                        <Form.Item
-                                          name={[subField.name, "time_limit"]}
-                                          required
-                                          label="Time (Min)"
-                                          className="mb-0"
-                                        >
-                                          <InputNumber className="w-full h-10 rounded-lg flex items-center" placeholder="Minutes" />
-                                        </Form.Item>
-                                      </div>
-                                    </div>
-                                  ))}
                                 </div>
-                              </div>
+
+                                <Card
+                                  hoverable
+                                  size="small"
+                                  className="mx-2 bg-gray-50 rounded-lg m-4 mt-2"
+                                  style={{ position: "relative" }}
+                                >
+                                  <Row gutter={16} className="w-full">
+                                    <Col span={24}>
+                                      <Row className="justify-center h-full w-full">
+                                        {subFields.length === 0 ? (
+                                          <Col className="w-full text-center">
+                                            <Button
+                                              type="dashed"
+                                              onClick={() => subOpt.add()}
+                                            >
+                                              + Add Section
+                                            </Button>
+                                          </Col>
+                                        ) : (
+                                          subFields.map((subField, index) => (
+                                            <Col
+                                              className="w-full rounded-md p-2 mt-2"
+                                              key={subField.key}
+                                              style={{ position: "relative" }}
+                                            >
+                                              {/* Section content */}
+                                              <div
+                                                style={{
+                                                  display: "flex",
+                                                  justifyContent:
+                                                    "space-between",
+                                                  alignItems: "center",
+                                                  marginBottom: "8px",
+                                                }}
+                                              >
+                                                <span
+                                                  style={{ fontSize: "16px" }}
+                                                >
+                                                  Section Name
+                                                </span>
+
+                                                <div
+                                                  style={{ cursor: "pointer" }}
+                                                  onClick={() =>
+                                                    subOpt.remove(subField.name)
+                                                  }
+                                                >
+                                                  <Image
+                                                    src={simpledeleteIcon}
+                                                    alt="Delete"
+                                                    width={20}
+                                                    height={20}
+                                                  />
+                                                </div>
+                                              </div>
+
+                                              <Form.Item
+                                                name={[subField.name, "name"]}
+                                                 rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
+                                                labelCol={{ span: 24 }}
+                                                wrapperCol={{ span: 24 }}
+                                                className="w-full"
+                                              >
+                                                <Input
+                                                  style={{ width: "100%" }}
+                                                  placeholder="Name of Section"
+                                                />
+                                              </Form.Item>
+
+                                              {/* Questions and Time Limit */}
+                                              <Row gutter={32} className="mb-2">
+                                                <Col span={24} md={12}>
+                                                  <div className="label">
+                                                    No. of Questions
+                                                  </div>
+                                                </Col>
+                                                <Col span={24} md={12}>
+                                                  <div className="label">
+                                                    Time Limit
+                                                  </div>
+                                                </Col>
+                                              </Row>
+                                              <Row gutter={16}>
+                                                <Col span={12}>
+                                                  <Form.Item
+                                                    name={[
+                                                      subField.name,
+                                                      "no_of_questions",
+                                                    ]}
+                                                    className="w-full"
+                                                     rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
+                                                  >
+                                                    <InputNumber
+                                                      style={{ width: "100%" }}
+                                                      placeholder="No. of Questions"
+                                                    />
+                                                  </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                  <Form.Item
+                                                    name={[
+                                                      subField.name,
+                                                      "time_limit",
+                                                    ]}
+                                                    className="w-full"
+                                                     rules={[
+                                          {
+                                            required: true,
+                                            message: "Required",
+                                          },
+                                        ]}
+                                                  >
+                                                    <InputNumber
+                                                      style={{ width: "100%" }}
+                                                      placeholder="Time Limit"
+                                                    />
+                                                  </Form.Item>
+                                                </Col>
+                                              </Row>
+                                            </Col>
+                                          ))
+                                        )}
+                                      </Row>
+                                    </Col>
+                                  </Row>
+                                </Card>
+                              </>
                             )}
                           </Form.List>
-                        </div>
+                        </Col>
                       ))}
-                    </div>
+                    </Row>
                   )}
                 </Form.List>
-              )}
-            </div>
-
-            {/* Footer / Actions */}
-            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
-              <Button
-                onClick={() => router.back()}
-                className="mr-3 h-11 px-6 border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 font-medium"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                loading={loading}
-                onClick={() => form.submit()}
-                className="bg-[#F28C28] hover:bg-[#d4761f] border-none h-11 px-8 rounded-lg shadow-md font-semibold text-lg"
-              >
-                {isEdit ? "Update Course" : "Create Course"}
-              </Button>
-            </div>
+              </Form.Item>
+            )}
           </div>
         </div>
       </Form>
+
+      {/* Submit Button */}
+      <div className="flex justify-end p-3">
+        <Button type="primary" loading={loading} onClick={() => form.submit()}>
+          {isEdit ? "Update" : "Create"}
+        </Button>
+      </div>
     </div>
   );
 }
