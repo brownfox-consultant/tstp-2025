@@ -3,8 +3,8 @@ import {
   getUpcomingOrFreeSubStudents,
 } from "@/app/services/authService";
 
-import { DeleteTwoTone, SearchOutlined } from "@ant-design/icons";
-import { Button, Input, Popconfirm, Space, Table, Pagination } from "antd";
+import { DeleteTwoTone, SearchOutlined, ExclamationCircleFilled } from "@ant-design/icons";
+import { Button, Input, Modal, Space, Table, Pagination } from "antd";
 import dayjs from "dayjs";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -12,9 +12,11 @@ import { useMediaQuery } from "react-responsive";
 import Image from "next/image";
 import downArrowIcon from "../../../public/icons/down-arrow.svg";
 
+const { confirm } = Modal;
+
 function UpcomingTable({ tabKey, api }) {
   const [studentsData, setStudentsData] = useState([]);
-  const [confirmLoading, setConfirmLoading] = useState(false);
+  // const [confirmLoading, setConfirmLoading] = useState(false); // Removed as Modal handles loading
   const [updated, setUpdated] = useState(false);
   const [current, setCurrent] = useState(1);
   const [total, setTotal] = useState(0);
@@ -51,17 +53,46 @@ function UpcomingTable({ tabKey, api }) {
         setTotalPages(total_pages);
       })
       .finally(() => setLoading(false));
-  }, [updated, current, searchText]); // 👈 Add `searchText` here
-  
+  }, [updated, current, searchText]);
 
-  const deleteConfirm = (id) => {
-    setConfirmLoading(true);
-    deleteUser(id)
+  // Updated delete handler to return promise
+  const handleDelete = (id) => {
+    return deleteUser(id)
       .then((res) => {
         setUpdated(!updated);
+        Modal.success({
+            content: "User deleted successfully",
+        });
       })
-      .catch((err) => console.log("err", err))
-      .finally(() => setConfirmLoading(false));
+      .catch((err) => {
+          console.log("err", err);
+          Modal.error({
+              title: "Error",
+              content: "Failed to delete user. Please try again.",
+          });
+      });
+  };
+
+  const showDeleteConfirm = (record) => {
+    confirm({
+      title: 'Are you sure delete this user?',
+      icon: <ExclamationCircleFilled />,
+      content: (
+          <div>
+              <p>You are about to delete user: <strong>{record.name}</strong></p>
+              <p className="text-gray-500 text-xs mt-2">This action cannot be undone.</p>
+          </div>
+      ),
+      okText: 'Yes, Delete',
+      okType: 'danger',
+      cancelText: 'No',
+      onOk() {
+        return handleDelete(record.id);
+      },
+      onCancel() {
+        console.log('Cancel');
+      },
+    });
   };
 
   const cols = [
@@ -222,20 +253,13 @@ function UpcomingTable({ tabKey, api }) {
           Edit
         </Button>
 
-        <Popconfirm
-          className="ml-3"
-          placement="leftTop"
-          title="Delete the user"
-          description="Are you sure to delete this user?"
-          onConfirm={() => deleteConfirm(record.id)}
-          okText="Yes"
-          cancelText="No"
-          okButtonProps={{
-            loading: confirmLoading,
-          }}
+        <Button
+          type="text"
+          className="ml-1 flex items-center justify-center"
+          onClick={() => showDeleteConfirm(record)}
         >
-          <DeleteTwoTone twoToneColor="#eb2f96" />
-        </Popconfirm>
+          <DeleteTwoTone twoToneColor="#eb2f96" style={{ fontSize: '16px' }} />
+        </Button>
       </Space>
     );
   },

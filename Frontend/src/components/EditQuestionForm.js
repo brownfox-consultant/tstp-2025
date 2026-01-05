@@ -11,6 +11,7 @@ import {
   MinusCircleOutlined,
   PlusCircleFilled,
   PlusOutlined,
+  ArrowLeftOutlined 
 } from "@ant-design/icons";
 import {
   Button,
@@ -439,6 +440,7 @@ function EditQuestionForm({
                 onClick={() => router.back()}
                 className="px-5 py-3 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 shadow transition-all duration-300 hover:scale-105 cursor-pointer border-0"
               >
+                <ArrowLeftOutlined />
                 Back
               </button>
             </div>

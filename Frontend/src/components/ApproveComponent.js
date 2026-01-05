@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ApproveForm from "@/components/ApproveForm";
 import { LeftOutlined } from "@ant-design/icons";
 import { usePathname, useRouter } from "next/navigation";
+import { LeftArrowIcon } from "./icons/score-analysis-icons";
 
 function ApproveComponent() {
   const router = useRouter();
@@ -37,14 +38,17 @@ function ApproveComponent() {
   }, []);
   return (
     <>
-      <div className="text-2xl font-bold mb-5 flex align-middle">
+      <div className="text-2xl font-bold mb-5 flex items-center justify-between">
+        <span>Approve Student User</span>
         {!areParentDetailsCompulsory && (
-          <LeftOutlined
-            className="mr-2 text-base hover:font-extrabold cursor-pointer"
+          <button
+            className="bg-white px-3 py-1.5 rounded-lg shadow-sm text-sm border border-gray-200 hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors"
             onClick={() => handleBack()}
-          />
-        )}{" "}
-        Approve Student User
+          >
+            <LeftArrowIcon className="w-4 h-4" />
+            <span>Back</span>
+          </button>
+        )}
       </div>
 
       {userDetails && (

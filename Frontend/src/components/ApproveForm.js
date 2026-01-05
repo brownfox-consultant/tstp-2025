@@ -5,6 +5,7 @@ import {
   PlusCircleOutlined,
   PlusCircleTwoTone,
   PlusOutlined,
+  DownOutlined,
 } from "@ant-design/icons";
 import {
   Button,
@@ -19,8 +20,9 @@ import {
   Popover,
   Radio,
   Row,
-  Select,
 } from "antd";
+import Select, { components } from "react-select";
+import { ChevronIcon } from "./icons/dashboard-icons";
 import { useForm } from "antd/es/form/Form";
 import dayjs from "dayjs";
 import { useState, useEffect } from "react";
@@ -247,428 +249,375 @@ function ApproveForm({
 
   const userInitalValues = getUserInitialValues(data);
 
+  // Custom Dropdown Indicator for react-select
+  const DropdownIndicator = (props) => {
+    return (
+      <components.DropdownIndicator {...props}>
+        <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+      </components.DropdownIndicator>
+    );
+  };
+
+  // Custom components for react-select
+  const customComponents = {
+    DropdownIndicator,
+  };
+
   return (
     <>
       <Form
-        className="p-10"
         form={form}
         onFinish={onFinish}
         onFieldsChange={onFieldsChange}
         initialValues={userInitalValues}
+        layout="vertical"
+        className="space-y-6"
       >
-        <Row gutter={[48, 8]}>
-          <Col span={24} sm={24} md={12} lg={8}>
-            <Form.Item
-              label="Name"
-              wrapperCol={{ span: 12 }}
-              labelCol={{ span: 5, lg: 4 }}
-              labelAlign="left"
-            >
-              <Input placeholder={data.name} disabled />
-            </Form.Item>
-          </Col>
-
-          <Col span={24} sm={24} md={12} lg={8}>
-            <Form.Item
-              label="Faculty"
-              name="faculty"
-              filterOption={(input, option) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              wrapperCol={{ span: 12 }}
-              labelCol={{ span: 5, lg: 5 }}
-              labelAlign="left"
-              showSearch
-            >
-              <Select
-                placeholder="Select Faculty"
-                options={facultyOptions}
-              ></Select>
-            </Form.Item>
-          </Col>
-          <Col span={24} sm={24} md={12} lg={8}>
-            <Form.Item
-              wrapperCol={{ span: 12 }}
-              labelCol={{ span: 5, lg: 5 }}
-              labelAlign="left"
-              label="Mentor"
-              name="mentor"
-            >
-              <Select
-                placeholder="Select Mentor"
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-                options={mentorOptions}
-              ></Select>
-            </Form.Item>
-          </Col>
-        </Row>
-        {requireParentDetails && (
-          <>
-            {showFatherForm ? (
-              <Col
-                className="w-full border-slate-300 border-2 rounded-md py-3 px-3"
-                style={{ marginTop: 10, marginBottom: 10 }}
+        {/* Student Details Card */}
+        <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+          <div className="mb-3">
+            <h3 className="text-lg font-bold text-[#F59405]">Student Information</h3>
+            <p className="text-sm text-gray-500 mt-1">Basic student details and assignments</p>
+          </div>
+          <Divider className="my-2 border-gray-200" />
+          
+          <Row gutter={[16, 12]}>
+            <Col xs={24} md={12} lg={8}>
+              <Form.Item label={<div className="text-base font-semibold text-gray-700">Name</div>}>
+                <Input placeholder={data.name} disabled className="h-10" />
+              </Form.Item>
+            </Col>
+            
+            <Col xs={24} md={12} lg={8}>
+              <Form.Item
+                label={<div className="text-base font-semibold text-gray-700">Faculty</div>}
+                name="faculty"
               >
-                <div
-                  className=""
-                  style={{ marginLeft: 10, marginRight: 10, marginTop: 5 }}
-                >
-                  <div className="flex justify-between">
-                    <div className="text-base font-semibold">
-                      Father Details
+                <Select
+                  placeholder="Select Faculty"
+                  options={facultyOptions}
+                  components={customComponents}
+                  isClearable
+                  isSearchable
+                  menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                  onChange={(selected) => {
+                    form.setFieldValue('faculty', selected?.value || null);
+                  }}
+                  value={facultyOptions.find(opt => opt.value === form.getFieldValue('faculty')) || null}
+                />
+              </Form.Item>
+            </Col>
+            
+            <Col xs={24} md={12} lg={8}>
+              <Form.Item
+                label={<div className="text-base font-semibold text-gray-700">Mentor</div>}
+                name="mentor"
+              >
+                <Select
+                  placeholder="Select Mentor"
+                  options={mentorOptions}
+                  components={customComponents}
+                  isClearable
+                  isSearchable
+                  menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                  onChange={(selected) => {
+                    form.setFieldValue('mentor', selected?.value || null);
+                  }}
+                  value={mentorOptions.find(opt => opt.value === form.getFieldValue('mentor')) || null}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </div>
+
+        {/* Parent Details Card */}
+        {requireParentDetails && (
+          <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+            <div className="mb-3">
+              <h3 className="text-lg font-bold text-[#007FBC]">Parent Details</h3>
+              <p className="text-sm text-gray-500 mt-1">Add or select parent information</p>
+            </div>
+            <Divider className="my-2 border-gray-200" />
+
+            <Row gutter={[16, 16]}>
+              {/* Father Details */}
+              <Col xs={24} xl={12}>
+                {showFatherForm ? (
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200 h-full">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="text-base font-bold text-gray-800">Father Details</div>
+                      <Button
+                        type="text"
+                        icon={<CloseOutlined />}
+                        onClick={() => {
+                          form.setFieldsValue({
+                            father_name: null,
+                            father_email: null,
+                            father_phone_number: null,
+                          });
+                          form.validateFields();
+                          setShowFatherForm(false);
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      />
                     </div>
-                    <CloseOutlined
-                      onClick={() => {
-                        form.setFieldsValue({
-                          father_name: null,
-                          father_email: null,
-                          father_phone_number: null,
-                        });
-                        form.validateFields();
-                        setShowFatherForm(false);
-                      }}
-                    />
+                    
+                    <Row gutter={[12, 12]}>
+                      <Col xs={24}>
+                        <Form.Item
+                          name="father_name"
+                          label={<div className="text-sm font-semibold text-gray-700">Name</div>}
+                          rules={[{ required: true, message: "Please input father name!" }]}
+                          style={{ marginBottom: 8 }}
+                        >
+                          <Input placeholder="Enter father's name" className="h-10" />
+                        </Form.Item>
+                      </Col>
+                      
+                      <Col xs={24}>
+                        <Form.Item
+                          label={<div className="text-sm font-semibold text-gray-700">Email</div>}
+                          name="father_email"
+                          rules={[
+                            { required: true, message: "Please input your father's email!" },
+                            { type: "email", message: "The input is not a valid email!" },
+                          ]}
+                          style={{ marginBottom: 8 }}
+                        >
+                          <Input placeholder="Enter father's email" className="h-10" />
+                        </Form.Item>
+                      </Col>
+                      
+                      <Col xs={24}>
+                        <Form.Item
+                          label={<div className="text-sm font-semibold text-gray-700">Contact Number</div>}
+                          name="father_phone_number"
+                          rules={[
+                            { required: true, message: "Please enter father's contact number!" },
+                            { pattern: /^\d{10}$/, message: "Contact number must be exactly 10 digits long" },
+                          ]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <Input
+                            maxLength={10}
+                            onChange={handleFatherPhoneNumberChange}
+                            placeholder="Enter 10-digit phone number"
+                            className="h-10"
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
                   </div>
-                  <Divider className="my-4" />
-                  <Row gutter={8}>
-                    <Col sm={24} md={12} lg={12}>
-                      <Form.Item
-                        name="father_name"
-                        label="Name"
-                        labelAlign="left"
-                        labelCol={{ span: 8, md: 6, lg: 3 }}
-                        wrapperCol={{ span: 10, md: 24, lg: 9 }}
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please input father name!",
-                          },
-                        ]}
-                      >
-                        <Input />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Row gutter={8}>
-                    <Col sm={24} md={12} lg={12}>
-                      <Form.Item
-                        labelAlign="left"
-                        labelCol={{ span: 8, md: 6, lg: 3 }}
-                        wrapperCol={{ span: 10, md: 24, lg: 9 }}
-                        label="Email"
-                        name="father_email"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please input your father's email!",
-                          },
-                          {
-                            type: "email",
-                            message: "The input is not a valid email!",
-                          },
-                        ]}
-                      >
-                        <Input />
-                      </Form.Item>
-                    </Col>
-                    <Col sm={24} md={12} lg={12}>
-                      <Form.Item
-                        labelAlign="left"
-                        wrapperCol={{ span: 10, md: 24, lg: 9 }}
-                        label="Contact Number"
-                        name="father_phone_number"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please enter father's contact number!",
-                          },
-                          {
-                            pattern: /^\d{10}$/,
-                            message:
-                              "Contact number must be exactly 10 digits long",
-                          },
-                        ]}
-                      >
-                        <Input
-                          maxLength={10}
-                          onChange={handleFatherPhoneNumberChange}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                </div>
-              </Col>
-            ) : (
-              <div className="" style={{ marginTop: 10 }}>
-                <Row gutter={8}>
-                  <Col span={22} md={12} lg={5}>
+                ) : (
+                  <div className="h-full flex flex-col justify-center">
                     <Form.Item
-                      label="Father"
-                      wrapperCol={{ span: 18, lg: 18 }}
-                      labelCol={{ span: 5, lg: 6 }}
-                      labelAlign="left"
+                      label={<div className="text-sm font-semibold text-gray-700">Father</div>}
                       name="father_id"
-                      rules={[]}
+                      style={{ marginBottom: 8 }}
                     >
                       <Select
-                        showSearch
                         placeholder="Select Father"
-                        filterOption={(input, option) =>
-                          (option?.label ?? "")
-                            .toLowerCase()
-                            .includes(input.toLowerCase())
-                        }
-                        disabled={showFatherForm}
                         options={parentOptions}
-                      ></Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={2} className="">
-                    {isMobile ? (
-                      <Popover title="Add Father Details">
-                        <PlusCircleTwoTone
-                          className="mt-12"
-                          onClick={() => {
-                            form.setFieldValue("father_id", null);
-                            setShowFatherForm(!showFatherForm);
-                          }}
-                        />
-                      </Popover>
-                    ) : (
-                      <Button
-                        shape="round"
-                        type="default"
-                        icon={<PlusCircleTwoTone />}
-                        onClick={() => {
-                          form.setFieldValue("father_id", null);
-                          setShowFatherForm(!showFatherForm);
+                        components={customComponents}
+                        isClearable
+                        isSearchable
+                        isDisabled={showFatherForm}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        onChange={(selected) => {
+                          form.setFieldValue('father_id', selected?.value || null);
                         }}
-                      >
-                        Add Father Details
-                      </Button>
-                    )}
-                  </Col>
-                </Row>
-              </div>
-            )}
-          </>
-        )}
-
-        {requireParentDetails && (
-          <>
-            {showMotherForm ? (
-              <Col
-                className="w-full border-slate-300 border-2 rounded-md py-3 px-3"
-                style={{ marginTop: 10, marginBottom: 10 }}
-              >
-                <div
-                  className=""
-                  style={{ marginLeft: 10, marginRight: 10, marginTop: 5 }}
-                >
-                  <div className="flex justify-between">
-                    <div className="text-base font-semibold">
-                      Mother Details
-                    </div>
-                    <CloseOutlined
-                      classID=""
+                        value={parentOptions.find(opt => opt.value === form.getFieldValue('father_id')) || null}
+                      />
+                    </Form.Item>
+                    <Button
+                      type="dashed"
+                      icon={<PlusCircleTwoTone />}
                       onClick={() => {
-                        form.setFieldsValue({
-                          mother_name: null,
-                          mother_email: null,
-                          mother_phone_number: null,
-                        });
-                        form.validateFields();
-                        setShowMotherForm(false);
+                        form.setFieldValue("father_id", null);
+                        setShowFatherForm(!showFatherForm);
                       }}
-                    />
+                      className="h-10 border-2 border-dashed border-blue-300 hover:border-blue-500 hover:text-blue-600 font-medium w-full"
+                    >
+                      Add Father Details
+                    </Button>
                   </div>
-                  <Divider className="my-4" />
-                  <Row gutter={8}>
-                    <Col sm={24} md={12} lg={12}>
-                      <Form.Item
-                        name="mother_name"
-                        label="Name"
-                        labelAlign="left"
-                        labelCol={{ span: 8, md: 6, lg: 3 }}
-                        wrapperCol={{ span: 10, md: 24, lg: 9 }}
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please input your name!",
-                          },
-                        ]}
-                      >
-                        <Input />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Row gutter={8}>
-                    <Col sm={24} md={12} lg={12}>
-                      <Form.Item
-                        labelAlign="left"
-                        labelCol={{ span: 8, md: 6, lg: 3 }}
-                        wrapperCol={{ span: 10, md: 24, lg: 9 }}
-                        label="Email"
-                        name="mother_email"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please input your mother's email!",
-                          },
-                          {
-                            type: "email",
-                            message: "The input is not a valid email!",
-                          },
-                        ]}
-                      >
-                        <Input />
-                      </Form.Item>
-                    </Col>
-                    <Col sm={24} md={12} lg={12}>
-                      <Form.Item
-                        labelAlign="left"
-                        wrapperCol={{ span: 10, md: 24, lg: 9 }}
-                        label="Contact Number"
-                        name="mother_phone_number"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please enter mother's contact number!",
-                          },
-                          {
-                            pattern: /^\d{10}$/,
-                            message:
-                              "Contact number must be exactly 10 digits long",
-                          },
-                        ]}
-                      >
-                        <Input
-                          maxLength={10}
-                          onChange={handleMotherPhoneNumberChange}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                </div>
+                )}
               </Col>
-            ) : (
-              <div className="" style={{ marginTop: 10 }}>
-                <Row gutter={8}>
-                  <Col span={22} md={12} lg={5}>
+
+              {/* Mother Details */}
+              <Col xs={24} xl={12}>
+                {showMotherForm ? (
+                  <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200 h-full">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="text-base font-bold text-gray-800">Mother Details</div>
+                      <Button
+                        type="text"
+                        icon={<CloseOutlined />}
+                        onClick={() => {
+                          form.setFieldsValue({
+                            mother_name: null,
+                            mother_email: null,
+                            mother_phone_number: null,
+                          });
+                          form.validateFields();
+                          setShowMotherForm(false);
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      />
+                    </div>
+                    
+                    <Row gutter={[12, 12]}>
+                      <Col xs={24}>
+                        <Form.Item
+                          name="mother_name"
+                          label={<div className="text-sm font-semibold text-gray-700">Name</div>}
+                          rules={[{ required: true, message: "Please input your name!" }]}
+                          style={{ marginBottom: 8 }}
+                        >
+                          <Input placeholder="Enter mother's name" className="h-10" />
+                        </Form.Item>
+                      </Col>
+                      
+                      <Col xs={24}>
+                        <Form.Item
+                          label={<div className="text-sm font-semibold text-gray-700">Email</div>}
+                          name="mother_email"
+                          rules={[
+                            { required: true, message: "Please input your mother's email!" },
+                            { type: "email", message: "The input is not a valid email!" },
+                          ]}
+                          style={{ marginBottom: 8 }}
+                        >
+                          <Input placeholder="Enter mother's email" className="h-10" />
+                        </Form.Item>
+                      </Col>
+                      
+                      <Col xs={24}>
+                        <Form.Item
+                          label={<div className="text-sm font-semibold text-gray-700">Contact Number</div>}
+                          name="mother_phone_number"
+                          rules={[
+                            { required: true, message: "Please enter mother's contact number!" },
+                            { pattern: /^\d{10}$/, message: "Contact number must be exactly 10 digits long" },
+                          ]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <Input
+                            maxLength={10}
+                            onChange={handleMotherPhoneNumberChange}
+                            placeholder="Enter 10-digit phone number"
+                            className="h-10"
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col justify-center">
                     <Form.Item
-                      label="Mother"
-                      wrapperCol={{ span: 18, lg: 18 }}
-                      labelCol={{ span: 5, lg: 6 }}
-                      labelAlign="left"
+                      label={<div className="text-sm font-semibold text-gray-700">Mother</div>}
                       name="mother_id"
-                      // rules={[{ message: "Please select a parent!" }]}
+                      style={{ marginBottom: 8 }}
                     >
                       <Select
                         placeholder="Select Mother"
-                        showSearch
-                        filterOption={(input, option) =>
-                          (option?.label ?? "")
-                            .toLowerCase()
-                            .includes(input.toLowerCase())
-                        }
-                        disabled={showMotherForm}
                         options={parentOptions}
-                      ></Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={2} className="">
-                    {isMobile ? (
-                      <Popover title="Add Mother Details">
-                        <PlusCircleTwoTone
-                          className="mt-12"
-                          onClick={() => {
-                            form.setFieldValue("mother_id", null);
-                            form.validateFields();
-                            setShowMotherForm(!showMotherForm);
-                          }}
-                        />
-                      </Popover>
-                    ) : (
-                      <Button
-                        shape="round"
-                        type="default"
-                        icon={<PlusCircleTwoTone />}
-                        onClick={() => {
-                          form.setFieldValue("mother_id", null);
-                          form.validateFields();
-                          setShowMotherForm(!showMotherForm);
+                        components={customComponents}
+                        isClearable
+                        isSearchable
+                        isDisabled={showMotherForm}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        onChange={(selected) => {
+                          form.setFieldValue('mother_id', selected?.value || null);
                         }}
-                      >
-                        Add Mother Details
-                      </Button>
-                    )}
-                  </Col>
-                </Row>
-              </div>
-            )}
-          </>
+                        value={parentOptions.find(opt => opt.value === form.getFieldValue('mother_id')) || null}
+                      />
+                    </Form.Item>
+                    <Button
+                      type="dashed"
+                      icon={<PlusCircleTwoTone />}
+                      onClick={() => {
+                        form.setFieldValue("mother_id", null);
+                        form.validateFields();
+                        setShowMotherForm(!showMotherForm);
+                      }}
+                      className="h-10 border-2 border-dashed border-pink-300 hover:border-pink-500 hover:text-pink-600 font-medium w-full"
+                    >
+                      Add Mother Details
+                    </Button>
+                  </div>
+                )}
+              </Col>
+            </Row>
+          </div>
         )}
-        <Form.List
-          name="courses"
-          initialValue={
-            data
-              ? Array(1).fill({})
-              : data?.courses?.map((value) => ({ course: value }))
-          }
-        >
-          {(fields, { add, remove }) => {
-            return (
-              <Row gutter={[16, 8]} justify="center">
-                {fields.map(({ key, name, ...restField }, index) => {
-                  return (
-                    <CourseMetaDetailsForm
-                      key={key}
-                      index={index}
-                      name={name}
-                      fields={fields}
-                      courses={courses}
-                      restField={restField}
-                      add={add}
-                      remove={remove}
-                    />
-                  );
-                })}
 
-                {fields.length <= 5 && (
-                  <Col span={16} md={7} lg={4}>
-                    <Form.Item className="">
+        {/* Course Subscription Card */}
+        <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+          <div className="mb-3">
+            <h3 className="text-lg font-bold text-[#F59405]">Course Subscription</h3>
+            <p className="text-sm text-gray-500 mt-1">Add course details and subscription information</p>
+          </div>
+          <Divider className="my-2 border-gray-200" />
+          
+          <Form.List
+            name="courses"
+            initialValue={
+              data
+                ? Array(1).fill({})
+                : data?.courses?.map((value) => ({ course: value }))
+            }
+          >
+            {(fields, { add, remove }) => {
+              return (
+                <div className="space-y-3">
+                  {fields.map(({ key, name, ...restField }, index) => {
+                    return (
+                      <CourseMetaDetailsForm
+                        key={key}
+                        index={index}
+                        name={name}
+                        fields={fields}
+                        courses={courses}
+                        restField={restField}
+                        add={add}
+                        remove={remove}
+                      />
+                    );
+                  })}
+
+                  {fields.length <= 5 && (
+                    <div className="flex justify-center mt-4">
                       <Button
                         type="dashed"
                         onClick={() => add()}
-                        block
                         icon={<PlusOutlined />}
+                        className="h-10 px-8 rounded-xl border-2 border-dashed border-[#FFD46A] hover:border-[#F59405] hover:text-[#F59405] font-medium"
                       >
-                        Add course
+                        Add Course
                       </Button>
-                    </Form.Item>{" "}
-                  </Col>
-                )}
-              </Row>
-            );
-          }}
-        </Form.List>
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+          </Form.List>
+        </div>
 
-        <div className="flex justify-center" style={{ marginTop: 15 }}>
-          <Button
-            type="primary"
-            htmlType="submit"
-            disabled={isSubmitDisabled}
-            loading={approveLoader}
-          >
-            Approve
-          </Button>
+        {/* Submit Button Card */}
+        <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+          <div className="flex justify-center">
+            <Button
+              type="primary"
+              htmlType="submit"
+              disabled={isSubmitDisabled}
+              loading={approveLoader}
+              size="large"
+              className="h-10 px-12 rounded-xl bg-[#F59405] border-0 hover:bg-[#E08904] font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              Approve Student
+            </Button>
+          </div>
         </div>
       </Form>
     </>

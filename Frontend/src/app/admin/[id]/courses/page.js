@@ -1,18 +1,16 @@
 "use client";
 
-import { deleteCourse,searchCourses } from "@/app/services/authService";
+import { deleteCourse, searchCourses } from "@/app/services/authService";
 import { getCoursesInsideAuth } from "@/app/services/courseService";
 import { Button, Modal, Space, Table, Tag, Input, notification } from "antd";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import downArrowIcon from "../../../../../public/icons/down-arrow.svg";
 import edit from "../../../../../public/icons/edit.svg";
 import deleteIcon from "../../../../../public/icons/trash.svg";
 import {
   SearchOutlined,
-  CheckCircleOutlined,
-  CloseOutlined,
+  ExclamationCircleFilled,
 } from "@ant-design/icons";
 import debounce from "lodash/debounce";
 
@@ -22,64 +20,47 @@ function Page() {
   const pathname = usePathname();
   const [coursesData, setCoursesData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [confirmLoading, setConfirmLoading] = useState(false);
   const [updated, setUpdated] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-const [filteredCourses, setFilteredCourses] = useState([]);
+  const [filteredCourses, setFilteredCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
 
 
   const showDeleteModal = (course) => {
-    setSelectedCourse(course);
-    setIsModalVisible(true);
-  };
-
-  const handleOk = () => {
-    if (selectedCourse) {
-      setConfirmLoading(true);
-
-      deleteCourse(selectedCourse.id)
-        .then((res) => {
-          setUpdated(!updated);
-          openNotification();
-        })
-        .catch((err) => console.log("err", err))
-        .finally(() => {
-          setConfirmLoading(false);
-          setIsModalVisible(false);
-        });
-    }
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-  };
-
-  const openNotification = () => {
-    notification.open({
-      description: (
-        <div className="custom-toast flex items-center justify-between p-2">
-          <div className="flex items-center">
-            <span className="custom-success-badge bg-white text-[#027947] font-semibold px-2 py-1 rounded-l-full rounded-r-full mr-2">
-              Success
-            </span>
-            <span className="custom-message text-[#027947] text-base font-semibold">
-              "{selectedCourse?.name}" deleted successfully
-            </span>
-          </div>
-          <CloseOutlined className="text-[#027947] cursor-pointer ml-4" />
+    Modal.confirm({
+      title: "Delete Course",
+      icon: <ExclamationCircleFilled />,
+      content: (
+        <div>
+          <p>
+            Are you sure you want to delete <strong>{course.name}</strong>?
+          </p>
+          <p className="text-gray-500 text-xs mt-2">
+            This action cannot be undone. Deleting this Course will delete its respective questions.
+          </p>
         </div>
       ),
-      style: {
-        backgroundColor: "#E9FAF1",
-        border: "1px solid #E9FAF1",
-        borderRadius: "10px",
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk() {
+        return deleteCourse(course.id)
+          .then(() => {
+            setUpdated(!updated);
+            notification.success({
+              message: "Success",
+              description: `"${course.name}" deleted successfully`,
+              placement: "topRight",
+            });
+          })
+          .catch((err) => {
+            console.error(err);
+            notification.error({
+              message: "Error",
+              description: "Failed to delete course",
+            });
+          });
       },
-      placement: "topRight",
-      duration: 3,
-      closeIcon: null,
     });
   };
 
@@ -89,195 +70,144 @@ const [filteredCourses, setFilteredCourses] = useState([]);
       title: (
         <div className="flex items-center">
           <span>Course name</span>
-          <Image
-            src={downArrowIcon}
-            alt="Down Arrow"
-            width={18}
-            height={20}
-            style={{ marginLeft: "8px" }}
-          />
         </div>
       ),
       dataIndex: "name",
-      render: (text) => <>{text}</>,
-      width: 400,
-      align: "left",
+      sorter: (a, b) => a.name.localeCompare(b.name),
+      render: (text) => <span className="font-medium">{text}</span>,
+      width: "40%",
     },
     {
       key: "subjects",
-      title: (
-        <div className="flex items-center">
-          <span>Subjects</span>
-          <Image
-            src={downArrowIcon}
-            alt="Down Arrow"
-            width={18}
-            height={20}
-            style={{ marginLeft: "8px" }}
-          />
-        </div>
-      ),
+      title: "Subjects",
       dataIndex: "subjects",
       render: (_, record) => {
         const { subjects } = record;
-        let subjectNames = subjects.map(({ name }) => name);
         let colors = ["volcano", "geekblue", "purple", "orange", "green"];
         return (
-          <>
-            {subjectNames.map((name, index) => {
-              return (
-                <Tag
-                  key={index}
-                  color={colors[index % colors.length]}
-                  bordered={false}
-                >
-                  {name}
-                </Tag>
-              );
-            })}
-          </>
+          <div className="flex flex-wrap gap-1">
+            {subjects.map(({ name }, index) => (
+              <Tag
+                key={index}
+                color={colors[index % colors.length]}
+                bordered={false}
+              >
+                {name}
+              </Tag>
+            ))}
+          </div>
         );
       },
-      align: "left",
-      width: 500,
+      width: "40%",
     },
     {
       key: "Action",
-      title: "  ",
+      title: "Actions",
       align: "center",
-      render: (_, record) => {
-        return (
-          <Space>
-            <Image
-              src={deleteIcon}
-              alt="delete"
-              width={18}
-              height={20}
-              style={{ marginLeft: "8px", cursor: "pointer" }}
-              onClick={() => showDeleteModal(record)}
-            />
-            <Image
-              src={edit}
-              alt="edit"
-              width={18}
-              height={20}
-              style={{ marginLeft: "8px", cursor: "pointer" }}
-              onClick={() => router.push(`${pathname}/${record.id}`)}
-            />
-          </Space>
-        );
-      },
+      width: "20%",
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<Image src={edit} alt="edit" width={18} height={18} />}
+            onClick={() => router.push(`${pathname}/${record.id}`)}
+          />
+          <Button
+            type="text"
+            danger
+            icon={<Image src={deleteIcon} alt="delete" width={18} height={18} />}
+            onClick={() => showDeleteModal(record)}
+          />
+        </Space>
+      ),
     },
   ];
 
- useEffect(() => {
-  setLoading(true);
-  getCoursesInsideAuth()
-    .then((res) => {
-      const sortedData = res.data.sort((a, b) => a.name.localeCompare(b.name));
-      setCoursesData(sortedData);
-      setFilteredCourses(sortedData);
-    })
-    .finally(() => setLoading(false));
- }, [updated]);
-  
- 
   useEffect(() => {
-  const fetchData = async () => {
     setLoading(true);
-    try {
-      const res = searchTerm
-        ? await searchCourses(searchTerm)
-        : await getCoursesInsideAuth();
-      setCoursesData(res.data);
-    } finally {
-      setLoading(false);
-    }
-  };
+    getCoursesInsideAuth()
+      .then((res) => {
+        const sortedData = res.data.sort((a, b) => a.name.localeCompare(b.name));
+        setCoursesData(sortedData);
+        setFilteredCourses(sortedData);
+      })
+      .finally(() => setLoading(false));
+  }, [updated]);
 
-  const debounceFetch = debounce(fetchData, 400);
-  debounceFetch();
-  return () => debounceFetch.cancel();
-  }, [searchTerm]);
-  
+
   useEffect(() => {
-  if (!searchTerm.trim()) {
-    setFilteredCourses(coursesData);
-  } else {
-    const filtered = coursesData.filter(course =>
-      course.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredCourses(filtered);
-  }
-}, [searchTerm, coursesData]);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = searchTerm
+          ? await searchCourses(searchTerm)
+          : await getCoursesInsideAuth();
+        setCoursesData(res.data);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    const debounceFetch = debounce(fetchData, 400);
+    debounceFetch();
+    return () => debounceFetch.cancel();
+  }, [searchTerm]);
 
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredCourses(coursesData);
+    } else {
+      const filtered = coursesData.filter(course =>
+        course.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredCourses(filtered);
+    }
+  }, [searchTerm, coursesData]);
 
 
   return (
-    <div>
-      <div className="mb-3 text-xl font-bold flex justify-between">
-        <div className="text-xl font-bold mb-2">Courses List</div>
-      </div>
-      <div className="flex justify-between items-center mb-4 mt-8">
-       <Input
-  prefix={<SearchOutlined />}
-  placeholder="Search courses..."
-  style={{ width: "280px" }}
-  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)}
-/>
-        <Button
-          type="primary"
-          onClick={() => router.push(`${pathname}/create`)}
-        >
-          Create Course
-        </Button>
-      </div>
-      <Table dataSource={filteredCourses} columns={cols} loading={loading} />
-
-      <Modal
-        title={<div className="text-2xl font-bold">Delete course</div>}
-        open={isModalVisible}
-        onOk={handleOk}
-        confirmLoading={confirmLoading}
-        onCancel={handleCancel}
-        closable={false}
-        footer={null}
-        className="rounded-lg"
-        style={{ textAlign: "left", padding: "12px 16px" }}
-        width="400px"
-      >
-        {/* Confirmation message left-aligned */}
-        <p className="mb-8" style={{ color: "#667085", fontSize: "14px" }}>
-          Are you sure you want to delete "{selectedCourse?.name}"? This action
-          cannot be undone and Deleting Course will delete it's respective questions
-        </p>
-
-        <div className="flex justify-between gap-2">
-          <Button
-            onClick={handleCancel}
-            className="w-1/2 border border-gray-300 text-gray-700"
-            style={{ borderRadius: "8px", fontWeight: 600 }}
-          >
-            Cancel
-          </Button>
-
-          <Button
-            onClick={handleOk}
-            danger
-            className="w-1/2 bg-red-600 text-white"
-            style={{
-              borderRadius: "8px",
-              backgroundColor: "#D92D20",
-              color: "white",
-              fontWeight: 600,
-            }}
-          >
-            Delete
-          </Button>
+    <div className="w-full">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/30 rounded-t-xl">
+          <div className="text-xl font-bold text-gray-800">Courses List</div>
+          <div className="flex gap-4">
+            <Input
+              prefix={<SearchOutlined className="text-gray-400" />}
+              placeholder="Search courses..."
+              className="w-[280px] rounded-lg border-gray-300"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              allowClear
+            />
+            <Button
+              type="primary"
+              onClick={() => router.push(`${pathname}/create`)}
+              className="h-11 px-6 bg-[#F28C28] hover:bg-[#d4761f] border-none rounded-lg font-semibold shadow-sm"
+              icon={<Image src={edit} alt="create" width={18} height={18} className="brightness-0 invert" />}
+            >
+              Create Course
+            </Button>
+          </div>
         </div>
-      </Modal>
+
+        <div className="p-0">
+          <Table
+            dataSource={filteredCourses}
+            columns={cols}
+            loading={loading}
+            rowKey="id"
+            rowClassName={(record, index) =>
+              `text-sm ${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-orange-50/50 transition-colors cursor-pointer`
+            }
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50"],
+              className: "p-4",
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

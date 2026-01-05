@@ -1,7 +1,7 @@
 "use client";
 
 import CourseForm from "@/components/CourseForm";
-import { LeftOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -9,12 +9,19 @@ function CreateSubjectPage() {
   const router = useRouter();
   return (
     <>
-      <div className="text-xl font-semibold mb-2 flex align-middle">
-        <LeftOutlined
+      <div className="flex items-center gap-2 mb-4 justify-between">
+
+        <div className="text-xl font-bold text-gray-800">
+          Create Course
+        </div>
+
+        <div
           onClick={() => router.back()}
-          className="mr-2 text-base hover:font-extrabold"
-        />{" "}
-        Create Course
+          className="cursor-pointer bg-white p-2 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors"
+        >
+          <ArrowLeftOutlined className="text-gray-600 text-sm me-2" />
+          Back
+        </div>
       </div>
       <CourseForm />
     </>

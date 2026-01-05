@@ -92,7 +92,7 @@ function CreateUserForm() {
     <div className="min-h-screen ">
       {/* Header */}
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-4 mb-8 justify-between">
+        <div className="flex items-center gap-4 mb-4 justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Create New User</h1>
             <p className="text-sm text-gray-500">Fill in the details to create a new user account</p>
@@ -157,6 +157,13 @@ function CreateUserForm() {
             .ant-select-open .ant-select-arrow {
               transform: rotate(180deg) !important;
             }
+            .ant-form-item {
+              margin-bottom: 0 !important;
+            }
+            .ant-form-item-explain {
+              margin-top: 5px !important;
+              font-size: 13px !important;
+            }
           `}</style>
           {/* Personal Details Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -168,7 +175,7 @@ function CreateUserForm() {
             </div>
             
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Name */}
                 <Form.Item 
                   label={<span className="font-medium text-gray-700">Full Name</span>} 
@@ -316,7 +323,6 @@ function CreateUserForm() {
               type="primary"
               htmlType="submit"
               loading={loading}
-              disabled={isSubmitDisabled}
               className="h-12 px-10 rounded-xl font-semibold shadow-lg bg-[#0071bc] hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 text-white"
             >
               Submit

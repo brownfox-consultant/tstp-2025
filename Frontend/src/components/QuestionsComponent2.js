@@ -212,13 +212,14 @@ function QuestionsComponent2({ courses }) {
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={handleSearch}
-              className="h-11 rounded-lg border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm"
-              style={{ width: '100%' }}
+              className="rounded-lg border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm"
+              style={{ height: '48px', width: '100%' }}
             />
             <Button 
               icon={<FilterOutlined />} 
               onClick={() => setShowAdvanced(true)}
-              className="h-11 px-5 rounded-lg border-gray-200 hover:border-blue-400 hover:text-blue-600 font-medium flex items-center gap-2"
+              className="px-5 rounded-lg border-gray-200 hover:border-blue-400 hover:text-blue-600 font-medium flex items-center justify-center gap-2"
+              style={{ height: '48px' }}
             >
               Advanced Search 
             </Button>

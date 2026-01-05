@@ -5,6 +5,7 @@ import {
   FilterFilled,
   SearchOutlined,
   UploadOutlined,
+  ExclamationCircleFilled,
 } from "@ant-design/icons";
 import {
   Table,
@@ -16,6 +17,7 @@ import {
   Dropdown,
   Pagination,
   Tabs,
+  Modal,
 } from "antd";
 import React, { useEffect, useState, useRef } from "react";
 import EditStudentUserModal from "../EditStudentUserModal";
@@ -24,14 +26,15 @@ import Image from "next/image";
 import downArrowIcon from "../../../public/icons/down-arrow.svg";
 import arrowUpCircle from "../../../public/icons/arrowupcircle.svg";
 import arrowDownCircle from "../../../public/icons/arrowdowncircle.svg";
-import { useRouter,usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { deleteUser } from "@/app/services/authService";
 import axios from "axios";
 import { BASE_URL } from "@/app/constants/apiConstants";
 import TestList from "@/components/TestList";
 import TestList_admin_user from "../TestList_admin_user";
-import { Modal } from "antd";
 import PracticeTestsList_admin_uer from "@/components/PracticeTestsList_admin_uer";
+
+const { confirm } = Modal;
 
 function AllUsersTable({ tabKey, api }) {
   const [loading, setLoading] = useState(false);
@@ -55,16 +58,12 @@ function AllUsersTable({ tabKey, api }) {
   const [ordering, setOrdering] = useState("");
   const [pageSize, setPageSize] = useState(10);
 
-
-  
-
-
   const searchInput = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
   console.log(pathname)
   useEffect(() => {
-    
+
     getRoles().then((res) => {
       //   setOptions(res.data);
       setFilterItems([
@@ -84,7 +83,7 @@ function AllUsersTable({ tabKey, api }) {
       .catch((err) => console.log(err));
   }, []);
 
-  
+
 
   useEffect(() => {
     const handleKeyPress = (event) => {
@@ -112,107 +111,94 @@ function AllUsersTable({ tabKey, api }) {
     };
   }, [isDropdownVisible, filterItems]);
 
-
- 
-
-
- const fetchUsers = async ({ role, page = 1, search = "", ordering = "",page_size = 10 }) => {
-  setLoading(true);
-  try {
-    const params = {};
-    if (role) params.role = role;
-    if (search) params.search = search;
-    if (page) params.page = page;
-    if (ordering) params.ordering = ordering;
-    if (page_size) params.size = page_size;
+  const fetchUsers = async ({ role, page = 1, search = "", ordering = "", page_size = 10 }) => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (role) params.role = role;
+      if (search) params.search = search;
+      if (page) params.page = page;
+      if (ordering) params.ordering = ordering;
+      if (page_size) params.size = page_size;
 
 
 
-    const response = await axios.get(`${BASE_URL}/api/user/`, {
-      params,
-      withCredentials: true,
+      const response = await axios.get(`${BASE_URL}/api/user/`, {
+        params,
+        withCredentials: true,
+      });
+
+      const { results, count, current_page, total_pages } = response.data;
+      setDataList(results);
+      setTotal(count);
+      setCurrent(current_page);
+      setTotalPages(total_pages);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const FIELD_MAP = {
+    role_label: "role_label",
+    name: "name",
+    email: "email",
+    phone_number: "phone_number",
+    is_active: "is_active",
+    user_type: "user_type", // ✅ FIXED
+  };
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    let order = "";
+    if (sorter && sorter.field) {
+      const field = FIELD_MAP[sorter.field] || sorter.field;
+      order = sorter.order === "ascend" ? field : `-${field}`;
+    }
+    setOrdering(order);
+
+    fetchUsers({
+      role: filterKey,
+      page: pagination.current,
+      search: searchText,
+      ordering: order,
     });
+  };
 
-    const { results, count, current_page, total_pages } = response.data;
-    setDataList(results);
-    setTotal(count);
-    setCurrent(current_page);
-    setTotalPages(total_pages);
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
- };
- const FIELD_MAP = {
-  role_label: "role_label",
-  name: "name",
-  email: "email",
-  phone_number: "phone_number",
-  is_active: "is_active",
-  user_type: "user_type", // ✅ FIXED
-};
-
-
- const handleTableChange = (pagination, filters, sorter) => {
-  let order = "";
-  if (sorter && sorter.field) {
-    const field = FIELD_MAP[sorter.field] || sorter.field;
-    order = sorter.order === "ascend" ? field : `-${field}`;
-  }
-  setOrdering(order);
-
-  fetchUsers({
-    role: filterKey,
-    page: pagination.current,
-    search: searchText,
-    ordering: order,
-  });
-};
-
-
- useEffect(() => {
-  fetchUsers({
-    role: filterKey,
-    page: current,
-    search: searchText,
-    ordering,
-    page_size: pageSize,
-  });
-}, [filterKey, updated, current, searchText, ordering,pageSize]);
-
-
-
-
-
- const exportToCSV = async () => {
-  try {
-    const queryParams = new URLSearchParams();
-    if (filterKey) queryParams.append("role", filterKey);
-    if (searchText) queryParams.append("search", searchText);
-
-    const exportUrl = `${BASE_URL}/api/user/export/?${queryParams.toString()}`;
-
-    const response = await axios.get(exportUrl, {
-      responseType: "blob",
-      withCredentials: true,
+  useEffect(() => {
+    fetchUsers({
+      role: filterKey,
+      page: current,
+      search: searchText,
+      ordering,
+      page_size: pageSize,
     });
+  }, [filterKey, updated, current, searchText, ordering, pageSize]);
 
-    const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.setAttribute("download", "users_export.csv");
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch (error) {
-    console.error("Export failed:", error);
-  }
-};
+  const exportToCSV = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filterKey) queryParams.append("role", filterKey);
+      if (searchText) queryParams.append("search", searchText);
 
-  
-  
+      const exportUrl = `${BASE_URL}/api/user/export/?${queryParams.toString()}`;
+
+      const response = await axios.get(exportUrl, {
+        responseType: "blob",
+        withCredentials: true,
+      });
+
+      const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.setAttribute("download", "users_export.csv");
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Export failed:", error);
+    }
+  };
 
   const dropDownOnClick = ({ key }) => {
     setFilterKey(key);
@@ -228,6 +214,29 @@ function AllUsersTable({ tabKey, api }) {
     confirm();
     setSearchText(selectedKeys[0]);
     setSearchedColumn(dataIndex);
+  };
+
+  const handleStatusChange = async (id, newStatus) => {
+    setStatusLoadingMap((prev) => ({ ...prev, [id]: true }));
+    try {
+      await axios.patch(
+        `${BASE_URL}/api/user/${id}/status/`,
+        {
+          is_active: newStatus,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+          },
+        }
+      );
+      setUpdated((prev) => !prev);
+    } catch (err) {
+      console.error("Status update failed:", err);
+    } finally {
+      setStatusLoadingMap((prev) => ({ ...prev, [id]: false }));
+    }
   };
 
   function expandedRowRenderFunc(record, index, indent, expanded) {
@@ -345,14 +354,47 @@ function AllUsersTable({ tabKey, api }) {
     //   ),
   }); */
 
-  const deleteConfirm = (id) => {
-    setConfirmLoading(true);
-    deleteUser(id)
+  const handleDelete = (id) => {
+    return deleteUser(id)
       .then((res) => {
         setUpdated(!updated);
+        Modal.success({
+          content: "User deleted successfully",
+        });
       })
-      .catch((err) => console.log("err", err))
-      .finally(() => setConfirmLoading(false));
+      .catch((err) => {
+        console.log("err", err);
+        Modal.error({
+          title: "Error",
+          content: "Failed to delete user. Please try again.",
+        });
+      });
+  };
+
+  const showDeleteConfirm = (record) => {
+    confirm({
+      title: "Are you sure delete this user?",
+      icon: <ExclamationCircleFilled />,
+      content: (
+        <div>
+          <p>
+            You are about to delete user: <strong>{record.name}</strong>
+          </p>
+          <p className="text-gray-500 text-xs mt-2">
+            This action cannot be undone.
+          </p>
+        </div>
+      ),
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "No",
+      onOk() {
+        return handleDelete(record.id);
+      },
+      onCancel() {
+        console.log("Cancel");
+      },
+    });
   };
 
   const UsersColumnsMap = {
@@ -384,18 +426,18 @@ function AllUsersTable({ tabKey, api }) {
         ),
         width: 200,
       },
-     {
-  title: (
-    <div className="flex items-center">
-      <span>Name</span>
-    </div>
-  ),
-  dataIndex: "name",
-  sorter: (a, b) => a.name.localeCompare(b.name),
-  key: "name",
-  render: (title) => <>{title}</>,
-  width: 140,
-},
+      {
+        title: (
+          <div className="flex items-center">
+            <span>Name</span>
+          </div>
+        ),
+        dataIndex: "name",
+        sorter: (a, b) => a.name.localeCompare(b.name),
+        key: "name",
+        render: (title) => <>{title}</>,
+        width: 140,
+      },
 
       {
         title: (
@@ -438,184 +480,159 @@ function AllUsersTable({ tabKey, api }) {
         width: 150,
       },
 
-   {
-  title: (
-    <div className="flex items-center">
-      <span>Course</span>
-      {/* <Image src={downArrowIcon} alt="Down Arrow" width={18} height={20}  style={{ marginLeft: "8px" }}/> */}
-    </div>
-  ),
-  key: "course",
-  sorter: (a, b) => {
-    const aCourses = a.course_details?.map((c) => c.course.name).join(", ") || "";
-    const bCourses = b.course_details?.map((c) => c.course.name).join(", ") || "";
-    return aCourses.localeCompare(bCourses);
-  },
-  render: (_, record) => {
-    const courses = record.course_details?.map((c) => c.course.name).join(", ");
-    return <>{courses || <span className="text-gray-400">N/A</span>}</>;
-  },
-  width: 150,
-},
-
-{
-  title: (
-    <div className="flex items-center">
-      <span>User Type</span>
-    </div>
-  ),
-  key: "user_type",
-  dataIndex: "user_type",
-  width: 120,
-  sorter: true,
-  render: (userType, record) => {
-    // ✅ Only students have user_type
-    if (record.role_name !== "student") {
-      return <Tag color="default">N/A</Tag>;
-    }
-
-    if (!userType) {
-      return <Tag color="default">N/A</Tag>;
-    }
-
-    return userType === "FREE" ? (
-      <Tag color="blue">FREE</Tag>
-    ) : (
-      <Tag color="gold">PAID</Tag>
-    );
-  },
-},
-
-
-
-    {
-  title: (
-    <div className="flex items-center">
-      <span>Status</span>
-    </div>
-  ),
-  dataIndex: "is_active",
-  sorter: (a, b) => Number(a.is_active) - Number(b.is_active),
-  key: "is_active",
-  align: "center",
-  width: 150,
-  render: (text, record) => {
-    return (
-      <div>
-        {record.is_active ? (
-          <Tag bordered={false} color="green">
-            Active
-          </Tag>
-        ) : (
-          <Tag bordered={false} color="red">
-            Inactive
-          </Tag>
-        )}
-      </div>
-    );
-  },
-},
+      {
+        title: (
+          <div className="flex items-center">
+            <span>Course</span>
+            {/* <Image src={downArrowIcon} alt="Down Arrow" width={18} height={20}  style={{ marginLeft: "8px" }}/> */}
+          </div>
+        ),
+        key: "course",
+        sorter: (a, b) => {
+          const aCourses = a.course_details?.map((c) => c.course.name).join(", ") || "";
+          const bCourses = b.course_details?.map((c) => c.course.name).join(", ") || "";
+          return aCourses.localeCompare(bCourses);
+        },
+        render: (_, record) => {
+          const courses = record.course_details?.map((c) => c.course.name).join(", ");
+          return <>{courses || <span className="text-gray-400">N/A</span>}</>;
+        },
+        width: 150,
+      },
 
       {
-  title: "   ",
-  key: "val",
-  align: "center",
-  render: (_, record) => {
-    
+        title: (
+          <div className="flex items-center">
+            <span>User Type</span>
+          </div>
+        ),
+        key: "user_type",
+        dataIndex: "user_type",
+        width: 120,
+        sorter: true,
+        render: (userType, record) => {
+          // ✅ Only students have user_type
+          if (record.role_name !== "student") {
+            return <Tag color="default">N/A</Tag>;
+          }
 
-    const handleStatusChange = async (id, newStatus) => {
-  setStatusLoadingMap(prev => ({ ...prev, [id]: true }));
-  try {
-    await axios.patch(`${BASE_URL}/api/user/${id}/status/`, {
-      is_active: newStatus,
-    }, {
-      withCredentials: true,
-      headers: {
-      "X-CSRFToken": window.localStorage.getItem("csrfToken"),
-    },
-     });
-    setUpdated(prev => !prev);
-  } catch (err) {
-    console.error("Status update failed:", err);
-  } finally {
-    setStatusLoadingMap(prev => ({ ...prev, [id]: false }));
-  }
-};
+          if (!userType) {
+            return <Tag color="default">N/A</Tag>;
+          }
 
-    return (
-      <>
-        {/* Edit modals */}
-        {record.role_name == "student" ? (
-          <EditStudentUserModal
-            updated={updated}
-            setUpdated={setUpdated}
-            recordData={record}
-          />
-        ) : (
-          <EditUserModal
-            updated={updated}
-            setUpdated={setUpdated}
-            recordData={record}
-          />
-        )}
+          return userType === "FREE" ? (
+            <Tag color="blue">FREE</Tag>
+          ) : (
+            <Tag color="gold">PAID</Tag>
+          );
+        },
+      },
 
-        {/* Activate / Deactivate Button */}
-        {record.is_active ? (
-  <Button
-    size="small"
-    danger
-    className="ml-2"
-    loading={statusLoadingMap[record.id]}
-    onClick={() => handleStatusChange(record.id, false)}
-  >
-    Deactivate
-  </Button>
-) : (
-  <Button
-    size="small"
-    type="primary"
-    className="ml-2"
-    loading={statusLoadingMap[record.id]}
-    onClick={() => handleStatusChange(record.id, true)}
-  >
-    Activate
-  </Button>
-)}
 
-        {/* Delete only if active */}
-        {record.is_active && (
-          <Popconfirm
-            className="ml-3"
-            placement="leftTop"
-            title="Delete the user"
-            description="Are you sure to delete this user?"
-            onConfirm={() => deleteConfirm(record.id)}
-            okText="Yes"
-            cancelText="No"
-            okButtonProps={{ loading: confirmLoading }}
-          >
-            <DeleteTwoTone twoToneColor="#eb2f96" />
-          </Popconfirm>
-        )}
 
-        {/* View Results for students */}
-        {record.role_name === "student" && (
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              set_student_id(record.id);
-              setStudentName(record.name); 
-              setShowResultModal(true);
-            }}
-          >
-            View Results
-          </Button>
-        )}
-      </>
-    );
-  },
-},
+      {
+        title: (
+          <div className="flex items-center">
+            <span>Status</span>
+          </div>
+        ),
+        dataIndex: "is_active",
+        sorter: (a, b) => Number(a.is_active) - Number(b.is_active),
+        key: "is_active",
+        align: "center",
+        width: 150,
+        render: (text, record) => {
+          return (
+            <div>
+              {record.is_active ? (
+                <Tag bordered={false} color="green">
+                  Active
+                </Tag>
+              ) : (
+                <Tag bordered={false} color="red">
+                  Inactive
+                </Tag>
+              )}
+            </div>
+          );
+        },
+      },
+
+      {
+        title: "Actions",
+        key: "val",
+        align: "start",
+        width: 300,
+        render: (_, record) => {
+          return (
+            <div className="flex items-center gap-2">
+              {/* Edit modals */}
+              {record.role_name == "student" ? (
+                <EditStudentUserModal
+                  updated={updated}
+                  setUpdated={setUpdated}
+                  recordData={record}
+                />
+              ) : (
+                <EditUserModal
+                  updated={updated}
+                  setUpdated={setUpdated}
+                  recordData={record}
+                />
+              )}
+
+              {/* View Results for students */}
+              {record.role_name === "student" && (
+                <Button
+                  type="default"
+                  size="small"
+                  className="text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500"
+                  onClick={() => {
+                    set_student_id(record.id);
+                    setStudentName(record.name);
+                    setShowResultModal(true);
+                  }}
+                >
+                  Results
+                </Button>
+              )}
+
+              {/* Activate / Deactivate Button */}
+              {record.is_active ? (
+                <Button
+                  size="small"
+                  danger
+                  loading={statusLoadingMap[record.id]}
+                  onClick={() => handleStatusChange(record.id, false)}
+                >
+                  Deactivate
+                </Button>
+              ) : (
+                <Button
+                  size="small"
+                  type="primary"
+                  className="bg-green-600 hover:bg-green-500"
+                  loading={statusLoadingMap[record.id]}
+                  onClick={() => handleStatusChange(record.id, true)}
+                >
+                  Activate
+                </Button>
+              )}
+
+              {/* Delete only if active */}
+              {record.is_active && (
+                <Button
+                  size="small"
+                  type="text"
+                  danger
+                  icon={<DeleteTwoTone twoToneColor="#eb2f96" />}
+                  onClick={() => showDeleteConfirm(record)}
+                />
+              )}
+            </div>
+          );
+        },
+      },
 
     ],
     registered: [],
@@ -636,16 +653,16 @@ function AllUsersTable({ tabKey, api }) {
     <div>
       <div className="w-full flex justify-between mb-4 mt-2">
         <div>
-        <Input
-  prefix={<SearchOutlined />}
-  placeholder="Search by name, email, or phone"
-  value={searchText}
-  onChange={(e) => {
-    setSearchText(e.target.value);
-    setCurrent(1); // Reset to page 1 on new search
-  }}
-  allowClear
-/>
+          <Input
+            prefix={<SearchOutlined />}
+            placeholder="Search by name, email, or phone"
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+              setCurrent(1); // Reset to page 1 on new search
+            }}
+            allowClear
+          />
         </div>
 
         {tabKey == "all" && (
@@ -655,13 +672,13 @@ function AllUsersTable({ tabKey, api }) {
               size="medium"
               onClick={() => router.push(`${pathname}/all/create/`)}
               type="primary"
-              // icon={<PlusCircleFilled />}
+            // icon={<PlusCircleFilled />}
             >
               Add new user
             </Button>
             <Button className="mr-3" size="medium" icon={<UploadOutlined />} onClick={exportToCSV}>
-  Export
-</Button>
+              Export
+            </Button>
 
             <Dropdown
               trigger={["click"]}
@@ -690,41 +707,41 @@ function AllUsersTable({ tabKey, api }) {
             <div className="flex justify-end mr-5">
               Page {current} of {totalPages} (Total: {total} records)
             </div>
-        <Pagination
-  className="size-changer pagination-styled"
-  current={current}
-  pageSize={pageSize}
-  total={total}
-  itemRender={itemRender}
-  showSizeChanger
-  pageSizeOptions={["10", "20", "50", "100"]}
+            <Pagination
+              className="size-changer pagination-styled"
+              current={current}
+              pageSize={pageSize}
+              total={total}
+              itemRender={itemRender}
+              showSizeChanger
+              pageSizeOptions={["10", "20", "50", "100"]}
 
-  onChange={(page, size) => {
-    setCurrent(page);
-    setPageSize(size);
+              onChange={(page, size) => {
+                setCurrent(page);
+                setPageSize(size);
 
-    fetchUsers({
-      role: filterKey,
-      page,
-      search: searchText,
-      ordering,
-      page_size: size,
-    });
-  }}
+                fetchUsers({
+                  role: filterKey,
+                  page,
+                  search: searchText,
+                  ordering,
+                  page_size: size,
+                });
+              }}
 
-  onShowSizeChange={(page, size) => {
-    setCurrent(1);
-    setPageSize(size);
+              onShowSizeChange={(page, size) => {
+                setCurrent(1);
+                setPageSize(size);
 
-    fetchUsers({
-      role: filterKey,
-      page: 1,
-      search: searchText,
-      ordering,
-      page_size: size,
-    });
-  }}
-/>
+                fetchUsers({
+                  role: filterKey,
+                  page: 1,
+                  search: searchText,
+                  ordering,
+                  page_size: size,
+                });
+              }}
+            />
 
 
           </div>
@@ -770,32 +787,32 @@ function AllUsersTable({ tabKey, api }) {
         className="tablestyles mt-4"
       />
       {showResultModal && (
-   <Modal
-    open={showResultModal}
-    onCancel={() => setShowResultModal(false)}
-    footer={null}
-    width="90%"
-    style={{ top: 30 }}
-    destroyOnClose
-    title={`Test Report - ${studentName}`}
-  >
-    <Tabs
-      defaultActiveKey="1"
-      items={[
-        {
-          key: "1",
-          label: "Practice Questions",
-          children: <PracticeTestsList_admin_uer studentId={student_id} />,
-        },
-        {
-          key: "2",
-          label: "Full Length Tests",
-          children: <TestList_admin_user studentId={student_id} />,
-        },
-      ]}
-    />
-  </Modal>
-)}
+        <Modal
+          open={showResultModal}
+          onCancel={() => setShowResultModal(false)}
+          footer={null}
+          width="90%"
+          style={{ top: 30 }}
+          destroyOnClose
+          title={`Test Report - ${studentName}`}
+        >
+          <Tabs
+            defaultActiveKey="1"
+            items={[
+              {
+                key: "1",
+                label: "Practice Questions",
+                children: <PracticeTestsList_admin_uer studentId={student_id} />,
+              },
+              {
+                key: "2",
+                label: "Full Length Tests",
+                children: <TestList_admin_user studentId={student_id} />,
+              },
+            ]}
+          />
+        </Modal>
+      )}
 
     </div>
   );
