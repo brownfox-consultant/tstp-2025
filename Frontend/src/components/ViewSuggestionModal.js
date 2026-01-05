@@ -105,7 +105,7 @@ function ViewSuggestionModal({
             </Row>
 
             {/* Action Buttons */}
-            <div className="flex justify-center mt-6 pt-4">
+            <div className="flex justify-center mt-4">
               {suggestionData?.status == "IN_REVIEW" && role == "admin" ? (
                 <div className="flex gap-3">
                   <Button

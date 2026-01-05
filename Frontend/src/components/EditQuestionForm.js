@@ -422,7 +422,7 @@ function EditQuestionForm({
     <>
       <div className="min-h-screen">
           {isHead && (
-            <div className="flex items-center gap-4 mb-8 justify-between">
+            <div className="flex items-center gap-4 mb-4 justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
                   {action == "suggest"
@@ -1151,7 +1151,7 @@ function EditQuestionForm({
             )}
 
             {/* Action Buttons Card */}
-            <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
+            <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
               <Form.Item className="flex justify-center mb-0">
                 <Space size="middle" wrap>
                   <Button

@@ -352,16 +352,17 @@ export default function AdvancedSearchModal({
       }
       bodyStyle={{ padding: 0 }}
     >
-      <div className="flex h-[500px]">
+      <div className="flex h-[470px]">
         {/* Left Column: Categories */}
-        <div className="w-1/4 border-r border-gray-100 bg-gray-50/50 p-2 overflow-y-auto">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3 pt-2">Filters</div>
+        <div className="w-1/4 border-r border-gray-100 bg-gray-50/50  overflow-y-auto">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Filters</div>
+          <div className="w-full h-px bg-gray-200 mb-2"></div>
           {keywordMap.map((item) => (
             <div
               key={item.key}
               onClick={() => setActiveCategory(item.key)}
               className={`
-                px-4 py-3 mb-1 rounded-lg cursor-pointer transition-all text-sm font-medium flex items-center justify-between
+                px-3 py-2 me-2 mb-1 rounded-md cursor-pointer transition-all text-sm font-medium flex items-center justify-between
                 ${activeCategory === item.key 
                   ? "bg-blue-50 text-blue-600 shadow-sm" 
                   : "text-gray-600 hover:bg-gray-100"}
@@ -374,8 +375,8 @@ export default function AdvancedSearchModal({
         </div>
 
         {/* Middle Column: Filter Options */}
-        <div className="w-1/2 p-6 overflow-y-auto">
-          <div className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <div className="w-1/2 px-4 overflow-y-auto">
+          <div className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
             {keywordMap.find(k => k.key === activeCategory)?.label}
           </div>
           {getFilterPane()}
@@ -384,6 +385,7 @@ export default function AdvancedSearchModal({
         {/* Right Column: Active Tags */}
         <div className="w-1/4 bg-gray-50 border-l border-gray-100 p-4 overflow-y-auto">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Applied Filters</div>
+          <div className="w-full h-px bg-gray-200 mb-2"></div>
           {appliedTags().length === 0 ? (
             <div className="text-gray-400 text-sm italic text-center mt-10">No filters applied</div>
           ) : (
