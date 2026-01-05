@@ -26,7 +26,7 @@ function RaiseIssueModal({ updated, setUpdated }) {
   };
 
   return (
-    <div onClick={(e) => e.stopPropagation()} style={{ marginTop: "25px" }}>
+    <div onClick={(e) => e.stopPropagation()}>
       <Button
         type="primary"
         onClick={(e) => {

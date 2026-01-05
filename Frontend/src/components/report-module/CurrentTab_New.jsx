@@ -84,7 +84,7 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
   return (
     <div className="w-full my-6 space-y-6">
       {/* Summary Section - Horizontal Layout */}
-      <div className="bg-gray-100 rounded-2xl p-4 md:p-5 shadow-sm">
+      <div>
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Score Card with Progress - Left Side */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex flex-col items-center justify-center min-w-[200px]">

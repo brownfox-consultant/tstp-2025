@@ -36,6 +36,26 @@ function TestList() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const debounceTimeoutRef = useRef(null);
 
+  // Highlight function to highlight search term
+  const highlightText = (text, search) => {
+    if (!search || !text) return text;
+    
+    const parts = String(text).split(new RegExp(`(${search})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, index) =>
+          part.toLowerCase() === search.toLowerCase() ? (
+            <span key={index} style={{ backgroundColor: '#fff59d', fontWeight: '600' }}>
+              {part}
+            </span>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
+
   useEffect(() => {
     setTestRunning(false);
 
@@ -97,7 +117,7 @@ function TestList() {
       ),
       key: "name",
       dataIndex: "name",
-      render: (text) => <>{text}</>,
+      render: (text) => <>{highlightText(text, debouncedSearchTerm)}</>,
       sorter: true,
       width: 100,
       align: "center",
@@ -112,6 +132,7 @@ function TestList() {
       key: "course_name",
       dataIndex: "course_name",
       align: "center",
+      render: (text) => <>{highlightText(text, debouncedSearchTerm)}</>,
       sorter: true,
       width: 100,
       sorter: { multiple: 2 },

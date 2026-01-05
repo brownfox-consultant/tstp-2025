@@ -2,7 +2,8 @@
 
 import { LeftOutlined, BookOutlined, AppstoreOutlined, FilterOutlined, FieldTimeOutlined, ThunderboltOutlined, OrderedListOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { Button, Col, Divider, Form, Row, Select, notification, Radio, Input, Spin } from "antd";
+import { Button, Col, Divider, Form, Row, notification, Radio, Input, Spin } from "antd";
+import Select, { components } from "react-select";
 import { useForm } from "antd/es/form/Form";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
@@ -20,7 +21,37 @@ import {
 import { useGlobalContext } from "@/context/store";
 import useFullScreen from "@/utils/useFullScreen";
 
-const { Option } = Select;
+// Custom Chevron Icon Component
+const ChevronIcon = ({ className, isOpen, color = "#805830" }) => (
+  <svg 
+    className={className}
+    width="16" 
+    height="16"
+    viewBox="0 0 24 24" 
+    fill="none"
+    style={{
+      transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      transition: 'transform 0.2s ease'
+    }}
+  >
+    <path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// Custom Dropdown Indicator for react-select
+const CustomDropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+    </components.DropdownIndicator>
+  );
+};
+
+const customSelectComponents = {
+  DropdownIndicator: CustomDropdownIndicator,
+};
+
+
 
 function PracticeTestForm({ onBack }) {
   const router = useRouter();
@@ -252,7 +283,7 @@ function PracticeTestForm({ onBack }) {
         </button>
       </div>
 
-      <div className=" mx-auto">
+      <div className="mx-auto">
         <Form
           form={form}
           onFinish={handleSubmit}
@@ -262,7 +293,7 @@ function PracticeTestForm({ onBack }) {
         >
           <Row gutter={[24, 24]}>
             {/* Left Column - Configuration */}
-            <Col span={24} lg={16} className="space-y-6">
+            <Col span={24} xl={16} className="space-y-6">
               
               {/* Basic Details Card */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -274,41 +305,43 @@ function PracticeTestForm({ onBack }) {
                 </div>
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Course */}
-                  <Form.Item
-                    label={<span className="font-medium text-gray-700">Course</span>}
-                    name="course"
-                    rules={[{ required: true, message: 'Please select a course' }]}
-                    className="mb-0"
-                  >
+                  <div>
+                    <label className="block font-medium text-gray-700 mb-2">Course</label>
                     <Select
-                      onChange={(v) => {
-                        setSelectedCourse(v);
+                      value={selectedCourse ? { label: selectedCourse, value: selectedCourse } : null}
+                      onChange={(option) => {
+                        setSelectedCourse(option?.value);
                         setSelectedCourseSubject();
+                        form.setFieldValue('course', option?.value);
                       }}
-                      value={selectedCourse}
+                      options={courses?.map((course) => ({
+                        value: course.name,
+                        label: course.name
+                      }))}
+                      components={customSelectComponents}
                       placeholder="Select Course"
-                      suffixIcon={<AppstoreOutlined className="text-gray-400" />}
-                      className="w-full"
-                      options={courses?.map((course) => ({ value: course.name, label: course.name }))}
+                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                      isClearable
                     />
-                  </Form.Item>
+                  </div>
 
                   {/* Subject */}
-                  <Form.Item
-                    label={<span className="font-medium text-gray-700">Subject</span>}
-                    name="course_subject"
-                    dependencies={["course"]}
-                    rules={[{ required: true, message: 'Please select a subject' }]}
-                    className="mb-0"
-                  >
+                  <div>
+                    <label className="block font-medium text-gray-700 mb-2">Subject</label>
                     <Select
-                      value={selectedCourseSubject}
-                      onChange={setSelectedCourseSubject}
-                      placeholder="Select Subject"
-                      suffixIcon={<BookOutlined className="text-gray-400" />}
+                      value={selectedCourseSubject ? subjectOptions?.find(opt => opt.value === selectedCourseSubject) : null}
+                      onChange={(option) => {
+                        setSelectedCourseSubject(option?.value);
+                        form.setFieldValue('course_subject', option?.value);
+                      }}
                       options={subjectOptions}
+                      components={customSelectComponents}
+                      placeholder="Select Subject"
+                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                      isClearable
+                      isDisabled={!selectedCourse}
                     />
-                  </Form.Item>
+                  </div>
                 </div>
               </div>
 
@@ -322,68 +355,76 @@ function PracticeTestForm({ onBack }) {
                 </div>
                 <div className="p-6 grid grid-cols-1 gap-6">
                   {/* Topic */}
-                  <Form.Item
-                    name="topic"
-                    label={<span className="font-medium text-gray-700">Select Topics</span>}
-                    className="mb-0"
-                  >
+                  <div>
+                    <label className="block font-medium text-gray-700 mb-2">Select Topics</label>
                     <Select
-                      mode="multiple"
-                      placeholder="Choose one or more topics..."
-                      options={topicOptions}
-                      value={selectedTopic}
-                      onChange={(values) => {
+                      isMulti
+                      value={selectedTopic?.map(val => topicOptions?.find(opt => opt.value === val)) || []}
+                      onChange={(selected) => {
+                        const values = selected?.map(item => item.value) || [];
                         setSelectedTopic(values.length === 0 ? null : values);
                         setSubTopicOptions(getSubtopicOptionsFromValues(values));
+                        form.setFieldValue('topic', values);
                       }}
-                      maxTagCount="responsive"
+                      options={topicOptions}
+                      components={customSelectComponents}
+                      placeholder="Choose one or more topics..."
+                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                      isClearable
+                      isDisabled={!selectedCourseSubject}
                     />
-                  </Form.Item>
+                  </div>
 
                   <Row gutter={[16, 16]}>
                     <Col span={24} md={12}>
-                      <Form.Item
-                        name="sub_topic"
-                        label={<span className="font-medium text-gray-700">Select Sub-Topics</span>}
-                        className="mb-0"
-                      >
+                      <div>
+                        <label className="block font-medium text-gray-700 mb-2">Select Sub-Topics</label>
                         <Select
-                          mode="multiple"
-                          placeholder="Choose sub-topics..."
+                          isMulti
+                          value={selectedSubTopic?.map(val => subTopicOptions?.find(opt => opt.value === val)) || []}
+                          onChange={(selected) => {
+                            const values = selected?.map(item => item.value) || [];
+                            setSelectedSubTopic(values);
+                            form.setFieldValue('sub_topic', values);
+                          }}
                           options={subTopicOptions?.map(({ id, name }) => ({
                             label: name,
                             value: id,
                           }))}
-                          value={selectedSubTopic}
-                          onChange={setSelectedSubTopic}
-                          maxTagCount="responsive"
+                          components={customSelectComponents}
+                          placeholder="Choose sub-topics..."
+                          menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                          isClearable
+                          isDisabled={!selectedTopic || selectedTopic.length === 0}
                         />
-                      </Form.Item>
+                      </div>
                     </Col>
                     <Col span={24} md={12}>
-                      <Form.Item
-                        name="difficulty"
-                        label={<span className="font-medium text-gray-700">Difficulty Level</span>}
-                        className="mb-0"
-                      >
+                      <div>
+                        <label className="block font-medium text-gray-700 mb-2">Difficulty Level</label>
                         <Select
-                          mode="multiple"
-                          placeholder="Choose difficulty..."
+                          isMulti
+                          value={selectedDifficulty?.map(val => difficultyOptions?.find(opt => opt.value === val)) || []}
+                          onChange={(selected) => {
+                            const values = selected?.map(item => item.value) || [];
+                            setSelectedDifficulty(values);
+                            form.setFieldValue('difficulty', values);
+                          }}
                           options={difficultyOptions}
-                          value={selectedDifficulty}
-                          onChange={setSelectedDifficulty}
-                          maxTagCount="responsive"
+                          components={customSelectComponents}
+                          placeholder="Choose difficulty..."
+                          menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                          isClearable
                         />
-                      </Form.Item>
+                      </div>
                     </Col>
                   </Row>
                 </div>
               </div>
-
             </Col>
 
             {/* Right Column - Parameters */}
-            <Col span={24} lg={8} className="space-y-6">
+            <Col span={24} xl={8} className="space-y-6">
               
               {/* Test Parameters Card */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-full">
@@ -393,7 +434,7 @@ function PracticeTestForm({ onBack }) {
                     Test Parameters
                   </h2>
                 </div>
-                <div className="p-6 flex flex-col gap-6">
+                <div className="p-6 flex flex-col">
                   
                   {/* Question Mode */}
                   <Form.Item
@@ -403,22 +444,22 @@ function PracticeTestForm({ onBack }) {
                     className="mb-0"
                   >
                     <Radio.Group className="w-full flex flex-col gap-2">
-                       <Radio value="INCORRECT" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors">
+                       <Radio value="INCORRECT" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors m-0">
                         <span className="font-medium">Incorrect Only</span>
-                        <div className="text-xs text-gray-500 pl-6">Re-attempt incorrectly answered questions</div>
+                        <div className="text-xs text-gray-500">Re-attempt incorrectly answered questions</div>
                        </Radio>
-                       <Radio value="UNANSWERED" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors">
+                       <Radio value="UNANSWERED" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors m-0">
                         <span className="font-medium">Unanswered Only</span>
-                        <div className="text-xs text-gray-500 pl-6">Questions you haven't attempted yet</div>
+                        <div className="text-xs text-gray-500">Questions you haven't attempted yet</div>
                        </Radio>
-                       <Radio value="BOTH" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors">
+                       <Radio value="BOTH" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors m-0">
                         <span className="font-medium">Both</span>
-                        <div className="text-xs text-gray-500 pl-6">Mix of incorrect and unanswered questions</div>
+                        <div className="text-xs text-gray-500">Mix of incorrect and unanswered questions</div>
                        </Radio>
                     </Radio.Group>
                   </Form.Item>
 
-                   <Divider dashed className="my-2" />
+                   <Divider dashed />
 
                   {/* Question Count */}
                   <Form.Item
@@ -435,7 +476,7 @@ function PracticeTestForm({ onBack }) {
                         },
                       },
                     ]}
-                    className="mb-0"
+                    className="mb-2"
                   >
                     <Input
                       type="number"
@@ -462,7 +503,7 @@ function PracticeTestForm({ onBack }) {
                         },
                       },
                     ]}
-                    className="mb-0"
+                    className="mb-2"
                   >
                     <Input
                       type="number"

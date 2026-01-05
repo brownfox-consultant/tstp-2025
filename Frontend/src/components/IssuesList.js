@@ -53,6 +53,7 @@ function IssuesList({ updated, setUpdated }) {
       title: "Created On",
       dataIndex: "created_at",
       sorter: true,
+      width: 180,
       render: (text) => formatDateTime(text),
     },
     {
@@ -61,7 +62,7 @@ function IssuesList({ updated, setUpdated }) {
       title: "Resolved on",
       align: "center",
       sorter: true,
-      width: 150,
+      width: 180,
       render: (text) => formatDateTime(text),
     },
      {
@@ -113,7 +114,7 @@ function IssuesList({ updated, setUpdated }) {
     title: "Created On",
     dataIndex: "created_at",
    render: (text) => formatDateTime(text),
-    width: 100,
+    width: 180,
     sorter: true,
     sorter: { multiple: 3 },
   },
@@ -122,7 +123,7 @@ function IssuesList({ updated, setUpdated }) {
     dataIndex: "resolution_date",
     title: "Resolved at",
     render: (text) => formatDateTime(text),
-    width: 100,
+    width: 180,
     sorter: true,
     sorter: { multiple: 4 },
     },
@@ -174,6 +175,7 @@ function IssuesList({ updated, setUpdated }) {
       title: "Created On",
       dataIndex: "created_at",
       sorter: true,
+      width: 180,
       render: (text) => formatDateTime(text),
     },
     {
@@ -182,6 +184,7 @@ function IssuesList({ updated, setUpdated }) {
       title: "Resolved at",
       align: "center",
       sorter: true,
+      width: 180,
       render: (text) => formatDateTime(text),
     },
      {
@@ -282,24 +285,19 @@ function IssuesList({ updated, setUpdated }) {
 
   return (
     <>
-      <div className="text-xl font-semibold mb-5 flex items-center">
+      <div className="mb-4 max-w-sm">
         <Input
-          placeholder={`Search`}
+          className="h-10 rounded-md text-sm"
+          placeholder="Search issues..."
           onChange={handleSearchChange}
-          style={{
-            marginBottom: 8,
-            width: "20%",
-            display: "block",
-            height: "40px",
-            fontSize: "18px",
-            backgroundImage: `url('/icons/search.svg')`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "10px center",
-            paddingLeft: "40px",
-            backgroundSize: "20px",
-          }}
+          prefix={
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+          }
         />
-      </div>{" "}
+      </div>
       <Table
         footer={() => (
           <div className="footer-container">

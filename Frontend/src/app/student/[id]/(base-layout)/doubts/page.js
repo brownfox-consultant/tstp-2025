@@ -5,7 +5,7 @@ function page() {
   return (
     <div>
       {" "}
-      <div className="text-xl ml-3 mb-3 font-bold">Doubts</div>
+      <div className="text-xl mb-3 font-bold">Doubts</div>
       <DoubtsList />
     </div>
   );

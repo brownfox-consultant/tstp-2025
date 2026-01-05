@@ -48,6 +48,42 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
+/* ================= CUSTOM TICK FOR MULTILINE LABELS ================= */
+const CustomXAxisTick = ({ x, y, payload }) => {
+  const maxWidth = 140;
+  const words = payload.value ? payload.value.split(' ') : [];
+  const lines = [];
+  let currentLine = '';
+
+  words.forEach(word => {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    if (testLine.length * 6 > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  });
+  if (currentLine) lines.push(currentLine);
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={0}
+          y={5 + i * 13}
+          textAnchor="middle"
+          fill="#666"
+          fontSize={10}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+};
+
 /* ================= MAIN COMPONENT ================= */
 export default function TopicWiseProgress({
   student_id,
@@ -121,7 +157,7 @@ export default function TopicWiseProgress({
 
   /* ================= RENDER ================= */
   return (
-    <div className="space-y-10">
+    <div className="space-y-5">
 
       {/* ================= TOP CHARTS ================= */}
       <ChartsSection chartData={chartData} />
@@ -145,14 +181,14 @@ const ChartsSection = ({ chartData }) => (
   <div className="flex flex-wrap gap-6">
 
     {/* HORIZONTAL BAR CHART */}
-    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[300px]">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[450px]">
       <h3 className="font-bold mb-4">Topic Progress Comparison</h3>
 
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart layout="vertical" data={chartData}>
             <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-            <YAxis dataKey="shortName" type="category" width={150} tick={{ width: 150 }} />
+            <YAxis dataKey="fullName" type="category" width={150} tick={{ width: 150, fontSize: 11 }} />
             <XAxis
               type="number"
               domain={[0, 100]}
@@ -173,7 +209,7 @@ const ChartsSection = ({ chartData }) => (
     </div>
 
     {/* VERTICAL COLUMN BAR CHART (replaced Radar) */}
-    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[300px]">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[450px]">
       <h3 className="font-bold mb-4">Skills Overview</h3>
 
       <div className="h-[300px]">
@@ -181,13 +217,12 @@ const ChartsSection = ({ chartData }) => (
           <BarChart data={chartData} barGap={8} barCategoryGap="20%">
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
             <XAxis 
-              dataKey="shortName" 
+              dataKey="fullName" 
               axisLine={false} 
               tickLine={false} 
-              fontSize={11}
-              angle={-20}
-              textAnchor="end"
-              height={60}
+              // height={120}
+              interval={0}
+              tick={<CustomXAxisTick />}
             />
             <YAxis
               axisLine={false}
@@ -298,9 +333,9 @@ const TopicLeaderboard = ({ allData }) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Overall Topic Leaderboard</h2>
+      <h2 className="text-2xl font-bold mb-3">Overall Topic Leaderboard</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {flat.map((i, idx) => (
           <div key={idx} className="bg-white rounded-2xl p-6 shadow-sm border">
             <div className="flex justify-between mb-2">

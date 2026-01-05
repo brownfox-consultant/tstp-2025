@@ -33,6 +33,26 @@ function PracticeTestsList() {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
 
+  // Highlight function to highlight search term
+  const highlightText = (text, search) => {
+    if (!search || !text) return text;
+    
+    const parts = String(text).split(new RegExp(`(${search})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, index) =>
+          part.toLowerCase() === search.toLowerCase() ? (
+            <span key={index} style={{ backgroundColor: '#fff59d', fontWeight: '600' }}>
+              {part}
+            </span>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
+
   useEffect(() => {
     // Fetch user details to get available courses
     if (role === "student") {
@@ -99,7 +119,7 @@ function PracticeTestsList() {
       align: "left",
       width: 180,
       sorter: false,
-      render: (text) => <span className="font-semibold text-gray-800">{text || "-"}</span>,
+      render: (text) => <span className="font-semibold text-gray-800">{highlightText(text || "-", debouncedSearchTerm)}</span>,
     },
     {
       key: "course",
@@ -262,7 +282,7 @@ function PracticeTestsList() {
                   onClick={() => setCreateTest(true)}
                   icon={<PlusOutlined />}
                   size="large"
-                  className="rounded-full shadow-md bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 h-10 px-6 font-semibold flex items-center"
+                  className="rounded-md shadow-md bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 h-10 px-6 font-semibold flex items-center"
                 >
                   Create New Practice
                 </Button>

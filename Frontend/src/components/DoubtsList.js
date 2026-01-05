@@ -24,14 +24,14 @@ function DoubtsList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const debounceTimeoutRef = useRef(null);
-  const formatDateTime = (text) => 
-  text ? dayjs.utc(text).tz("Asia/Kolkata").format("MMM D, YYYY h:mm A") : "-";
+  const formatDateTime = (text) =>
+    text ? dayjs.utc(text).tz("Asia/Kolkata").format("MMM D, YYYY h:mm A") : "-";
   const role = usePathname().split("/")[1];
 
   const formatTestType = (type) => {
-  if (!type) return "-";
-  return type === "EXAM" ? "Full Length Tests" : type;
-};
+    if (!type) return "-";
+    return type === "EXAM" ? "Full Length Tests" : type;
+  };
 
 
   useEffect(() => {
@@ -101,12 +101,12 @@ function DoubtsList() {
       render: (text) => <DoubtStatusTag status={text} />,
     },
     {
-  key: "test_type",
-  dataIndex: "test_type",
-  title: "Test Type",
-  sorter: true,
-  render: (text) => <>{formatTestType(text)}</>,
-},
+      key: "test_type",
+      dataIndex: "test_type",
+      title: "Test Type",
+      sorter: true,
+      render: (text) => <>{formatTestType(text)}</>,
+    },
 
     {
       key: "created_at",
@@ -118,17 +118,17 @@ function DoubtsList() {
 
     },
     {
-  key: "faculty_assigned_date",
-  dataIndex: "faculty_assigned_date",
-  title: (
-    <div className="flex items-center whitespace-nowrap">
-      Faculty Assigned Date
-    </div>
-  ),
-  width: 200, // Optional but helps with layout stability
-  sorter: true,
-  render: (text) => formatDateTime(text),
-},
+      key: "faculty_assigned_date",
+      dataIndex: "faculty_assigned_date",
+      title: (
+        <div className="flex items-center whitespace-nowrap">
+          Faculty Assigned Date
+        </div>
+      ),
+      width: 200, // Optional but helps with layout stability
+      sorter: true,
+      render: (text) => formatDateTime(text),
+    },
 
     {
       key: "resolution_date",
@@ -139,14 +139,14 @@ function DoubtsList() {
       sortDirections: ['ascend', 'descend'],
       render: (text) => formatDateTime(text),
     },
-     {
-    key: "resolved_by",
-    dataIndex: "resolved_by",
-    title: "Resolved By",
-       width: 150,
-    sorter: true,
-    render: (text) => <>{text || "-"}</>,
-  },
+    {
+      key: "resolved_by",
+      dataIndex: "resolved_by",
+      title: "Resolved By",
+      width: 150,
+      sorter: true,
+      render: (text) => <>{text || "-"}</>,
+    },
     {
       key: "action",
       title: "Action",
@@ -160,7 +160,7 @@ function DoubtsList() {
       ),
     },
   ];
-  
+
   const studentCols = [
     {
       key: "description",
@@ -195,12 +195,12 @@ function DoubtsList() {
       sorter: { multiple: 2 },
     },
     {
-  key: "test_type",
-  dataIndex: "test_type",
-  title: "Test Type",
-  sorter: true,
-  render: (text) => <>{formatTestType(text)}</>,
-},
+      key: "test_type",
+      dataIndex: "test_type",
+      title: "Test Type",
+      sorter: true,
+      render: (text) => <>{formatTestType(text)}</>,
+    },
 
     {
       key: "created_at",
@@ -226,18 +226,18 @@ function DoubtsList() {
       ),
       align: "left",
       width: 150,
-     render: (text) => formatDateTime(text),
+      render: (text) => formatDateTime(text),
       sorter: true,
       sorter: { multiple: 4 },
     },
-     {
-    key: "resolved_by",
-    dataIndex: "resolved_by",
-    title: "Resolved By",
-       width: 150,
-    sorter: true,
-    render: (text) => <>{text || "-"}</>,
-  },
+    {
+      key: "resolved_by",
+      dataIndex: "resolved_by",
+      title: "Resolved By",
+      width: 150,
+      sorter: true,
+      render: (text) => <>{text || "-"}</>,
+    },
     {
       key: "action",
       title: "   ",
@@ -282,12 +282,12 @@ function DoubtsList() {
       },
     },
     {
-  key: "test_type",
-  dataIndex: "test_type",
-  title: "Test Type",
-  sorter: true,
-  render: (text) => <>{formatTestType(text)}</>,
-},
+      key: "test_type",
+      dataIndex: "test_type",
+      title: "Test Type",
+      sorter: true,
+      render: (text) => <>{formatTestType(text)}</>,
+    },
 
     {
       key: "created_at",
@@ -316,14 +316,14 @@ function DoubtsList() {
       align: "center",
       render: (text) => formatDateTime(text),
     },
-     {
-    key: "resolved_by",
-    dataIndex: "resolved_by",
-    title: "Resolved By",
-       width: 150,
-    sorter: true,
-    render: (text) => <>{text || "-"}</>,
-  },
+    {
+      key: "resolved_by",
+      dataIndex: "resolved_by",
+      title: "Resolved By",
+      width: 150,
+      sorter: true,
+      render: (text) => <>{text || "-"}</>,
+    },
     {
       key: "action",
       title: "Action",
@@ -342,86 +342,86 @@ function DoubtsList() {
   ];
 
   const parentCols = [
-  {
-    key: "student",
-    dataIndex: "student",
-    title: "Student",
-    render: (text) => {
-      return <>{text}</>;
+    {
+      key: "student",
+      dataIndex: "student",
+      title: "Student",
+      render: (text) => {
+        return <>{text}</>;
+      },
     },
-  },
-  {
-    key: "description",
-    dataIndex: "description",
-    title: "Doubt",
-    render: (text) => {
-      return <>{text}</>;
+    {
+      key: "description",
+      dataIndex: "description",
+      title: "Doubt",
+      render: (text) => {
+        return <>{text}</>;
+      },
     },
-  },
-  {
-    key: "status",
-    dataIndex: "status",
-    title: "Status",
-    render: (text) => {
-      return <DoubtStatusTag status={text} />;
+    {
+      key: "status",
+      dataIndex: "status",
+      title: "Status",
+      render: (text) => {
+        return <DoubtStatusTag status={text} />;
+      },
     },
-  },
-  {
-  key: "test_type",
-  dataIndex: "test_type",
-  title: "Test Type",
-  sorter: true,
-  render: (text) => <>{formatTestType(text)}</>,
-},
+    {
+      key: "test_type",
+      dataIndex: "test_type",
+      title: "Test Type",
+      sorter: true,
+      render: (text) => <>{formatTestType(text)}</>,
+    },
 
-  {
-    key: "created_at",
-    dataIndex: "created_at",
-    title: "Created on",
-    render: (text) => formatDateTime(text),
-  },
-  {
-    key: "faculty_assigned_date",
-    dataIndex: "faculty_assigned_date",
-    title: (
-      <div className="flex items-center whitespace-nowrap">
-        Faculty Assigned Date
-      </div>
-    ),
-    width: 200,
-    sorter: true,
-    render: (text) => formatDateTime(text),
-  },
-  {
-    key: "resolution_date",
-    dataIndex: "resolution_date",
-    title: "Resolved on",
-    width: 150,
-    align: "center",
-    render: (text) => formatDateTime(text),
+    {
+      key: "created_at",
+      dataIndex: "created_at",
+      title: "Created on",
+      render: (text) => formatDateTime(text),
     },
-   {
-    key: "resolved_by",
-    dataIndex: "resolved_by",
-    title: "Resolved By",
-     width: 150,
-    sorter: true,
-    render: (text) => <>{text || "-"}</>,
-  },
-  {
-    key: "action",
-    title: "Action",
-    align: "center",
-    render: (id, record) => (
-      <ViewDoubtModal
-        updated={updated}
-        setUpdated={setUpdated}
-        data={record}
-        role="parent"
-      />
-    ),
-  },
-];
+    {
+      key: "faculty_assigned_date",
+      dataIndex: "faculty_assigned_date",
+      title: (
+        <div className="flex items-center whitespace-nowrap">
+          Faculty Assigned Date
+        </div>
+      ),
+      width: 200,
+      sorter: true,
+      render: (text) => formatDateTime(text),
+    },
+    {
+      key: "resolution_date",
+      dataIndex: "resolution_date",
+      title: "Resolved on",
+      width: 150,
+      align: "center",
+      render: (text) => formatDateTime(text),
+    },
+    {
+      key: "resolved_by",
+      dataIndex: "resolved_by",
+      title: "Resolved By",
+      width: 150,
+      sorter: true,
+      render: (text) => <>{text || "-"}</>,
+    },
+    {
+      key: "action",
+      title: "Action",
+      align: "center",
+      render: (id, record) => (
+        <ViewDoubtModal
+          updated={updated}
+          setUpdated={setUpdated}
+          data={record}
+          role="parent"
+        />
+      ),
+    },
+  ];
 
 
   const colsMap = {
@@ -443,28 +443,28 @@ function DoubtsList() {
   };
 
   const handleTableChange = (pagination, filters, sorter) => {
-  let sortObj = {};
+    let sortObj = {};
 
-  if (Array.isArray(sorter)) {
-    sorter.forEach((s) => {
-      if (s.order === "ascend") {
-        sortObj[s.field || s.columnKey] = "asc";
-      } else if (s.order === "descend") {
-        sortObj[s.field || s.columnKey] = "desc";
-      }
-    });
-  } else if (sorter && sorter.order) {
-    const sortKey = sorter.field || sorter.columnKey;
-    sortObj[sortKey] = sorter.order === "ascend" ? "asc" : "desc";
-  }
+    if (Array.isArray(sorter)) {
+      sorter.forEach((s) => {
+        if (s.order === "ascend") {
+          sortObj[s.field || s.columnKey] = "asc";
+        } else if (s.order === "descend") {
+          sortObj[s.field || s.columnKey] = "desc";
+        }
+      });
+    } else if (sorter && sorter.order) {
+      const sortKey = sorter.field || sorter.columnKey;
+      sortObj[sortKey] = sorter.order === "ascend" ? "asc" : "desc";
+    }
 
-  setSortParams(sortObj);
-};
+    setSortParams(sortObj);
+  };
 
 
   return (
     <div>
-      <div className="mb-8 mt-4">
+      <div className="mb-3 ">
         <Input
           placeholder={`Search`}
           onChange={handleSearchChange}

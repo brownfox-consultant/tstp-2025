@@ -135,7 +135,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
         <span className="hidden sm:inline">Back</span>
       </button>
 
-      <div className="bg-gray-100 rounded-2xl p-4 md:p-6 shadow-card mb-6 animate-fade-in">
+      <div className="bg-gray-100 rounded-2xl p-4 md:p-6 shadow-card mb-6 animate-fade-in shadow-md">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 1. Header Card - Left Aligned */}
           <div className="lg:col-span-1 flex flex-col justify-center">
