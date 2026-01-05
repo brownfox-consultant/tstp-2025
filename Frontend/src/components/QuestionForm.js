@@ -925,13 +925,13 @@ function QuestionForm({
 
             {/* Course Details Card */}
             <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
-              <div className="mb-4">
+              <div className="mb-1">
                 <h3 className="text-xl font-bold text-[#F59405]">
                   Course Details
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">Add course information and metadata for this question</p>
               </div>
-              <Divider className="my-4 border-gray-200" />
+              <div className="border-gray-200" />
               <Form.List name="questions_data" initialValue={Array(1).fill({})}>
                 {(fields, { add, remove }) => (
                   <div className="space-y-4">
