@@ -425,15 +425,18 @@ if (sectionData.test_type === "FULL_LENGTH_TEST") {
 
   return (
     <>
-      <Table
-        pagination={false}
-        className="my-4"
-        columns={questionViewCols}
-        dataSource={questions_data}
-        onRow={(record, rowIndex) => ({
-          onClick: () => handleQuestionClick(record, rowIndex),
-        })}
-      />
+      <div className="overflow-x-auto">
+        <Table
+          pagination={false}
+          className="my-4"
+          columns={questionViewCols}
+          dataSource={questions_data}
+          scroll={{ x: 'max-content' }}
+          onRow={(record, rowIndex) => ({
+            onClick: () => handleQuestionClick(record, rowIndex),
+          })}
+        />
+      </div>
       <Modal
         width={modalData.question_type === "MCQ" ? "80rem" : "64rem"}
         open={showModal}

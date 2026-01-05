@@ -280,7 +280,7 @@ const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
       </div>
 
       {/* Custom Tabs Section */}
-      <div className="my-5 bg-white/90 backdrop-blur-lg p-2 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="my-5 bg-white/90 backdrop-blur-lg p-2 rounded-xl border border-gray-100 shadow-sm">
         <div className="flex flex-wrap gap-2">
           {["english", "math", "questions"].map((tab) => (
             <button

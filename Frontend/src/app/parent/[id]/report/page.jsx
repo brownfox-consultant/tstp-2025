@@ -42,7 +42,7 @@ export default function ParentReportPage() {
 
   if (!studentId) {
     return (
-      <div className="p-6">
+      <div>
         <div className="text-2xl font-bold mb-4 text-black">Student Reports</div>
         <div className="text-center py-20 bg-gray-50 rounded-lg border border-gray-200 text-gray-400">
           No student linked to this parent account.
@@ -52,7 +52,7 @@ export default function ParentReportPage() {
   }
 
   return (
-    <div className="p-6">
+    <div>
       <div className="text-2xl font-bold mb-4 text-black">Student Reports</div>
       <StudentReportDashboard 
         studentIdProp={studentId} 

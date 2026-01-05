@@ -2,7 +2,7 @@
 
 import SuggestionsList from "@/components/SuggestionsList";
 import React from "react";
-import { LeftOutlined } from "@ant-design/icons";
+// import { LeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 
 function page() {

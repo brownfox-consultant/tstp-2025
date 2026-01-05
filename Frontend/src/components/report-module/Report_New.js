@@ -15,6 +15,7 @@ import {
   ArrowLeftIcon,
   UserIcon,
   FileTextIcon,
+  CalendarIcon,
   SparklesIcon
 } from "./icons";
 
@@ -29,16 +30,6 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
   const router = useRouter();
   const availableSubjects = resultData?.subjects?.map(s => s.name.toLowerCase()) || [];
   const tabs = [...availableSubjects, "questions"];
-
-  // const questionItemStyle = {
-  //   display: "flex",
-  //   justifyContent: "space-between",
-  //   alignItems: "center",
-  //   padding: "10px 15px",
-  //   marginBottom: "10px",
-  //   border: "1px solid #e5e7eb",
-  //   borderRadius: "10px",
-  // };
 
   useEffect(() => {
     setLoading(true);
@@ -135,7 +126,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
         <span className="hidden sm:inline">Back</span>
       </button>
 
-      <div className="bg-gray-100 rounded-2xl p-4 md:p-6 shadow-card mb-6 animate-fade-in shadow-md">
+      <div className="bg-slate-200 rounded-xl p-4 md:p-6 shadow-card mb-6 animate-fade-in shadow-md">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 1. Header Card - Left Aligned */}
           <div className="lg:col-span-1 flex flex-col justify-center">
@@ -143,12 +134,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
               {/* Date Badge */}
               {resultData?.testDate && (
                 <div className="inline-flex items-center gap-1.5 text-sm text-black mb-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
+                  <CalendarIcon size={16} />
                   <span className="font-medium">{new Date(resultData.testDate).toDateString()}</span>
                 </div>
               )}
@@ -240,7 +226,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
       </div>
 
       {/* Custom Tabs Section */}
-      <div className="my-5 bg-white/90 backdrop-blur-lg p-2 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="my-5 bg-white/90 backdrop-blur-lg p-2 rounded-xl border border-gray-100 shadow-sm">
         <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <button
