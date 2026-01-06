@@ -98,9 +98,8 @@ function CreateUserForm() {
   const [loading, setLoading] = useState(false);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
   const [countryCodes, setCountryCodes] = useState([]);
-const [selectedCountryCode, setSelectedCountryCode] = useState("");
+const [selectedCountryCode, setSelectedCountryCode] = useState("+91");
 const [altCountryCode, setAltCountryCode] = useState("+91");
-
 
 
   const handlePhoneNumberChange = (e, name) => {
@@ -129,23 +128,18 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
         .flat()
         .filter(Boolean);
 
-      // remove duplicates & sort
       const uniqueCodes = [...new Set(codes)].sort((a, b) =>
         a.localeCompare(b)
       );
 
       setCountryCodes(uniqueCodes);
-      setSelectedCountryCode("+91"); // default
+      setSelectedCountryCode("+91");
+      setAltCountryCode("+91");
     })
     .catch(console.error);
 }, []);
 
 
-
-
-  const handleRoleChange = (selectedId) => {
-    setRoleState(selectedId);
-    const selected = options.find(({ id }) => selectedId == id);
   const handleRoleChange = (selected) => {
     setRoleState(selected);
     setRoleName(selected?.name);
@@ -153,16 +147,17 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
   };
 
   const handleSubmit = (formData) => {
-
-    formData.phone_number = `${selectedCountryCode}${formData.phone_number}`;
-    if (formData.alternative_number) {
-  formData.alternative_number = `${altCountryCode}${formData.alternative_number}`;
-}
-
-
     if (formData.dob) {
-      formData.dob = dayjs(formData.dob).format("YYYY-MM-DD");
-    }
+    formData.dob = dayjs(formData.dob).format("YYYY-MM-DD");
+  }
+
+  // 🔥 add country codes
+  formData.phone_number = `${selectedCountryCode}${formData.phone_number}`;
+
+  if (formData.alternative_number) {
+    formData.alternative_number =
+      `${altCountryCode}${formData.alternative_number}`;
+  }
     setLoading(true);
 
     createUser(formData)
@@ -310,54 +305,58 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                 </Form.Item>
 
                 {/* Contact Number */}
-               <Form.Item label="Contact Number" name="phone_number"
-               rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
-               >
-  <Input
-    addonBefore={
-      <Select
-        value={selectedCountryCode}
-        onChange={setSelectedCountryCode}
-        style={{ width: 90 }}
-      >
-        {countryCodes.map((code) => (
-          <Option key={code} value={code}>
-            {code}
-          </Option>
-        ))}
-      </Select>
-    }
-    placeholder="Enter phone number"
-  />
-</Form.Item>
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Contact Number</span>}
+                  name="phone_number"
+                  rules={[{ required: true }, { pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
+                >
+                  <Input
+                     addonBefore={
+    <select
+      value={selectedCountryCode}
+      onChange={(e) => setSelectedCountryCode(e.target.value)}
+      className="border-0 bg-transparent outline-none"
+    >
+      {countryCodes.map((code) => (
+        <option key={code} value={code}>
+          {code}
+        </option>
+      ))}
+    </select>
+  }
+                    maxLength={10}
+                    onChange={(e) => handlePhoneNumberChange(e, "phone_number")}
+                    placeholder="Enter 10 digit number"
+                    className="h-11 rounded-lg"
+                  />
+                </Form.Item>
 
-
-
-               <Form.Item
-  label={<span className="font-medium text-gray-700">Alternative Number</span>}
-  name="alternative_number"
-  rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
->
-  <Input
-    addonBefore={
-      <Select
+                {/* Alternative Number */}
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Alternative Number</span>}
+                  name="alternative_number"
+                  rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
+                >
+                  <Input
+                     addonBefore={
+      <select
         value={altCountryCode}
-        onChange={setAltCountryCode}
-        style={{ width: 90 }}
+        onChange={(e) => setAltCountryCode(e.target.value)}
+        className="border-0 bg-transparent outline-none"
       >
         {countryCodes.map((code) => (
-          <Option key={code} value={code}>
+          <option key={code} value={code}>
             {code}
-          </Option>
+          </option>
         ))}
-      </Select>
+      </select>
     }
-    maxLength={10}
-    onChange={(e) => handlePhoneNumberChange(e, "alternative_number")}
-    placeholder="Enter alternative number"
-  />
-</Form.Item>
-
+                    maxLength={10}
+                    onChange={(e) => handlePhoneNumberChange(e, "alternative_number")}
+                    placeholder="Enter alternative number"
+                    className="h-11 rounded-lg"
+                  />
+                </Form.Item>
 
                 {/* Date of Birth */}
                 <Form.Item 
