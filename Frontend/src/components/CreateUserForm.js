@@ -97,6 +97,10 @@ function CreateUserForm() {
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+  const [countryCodes, setCountryCodes] = useState([]);
+const [selectedCountryCode, setSelectedCountryCode] = useState("+91");
+const [altCountryCode, setAltCountryCode] = useState("+91");
+
 
   const handlePhoneNumberChange = (e, name) => {
     const filtered = e.target.value.replace(/\D/g, "");
@@ -110,6 +114,32 @@ function CreateUserForm() {
       .catch(console.log);
   }, []);
 
+  useEffect(() => {
+  fetch("https://restcountries.com/v3.1/all?fields=idd")
+    .then((res) => res.json())
+    .then((data) => {
+      const codes = data
+        .map((c) => {
+          const root = c.idd?.root;
+          const suffixes = c.idd?.suffixes;
+          if (!root || !suffixes) return [];
+          return suffixes.map((s) => `${root}${s}`);
+        })
+        .flat()
+        .filter(Boolean);
+
+      const uniqueCodes = [...new Set(codes)].sort((a, b) =>
+        a.localeCompare(b)
+      );
+
+      setCountryCodes(uniqueCodes);
+      setSelectedCountryCode("+91");
+      setAltCountryCode("+91");
+    })
+    .catch(console.error);
+}, []);
+
+
   const handleRoleChange = (selected) => {
     setRoleState(selected);
     setRoleName(selected?.name);
@@ -118,8 +148,16 @@ function CreateUserForm() {
 
   const handleSubmit = (formData) => {
     if (formData.dob) {
-      formData.dob = dayjs(formData.dob).format("YYYY-MM-DD");
-    }
+    formData.dob = dayjs(formData.dob).format("YYYY-MM-DD");
+  }
+
+  // 🔥 add country codes
+  formData.phone_number = `${selectedCountryCode}${formData.phone_number}`;
+
+  if (formData.alternative_number) {
+    formData.alternative_number =
+      `${altCountryCode}${formData.alternative_number}`;
+  }
     setLoading(true);
 
     createUser(formData)
@@ -273,7 +311,19 @@ function CreateUserForm() {
                   rules={[{ required: true }, { pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
                 >
                   <Input
-                    addonBefore={<span className="text-gray-500">+91</span>}
+                     addonBefore={
+    <select
+      value={selectedCountryCode}
+      onChange={(e) => setSelectedCountryCode(e.target.value)}
+      className="border-0 bg-transparent outline-none"
+    >
+      {countryCodes.map((code) => (
+        <option key={code} value={code}>
+          {code}
+        </option>
+      ))}
+    </select>
+  }
                     maxLength={10}
                     onChange={(e) => handlePhoneNumberChange(e, "phone_number")}
                     placeholder="Enter 10 digit number"
@@ -288,7 +338,19 @@ function CreateUserForm() {
                   rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
                 >
                   <Input
-                    addonBefore={<span className="text-gray-500">+91</span>}
+                     addonBefore={
+      <select
+        value={altCountryCode}
+        onChange={(e) => setAltCountryCode(e.target.value)}
+        className="border-0 bg-transparent outline-none"
+      >
+        {countryCodes.map((code) => (
+          <option key={code} value={code}>
+            {code}
+          </option>
+        ))}
+      </select>
+    }
                     maxLength={10}
                     onChange={(e) => handlePhoneNumberChange(e, "alternative_number")}
                     placeholder="Enter alternative number"

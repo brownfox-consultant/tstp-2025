@@ -218,17 +218,22 @@ function TestList() {
               className="text-xl cursor-pointer"
             />
           </Popover>
-        ) : role === "student" ? (
-          <Button
-            key={record.test_submission_id}
-            type="primary"
-            onClick={() => handleTestClick(record, record.status)}
-          >
-            {record.status === "YET_TO_START" ? "Start Test" : "Continue Test"}
-          </Button>
-        ) : (
-          "-"
-        );
+       ) : role === "student" ? (
+  <Button
+    key={record.test_submission_id}
+    type="primary"
+    onClick={() => handleTestClick(record, record.status)}
+    disabled={
+      subscriptionType === "FREE" &&
+      record.status !== "YET_TO_START"   // FREE user can only start new test
+    }
+  >
+    {record.status === "YET_TO_START" ? "Start Test" : "Continue Test"}
+  </Button>
+) : (
+  "-"
+);
+
       },
       width: 200,
     },

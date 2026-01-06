@@ -146,17 +146,26 @@ class EligibleStudentSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'email', 'subscription_type']
 
     def get_subscription_type(self, obj):
-        request = self.context.get('request')
-        if request:
-            test_id = request.parser_context['kwargs'].get('pk', None)
-            if test_id:
-                test = Test.objects.filter(id=test_id).first()
-                if test:
-                    course_id = test.course_id
-                    enrollment = CourseEnrollment.objects.filter(student=obj, course_id=course_id).first()
-                    if enrollment:
-                        return enrollment.get_subscription_type_display()
-        return None
+        """
+        If the student has ANY paid subscription in ANY course,
+        return 'Paid', else return 'Free'
+        """
+
+        # import here to avoid circular import
+        from course_manager.models import CourseEnrollment
+
+        # get all enrollments of this student
+        enrollments = CourseEnrollment.objects.filter(student=obj)
+
+        if not enrollments.exists():
+            return "Free"
+
+        # if ANY enrollment is paid → Paid
+        for enrollment in enrollments:
+            if enrollment.subscription_type != CourseEnrollment.FREE:
+                return "Paid"
+
+        return "Free"
 
 
 class TestFeedbackSerializer(serializers.ModelSerializer):
