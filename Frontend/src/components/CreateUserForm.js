@@ -10,23 +10,91 @@ import {
   Form,
   Input,
   Modal,
-  Select,
 } from "antd";
 import { useForm } from "antd/es/form/Form";
 import { useParams, useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import dayjs from 'dayjs';
+import Select, { components } from "react-select";
 
-const { Option } = Select;
+// Custom Dropdown Indicator with rotating arrow
+const DropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <svg 
+        className={`w-4 h-4 transition-transform duration-200 ${props.selectProps.menuIsOpen ? 'rotate-180' : ''}`}
+        fill="none" 
+        stroke="#0071BC" 
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </components.DropdownIndicator>
+  );
+};
+
+// Custom styles for react-select
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: '44px',
+    borderColor: state.isFocused ? '#0071BC' : '#E5E7EB',
+    boxShadow: state.isFocused ? '0 0 0 1px #0071BC' : 'none',
+    '&:hover': {
+      borderColor: '#0071BC',
+    },
+    borderRadius: '0.5rem',
+    backgroundColor: 'white',
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected 
+      ? '#0071BC' 
+      : state.isFocused 
+      ? '#E6F4FF' 
+      : 'white',
+    color: state.isSelected ? 'white' : '#1F2937',
+    cursor: 'pointer',
+    '&:active': {
+      backgroundColor: '#0071BC',
+    },
+  }),
+  multiValue: (base) => ({
+    ...base,
+    backgroundColor: '#E6F4FF',
+    borderRadius: '0.375rem',
+  }),
+  multiValueLabel: (base) => ({
+    ...base,
+    color: '#0071BC',
+    fontWeight: '500',
+  }),
+  multiValueRemove: (base) => ({
+    ...base,
+    color: '#0071BC',
+    '&:hover': {
+      backgroundColor: '#0071BC',
+      color: 'white',
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: '0.5rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    zIndex: 9999,
+  }),
+};
 
 function CreateUserForm() {
   const [form] = useForm();
   const router = useRouter();
   const { id } = useParams();
   const [options, setOptions] = useState([]);
-  const [roleState, setRoleState] = useState();
+  const [roleState, setRoleState] = useState(null);
   const [roleName, setRoleName] = useState();
   const [courseOptions, setCourseOptions] = useState([]);
+  const [selectedBloodGroup, setSelectedBloodGroup] = useState(null);
+  const [selectedCourses, setSelectedCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
   const [countryCodes, setCountryCodes] = useState([]);
@@ -78,7 +146,10 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
   const handleRoleChange = (selectedId) => {
     setRoleState(selectedId);
     const selected = options.find(({ id }) => selectedId == id);
+  const handleRoleChange = (selected) => {
+    setRoleState(selected);
     setRoleName(selected?.name);
+    form.setFieldValue("role", selected?.value);
   };
 
   const handleSubmit = (formData) => {
@@ -132,7 +203,7 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
     <div className="min-h-screen ">
       {/* Header */}
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-4 mb-8 justify-between">
+        <div className="flex items-center gap-4 mb-4 justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Create New User</h1>
             <p className="text-sm text-gray-500">Fill in the details to create a new user account</p>
@@ -154,6 +225,9 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
         >
           {/* Global style for consistent input heights */}
           <style jsx global>{`
+            .ant-form-item {
+              margin-bottom: 0 !important;
+            }
             .ant-input, 
             .ant-input-affix-wrapper,
             .ant-picker,
@@ -208,7 +282,7 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
             </div>
             
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Name */}
                 <Form.Item 
                   label={<span className="font-medium text-gray-700">Full Name</span>} 
@@ -304,11 +378,22 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                   label={<span className="font-medium text-gray-700">Blood Group</span>} 
                   name="blood_group"
                 >
-                  <Select placeholder="Select blood group" className="h-11">
-                    {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((group) => (
-                      <Option key={group} value={group}>{group}</Option>
-                    ))}
-                  </Select>
+                  <div>
+                    <Select
+                      value={selectedBloodGroup}
+                      onChange={(selected) => {
+                        setSelectedBloodGroup(selected);
+                        form.setFieldValue("blood_group", selected?.value);
+                      }}
+                      options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(group => ({ value: group, label: group }))}
+                      placeholder="Select blood group"
+                      components={{ DropdownIndicator }}
+                      styles={customSelectStyles}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      isClearable
+                    />
+                  </div>
                 </Form.Item>
 
                 {/* Address */}
@@ -331,19 +416,21 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                   name="role" 
                   rules={[{ required: true, message: "Please select role" }]}
                 >
-                  <Select 
-                    placeholder="Select Role" 
-                    value={roleState} 
-                    onChange={handleRoleChange}
-                    className="h-11"
-                  >
-                    {options &&
-                      options
-                        .filter(({ name }) => name !== "parent")
-                        .map(({ id, name, label }) => (
-                          <Option key={id} value={id}>{label}</Option>
-                        ))}
-                  </Select>
+                  <div>
+                    <Select
+                      value={roleState}
+                      onChange={handleRoleChange}
+                      options={options
+                        ?.filter(({ name }) => name !== "parent")
+                        .map(({ id, name, label }) => ({ value: id, label, name }))}
+                      placeholder="Select Role"
+                      components={{ DropdownIndicator }}
+                      styles={customSelectStyles}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      isClearable
+                    />
+                  </div>
                 </Form.Item>
 
                 {/* Course - Only for students */}
@@ -353,11 +440,23 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                     name="courses"
                     rules={[{ required: true, message: "Please select course" }]}
                   >
-                    <Select mode="multiple" placeholder="Select Course" className="min-h-11">
-                      {courseOptions.map(({ id, name }) => (
-                        <Option key={id} value={name}>{name}</Option>
-                      ))}
-                    </Select>
+                    <div>
+                      <Select
+                        isMulti
+                        value={selectedCourses}
+                        onChange={(selected) => {
+                          setSelectedCourses(selected || []);
+                          form.setFieldValue("courses", selected?.map(s => s.value) || []);
+                        }}
+                        options={courseOptions.map(({ id, name }) => ({ value: name, label: name }))}
+                        placeholder="Select Course"
+                        components={{ DropdownIndicator }}
+                        styles={customSelectStyles}
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                        isClearable
+                      />
+                    </div>
                   </Form.Item>
                 )}
               </div>
@@ -365,7 +464,7 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-center gap-4 pt-6 pb-4">
+          <div className="flex justify-center gap-4">
             <button 
               className="h-12 px-8 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-300" 
               onClick={() => router.back()}

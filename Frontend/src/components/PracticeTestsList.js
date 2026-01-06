@@ -282,7 +282,7 @@ function PracticeTestsList() {
                   onClick={() => setCreateTest(true)}
                   icon={<PlusOutlined />}
                   size="large"
-                  className="rounded-md shadow-md bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 h-10 px-6 font-semibold flex items-center"
+                  className="rounded-md shadow-md border-0 h-10 px-6 font-semibold flex items-center" 
                 >
                   Create New Practice
                 </Button>

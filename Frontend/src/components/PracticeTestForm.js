@@ -1,9 +1,8 @@
 "use client";
 
-import { LeftOutlined, BookOutlined, AppstoreOutlined, FilterOutlined, FieldTimeOutlined, ThunderboltOutlined, OrderedListOutlined } from "@ant-design/icons";
+import { LeftOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { Button, Col, Divider, Form, Row, notification, Radio, Input, Spin } from "antd";
-import Select, { components } from "react-select";
+import { Button, Col, Divider, Form, Row, notification, Radio, Input } from "antd";
 import { useForm } from "antd/es/form/Form";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
@@ -20,40 +19,75 @@ import {
 
 import { useGlobalContext } from "@/context/store";
 import useFullScreen from "@/utils/useFullScreen";
+import {
+  SubjectSelectionIcon,
+  TopicFilterIcon,
+  TestParametersIcon,
+  DropdownArrowIcon
+} from "./icons/PracticeTestIcons";
 
-// Custom Chevron Icon Component
-const ChevronIcon = ({ className, isOpen, color = "#805830" }) => (
-  <svg 
-    className={className}
-    width="16" 
-    height="16"
-    viewBox="0 0 24 24" 
-    fill="none"
-    style={{
-      transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-      transition: 'transform 0.2s ease'
-    }}
-  >
-    <path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-// Custom Dropdown Indicator for react-select
-const CustomDropdownIndicator = (props) => {
+// Custom Dropdown Indicator with rotating arrow
+const DropdownIndicator = (props) => {
   return (
     <components.DropdownIndicator {...props}>
-      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+      <DropdownArrowIcon isOpen={props.selectProps.menuIsOpen} />
     </components.DropdownIndicator>
   );
 };
 
-const customSelectComponents = {
-  DropdownIndicator: CustomDropdownIndicator,
+// Custom styles for react-select to match admin dashboard
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: '48px',
+    borderColor: state.isFocused ? '#F59405' : '#E5E7EB',
+    boxShadow: state.isFocused ? '0 0 0 1px #F59405' : 'none',
+    '&:hover': {
+      borderColor: '#F59405',
+    },
+    borderRadius: '6px',
+    backgroundColor: 'white',
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected 
+      ? '#F59405' 
+      : state.isFocused 
+      ? '#FFF5E6' 
+      : 'white',
+    color: state.isSelected ? 'white' : '#2E2725',
+    cursor: 'pointer',
+    '&:active': {
+      backgroundColor: '#F59405',
+    },
+  }),
+  multiValue: (base) => ({
+    ...base,
+    backgroundColor: '#FFF5E6',
+    borderRadius: '0.375rem',
+  }),
+  multiValueLabel: (base) => ({
+    ...base,
+    color: '#805830',
+    fontWeight: '500',
+  }),
+  multiValueRemove: (base) => ({
+    ...base,
+    color: '#805830',
+    '&:hover': {
+      backgroundColor: '#F59405',
+      color: 'white',
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: '0.5rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    zIndex: 9999,
+  }),
 };
 
-
-
-function PracticeTestForm({ onBack }) {
+function PracticeTestForm() {
   const router = useRouter();
   const [form] = useForm();
   const pathname = usePathname();
@@ -162,6 +196,7 @@ function PracticeTestForm({ onBack }) {
   };
 
 
+
   useEffect(() => {
     getUserDetails(id)
       .then((res) => {
@@ -206,6 +241,8 @@ function PracticeTestForm({ onBack }) {
       setSelectedSubTopic([]);
       setSelectedDifficulty([]);
       setTimer(null);
+      // form.setFieldValue("topic", []);
+      // form.setFieldValue("sub_topic", []);
       form.setFieldsValue({
         topic: [],
         sub_topic: [],
@@ -237,234 +274,219 @@ function PracticeTestForm({ onBack }) {
   };
 
   return (
-    <div className="min-h-screen max-w-7xl mx-auto">
-      {/* Global Style Override */}
-      <style jsx global>{`
-         .practice-form .ant-select-selector,
-         .practice-form .ant-input,
-         .practice-form .ant-input-number-input {
-           height: 48px !important;
-           min-height: 48px !important;
-           border-radius: 8px !important;
-           display: flex !important;
-           align-items: center !important;
-         }
-         .practice-form .ant-select-selection-search-input {
-           height: 46px !important;
-         }
-         .practice-form .ant-select-multiple .ant-select-selector {
-           height: auto !important;
-           min-height: 48px !important;
-           padding-top: 4px !important;
-           padding-bottom: 4px !important;
-         }
-         .practice-form .ant-radio-button-wrapper {
-           height: 48px;
-           line-height: 46px;
-           font-weight: 500;
-         }
-       `}</style>
-
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6 justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Create Custom Practice
-          </h1>
-          <p className="text-sm text-gray-500">
-            Customize your practice test by selecting topics and difficulties
-          </p>
+    <div>
+      {/* Page Header */}
+      <div className="max-w-7xl  mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Custom Practice</h1>
+            <p className="text-gray-600">Customize your practice test by selecting topics and difficulties</p>
+          </div>
+          <Button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 h-10 px-4 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            <LeftOutlined className="text-sm" />
+            Back
+          </Button>
         </div>
-        <button
-          onClick={onBack || (() => router.back())}
-          className="px-5 py-3 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 shadow transition-all duration-300 hover:scale-105 cursor-pointer border-0 text-gray-700 font-medium"
-        >
-          <LeftOutlined className="mr-2" /> Back
-        </button>
       </div>
 
-      <div className="mx-auto">
-        <Form
-          form={form}
-          onFinish={handleSubmit}
-          onFieldsChange={onFieldsChange}
-          layout="vertical"
-          className="practice-form space-y-6"
-        >
-          <Row gutter={[24, 24]}>
-            {/* Left Column - Configuration */}
-            <Col span={24} xl={16} className="space-y-6">
-              
-              {/* Basic Details Card */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-[#0071BC] text-white px-6 py-4">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <BookOutlined />
-                    Subject & Course Selection
-                  </h2>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Course */}
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-2">Course</label>
-                    <Select
-                      value={selectedCourse ? { label: selectedCourse, value: selectedCourse } : null}
-                      onChange={(option) => {
-                        setSelectedCourse(option?.value);
-                        setSelectedCourseSubject();
-                        form.setFieldValue('course', option?.value);
-                      }}
-                      options={courses?.map((course) => ({
-                        value: course.name,
-                        label: course.name
-                      }))}
-                      components={customSelectComponents}
-                      placeholder="Select Course"
-                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                      isClearable
-                    />
-                  </div>
-
-                  {/* Subject */}
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-2">Subject</label>
-                    <Select
-                      value={selectedCourseSubject ? subjectOptions?.find(opt => opt.value === selectedCourseSubject) : null}
-                      onChange={(option) => {
-                        setSelectedCourseSubject(option?.value);
-                        form.setFieldValue('course_subject', option?.value);
-                      }}
-                      options={subjectOptions}
-                      components={customSelectComponents}
-                      placeholder="Select Subject"
-                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                      isClearable
-                      isDisabled={!selectedCourse}
-                    />
-                  </div>
-                </div>
+      {/* Main Form */}
+      <Form form={form} onFinish={handleSubmit} onFieldsChange={onFieldsChange}>
+        <div className="max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Course Selection & Topic Filtering */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Subject & Course Selection Card */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl bg-[#00718C]">
+                <SubjectSelectionIcon />
+                <h2 className="text-lg font-semibold text-white">Subject & Course Selection</h2>
               </div>
-
-              {/* Filtering Criteria Card */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-[#805B30] text-white px-6 py-4">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <FilterOutlined />
-                    Topic & Difficulty Filtering
-                  </h2>
-                </div>
-                <div className="p-6 grid grid-cols-1 gap-6">
-                  {/* Topic */}
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-2">Select Topics</label>
-                    <Select
-                      isMulti
-                      value={selectedTopic?.map(val => topicOptions?.find(opt => opt.value === val)) || []}
-                      onChange={(selected) => {
-                        const values = selected?.map(item => item.value) || [];
-                        setSelectedTopic(values.length === 0 ? null : values);
-                        setSubTopicOptions(getSubtopicOptionsFromValues(values));
-                        form.setFieldValue('topic', values);
-                      }}
-                      options={topicOptions}
-                      components={customSelectComponents}
-                      placeholder="Choose one or more topics..."
-                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                      isClearable
-                      isDisabled={!selectedCourseSubject}
-                    />
-                  </div>
-
-                  <Row gutter={[16, 16]}>
-                    <Col span={24} md={12}>
+              <div className="p-6">
+                <Row gutter={[16, 16]}>
+                  <Col span={24} md={12}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Course</label>
+                    <Form.Item name="course" className="!mb-0" rules={[{ required: true, message: 'Please select a course' }]}>
                       <div>
-                        <label className="block font-medium text-gray-700 mb-2">Select Sub-Topics</label>
                         <Select
-                          isMulti
-                          value={selectedSubTopic?.map(val => subTopicOptions?.find(opt => opt.value === val)) || []}
-                          onChange={(selected) => {
-                            const values = selected?.map(item => item.value) || [];
-                            setSelectedSubTopic(values);
-                            form.setFieldValue('sub_topic', values);
+                          value={courses?.find((c) => c.name === selectedCourse) || null}
+                          onChange={(opt) => {
+                            setSelectedCourse(opt?.name);
+                            setSelectedCourseSubject();
+                            form.setFieldValue("course", opt?.name);
                           }}
-                          options={subTopicOptions?.map(({ id, name }) => ({
-                            label: name,
-                            value: id,
-                          }))}
-                          components={customSelectComponents}
-                          placeholder="Choose sub-topics..."
-                          menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                          options={courses}
+                          getOptionLabel={(e) => e.name}
+                          getOptionValue={(e) => e.name}
+                          placeholder="Select Course"
+                          components={{ DropdownIndicator }}
+                          styles={customSelectStyles}
                           isClearable
-                          isDisabled={!selectedTopic || selectedTopic.length === 0}
                         />
                       </div>
-                    </Col>
-                    <Col span={24} md={12}>
+                    </Form.Item>
+                  </Col>
+                  <Col span={24} md={12}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                    <Form.Item name="course_subject" className="!mb-0" rules={[{ required: true, message: 'Please select a subject' }]}>
                       <div>
-                        <label className="block font-medium text-gray-700 mb-2">Difficulty Level</label>
+                        <Select
+                          value={subjectOptions?.find((s) => s.value === selectedCourseSubject) || null}
+                          onChange={(opt) => {
+                            setSelectedCourseSubject(opt?.value);
+                            form.setFieldValue("course_subject", opt?.value);
+                          }}
+                          options={subjectOptions}
+                          placeholder="Select Subject"
+                          components={{ DropdownIndicator }}
+                          styles={customSelectStyles}
+                          isClearable
+                        />
+                      </div>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
+            </div>
+
+            {/* Topic & Difficulty Filtering Card */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl bg-[#805B36]">
+                <TopicFilterIcon />
+                <h2 className="text-lg font-semibold text-white">Topic & Difficulty Filtering</h2>
+              </div>
+              <div className="p-6 space-y-6">
+                {/* Select Topics */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Topics</label>
+                  <Form.Item name="topic" className="!mb-0">
+                    <div>
+                      <Select
+                        isMulti
+                        closeMenuOnSelect={false}
+                        value={topicOptions?.filter((opt) => selectedTopic?.includes(opt.value)) || []}
+                        onChange={(selected) => {
+                          const values = selected ? selected.map((s) => s.value) : [];
+                          setSelectedTopic(values.length === 0 ? null : values);
+                          setSubTopicOptions(getSubtopicOptionsFromValues(values));
+                          form.setFieldValue("topic", values);
+                        }}
+                        options={topicOptions}
+                        placeholder="Select topics..."
+                        components={{ DropdownIndicator }}
+                        styles={customSelectStyles}
+                        isClearable
+                      />
+                    </div>
+                  </Form.Item>
+                </div>
+
+                {/* Sub-Topics and Difficulty */}
+                <Row gutter={[16, 16]}>
+                  <Col span={24} md={12}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Sub-Topics</label>
+                    <Form.Item name="sub_topic" className="!mb-0">
+                      <div>
                         <Select
                           isMulti
-                          value={selectedDifficulty?.map(val => difficultyOptions?.find(opt => opt.value === val)) || []}
+                          closeMenuOnSelect={false}
+                          value={subTopicOptions?.filter((opt) => selectedSubTopic?.includes(opt.id)).map(({ id, name }) => ({ label: name, value: id })) || []}
                           onChange={(selected) => {
-                            const values = selected?.map(item => item.value) || [];
+                            const values = selected ? selected.map((s) => s.value) : [];
+                            setSelectedSubTopic(values);
+                            form.setFieldValue("sub_topic", values);
+                          }}
+                          options={subTopicOptions?.map(({ id, name }) => ({ label: name, value: id }))}
+                          placeholder="Choose sub-topics..."
+                          components={{ DropdownIndicator }}
+                          styles={customSelectStyles}
+                          isClearable
+                        />
+                      </div>
+                    </Form.Item>
+                  </Col>
+                  <Col span={24} md={12}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
+                    <Form.Item name="difficulty" className="!mb-0">
+                      <div>
+                        <Select
+                          isMulti
+                          closeMenuOnSelect={false}
+                          value={difficultyOptions?.filter((opt) => selectedDifficulty?.includes(opt.value)) || []}
+                          onChange={(selected) => {
+                            const values = selected ? selected.map((s) => s.value) : [];
                             setSelectedDifficulty(values);
-                            form.setFieldValue('difficulty', values);
+                            form.setFieldValue("difficulty", values);
                           }}
                           options={difficultyOptions}
-                          components={customSelectComponents}
                           placeholder="Choose difficulty..."
-                          menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                          components={{ DropdownIndicator }}
+                          styles={customSelectStyles}
                           isClearable
                         />
                       </div>
-                    </Col>
-                  </Row>
-                </div>
+                    </Form.Item>
+                  </Col>
+                </Row>
               </div>
-            </Col>
+            </div>
+          </div>
 
-            {/* Right Column - Parameters */}
-            <Col span={24} xl={8} className="space-y-6">
-              
-              {/* Test Parameters Card */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-full">
-                <div className="bg-[#F59403] text-white px-6 py-4">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <ThunderboltOutlined />
-                    Test Parameters
-                  </h2>
-                </div>
-                <div className="p-6 flex flex-col">
-                  
-                  {/* Question Mode */}
+          {/* Right Column - Test Parameters */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm sticky top-6">
+              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl" style={{ backgroundColor: '#F59405' }}>
+                <TestParametersIcon />
+                <h2 className="text-lg font-semibold text-white">Test Parameters</h2>
+              </div>
+              <div className="p-6 space-y-6">
+                {/* Question Mode */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <span className="text-red-500">*</span> Question Mode
+                  </label>
                   <Form.Item
                     name="question_mode"
-                    label={<span className="font-medium text-gray-700">Question Mode</span>}
-                    rules={[{ required: true, message: "Select question mode" }]}
-                    className="mb-0"
+                    rules={[{ required: true, message: "Please select a question mode" }]}
+                    className="!mb-0"
                   >
-                    <Radio.Group className="w-full flex flex-col gap-2">
-                       <Radio value="INCORRECT" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors m-0">
-                        <span className="font-medium">Incorrect Only</span>
-                        <div className="text-xs text-gray-500">Re-attempt incorrectly answered questions</div>
-                       </Radio>
-                       <Radio value="UNANSWERED" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors m-0">
-                        <span className="font-medium">Unanswered Only</span>
-                        <div className="text-xs text-gray-500">Questions you haven't attempted yet</div>
-                       </Radio>
-                       <Radio value="BOTH" className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors m-0">
-                        <span className="font-medium">Both</span>
-                        <div className="text-xs text-gray-500">Mix of incorrect and unanswered questions</div>
-                       </Radio>
+                    <Radio.Group className="w-full space-y-3">
+                      <div className="border border-gray-200 rounded-lg p-4 transition-all cursor-pointer" style={{ '--hover-border': '#F59405', '--hover-bg': '#FFF5E6' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F59405'; e.currentTarget.style.backgroundColor = '#FFF5E6'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                        <Radio value="INCORRECT" className="w-full">
+                          <div>
+                            <div className="font-medium text-gray-900">Incorrect Only</div>
+                            <div className="text-sm text-gray-500">Re-attempt incorrectly answered questions</div>
+                          </div>
+                        </Radio>
+                      </div>
+                      <div className="border border-gray-200 rounded-lg p-4 transition-all cursor-pointer" onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F59405'; e.currentTarget.style.backgroundColor = '#FFF5E6'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                        <Radio value="UNANSWERED" className="w-full">
+                          <div>
+                            <div className="font-medium text-gray-900">Unanswered Only</div>
+                            <div className="text-sm text-gray-500">Questions you haven't attempted yet</div>
+                          </div>
+                        </Radio>
+                      </div>
+                      <div className="border border-gray-200 rounded-lg p-4 transition-all cursor-pointer" onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F59405'; e.currentTarget.style.backgroundColor = '#FFF5E6'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                        <Radio value="BOTH" className="w-full">
+                          <div>
+                            <div className="font-medium text-gray-900">Both</div>
+                            <div className="text-sm text-gray-500">Mix of incorrect and unanswered questions</div>
+                          </div>
+                        </Radio>
+                      </div>
                     </Radio.Group>
                   </Form.Item>
+                </div>
 
-                   <Divider dashed />
-
-                  {/* Question Count */}
+                {/* Number of Questions */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <span className="text-red-500">*</span> Number of Questions
+                  </label>
                   <Form.Item
                     name="no_of_questions"
-                    label={<span className="font-medium text-gray-700">Number of Questions</span>}
                     rules={[
                       { required: true, message: "Enter number of questions" },
                       {
@@ -472,65 +494,77 @@ function PracticeTestForm({ onBack }) {
                           if (!value || (value > 0 && value <= 90)) {
                             return Promise.resolve();
                           }
-                          return Promise.reject(new Error("1 - 90 questions"));
+                          return Promise.reject(new Error("Enter between 1 and 90 questions"));
                         },
                       },
                     ]}
-                    className="mb-2"
+                    className="!mb-0"
                   >
                     <Input
                       type="number"
-                      prefix={<OrderedListOutlined className="text-gray-400" />}
                       min={1}
                       max={90}
                       placeholder="e.g. 20"
-                      className="w-full"
+                      prefix={<span className="text-gray-400">📝</span>}
+                      className="w-full h-12"
+                      size="large"
                     />
                   </Form.Item>
+                </div>
 
-                  {/* Timer */}
+                {/* Timer */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <span className="text-red-500">*</span> Timer (Minutes)
+                  </label>
                   <Form.Item
                     name="timer"
-                    label={<span className="font-medium text-gray-700">Timer (Minutes)</span>}
                     rules={[
-                      { required: true, message: "Enter timer duration" },
+                      { required: true, message: "Enter timer in minutes" },
                       {
                         validator(_, value) {
                           if (!value || (value > 0 && value <= 90)) {
                             return Promise.resolve();
                           }
-                          return Promise.reject(new Error("1 - 90 minutes"));
+                          return Promise.reject(new Error("Enter between 1 and 90 minutes"));
                         },
                       },
                     ]}
-                    className="mb-2"
+                    className="!mb-0"
                   >
                     <Input
                       type="number"
-                      prefix={<FieldTimeOutlined className="text-gray-400" />}
                       min={1}
                       max={90}
                       placeholder="e.g. 30"
-                      className="w-full"
+                      prefix={<span className="text-gray-400">⏱️</span>}
+                      className="w-full h-12"
+                      size="large"
                     />
                   </Form.Item>
+                </div>
 
-                  {/* Action Button */}
-                   <Button
+                {/* Submit Button */}
+                <Form.Item className="!mb-0 !mt-8">
+                  <Button
                     loading={practiceLoading}
                     disabled={isSubmitDisabled}
                     type="primary"
                     htmlType="submit"
-                    className="w-full h-12 rounded-xl text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 shadow-lg mt-4"
+                    className="w-full h-12 text-base font-semibold border-none rounded-lg shadow-md hover:shadow-lg transition-all"
+                    style={{ backgroundColor: '#F59405' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E08804'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F59405'}
+                    size="large"
                   >
-                    Start Practice Test
+                    {practiceLoading ? "Starting Practice..." : "Start Practice Test"}
                   </Button>
-                </div>
+                </Form.Item>
               </div>
-            </Col>
-          </Row>
-        </Form>
-      </div>
+            </div>
+          </div>
+        </div>
+      </Form>
     </div>
   );
 }

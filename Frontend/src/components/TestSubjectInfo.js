@@ -232,7 +232,7 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
   return format_type === "DYNAMIC" ? (
     <Empty description="Questions will be added dynamically for subjects and sections." />
   ) : (
-    <div className="space-y-6">
+    <div className={selectedSection === "none" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-6"}>
       {selectedSection === "none" ? (
         subjects
           .sort((a, b) => a.order - b.order)
@@ -294,7 +294,7 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
               
               <div className="bg-white/20 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm border border-white/10">
                 <FileTextOutlined />
-                <span>{selectedSection.questions?.length || 0} / {selectedSection.no_of_questions}</span>
+                <span>{selectedRowKeys.length} / {selectedSection.no_of_questions}</span>
               </div>
             </div>
           </div>
