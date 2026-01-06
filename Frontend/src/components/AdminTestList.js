@@ -338,7 +338,7 @@ function AdminTestList() {
             {role == "admin" && (
               <button
                 onClick={() => router.push(`${pathname}/create`)}
-                className="h-11 px-6 rounded-md bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium shadow-lg hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 flex items-center gap-2"
+                className="h-11 px-6 rounded-md text-white bg-[#F59403] font-medium shadow-lg hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 flex items-center gap-2"
               >
                 <PlusOutlined />
                 Create Test

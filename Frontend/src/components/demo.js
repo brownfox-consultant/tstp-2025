@@ -463,30 +463,30 @@ export default function Dashboard() {
               </h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+              <table className="min-w-full text-sm border-collapse">
+                <thead className="bg-gray-50 border-b-2 border-gray-400">
                   <tr>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Course</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Subject</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Total</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Active</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Inactive</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Practice</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Course</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Subject</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Total</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Active</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Inactive</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Practice</th>
                     <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Full Length</th>
                   </tr>
                 </thead>
                 <tbody>
                   {questionCounts.length > 0 ? (
                     questionCounts.map((item, i) => (
-                      <tr key={i} className="border-b border-gray-50 hover:bg-[#FFD36A]/10 transition-colors">
-                        <td className="px-5 py-4 font-medium text-[#2E2725]">{item.course}</td>
-                        <td className="px-5 py-4 text-[#805830]">{item.subject}</td>
-                        <td className="px-5 py-4">
+                      <tr key={i} className="border-b border-gray-400 hover:bg-[#FFD36A]/10 transition-colors">
+                        <td className="px-5 py-4 font-medium text-[#2E2725] border-r border-gray-300">{item.course}</td>
+                        <td className="px-5 py-4 text-[#805830] border-r border-gray-300">{item.subject}</td>
+                        <td className="px-5 py-4 border-r border-gray-300">
                           <span className="px-2.5 py-1 bg-[#0071BC]/10 text-[#0071BC] rounded-full font-semibold text-xs">
                             {item.total_questions}
                           </span>
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 border-r border-gray-300">
                           <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-full font-semibold text-xs">
                             {item.active_questions}
                           </span>
@@ -496,7 +496,7 @@ export default function Dashboard() {
                             {item.inactive_questions}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-[#805830]">{item.total_self_practice_questions}</td>
+                        <td className="px-5 py-4 text-[#805830] border-r border-gray-300">{item.total_self_practice_questions}</td>
                         <td className="px-5 py-4 text-[#805830]">{item.total_full_length_questions}</td>
                       </tr>
                     ))
@@ -512,7 +512,7 @@ export default function Dashboard() {
                   )}
                 </tbody>
               </table>
-              <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-sm text-[#805830] rounded-xl">
+              <div className="px-5 py-3 bg-gray-50 border-t-2 border-gray-400 text-sm text-[#805830] rounded-xl">
                 Showing {questionCounts.length} records
               </div>
             </div>
