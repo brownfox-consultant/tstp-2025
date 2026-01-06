@@ -5,8 +5,11 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 
-phone_regex = RegexValidator(regex=r'^\d{10}$',
-                             message="Phone number must be entered in the format: '9#########'. Up to 10 digits allowed.")
+phone_regex = RegexValidator(
+    regex=r'^\+\d{8,15}$',
+    message="Phone number must be in international format, e.g. +919876543210"
+)
+
 
 
 class Role(models.Model):
@@ -55,8 +58,19 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(validators=[phone_regex], max_length=10, unique=True)
-    alternative_number = models.CharField(validators=[phone_regex], max_length=10, blank=True, null=True)  # ✅ New field
+    phone_number = models.CharField(
+    validators=[phone_regex],
+    max_length=16,
+    unique=True
+    )
+
+    alternative_number = models.CharField(
+        validators=[phone_regex],
+        max_length=16,
+        blank=True,
+        null=True
+    )
+  # ✅ New field
     name = models.CharField(max_length=30, blank=True)
     role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='users')
     address = models.TextField(blank=True, null=True)  # <- new field

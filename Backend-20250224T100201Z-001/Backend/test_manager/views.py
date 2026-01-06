@@ -161,6 +161,7 @@ from course_manager.models import (
 )
 
 from user_manager.models import User
+from course_manager.models import CourseEnrollment
 
 
 
@@ -1692,43 +1693,75 @@ class TestViewSet(viewsets.ModelViewSet):
         test = Test.get_test_by_id(test_id=pk)
         student_ids = request.data.get('student_ids', [])
 
-        # Validate that the provided student IDs exist and are actually students
-        if not (User.filter_users_using_id_and_role(
-                user_ids=student_ids,
-                role=Role.get_role_using_name('student').id
-        ).count() == len(student_ids)):
+        # Validate students
+        valid_students = User.filter_users_using_id_and_role(
+            user_ids=student_ids,
+            role=Role.get_role_using_name('student').id
+        )
+
+        if valid_students.count() != len(student_ids):
             return get_error_response(message='One or more student IDs are invalid.')
 
-        # Add students to the test
+        blocked_students = []
+
+        for student in valid_students:
+            # 🔹 check if student is paid
+            is_paid = CourseEnrollment.objects.filter(
+                student=student
+            ).exclude(subscription_type=CourseEnrollment.FREE).exists()
+
+            if not is_paid:
+                # 🔹 count how many tests already assigned
+                assigned_count = TestSubmission.objects.filter(student=student).count()
+
+                if assigned_count >= 2:
+                    blocked_students.append(student.name)
+
+        # ❌ If any free student crossed limit → block
+        if blocked_students:
+            names = ", ".join(blocked_students)
+            return Response(
+                {
+                    "detail": (
+                        f"This test cannot be assigned to the following student(s) "
+                        f"because they are free users and already have 2 tests assigned: "
+                        f"{names}"
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # ✅ Assign students
         test.students.add(*student_ids)
 
-        # Create TestSubmission entry for each student
         assigned_date = timezone.now()
         expiration_date = assigned_date + timedelta(hours=48)
 
-        submissions = []
-        for student_id in student_ids:
+        for student in valid_students:
             test_submission = TestSubmission.objects.create(
                 test=test,
-                student_id=student_id,
+                student=student,
                 assigned_date=assigned_date,
                 expiration_date=expiration_date
             )
-            submissions.append(test_submission)
 
-            # Send notification
-            student = User.get_user_by_id(student_id)
-            notification_params = {NotificationTemplate.USER_NAME: student.name,
-                                   NotificationTemplate.TEST_NAME: test.name,
-                                   NotificationTemplate.REFERENCE_ID: test_submission.id}
+            # Notification
+            notification_params = {
+                NotificationTemplate.USER_NAME: student.name,
+                NotificationTemplate.TEST_NAME: test.name,
+                NotificationTemplate.REFERENCE_ID: test_submission.id
+            }
 
-            send_notification.delay(notification_name=Notification.TEST_ASSIGNED_NOTIFICATION,
-                                    params=notification_params,
-                                    user_id=student.id)
+            send_notification.delay(
+                notification_name=Notification.TEST_ASSIGNED_NOTIFICATION,
+                params=notification_params,
+                user_id=student.id
+            )
 
-        # TestSubmission.objects.bulk_create(submissions)
-
-        return Response(data={"detail": "Students added successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Students added successfully."},
+            status=status.HTTP_200_OK
+        )
 
     @action(detail=True, methods=['POST'], url_path='take-test')
     def take_test(self, request, pk=None, *args, **kwargs):
