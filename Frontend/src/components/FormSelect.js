@@ -28,7 +28,9 @@ const FormSelect = ({
   const getLabel =
     getOptionLabel || ((option) => option?.label || option?.name || option);
   const getValue =
-    getOptionValue || ((option) => option?.value || option?.id || option);
+    getOptionValue ||
+    ((option) =>
+      option?.value !== undefined ? option?.value : option?.id || option);
 
   // Find selected option
   const selectedOption =
