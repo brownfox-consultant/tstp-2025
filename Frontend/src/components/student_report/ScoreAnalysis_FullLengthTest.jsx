@@ -145,7 +145,7 @@ export default function ScoreAnalysis_FullLengthTest({
   if (!chartData || chartData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
-        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
           <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
@@ -162,11 +162,11 @@ export default function ScoreAnalysis_FullLengthTest({
 
   /* ================= RENDER ================= */
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-4 animate-fadeIn">
 
       {/* ================= SCORE CHART ================= */}
       <div className="card-layout">
-        <h3 className="text-xl font-bold text-gray-800 mb-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">
           Full-Length Test - {courseName} Analysis
         </h3>
 

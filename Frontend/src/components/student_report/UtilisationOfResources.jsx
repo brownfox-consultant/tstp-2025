@@ -137,8 +137,8 @@ export default function UtilisationOfResources({
   };
 
   return (
-    <div className="w-full py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-4">
+    <div className="w-full pb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto px-4">
         {data.English && (
           <ChartCard
             title="English"

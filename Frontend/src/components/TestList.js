@@ -38,9 +38,9 @@ function TestList() {
 
 
   const subscriptionType =
-  typeof window !== "undefined"
-    ? localStorage.getItem("subscription_type")
-    : null;
+    typeof window !== "undefined"
+      ? localStorage.getItem("subscription_type")
+      : null;
 
 
   useEffect(() => {
@@ -63,38 +63,38 @@ function TestList() {
       params.search = debouncedSearchTerm;
     }
     getTestsList(params)
-    .then((res) => {
-  let results = res.data.results;
+      .then((res) => {
+        let results = res.data.results;
 
-  // ✅ FREE subscription → show only 2 tests total
-  if (subscriptionType === "FREE") {
-    results = results.slice(0, 2);
-  }
+        // ✅ FREE subscription → show only 2 tests total
+        if (subscriptionType === "FREE") {
+          results = results.slice(0, 2);
+        }
 
-  const sortedResults = results.map((test, index) => ({
-    ...test,
-    key: index,
-  }));
+        const sortedResults = results.map((test, index) => ({
+          ...test,
+          key: index,
+        }));
 
-  setTestsData(sortedResults);
+        setTestsData(sortedResults);
 
-  // ✅ Fix pagination numbers
-  if (subscriptionType === "FREE") {
-    setCurrent(1);
-    setTotal(results.length);
-    setTotalPages(1);
-  } else {
-    setCurrent(res.data.current_page);
-    setTotal(res.data.count);
-    setTotalPages(res.data.total_pages);
-  }
+        // ✅ Fix pagination numbers
+        if (subscriptionType === "FREE") {
+          setCurrent(1);
+          setTotal(results.length);
+          setTotalPages(1);
+        } else {
+          setCurrent(res.data.current_page);
+          setTotal(res.data.count);
+          setTotalPages(res.data.total_pages);
+        }
 
-  // Cleanup session
-  window.sessionStorage.removeItem("course_subject_index");
-  window.sessionStorage.removeItem("section_index");
-  window.sessionStorage.removeItem("question_index");
-  window.sessionStorage.removeItem("remaining_time");
-})
+        // Cleanup session
+        window.sessionStorage.removeItem("course_subject_index");
+        window.sessionStorage.removeItem("section_index");
+        window.sessionStorage.removeItem("question_index");
+        window.sessionStorage.removeItem("remaining_time");
+      })
 
       .finally(() => setTableLoading(false));
   }, [current, sortParams, debouncedSearchTerm]);
@@ -181,7 +181,7 @@ function TestList() {
       width: 200,
     },
     {
-      title: "   ",
+      title: "",
       align: "center",
       dataIndex: "val",
       key: "val",
@@ -218,21 +218,21 @@ function TestList() {
               className="text-xl cursor-pointer"
             />
           </Popover>
-       ) : role === "student" ? (
-  <Button
-    key={record.test_submission_id}
-    type="primary"
-    onClick={() => handleTestClick(record, record.status)}
-    disabled={
-      subscriptionType === "FREE" &&
-      record.status !== "YET_TO_START"   // FREE user can only start new test
-    }
-  >
-    {record.status === "YET_TO_START" ? "Start Test" : "Continue Test"}
-  </Button>
-) : (
-  "-"
-);
+        ) : role === "student" ? (
+          <Button
+            key={record.test_submission_id}
+            type="primary"
+            onClick={() => handleTestClick(record, record.status)}
+            disabled={
+              subscriptionType === "FREE" &&
+              record.status !== "YET_TO_START"   // FREE user can only start new test
+            }
+          >
+            {record.status === "YET_TO_START" ? "Start Test" : "Continue Test"}
+          </Button>
+        ) : (
+          "-"
+        );
 
       },
       width: 200,
@@ -240,23 +240,23 @@ function TestList() {
   ];
 
   function handleTestClick(record, status) {
-  window.sessionStorage.setItem(
-    "test_submission_id",
-    record.test_submission_id
-  );
-  dispatch(resetTestSlice());
+    window.sessionStorage.setItem(
+      "test_submission_id",
+      record.test_submission_id
+    );
+    dispatch(resetTestSlice());
 
-  const studentId = pathname.split("/")[2]; // Get student id from URL
-  const basePath = `/${role}/${studentId}/test`;
+    const studentId = pathname.split("/")[2]; // Get student id from URL
+    const basePath = `/${role}/${studentId}/test`;
 
-  if (status === "IN_PROGRESS") {
-    setTestLoading(true);
-    router.push(`${basePath}/${record.id}/begin`);
-    goFullScreen();
-  } else if (status === "YET_TO_START") {
-    router.push(`${basePath}/${record.id}/begin`);
+    if (status === "IN_PROGRESS") {
+      setTestLoading(true);
+      router.push(`${basePath}/${record.id}/begin`);
+      goFullScreen();
+    } else if (status === "YET_TO_START") {
+      router.push(`${basePath}/${record.id}/begin`);
+    }
   }
-}
 
 
   const itemRender = (_, type, originalElement) => {
@@ -297,8 +297,8 @@ function TestList() {
   return (
     <div className="mt-3">
       {showResult ? (
-       // <Report testSubmissionId={submissionId} />
-        <ReportNew testSubmissionId={submissionId}/>
+        // <Report testSubmissionId={submissionId} />
+        <ReportNew testSubmissionId={submissionId} />
       ) : (
         <>
           <Input
@@ -322,18 +322,18 @@ function TestList() {
                 <div className="flex justify-end mr-5">
                   Page {current} of {totalPages} (Total: {total} records)
                 </div>
-               {subscriptionType !== "FREE" && (
-  <Pagination
-    className="size-changer"
-    current={current}
-    pageSize={pageSize}
-    total={total}
-    itemRender={itemRender}
-    onChange={(page) => {
-      setCurrent(page);
-    }}
-  />
-)}
+                {subscriptionType !== "FREE" && (
+                  <Pagination
+                    className="size-changer"
+                    current={current}
+                    pageSize={pageSize}
+                    total={total}
+                    itemRender={itemRender}
+                    onChange={(page) => {
+                      setCurrent(page);
+                    }}
+                  />
+                )}
 
               </div>
             )}

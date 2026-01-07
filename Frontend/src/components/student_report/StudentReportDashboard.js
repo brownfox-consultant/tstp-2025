@@ -268,7 +268,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
       {!hideHeader && <Header studentName={studentNameProp} />}
 
       {/* INLINE DROPDOWNS - Course & Test Type */}
-      <div className="w-full mb-6">
+      <div className="w-full mb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-auto">
 
           {/* COURSE CARD */}
@@ -292,7 +292,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
       </div>
 
       {/* REPORT TYPE TABS */}
-      <div className="w-full mb-6">
+      <div className="w-full mb-4">
         <Tabs
           tabs={[
             { value: 'score-analysis', label: `${selectedCourseName} Score Analysis` },
@@ -346,7 +346,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
             <div className="py-20 text-center text-gray-500 text-lg">Loading...</div>
           ) : !hasEnglishData ? (
             <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl border border-gray-200 p-12 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
                 <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
@@ -374,7 +374,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
                 />
               </div>
 
-              <div style={{ marginTop: "25px" }}>
+              <div className="mt-4">
                 <SubTopicPracticeStyled
                   student_id={studentId}
                   course_id={selectedCourse}
@@ -394,7 +394,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
             <div className="py-20 text-center text-gray-500 text-lg">Loading...</div>
           ) : !hasMathData ? (
             <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl border border-gray-200 p-12 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
                 <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
@@ -422,7 +422,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
               </div>
 
               {/* FULL WIDTH BELOW */}
-              <div style={{ marginTop: "25px" }}>
+              <div className="mt-4">
                 <Math_SubTopicPracticeStyled
                   student_id={studentId}
                   course_id={selectedCourse}

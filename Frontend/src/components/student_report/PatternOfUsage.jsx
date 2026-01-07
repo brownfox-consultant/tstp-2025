@@ -152,7 +152,7 @@ export default function PatternOfUsage({
   /* ================= RENDER ================= */
 
   return (
-    <div className="w-full py-8">
+    <div className="w-full">
 
       {/* CHART CONTAINER */}
       <div className="max-w-7xl mx-auto px-4">

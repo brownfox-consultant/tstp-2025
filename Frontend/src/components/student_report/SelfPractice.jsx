@@ -120,7 +120,7 @@ export default function SelfPractice({ student_id, course_id }) {
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 w-full space-y-10">
+    <div className="bg-white rounded-xl shadow-sm p-6 w-full space-y-6">
       <TableTwo data={scoreData} />
 
       <div className="flex justify-center mt-10">

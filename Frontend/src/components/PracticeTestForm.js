@@ -25,6 +25,7 @@ import {
   TestParametersIcon,
   DropdownArrowIcon
 } from "./icons/PracticeTestIcons";
+import ReactSelect, { components } from "react-select";
 
 // Custom Dropdown Indicator with rotating arrow
 const DropdownIndicator = (props) => {
@@ -299,7 +300,7 @@ function PracticeTestForm() {
           <div className="lg:col-span-2 space-y-6">
             {/* Subject & Course Selection Card */}
             <div className="bg-white rounded-xl shadow-sm">
-              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl bg-[#00718C]">
+              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl bg-[#805B36]">
                 <SubjectSelectionIcon />
                 <h2 className="text-lg font-semibold text-white">Subject & Course Selection</h2>
               </div>
@@ -309,7 +310,7 @@ function PracticeTestForm() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Course</label>
                     <Form.Item name="course" className="!mb-0" rules={[{ required: true, message: 'Please select a course' }]}>
                       <div>
-                        <Select
+                        <ReactSelect
                           value={courses?.find((c) => c.name === selectedCourse) || null}
                           onChange={(opt) => {
                             setSelectedCourse(opt?.name);
@@ -331,7 +332,7 @@ function PracticeTestForm() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
                     <Form.Item name="course_subject" className="!mb-0" rules={[{ required: true, message: 'Please select a subject' }]}>
                       <div>
-                        <Select
+                        <ReactSelect
                           value={subjectOptions?.find((s) => s.value === selectedCourseSubject) || null}
                           onChange={(opt) => {
                             setSelectedCourseSubject(opt?.value);
@@ -362,7 +363,7 @@ function PracticeTestForm() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Select Topics</label>
                   <Form.Item name="topic" className="!mb-0">
                     <div>
-                      <Select
+                      <ReactSelect
                         isMulti
                         closeMenuOnSelect={false}
                         value={topicOptions?.filter((opt) => selectedTopic?.includes(opt.value)) || []}
@@ -388,7 +389,7 @@ function PracticeTestForm() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Select Sub-Topics</label>
                     <Form.Item name="sub_topic" className="!mb-0">
                       <div>
-                        <Select
+                        <ReactSelect
                           isMulti
                           closeMenuOnSelect={false}
                           value={subTopicOptions?.filter((opt) => selectedSubTopic?.includes(opt.id)).map(({ id, name }) => ({ label: name, value: id })) || []}
@@ -410,7 +411,7 @@ function PracticeTestForm() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
                     <Form.Item name="difficulty" className="!mb-0">
                       <div>
-                        <Select
+                        <ReactSelect
                           isMulti
                           closeMenuOnSelect={false}
                           value={difficultyOptions?.filter((opt) => selectedDifficulty?.includes(opt.value)) || []}

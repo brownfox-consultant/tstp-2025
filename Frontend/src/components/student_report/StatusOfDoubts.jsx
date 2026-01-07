@@ -79,7 +79,7 @@ export default function StatusOfDoubts({
   }
 
   return (
-    <div className="w-full py-6">
+    <div className="w-full">
       <div className="flex flex-col xxl:flex-row gap-6">
         
         {/* ================= LEFT SIDE: GRAPH ================= */}

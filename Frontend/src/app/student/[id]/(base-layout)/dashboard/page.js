@@ -12,7 +12,6 @@ import { RocketIcon, PracticeIcon, ReportIcon } from "@/components/icons/dashboa
 import DashboardHeader from "@/components/DashboardHeader";
 import "@/app/Dashboard.css";
 
-
 function DashboardPage() {
   const [name, setName] = useState("");
   const [isFreeUser, setIsFreeUser] = useState(false);
@@ -51,7 +50,6 @@ function DashboardPage() {
     if (key === selectedTab) return;
     setIsLoading(true);
     setSelectedTab(key);
-    // Simulate a refresh delay for better UX
     setTimeout(() => {
       setIsLoading(false);
     }, 600);
