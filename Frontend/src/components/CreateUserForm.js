@@ -21,10 +21,10 @@ import Select, { components } from "react-select";
 const DropdownIndicator = (props) => {
   return (
     <components.DropdownIndicator {...props}>
-      <svg 
+      <svg
         className={`w-4 h-4 transition-transform duration-200 ${props.selectProps.menuIsOpen ? 'rotate-180' : ''}`}
-        fill="none" 
-        stroke="#0071BC" 
+        fill="none"
+        stroke="#0071BC"
         viewBox="0 0 24 24"
       >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -48,11 +48,11 @@ const customSelectStyles = {
   }),
   option: (base, state) => ({
     ...base,
-    backgroundColor: state.isSelected 
-      ? '#0071BC' 
-      : state.isFocused 
-      ? '#E6F4FF' 
-      : 'white',
+    backgroundColor: state.isSelected
+      ? '#0071BC'
+      : state.isFocused
+        ? '#E6F4FF'
+        : 'white',
     color: state.isSelected ? 'white' : '#1F2937',
     cursor: 'pointer',
     '&:active': {
@@ -98,8 +98,8 @@ function CreateUserForm() {
   const [loading, setLoading] = useState(false);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
   const [countryCodes, setCountryCodes] = useState([]);
-const [selectedCountryCode, setSelectedCountryCode] = useState("+91");
-const [altCountryCode, setAltCountryCode] = useState("+91");
+  const [selectedCountryCode, setSelectedCountryCode] = useState("+91");
+  const [altCountryCode, setAltCountryCode] = useState("+91");
 
 
   const handlePhoneNumberChange = (e, name) => {
@@ -115,29 +115,29 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
   }, []);
 
   useEffect(() => {
-  fetch("https://restcountries.com/v3.1/all?fields=idd")
-    .then((res) => res.json())
-    .then((data) => {
-      const codes = data
-        .map((c) => {
-          const root = c.idd?.root;
-          const suffixes = c.idd?.suffixes;
-          if (!root || !suffixes) return [];
-          return suffixes.map((s) => `${root}${s}`);
-        })
-        .flat()
-        .filter(Boolean);
+    fetch("https://restcountries.com/v3.1/all?fields=idd")
+      .then((res) => res.json())
+      .then((data) => {
+        const codes = data
+          .map((c) => {
+            const root = c.idd?.root;
+            const suffixes = c.idd?.suffixes;
+            if (!root || !suffixes) return [];
+            return suffixes.map((s) => `${root}${s}`);
+          })
+          .flat()
+          .filter(Boolean);
 
-      const uniqueCodes = [...new Set(codes)].sort((a, b) =>
-        a.localeCompare(b)
-      );
+        const uniqueCodes = [...new Set(codes)].sort((a, b) =>
+          a.localeCompare(b)
+        );
 
-      setCountryCodes(uniqueCodes);
-      setSelectedCountryCode("+91");
-      setAltCountryCode("+91");
-    })
-    .catch(console.error);
-}, []);
+        setCountryCodes(uniqueCodes);
+        setSelectedCountryCode("+91");
+        setAltCountryCode("+91");
+      })
+      .catch(console.error);
+  }, []);
 
 
   const handleRoleChange = (selected) => {
@@ -148,16 +148,16 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
 
   const handleSubmit = (formData) => {
     if (formData.dob) {
-    formData.dob = dayjs(formData.dob).format("YYYY-MM-DD");
-  }
+      formData.dob = dayjs(formData.dob).format("YYYY-MM-DD");
+    }
 
-  // 🔥 add country codes
-  formData.phone_number = `${selectedCountryCode}${formData.phone_number}`;
+    // 🔥 add country codes
+    formData.phone_number = `${selectedCountryCode}${formData.phone_number}`;
 
-  if (formData.alternative_number) {
-    formData.alternative_number =
-      `${altCountryCode}${formData.alternative_number}`;
-  }
+    if (formData.alternative_number) {
+      formData.alternative_number =
+        `${altCountryCode}${formData.alternative_number}`;
+    }
     setLoading(true);
 
     createUser(formData)
@@ -203,11 +203,11 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
             <h1 className="text-2xl font-bold text-gray-800">Create New User</h1>
             <p className="text-sm text-gray-500">Fill in the details to create a new user account</p>
           </div>
-          <button 
+          <button
             onClick={() => router.back()}
             className="px-5 py-3 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 shadow  transition-all duration-300 hover:scale-105"
           >
-           Back
+            Back
           </button>
         </div>
 
@@ -275,18 +275,18 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                 Personal Details
               </h2>
             </div>
-            
+
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Name */}
-                <Form.Item 
-                  label={<span className="font-medium text-gray-700">Full Name</span>} 
-                  name="name" 
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Full Name</span>}
+                  name="name"
                   rules={[{ required: true, message: "Please enter name" }]}
                 >
-                  <Input 
+                  <Input
                     prefix={<UserOutlined className="text-gray-400" />}
-                    placeholder="Enter full name" 
+                    placeholder="Enter full name"
                     className="h-11 rounded-lg"
                   />
                 </Form.Item>
@@ -297,9 +297,9 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                   name="email"
                   rules={[{ required: true }, { type: "email", message: "Please enter valid email" }]}
                 >
-                  <Input 
+                  <Input
                     prefix={<MailOutlined className="text-gray-400" />}
-                    placeholder="Enter email address" 
+                    placeholder="Enter email address"
                     className="h-11 rounded-lg"
                   />
                 </Form.Item>
@@ -311,19 +311,19 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                   rules={[{ required: true }, { pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
                 >
                   <Input
-                     addonBefore={
-    <select
-      value={selectedCountryCode}
-      onChange={(e) => setSelectedCountryCode(e.target.value)}
-      className="border-0 bg-transparent outline-none"
-    >
-      {countryCodes.map((code) => (
-        <option key={code} value={code}>
-          {code}
-        </option>
-      ))}
-    </select>
-  }
+                    addonBefore={
+                      <select
+                        value={selectedCountryCode}
+                        onChange={(e) => setSelectedCountryCode(e.target.value)}
+                        className="border-0 bg-transparent outline-none"
+                      >
+                        {countryCodes.map((code) => (
+                          <option key={code} value={code}>
+                            {code}
+                          </option>
+                        ))}
+                      </select>
+                    }
                     maxLength={10}
                     onChange={(e) => handlePhoneNumberChange(e, "phone_number")}
                     placeholder="Enter 10 digit number"
@@ -338,19 +338,19 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                   rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
                 >
                   <Input
-                     addonBefore={
-      <select
-        value={altCountryCode}
-        onChange={(e) => setAltCountryCode(e.target.value)}
-        className="border-0 bg-transparent outline-none"
-      >
-        {countryCodes.map((code) => (
-          <option key={code} value={code}>
-            {code}
-          </option>
-        ))}
-      </select>
-    }
+                    addonBefore={
+                      <select
+                        value={altCountryCode}
+                        onChange={(e) => setAltCountryCode(e.target.value)}
+                        className="border-0 bg-transparent outline-none"
+                      >
+                        {countryCodes.map((code) => (
+                          <option key={code} value={code}>
+                            {code}
+                          </option>
+                        ))}
+                      </select>
+                    }
                     maxLength={10}
                     onChange={(e) => handlePhoneNumberChange(e, "alternative_number")}
                     placeholder="Enter alternative number"
@@ -359,22 +359,22 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                 </Form.Item>
 
                 {/* Date of Birth */}
-                <Form.Item 
-                  label={<span className="font-medium text-gray-700">Date of Birth</span>} 
-                  name="dob" 
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Date of Birth</span>}
+                  name="dob"
                   rules={[{ required: true, message: "Please select date" }]}
                 >
-                  <DatePicker 
-                    className="w-full h-11 rounded-lg" 
-                    format="YYYY-MM-DD" 
+                  <DatePicker
+                    className="w-full h-11 rounded-lg"
+                    format="YYYY-MM-DD"
                     placeholder="Select date"
                     disabledDate={(current) => current && current > dayjs().endOf('day')}
                   />
                 </Form.Item>
 
                 {/* Blood Group */}
-                <Form.Item 
-                  label={<span className="font-medium text-gray-700">Blood Group</span>} 
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Blood Group</span>}
                   name="blood_group"
                 >
                   <div>
@@ -396,23 +396,23 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
                 </Form.Item>
 
                 {/* Address */}
-                <Form.Item 
-                  label={<span className="font-medium text-gray-700">Address</span>} 
-                  name="address" 
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Address</span>}
+                  name="address"
                   rules={[{ required: true, message: "Please enter address" }]}
                   className="md:col-span-2 lg:col-span-1"
                 >
-                  <Input 
+                  <Input
                     prefix={<HomeOutlined className="text-gray-400" />}
-                    placeholder="Enter address" 
+                    placeholder="Enter address"
                     className="h-11 rounded-lg"
                   />
                 </Form.Item>
 
                 {/* Role */}
-                <Form.Item 
-                  label={<span className="font-medium text-gray-700">Role</span>} 
-                  name="role" 
+                <Form.Item
+                  label={<span className="font-medium text-gray-700">Role</span>}
+                  name="role"
                   rules={[{ required: true, message: "Please select role" }]}
                 >
                   <div>
@@ -464,8 +464,8 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
 
           {/* Action Buttons */}
           <div className="flex justify-center gap-4">
-            <button 
-              className="h-12 px-8 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-300" 
+            <button
+              className="h-12 px-8 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-300"
               onClick={() => router.back()}
             >
               Cancel
@@ -474,7 +474,7 @@ const [altCountryCode, setAltCountryCode] = useState("+91");
               type="primary"
               htmlType="submit"
               loading={loading}
-              disabled={isSubmitDisabled}
+              // disabled={isSubmitDisabled}
               className="h-12 px-10 rounded-xl font-semibold shadow-lg bg-[#0071bc] hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 text-white"
             >
               Submit

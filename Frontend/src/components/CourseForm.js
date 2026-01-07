@@ -65,22 +65,22 @@ function CourseForm({ courseData = {}, isEdit = false }) {
 
 
   const handleDeleteSubject = (removeFn, fieldName) => {
-  Modal.confirm({
-    title: "Are you sure you want to delete this subject?",
-    content:
-      "Deleting this subject will remove all related questions, tests, and results permanently.",
-    okText: "Yes, Delete",
-    okType: "danger",
-    cancelText: "Cancel",
-    onOk() {
-      removeFn(fieldName);
-      notification.success({
-        message: "Deleted",
-        description: "Subject and its related data have been deleted.",
-      });
-    },
-  });
-};
+    Modal.confirm({
+      title: "Are you sure you want to delete this subject?",
+      content:
+        "Deleting this subject will remove all related questions, tests, and results permanently.",
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk() {
+        removeFn(fieldName);
+        notification.success({
+          message: "Deleted",
+          description: "Subject and its related data have been deleted.",
+        });
+      },
+    });
+  };
 
   const openNotification = () => {
     notification.success({
@@ -101,55 +101,55 @@ function CourseForm({ courseData = {}, isEdit = false }) {
   };
 
   const onFinish = (values) => {
-  console.log("Came Here", values);
+    console.log("Came Here", values);
 
-  // ✅ Manual validation: check each subject has at least one section
-  const hasEmptySections = (values.subjects || []).some((subject, index) => {
-    if (!subject.sections || subject.sections.length === 0) {
-      notification.error({
-        message: `Validation Error`,
-        description: `Subject ${index + 1}: Section is required.`,
-        placement: "topRight",
-      });
-      return true;
+    // ✅ Manual validation: check each subject has at least one section
+    const hasEmptySections = (values.subjects || []).some((subject, index) => {
+      if (!subject.sections || subject.sections.length === 0) {
+        notification.error({
+          message: `Validation Error`,
+          description: `Subject ${index + 1}: Section is required.`,
+          placement: "topRight",
+        });
+        return true;
+      }
+      return false;
+    });
+
+    if (hasEmptySections) {
+      return; // ❌ Stop if validation fails
     }
-    return false;
-  });
 
-  if (hasEmptySections) {
-    return; // ❌ Stop if validation fails
-  }
+    setLoading(true);
 
-  setLoading(true);
+    const request = isEdit ? editCourse(courseId, values) : createCourse(values);
 
-  const request = isEdit ? editCourse(courseId, values) : createCourse(values);
-
-  request
-    .then(({ data }) => {
-      Modal.success({
-        title: data.detail,
-        onOk: () => router.back(),
-      });
-      notification.success({
-        message: "Success",
-        description: data.detail,
-        icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
-      });
-    })
-    .catch((err) => {
-      const msg =
-        err?.response?.data?.msg ||
-        err?.response?.data?.detail ||
-        "Something went wrong";
-      notification.error({
-        message: "Error",
-        description: msg,
-        placement: "topRight",
-      });
-      console.log("err", err);
-    })
-    .finally(() => setLoading(false));
-};
+    request
+      .then(({ data }) => {
+        Modal.success({
+          title: data.detail,
+          onOk: () => router.back(),
+        });
+        // notification.success({
+        //   message: "Success",
+        //   description: data.detail,
+        //   icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
+        // });
+      })
+      .catch((err) => {
+        const msg =
+          err?.response?.data?.msg ||
+          err?.response?.data?.detail ||
+          "Something went wrong";
+        notification.error({
+          message: "Error",
+          description: msg,
+          placement: "topRight",
+        });
+        console.log("err", err);
+      })
+      .finally(() => setLoading(false));
+  };
 
 
   const onFieldsChange = (_, allFields) => {
@@ -198,12 +198,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                 }}
                 name="name"
                 labelAlign="left"
-                 rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Required",
+                  },
+                ]}
               >
                 <Input placeholder="Course Name"></Input>
               </Form.Item>
@@ -249,13 +249,13 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                         {`Subject ${field.name + 1}`}
 
                         <Image
-  className="cursor-pointer hidden group-hover:block"
-  src={deleteIcon}
-  alt="delete"
-  width={20}
-  height={20}
-  onClick={() => handleDeleteSubject(remove, field.name)} // confirmation before delete
-/>
+                          className="cursor-pointer hidden group-hover:block"
+                          src={deleteIcon}
+                          alt="delete"
+                          width={20}
+                          height={20}
+                          onClick={() => handleDeleteSubject(remove, field.name)} // confirmation before delete
+                        />
 
                       </div>
                     ))}
@@ -278,12 +278,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
             style={{ maxHeight: "calc(87vh - 100px)", overflowY: "auto" }}
           >
             {showSubjectForm && (
-              <Form.Item  rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]} className="w-full">
+              <Form.Item rules={[
+                {
+                  required: true,
+                  message: "Required",
+                },
+              ]} className="w-full">
                 <Form.List name="subjects" ref={subjectListRef}>
                   {(fields, { add, remove }) => (
                     <Row gutter={8} className="w-full">
@@ -296,14 +296,14 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                             hoverable
                             size="small"
                             className="mx-2 bg-gray-50 rounded-lg m-4"
-                            /* extra={
-                              <CloseOutlined
-                                onClick={() => {
-                                  remove(field.name);
-                                  setAddSubjectCount(addSubjectCount - 1);
-                                }}
-                              />
-                            } */
+                          /* extra={
+                            <CloseOutlined
+                              onClick={() => {
+                                remove(field.name);
+                                setAddSubjectCount(addSubjectCount - 1);
+                              }}
+                            />
+                          } */
                           >
                             <Row gutter={16}>
                               <Col span={24}>
@@ -320,12 +320,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                     </p>
                                   }
                                   //label="Subject Name"
-                                   rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                                  rules={[
+                                    {
+                                      required: true,
+                                      message: "Required",
+                                    },
+                                  ]}
                                   labelCol={{ span: 24 }}
                                   wrapperCol={{ span: 24 }}
                                   labelStyle={{
@@ -340,19 +340,17 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                     className="flex justify-between w-full"
                                   >
                                     <div
-                                      className={`flex-1 border border-gray-300 rounded-md p-2 mr-2 ${
-                                        selectedOption === "select_existing"
+                                      className={`flex-1 border border-gray-300 rounded-md p-2 mr-2 ${selectedOption === "select_existing"
                                           ? "bg-orange-50 border-orange-300"
                                           : ""
-                                      }`}
+                                        }`}
                                     >
                                       <Radio
                                         value="select_existing"
-                                        className={`w-full text-center ${
-                                          selectedOption === "select_existing"
+                                        className={`w-full text-center ${selectedOption === "select_existing"
                                             ? "text-orange-500"
                                             : ""
-                                        }`}
+                                          }`}
                                       >
                                         <p
                                           style={{
@@ -366,19 +364,17 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                       </Radio>
                                     </div>
                                     <div
-                                      className={`flex-1 border border-gray-300 rounded-md p-2 ${
-                                        selectedOption === "add_new"
+                                      className={`flex-1 border border-gray-300 rounded-md p-2 ${selectedOption === "add_new"
                                           ? "bg-orange-50 text-orange-500 border-orange-300"
                                           : ""
-                                      }`}
+                                        }`}
                                     >
                                       <Radio
                                         value="add_new"
-                                        className={`w-full text-center ${
-                                          selectedOption === "add_new"
+                                        className={`w-full text-center ${selectedOption === "add_new"
                                             ? "text-orange-500"
                                             : ""
-                                        }`}
+                                          }`}
                                       >
                                         <p
                                           style={{
@@ -400,12 +396,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                 {selectedOption === "select_existing" ? (
                                   <Form.Item
                                     name={[field.name, "name"]} // Keep the name consistent
-                                     rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                                    rules={[
+                                      {
+                                        required: true,
+                                        message: "Required",
+                                      },
+                                    ]}
                                   >
                                     <CustomSelect
                                       fieldName="Subject"
@@ -478,12 +474,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                     <Form.Item
                                       wrapperCol={{ span: 24 }}
                                       className="w-full"
-                                       rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                                      rules={[
+                                        {
+                                          required: true,
+                                          message: "Required",
+                                        },
+                                      ]}
                                       name={[
                                         field.name,
                                         "correct_answer_marks",
@@ -499,12 +495,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                     <Form.Item
                                       wrapperCol={{ span: 24 }}
                                       className="w-full"
-                                       rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                                      rules={[
+                                        {
+                                          required: true,
+                                          message: "Required",
+                                        },
+                                      ]}
                                       name={[
                                         field.name,
                                         "incorrect_answer_marks",
@@ -520,12 +516,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                     <Form.Item
                                       wrapperCol={{ span: 24 }}
                                       className="w-full"
-                                       rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                                      rules={[
+                                        {
+                                          required: true,
+                                          message: "Required",
+                                        },
+                                      ]}
                                       name={[field.name, "order"]}
                                     >
                                       <InputNumber
@@ -640,12 +636,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
 
                                               <Form.Item
                                                 name={[subField.name, "name"]}
-                                                 rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                                                rules={[
+                                                  {
+                                                    required: true,
+                                                    message: "Required",
+                                                  },
+                                                ]}
                                                 labelCol={{ span: 24 }}
                                                 wrapperCol={{ span: 24 }}
                                                 className="w-full"
@@ -677,12 +673,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                                       "no_of_questions",
                                                     ]}
                                                     className="w-full"
-                                                     rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                                                    rules={[
+                                                      {
+                                                        required: true,
+                                                        message: "Required",
+                                                      },
+                                                    ]}
                                                   >
                                                     <InputNumber
                                                       style={{ width: "100%" }}
@@ -697,12 +693,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                                       "time_limit",
                                                     ]}
                                                     className="w-full"
-                                                     rules={[
-                                          {
-                                            required: true,
-                                            message: "Required",
-                                          },
-                                        ]}
+                                                    rules={[
+                                                      {
+                                                        required: true,
+                                                        message: "Required",
+                                                      },
+                                                    ]}
                                                   >
                                                     <InputNumber
                                                       style={{ width: "100%" }}
