@@ -367,11 +367,11 @@ function QuestionForm({
         selectedRange == "OPEN RANGE"
           ? transformExpressions(expressions)
           : [
-              {
-                [inverseOperatorMapping[formState.operator1]]: formState.value1,
-                [normalOperatorMapping[formState.operator2]]: formState.value2,
-              },
-            ];
+            {
+              [inverseOperatorMapping[formState.operator1]]: formState.value1,
+              [normalOperatorMapping[formState.operator2]]: formState.value2,
+            },
+          ];
       let payload = {
         ...values,
         ...(selectedSubQuestionType == "RANGE_BASED_ANSWER" && {
@@ -417,458 +417,345 @@ function QuestionForm({
   };
   return (
     <>
-    <Form
-      form={form}
-      onFinish={onSubmit}
-      layout="vertical"
-      initialValues={initialValues}
-      // onFieldsChange={onFieldsChange}
-    >
-      <Row gutter={[16]}>
-        <Col span={24} sm={5}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Question Type</div>}
-            name="question_type"
-            required
-            rules={[
-              {
-                required: true,
-                message: "Please select a question type",
-              },
-            ]}
-          >
-            <Select
-              placeholder="Select Question Type"
-              options={questionTypeOptions}
-              value={selectedSubQuestionType}
-              onChange={(value) => {
-                setSelectedQuestionType(value);
-                setSelectedSubQuestionType(undefined);
-                form.setFieldValue("question_subtype", undefined);
-              }}
-            ></Select>
-          </Form.Item>
-        </Col>
-        <Col span={24} sm={5}>
-          <Form.Item
-            label={
-              <div className="text-base font-semibold">Sub Question Type</div>
-            }
-            dependencies={["question_type"]}
-            name="question_subtype"
-            required
-            rules={[
-              {
-                required: true,
-                message: "Please select a sub question type",
-              },
-            ]}
-          >
-            <Select
-              placeholder="Select Sub Question Type"
-              options={subQuestionTypeOptions}
-              value={selectedSubQuestionType}
-              onChange={setSelectedSubQuestionType}
-            ></Select>
-          </Form.Item>
-        </Col>
-      </Row>
+      <Form
+        form={form}
+        onFinish={onSubmit}
+        layout="vertical"
+        initialValues={initialValues}
+        className="space-y-6"
+      >
+        {/* Question Type Configuration Card */}
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden p-6">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-[#F59405]">Question Type Configuration</h3>
+            <p className="text-sm text-gray-500 mt-1">Select the type and subtype for your question</p></div>
 
-      {selectedSubQuestionType == "READING_COMPREHENSION" &&
-        selectedQuestionType == "MCQ" && (
-          <Row gutter={[8, 8]}>
-            <Col md={12} sm={24}>
+          <Row gutter={[24, 16]}>
+            <Col xs={24} md={12}>
               <Form.Item
-                label={
-                  <div className="text-base font-semibold">Reading Passage</div>
-                }
-                name="reading_comprehension_passage"
+                label={<span className="text-sm font-semibold text-gray-700">Question Type</span>}
+                name="question_type"
                 required
-                rules={[
-                  {
-                    required: true,
-                    message: "Please add a reading passage",
-                  },
-                ]}
+                rules={[{ required: true, message: "Please select a question type" }]}
+                className="mb-0"
               >
-                <RichTextEditor />
+                <Select
+                  placeholder="Select Question Type"
+                  options={questionTypeOptions}
+                  value={selectedSubQuestionType}
+                  onChange={(value) => {
+                    setSelectedQuestionType(value);
+                    setSelectedSubQuestionType(undefined);
+                    form.setFieldValue("question_subtype", undefined);
+                  }}
+                  size="large"
+                  className="w-full [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-gray-200 [&_.ant-select-selector]:!h-10"
+                />
               </Form.Item>
             </Col>
-            {/* <Col md={12} sm={24}>
+            <Col xs={24} md={12}>
               <Form.Item
-                label={<div className="text-base font-semibold">Question</div>}
-                name="description"
+                label={<span className="text-sm font-semibold text-gray-700">Sub Question Type</span>}
+                dependencies={["question_type"]}
+                name="question_subtype"
                 required
-                rules={[
-                  {
-                    required: true,
-                    message: "Please add question description",
-                  },
-                ]}
+                rules={[{ required: true, message: "Please select a sub question type" }]}
+                className="mb-0"
               >
-                <RichTextEditor />
-              </Form.Item>
-            </Col> */}
-          </Row>
-        )}
-      {/* {selectedQuestionType == "MCQ" &&
-        selectedSubQuestionType !== "READING_COMPREHENSION" && (
-          <Row gutter={[8, 8]}>
-            <Col md={19} sm={24}>
-              <Form.Item
-                label={<div className="text-base font-semibold">Question</div>}
-                name="description"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please add question description",
-                  },
-                ]}
-                required
-              >
-                <RichTextEditor />
+                <Select
+                  placeholder="Select Sub Question Type"
+                  options={subQuestionTypeOptions}
+                  value={selectedSubQuestionType}
+                  onChange={setSelectedSubQuestionType}
+                  size="large"
+                  className="w-full [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-gray-200 [&_.ant-select-selector]:!h-10"
+                />
               </Form.Item>
             </Col>
           </Row>
-        )} */}
+        </div>
 
-      <Row gutter={[8, 8]}>
-        {/* <Col md={12} sm={24}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Directions</div>}
-            name="directions"
-          >
-            <RichTextEditor />
-          </Form.Item>
-        </Col> */}
-           <Col md={12} sm={24}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Explanation</div>}
-            name="explanation"
-          >
-            <RichTextEditor />
-          </Form.Item>
-        </Col>
-        <Col md={12} sm={24}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Question</div>}
-            name="description"
-            required
-            rules={[
-              {
-                required: true,
-                message: "Please add question description",
-              },
-            ]}
-          >
-            <RichTextEditor />
-          </Form.Item>
-        </Col>
-      </Row>
 
-      {selectedQuestionType == "MCQ" && (
-        <div className="border-gray-300 border-2 rounded-md p-5">
-          <div className="mb-3 text-base font-semibold">Options</div>
-          <span className=" text-sm text-grey-400 italic">
-            Tick the checkbox of the correct option
-          </span>
-          <Divider className="my-4" />
-          <Form.List name="options" initialValue={Array(4).fill({})}>
-            {(fields, { add, remove }) => (
-              <Row gutter={[16, 8]}>
-                {selectedSubQuestionType == "MULTI_CHOICE" ? (
-                  fields.map(({ key, name, ...restField }, index) => (
-                    <Col lg={12} sm={24}>
-                      <Row
-                        key={key}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          marginBottom: 2,
-                        }}
-                      >
-                        <Row className="flex justify-between align-middle">
-                          <Col span={6}>
-                            <Form.Item
-                              {...restField}
-                              labelAlign="left"
-                              name={[name, "is_correct"]}
-                              valuePropName="checked"
-                              initialValue={false}
-                              className="mb-0"
-                              wrapperCol={{ span: 24 }}
-                            >
-                              <Checkbox className="w-max">
-                                Option {index + 1}
-                              </Checkbox>
-                            </Form.Item>
-                          </Col>
-                          {fields.length > 1 ? (
-                            <CloseOutlined
-                              className="dynamic-delete-button mb-2 mr-1"
-                              onClick={() => remove(name)}
-                            />
-                          ) : null}
-                        </Row>
-                        <Form.Item
-                          {...restField}
-                          name={[name, "description"]}
-                          rules={[
-                            {
-                              required: true,
-                              message: "Missing option",
-                            },
-                          ]}
-                        >
-                          <RichTextEditor />
-                        </Form.Item>
-                      </Row>
-                    </Col>
-                  ))
-                ) : (
-                  <Radio.Group className="w-full" onChange={handleRadioChange}>
-                    <Row gutter={[16, 0]}>
-                      {fields.map(({ key, name, ...restField }, index) => (
-                        <Col span={24} lg={12}>
-                          <Row
-                            key={key}
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              marginBottom: 2,
-                            }}
-                          >
-                            <Row className="flex justify-between align-middle">
-                              <Col span={24} lg={12}>
+        {/* Reading Passage Card - Conditional */}
+        {selectedSubQuestionType == "READING_COMPREHENSION" &&
+          selectedQuestionType == "MCQ" && (
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-[#007FBC] to-[#00A3E0] px-6 py-4">
+                <h3 className="text-lg font-bold text-white m-0">Reading Passage</h3>
+              </div>
+              <div className="p-6">
+                <Form.Item
+                  label={<span className="text-sm font-semibold text-gray-700">Passage Content</span>}
+                  name="reading_comprehension_passage"
+                  required
+                  rules={[{ required: true, message: "Please add a reading passage" }]}
+                  className="mb-0"
+                >
+                  <RichTextEditor />
+                </Form.Item>
+              </div>
+            </div>
+          )}
+
+        {/* Question Content Card */}
+        <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-[#F59405]">Question Details</h3>
+            <p className="text-sm text-gray-500 mt-1">Provide the question description and explanation</p>
+          </div>
+          <div>
+            <Row gutter={[24, 24]}>
+              <Col xs={24} lg={12}>
+                <Form.Item
+                  label={<span className="text-sm font-semibold text-gray-700">Question Text</span>}
+                  name="description"
+                  required
+                  rules={[{ required: true, message: "Please add question description" }]}
+                  className="mb-0"
+                >
+                  <RichTextEditor />
+                </Form.Item>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Form.Item
+                  label={<span className="text-sm font-semibold text-gray-700">Explanation</span>}
+                  name="explanation"
+                  className="mb-0"
+                >
+                  <RichTextEditor />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+        </div>
+
+        {/* MCQ Options Card */}
+        {selectedQuestionType == "MCQ" && (
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#F59405] to-[#F59405] px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white m-0">Answer Options</h3>
+              <span className="text-xs font-medium text-white/90 bg-white/20 px-3 py-1.5 rounded-full">
+                {selectedSubQuestionType == "MULTI_CHOICE" ? "Select multiple correct answers" : "Select one correct answer"}
+              </span>
+            </div>
+            <div className="p-6">
+              <Form.List name="options" initialValue={Array(4).fill({})}>
+                {(fields, { add, remove }) => (
+                  <div className="space-y-4">
+                    <Row gutter={[24, 24]}>
+                      {selectedSubQuestionType == "MULTI_CHOICE" ? (
+                        fields.map(({ key, name, ...restField }, index) => (
+                          <Col lg={12} xs={24} key={key}>
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-[#F59405] hover:shadow-sm transition-all duration-200">
+                              <div className="flex justify-between items-center mb-3">
                                 <Form.Item
                                   {...restField}
                                   labelAlign="left"
                                   name={[name, "is_correct"]}
                                   valuePropName="checked"
+                                  initialValue={false}
                                   className="mb-0"
                                   wrapperCol={{ span: 24 }}
                                 >
-                                  <Radio value={index} className="w-max">
+                                  <Checkbox className="font-semibold text-gray-700">
                                     Option {index + 1}
-                                  </Radio>
+                                  </Checkbox>
                                 </Form.Item>
-                              </Col>
-                              {fields.length > 1 ? (
-                                <CloseOutlined
-                                  className="dynamic-delete-button mb-2 mr-1"
-                                  onClick={() => remove(name)}
-                                />
-                              ) : null}
-                            </Row>
-                            <Form.Item
-                              {...restField}
-                              name={[name, "description"]}
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Missing option",
-                                },
-                              ]}
-                            >
-                              <RichTextEditor />
-                            </Form.Item>
-                          </Row>
-                        </Col>
-                      ))}
-                    </Row>
-                  </Radio.Group>
-                )}
-
-                {fields.length <= 5 && (
-                  <Form.Item className="w-full flex justify-center">
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Option
-                    </Button>
-                  </Form.Item>
-                )}
-              </Row>
-            )}
-          </Form.List>
-        </div>
-      )}
-
-      {selectedQuestionType == "GRIDIN" && (
-        <>
-          {["SINGLE_ANSWER", "MULTI_ANSWER"].includes(
-            selectedSubQuestionType
-          ) && (
-            <Form.List
-              name="options"
-              initialValue={Array(1).fill({ value: 1 })}
-            >
-              {(fields, { add, remove }) => (
-                <Row gutter={[16, 8]}>
-                  {fields.map(({ key, name, ...restField }, index) => (
-                    <Col span={3}>
-                      <Space>
-                        <Form.Item
-                          label={
-                            <div className="text-base font-semibold">
-                              Answer
+                                {fields.length > 1 && (
+                                  <Button
+                                    type="text"
+                                    danger
+                                    icon={<CloseOutlined />}
+                                    onClick={() => remove(name)}
+                                    className="hover:bg-red-50"
+                                  />
+                                )}
+                              </div>
+                              <Form.Item
+                                {...restField}
+                                name={[name, "description"]}
+                                rules={[{ required: true, message: "Missing option" }]}
+                                className="mb-0"
+                              >
+                                <RichTextEditor />
+                              </Form.Item>
                             </div>
-                          }
-                          {...restField}
-                          name={[name]}
-                          rules={[
-                            {
-                              required: true,
-                              message: "Missing answer",
-                            },
-                          ]}
-                        >
-                          <Input
-                            value={form.getFieldValue([name])}
-                            onChange={(e) => handleInputNumber(e, name)}
-                            placeholder="Enter value"
-                            onKeyDown={(e) => {
-                              handleKeyDown(e, add);
-                              handleKeyDownLengthCheck(e);
-                            }}
-                          ></Input>
-                        </Form.Item>
-                        {selectedSubQuestionType == "MULTI_ANSWER" && (
-                          <Popover content={`Add more answer`}>
-                            <Button
-                              shape="circle"
-                              icon={<PlusOutlined />}
-                              onClick={() => add()}
-                              type="primary"
-                            ></Button>
-                          </Popover>
-                        )}
-                        {index > 0 && (
-                          <MinusCircleOutlined onClick={() => remove(name)} />
-                        )}
-                      </Space>
-                    </Col>
-                  ))}
-                </Row>
-              )}
-            </Form.List>
-          )}
-          {selectedSubQuestionType == "RANGE_BASED_ANSWER" && (
-            <div>
-              <div className="my-2 text-base font-semibold">Answer Range</div>
-              <Select
-                placeholder="Select type"
-                className="w-40"
-                style={{ marginRight: "1rem" }}
-                value={selectedRange}
-                onChange={setSelectedRange}
-                options={[
-                  { label: "CLOSED RANGE", value: "CLOSED RANGE" },
-                  { label: "OPEN RANGE", value: "OPEN RANGE" },
-                ]}
-              ></Select>
-              {selectedRange == "CLOSED RANGE" ? (
-                <Space className="" align="baseline">
-                  <Form.Item
-                    name="value1"
-                    required
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please add a value",
-                      },
-                    ]}
-                  >
-                    <Input
-                      name="value1"
-                      value={formState.value1}
-                      onKeyDown={(e) => handleKeyDownLengthCheck(e)}
-                      onChange={(e) =>
-                        handleInputChange("value1", e.target.value)
-                      }
-                    />
-                  </Form.Item>
-                  <Form.Item>
-                    <Select
-                      name="operator1"
-                      value={formState.operator1}
-                      onChange={(value) =>
-                        handleSelectChange("operator1", value)
-                      }
-                    >
-                      <Option value="<">&lt;</Option>
-                      <Option value="<=">&lt;=</Option>
-                      <Option value=">">&gt;</Option>
-                      <Option value=">=">&gt;=</Option>
-                      <Option value="==">==</Option>
-                    </Select>
-                  </Form.Item>
-                  <Form.Item>
-                    <InputNumber
-                      className="font-bold"
-                      disabled
-                      placeholder="ANS"
-                    />
-                  </Form.Item>
-
-                  <Form.Item>
-                    <Select
-                      name="operator2"
-                      value={formState.operator2}
-                      onChange={(value) =>
-                        handleSelectChange("operator2", value)
-                      }
-                    >
-                      <Option value="<">&lt;</Option>
-                      <Option value="<=">&lt;=</Option>
-                      <Option value=">">&gt;</Option>
-                      <Option value=">=">&gt;=</Option>
-                      <Option value="=">=</Option>
-                    </Select>
-                  </Form.Item>
-                  <Form.Item
-                    name="value2"
-                    required
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please add a value",
-                      },
-                    ]}
-                  >
-                    <Input
-                      onKeyDown={(e) => handleKeyDownLengthCheck(e)}
-                      name="value2"
-                      value={formState.value2}
-                      onChange={(e) =>
-                        handleInputChange("value2", e.target.value)
-                      }
-                    />
-                  </Form.Item>
-                </Space>
-              ) : (
-                <>
-                  {expressions.map((expression, index) => (
-                    <Space className="mr-1" key={index} align="baseline">
-                      {index > 0 && (
-                        <span className=" mx-2 font-semibold">OR</span>
+                          </Col>
+                        ))
+                      ) : (
+                        <Radio.Group className="w-full" onChange={handleRadioChange}>
+                          <Row gutter={[24, 24]}>
+                            {fields.map(({ key, name, ...restField }, index) => (
+                              <Col xs={24} lg={12} key={key}>
+                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-[#F59405] hover:shadow-sm transition-all duration-200">
+                                  <div className="flex justify-between items-center mb-3">
+                                    <Form.Item
+                                      {...restField}
+                                      labelAlign="left"
+                                      name={[name, "is_correct"]}
+                                      valuePropName="checked"
+                                      className="mb-0"
+                                      wrapperCol={{ span: 24 }}
+                                    >
+                                      <Radio value={index} className="font-semibold text-gray-700">
+                                        Option {index + 1}
+                                      </Radio>
+                                    </Form.Item>
+                                    {fields.length > 1 && (
+                                      <Button
+                                        type="text"
+                                        danger
+                                        icon={<CloseOutlined />}
+                                        onClick={() => remove(name)}
+                                        className="hover:bg-red-50"
+                                      />
+                                    )}
+                                  </div>
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, "description"]}
+                                    rules={[{ required: true, message: "Missing option" }]}
+                                    className="mb-0"
+                                  >
+                                    <RichTextEditor />
+                                  </Form.Item>
+                                </div>
+                              </Col>
+                            ))}
+                          </Row>
+                        </Radio.Group>
                       )}
-                      <Form.Item>
+                    </Row>
+
+                    {fields.length <= 5 && (
+                      <Button
+                        type="dashed"
+                        onClick={() => add()}
+                        block
+                        icon={<PlusOutlined />}
+                        className="h-12 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:text-[#F59405] hover:border-[#F59405] font-medium transition-colors"
+                      >
+                        Add Option
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </Form.List>
+            </div>
+          </div>
+        )}
+
+        {/* Grid-In Answers Card */}
+        {selectedQuestionType == "GRIDIN" && (
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#F59405] to-[#F59405] px-6 py-4">
+              <h3 className="text-lg font-bold text-white m-0">Correct Answer(s)</h3>
+            </div>
+            <div className="p-6">
+              {["SINGLE_ANSWER", "MULTI_ANSWER"].includes(selectedSubQuestionType) && (
+                <Form.List name="options" initialValue={Array(1).fill({ value: 1 })}>
+                  {(fields, { add, remove }) => (
+                    <div className="flex flex-wrap gap-4">
+                      {fields.map(({ key, name, ...restField }, index) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <Form.Item
+                            label={<span className="text-sm font-semibold text-gray-700">Answer {index + 1}</span>}
+                            {...restField}
+                            name={[name]}
+                            rules={[{ required: true, message: "Missing answer" }]}
+                            className="mb-0"
+                          >
+                            <Input
+                              value={form.getFieldValue([name])}
+                              onChange={(e) => handleInputNumber(e, name)}
+                              placeholder="Enter value"
+                              onKeyDown={(e) => {
+                                handleKeyDown(e, add);
+                                handleKeyDownLengthCheck(e);
+                              }}
+                              className="w-32 h-10 rounded-lg font-semibold"
+                            />
+                          </Form.Item>
+                          {selectedSubQuestionType == "MULTI_ANSWER" && (
+                            <Popover content="Add more answer">
+                              <Button
+                                shape="circle"
+                                icon={<PlusOutlined />}
+                                onClick={() => add()}
+                                type="primary"
+                                className="bg-[#F59405] border-[#F59405] hover:bg-[#d68104]"
+                              />
+                            </Popover>
+                          )}
+                          {index > 0 && (
+                            <Button
+                              type="text"
+                              danger
+                              icon={<MinusCircleOutlined />}
+                              onClick={() => remove(name)}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Form.List>
+              )}
+
+              {selectedSubQuestionType == "RANGE_BASED_ANSWER" && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-semibold text-gray-700">Range Type:</span>
+                    <Select
+                      placeholder="Select type"
+                      className="w-48 [&_.ant-select-selector]:!rounded-lg"
+                      value={selectedRange}
+                      onChange={setSelectedRange}
+                      options={[
+                        { label: "Closed Range", value: "CLOSED RANGE" },
+                        { label: "Open Range", value: "OPEN RANGE" },
+                      ]}
+                    />
+                  </div>
+
+                  {selectedRange == "CLOSED RANGE" ? (
+                    <div className="flex flex-wrap items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                      <Form.Item
+                        name="value1"
+                        required
+                        rules={[{ required: true, message: "Required" }]}
+                        className="!mb-0"
+                      >
                         <Input
-                          disabled
-                          className="font-bold"
-                          value={expression.variable}
+                          name="value1"
+                          value={formState.value1}
+                          onKeyDown={(e) => handleKeyDownLengthCheck(e)}
+                          onChange={(e) => handleInputChange("value1", e.target.value)}
+                          className="w-24 h-10 rounded-lg font-semibold m-0"
+                          placeholder="Min"
                         />
                       </Form.Item>
-                      <Form.Item required>
+                      <Form.Item className="!mb-0">
                         <Select
-                          value={expression.operator}
-                          onChange={(value) =>
-                            handleExpChange(index, "operator", value)
-                          }
+                          name="operator1"
+                          value={formState.operator1}
+                          onChange={(value) => handleSelectChange("operator1", value)}
+                          className="w-20 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selection-item]:!flex [&_.ant-select-selection-item]:!items-center [&_.ant-select-selection-item]:!justify-center"
+                        >
+                          <Option value="<">&lt;</Option>
+                          <Option value="<=">&lt;=</Option>
+                          <Option value=">">&gt;</Option>
+                          <Option value=">=">&gt;=</Option>
+                          <Option value="==">==</Option>
+                        </Select>
+                      </Form.Item>
+                      <div className="h-10 px-4 flex items-center bg-gray-200 rounded-lg font-bold text-gray-600">ANS</div>
+                      <Form.Item className="!mb-0">
+                        <Select
+                          name="operator2"
+                          value={formState.operator2}
+                          onChange={(value) => handleSelectChange("operator2", value)}
+                          className="w-20 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selection-item]:!flex [&_.ant-select-selection-item]:!items-center [&_.ant-select-selection-item]:!justify-center"
                         >
                           <Option value="<">&lt;</Option>
                           <Option value="<=">&lt;=</Option>
@@ -878,106 +765,141 @@ function QuestionForm({
                         </Select>
                       </Form.Item>
                       <Form.Item
-                        name={`value_${index}`}
+                        name="value2"
                         required
-                        rules={[
-                          { required: true, message: "Please add a value" },
-                        ]}
+                        rules={[{ required: true, message: "Required" }]}
+                        className="!mb-0"
                       >
                         <Input
                           onKeyDown={(e) => handleKeyDownLengthCheck(e)}
-                          value={expression.value}
-                          onChange={(e) =>
-                            handleExpChange(index, "value", e.target.value)
-                          }
+                          name="value2"
+                          value={formState.value2}
+                          onChange={(e) => handleInputChange("value2", e.target.value)}
+                          className="w-24 h-10 rounded-lg font-semibold"
+                          placeholder="Max"
                         />
                       </Form.Item>
-                      {expressions.length == 2 && index == 1 && (
-                        <MinusCircleFilled
-                          onClick={() => removeExpression(index)}
-                        />
-                      )}
-                      {expressions.length == 1 && (
-                        <PlusCircleFilled onClick={addExpression} />
-                      )}
-                    </Space>
-                  ))}
-                </>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {expressions.map((expression, index) => (
+                        <div key={index} className="flex flex-wrap items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                          {index > 0 && <span className="font-bold text-[#F59405] px-2">OR</span>}
+                          <div className="h-10 px-6 flex items-center justify-center bg-gray-200 rounded-lg font-bold text-gray-600">{expression.variable}</div>
+                          <Form.Item required className="!mb-0">
+                            <Select
+                              value={expression.operator}
+                              onChange={(value) => handleExpChange(index, "operator", value)}
+                              className="w-20 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!h-10 [&_.ant-select-selection-item]:!flex [&_.ant-select-selection-item]:!items-center [&_.ant-select-selection-item]:!justify-center"
+                            >
+                              <Option value="<">&lt;</Option>
+                              <Option value="<=">&lt;=</Option>
+                              <Option value=">">&gt;</Option>
+                              <Option value=">=">&gt;=</Option>
+                              <Option value="=">=</Option>
+                            </Select>
+                          </Form.Item>
+                          <Form.Item
+                            name={`value_${index}`}
+                            required
+                            rules={[{ required: true, message: "Required" }]}
+                            className="!mb-0"
+                          >
+                            <Input
+                              onKeyDown={(e) => handleKeyDownLengthCheck(e)}
+                              value={expression.value}
+                              onChange={(e) => handleExpChange(index, "value", e.target.value)}
+                              className="w-24 h-10 rounded-lg font-semibold"
+                              placeholder="Value"
+                            />
+                          </Form.Item>
+                          <div className="flex gap-2 ml-auto">
+                            {expressions.length == 2 && index == 1 && (
+                              <Button shape="circle" danger icon={<MinusCircleFilled />} onClick={() => removeExpression(index)} />
+                            )}
+                            {expressions.length == 1 && (
+                              <Button shape="circle" type="primary" icon={<PlusCircleFilled />} onClick={addExpression} className="bg-[#F59405] border-[#F59405]" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </>
-      )}
+          </div>
+        )}
 
-      <Row className="my-2" gutter={[8, 8]}>
-        {/* <Col md={12} sm={24}>
-          <Form.Item
-            label={<div className="text-base font-semibold">Explanation</div>}
-            name="explanation"
-          >
-            <RichTextEditor />
-          </Form.Item>
-        </Col> */}
-      </Row>
+        {/* Course Details Card */}
+        <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+          <div class="mb-1"><h3 class="text-xl font-bold text-[#F59405]">Course Details</h3><p class="text-sm text-gray-500 mt-1">Add course information and metadata for this question</p></div>
+          <div className="p-6">
+            <Form.List name="questions_data" initialValue={Array(1).fill({})}>
+              {(fields, { add, remove }) => (
+                <div className="space-y-4">
+                  {fields.map(({ key, name, ...restField }, index) => (
+                    <div key={key}>
+                      <QuestionMetaDataCard
+                        index={index}
+                        name={name}
+                        fields={fields}
+                        courses={courses}
+                        restField={restField}
+                        add={add}
+                        remove={remove}
+                      />
+                    </div>
+                  ))}
 
-      <div className="border-gray-300 border-2 rounded-md p-5 my-5">
-        <div className="mb-3 text-base font-semibold">Course Details</div>
-        <span className=" text-sm text-grey-400 italic">
-          Add courses and other information for the question
-        </span>
-        <Divider className="my-4" />
-        <Form.List name="questions_data" initialValue={Array(1).fill({})}>
-          {(fields, { add, remove }) => (
-            <Row gutter={[16, 8]}>
-              {fields.map(({ key, name, ...restField }, index) => (
-                <Col span={24}>
-                  <QuestionMetaDataCard
-                    key={key}
-                    index={index}
-                    name={name}
-                    fields={fields}
-                    courses={courses}
-                    restField={restField}
-                    add={add}
-                    remove={remove}
-                  />
-                </Col>
-              ))}
-
-              {fields.length <= 5 && (
-                <Col span={24}>
-                  <Form.Item className="flex justify-center">
+                  {fields.length <= 5 && (
                     <Button
                       type="dashed"
                       onClick={() => add()}
                       block
                       icon={<PlusOutlined />}
+                      className="h-12 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:text-[#F59405] hover:border-[#F59405] font-medium transition-colors"
                     >
                       Add this question in another course
                     </Button>
-                  </Form.Item>
-                </Col>
+                  )}
+                </div>
               )}
-            </Row>
-          )}
-        </Form.List>
-      </div>
+            </Form.List>
+          </div>
+        </div>
 
-        <Form.Item className="flex justify-center">
-          <Button type="default" className="mr-3" onClick={openPreview}>
-            Preview
-          </Button>
-          <Button type="primary" htmlType="submit" loading={submitLoader}>
-            Submit
-          </Button>
-          <Button className="ml-5" onClick={() => router.back()}>
-            Cancel
-        </Button>
-        
-        </Form.Item>
-    </Form>
+        {/* Action Buttons */}
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+          <div className="flex flex-wrap justify-center gap-4">
+            <Button
+              size="large"
+              className="min-w-[120px] h-12 rounded-xl font-semibold border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-700"
+              onClick={() => router.back()}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="large"
+              className="min-w-[120px] h-12 rounded-xl font-semibold border-[#007FBC] text-[#007FBC] hover:bg-[#007FBC] hover:text-white"
+              onClick={openPreview}
+            >
+              Preview
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitLoader}
+              size="large"
+              className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200 hover:shadow-orange-300 hover:opacity-90"
+            >
+              Submit Question
+            </Button>
+          </div>
+        </div>
+      </Form>
 
-    {/* Preview Modal */}
+      {/* Preview Modal */}
       {previewData && (
         <PreviewQuestionModal
           visible={previewVisible}
