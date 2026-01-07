@@ -23,7 +23,6 @@ import {
   Popover,
   Radio,
   Row,
-  Select,
   Space,
 } from "antd";
 import { useForm } from "antd/es/form/Form";
@@ -33,6 +32,52 @@ import { useMediaQuery } from "react-responsive";
 import QuestionMetaDataCard from "./QuestionMetaDataCard";
 import RichTextEditor from "./RichTextEditor";
 import PreviewQuestionModal from "./PreviewQuestionModal";
+import ReactSelect, { components } from "react-select";
+import { ChevronIcon } from "./icons/dashboard-icons";
+
+const DropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <ChevronIcon
+        className="w-4 h-4"
+        isOpen={props.selectProps.menuIsOpen}
+        color="#805830"
+      />
+    </components.DropdownIndicator>
+  );
+};
+
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    marginBottom: "0 !important",
+    minHeight: "48px",
+    borderRadius: "8px",
+    borderColor: state.isFocused ? "#F59405" : "#E5E7EB",
+    boxShadow: state.isFocused ? "0 0 0 1px #F59405" : "none",
+    "&:hover": {
+      borderColor: "#F59405",
+    },
+  }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+};
+
+const FormReactSelect = ({ value, options, onChange, onSelectionChange, ...props }) => {
+  const selectedOption = options?.find((opt) => opt.value === value) || null;
+
+  return (
+    <ReactSelect
+      {...props}
+      options={options}
+      value={selectedOption}
+      onChange={(option) => {
+        const val = option ? option.value : null;
+        onChange?.(val);
+        onSelectionChange?.(val, option);
+      }}
+    />
+  );
+};
 
 function QuestionForm({
   initialValues = {},
@@ -437,19 +482,20 @@ function QuestionForm({
                 name="question_type"
                 required
                 rules={[{ required: true, message: "Please select a question type" }]}
-                className="mb-0"
+                className="!mb-0"
               >
-                <Select
+                <FormReactSelect
                   placeholder="Select Question Type"
                   options={questionTypeOptions}
-                  value={selectedSubQuestionType}
-                  onChange={(value) => {
+                  onSelectionChange={(value) => {
                     setSelectedQuestionType(value);
                     setSelectedSubQuestionType(undefined);
                     form.setFieldValue("question_subtype", undefined);
                   }}
-                  size="large"
-                  className="w-full [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-gray-200 [&_.ant-select-selector]:!h-10"
+                  styles={customSelectStyles}
+                  components={{ DropdownIndicator }}
+                  classNamePrefix="react-select "
+                  menuPortalTarget={typeof document !== "undefined" ? document.body : null}
                 />
               </Form.Item>
             </Col>
@@ -460,15 +506,16 @@ function QuestionForm({
                 name="question_subtype"
                 required
                 rules={[{ required: true, message: "Please select a sub question type" }]}
-                className="mb-0"
+                className="!mb-0"
               >
-                <Select
+                <FormReactSelect
                   placeholder="Select Sub Question Type"
                   options={subQuestionTypeOptions}
-                  value={selectedSubQuestionType}
-                  onChange={setSelectedSubQuestionType}
-                  size="large"
-                  className="w-full [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-gray-200 [&_.ant-select-selector]:!h-10"
+                  onSelectionChange={(value) => setSelectedSubQuestionType(value)}
+                  styles={customSelectStyles}
+                  components={{ DropdownIndicator }}
+                  classNamePrefix="react-select"
+                  menuPortalTarget={typeof document !== "undefined" ? document.body : null}
                 />
               </Form.Item>
             </Col>
@@ -489,7 +536,7 @@ function QuestionForm({
                   name="reading_comprehension_passage"
                   required
                   rules={[{ required: true, message: "Please add a reading passage" }]}
-                  className="mb-0"
+                  className="!mb-0"
                 >
                   <RichTextEditor />
                 </Form.Item>
@@ -511,7 +558,7 @@ function QuestionForm({
                   name="description"
                   required
                   rules={[{ required: true, message: "Please add question description" }]}
-                  className="mb-0"
+                  className="!mb-0"
                 >
                   <RichTextEditor />
                 </Form.Item>
@@ -520,7 +567,7 @@ function QuestionForm({
                 <Form.Item
                   label={<span className="text-sm font-semibold text-gray-700">Explanation</span>}
                   name="explanation"
-                  className="mb-0"
+                  className="!mb-0"
                 >
                   <RichTextEditor />
                 </Form.Item>
@@ -554,7 +601,7 @@ function QuestionForm({
                                   name={[name, "is_correct"]}
                                   valuePropName="checked"
                                   initialValue={false}
-                                  className="mb-0"
+                                  className="!mb-0"
                                   wrapperCol={{ span: 24 }}
                                 >
                                   <Checkbox className="font-semibold text-gray-700">
@@ -575,7 +622,7 @@ function QuestionForm({
                                 {...restField}
                                 name={[name, "description"]}
                                 rules={[{ required: true, message: "Missing option" }]}
-                                className="mb-0"
+                                className="!mb-0"
                               >
                                 <RichTextEditor />
                               </Form.Item>
@@ -594,7 +641,7 @@ function QuestionForm({
                                       labelAlign="left"
                                       name={[name, "is_correct"]}
                                       valuePropName="checked"
-                                      className="mb-0"
+                                      className="!mb-0"
                                       wrapperCol={{ span: 24 }}
                                     >
                                       <Radio value={index} className="font-semibold text-gray-700">
@@ -615,7 +662,7 @@ function QuestionForm({
                                     {...restField}
                                     name={[name, "description"]}
                                     rules={[{ required: true, message: "Missing option" }]}
-                                    className="mb-0"
+                                    className="!mb-0"
                                   >
                                     <RichTextEditor />
                                   </Form.Item>
@@ -628,15 +675,15 @@ function QuestionForm({
                     </Row>
 
                     {fields.length <= 5 && (
-                      <Button
+                      <button
                         type="dashed"
                         onClick={() => add()}
                         block
                         icon={<PlusOutlined />}
-                        className="h-12 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:text-[#F59405] hover:border-[#F59405] font-medium transition-colors"
+                        className="px-5 py-3 rounded-lg border border-dashed border-[#F59405] bg-[#FFF8F0] text-[#F59405] hover:!bg-[#F59405] hover:!text-white hover:!border-[#F59405] font-semibold transition-all duration-300 flex items-center justify-center gap-2 w-auto mx-auto"
                       >
                         Add Option
-                      </Button>
+                      </button>
                     )}
                   </div>
                 )}
@@ -663,7 +710,7 @@ function QuestionForm({
                             {...restField}
                             name={[name]}
                             rules={[{ required: true, message: "Missing answer" }]}
-                            className="mb-0"
+                            className="!mb-0"
                           >
                             <Input
                               value={form.getFieldValue([name])}
@@ -706,15 +753,17 @@ function QuestionForm({
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <span className="text-sm font-semibold text-gray-700">Range Type:</span>
-                    <Select
+                    <FormReactSelect
                       placeholder="Select type"
-                      className="w-48 [&_.ant-select-selector]:!rounded-lg"
-                      value={selectedRange}
-                      onChange={setSelectedRange}
+                      onSelectionChange={(value) => setSelectedRange(value)}
                       options={[
                         { label: "Closed Range", value: "CLOSED RANGE" },
                         { label: "Open Range", value: "OPEN RANGE" },
                       ]}
+                      styles={customSelectStyles}
+                      components={{ DropdownIndicator }}
+                      classNamePrefix="react-select"
+                      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
                     />
                   </div>
 
@@ -736,33 +785,27 @@ function QuestionForm({
                         />
                       </Form.Item>
                       <Form.Item className="!mb-0">
-                        <Select
+                        <FormReactSelect
                           name="operator1"
-                          value={formState.operator1}
-                          onChange={(value) => handleSelectChange("operator1", value)}
-                          className="w-20 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selection-item]:!flex [&_.ant-select-selection-item]:!items-center [&_.ant-select-selection-item]:!justify-center"
-                        >
-                          <Option value="<">&lt;</Option>
-                          <Option value="<=">&lt;=</Option>
-                          <Option value=">">&gt;</Option>
-                          <Option value=">=">&gt;=</Option>
-                          <Option value="==">==</Option>
-                        </Select>
+                          onSelectionChange={(value) => handleSelectChange("operator1", value)}
+                          options={[{ value: "<", label: "<" }, { value: "<=", label: "<=" }, { value: ">", label: ">" }, { value: ">=", label: ">=" }, { value: "==", label: "==" }]}
+                          styles={customSelectStyles}
+                          components={{ DropdownIndicator }}
+                          classNamePrefix="react-select"
+                          menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                        />
                       </Form.Item>
                       <div className="h-10 px-4 flex items-center bg-gray-200 rounded-lg font-bold text-gray-600">ANS</div>
                       <Form.Item className="!mb-0">
-                        <Select
+                        <FormReactSelect
                           name="operator2"
-                          value={formState.operator2}
-                          onChange={(value) => handleSelectChange("operator2", value)}
-                          className="w-20 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selection-item]:!flex [&_.ant-select-selection-item]:!items-center [&_.ant-select-selection-item]:!justify-center"
-                        >
-                          <Option value="<">&lt;</Option>
-                          <Option value="<=">&lt;=</Option>
-                          <Option value=">">&gt;</Option>
-                          <Option value=">=">&gt;=</Option>
-                          <Option value="=">=</Option>
-                        </Select>
+                          onSelectionChange={(value) => handleSelectChange("operator2", value)}
+                          options={[{ value: "<", label: "<" }, { value: "<=", label: "<=" }, { value: ">", label: ">" }, { value: ">=", label: ">=" }, { value: "=", label: "=" }]}
+                          styles={customSelectStyles}
+                          components={{ DropdownIndicator }}
+                          classNamePrefix="react-select"
+                          menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                        />
                       </Form.Item>
                       <Form.Item
                         name="value2"
@@ -787,17 +830,14 @@ function QuestionForm({
                           {index > 0 && <span className="font-bold text-[#F59405] px-2">OR</span>}
                           <div className="h-10 px-6 flex items-center justify-center bg-gray-200 rounded-lg font-bold text-gray-600">{expression.variable}</div>
                           <Form.Item required className="!mb-0">
-                            <Select
-                              value={expression.operator}
-                              onChange={(value) => handleExpChange(index, "operator", value)}
-                              className="w-20 [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!h-10 [&_.ant-select-selection-item]:!flex [&_.ant-select-selection-item]:!items-center [&_.ant-select-selection-item]:!justify-center"
-                            >
-                              <Option value="<">&lt;</Option>
-                              <Option value="<=">&lt;=</Option>
-                              <Option value=">">&gt;</Option>
-                              <Option value=">=">&gt;=</Option>
-                              <Option value="=">=</Option>
-                            </Select>
+                            <FormReactSelect
+                              onSelectionChange={(value) => handleExpChange(index, "operator", value)}
+                              options={[{ value: "<", label: "<" }, { value: "<=", label: "<=" }, { value: ">", label: ">" }, { value: ">=", label: ">=" }, { value: "=", label: "=" }]}
+                              styles={customSelectStyles}
+                              components={{ DropdownIndicator }}
+                              classNamePrefix="react-select"
+                              menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                            />
                           </Form.Item>
                           <Form.Item
                             name={`value_${index}`}
@@ -832,9 +872,12 @@ function QuestionForm({
         )}
 
         {/* Course Details Card */}
-        <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
-          <div class="mb-1"><h3 class="text-xl font-bold text-[#F59405]">Course Details</h3><p class="text-sm text-gray-500 mt-1">Add course information and metadata for this question</p></div>
-          <div className="p-6">
+        <div className="bg-white rounded-2xl shadow-md p-4 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+          <div className="mb-2">
+            <h3 className="text-xl font-bold text-[#F59405]">Course Details</h3>
+            <p className="text-sm text-gray-500 mt-1">Add course information and metadata for this question</p>
+          </div>
+          <div>
             <Form.List name="questions_data" initialValue={Array(1).fill({})}>
               {(fields, { add, remove }) => (
                 <div className="space-y-4">
@@ -853,15 +896,15 @@ function QuestionForm({
                   ))}
 
                   {fields.length <= 5 && (
-                    <Button
-                      type="dashed"
+                    <button
+                      type="button"
                       onClick={() => add()}
                       block
                       icon={<PlusOutlined />}
-                      className="h-12 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:text-[#F59405] hover:border-[#F59405] font-medium transition-colors"
+                      className="px-5 py-3 rounded-lg border border-dashed border-[#F59405] bg-[#FFF8F0] text-[#F59405] hover:!bg-[#F59405] hover:!text-white hover:!border-[#F59405] font-semibold transition-all duration-300 flex items-center justify-center gap-2 w-auto mx-auto"
                     >
                       Add this question in another course
-                    </Button>
+                    </button>
                   )}
                 </div>
               )}
