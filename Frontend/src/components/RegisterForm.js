@@ -11,6 +11,8 @@ import { useEffect, useRef } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import OtpModal from "./OtpModal";
+import { useCountryCode } from "@/hooks/useCountryCode";
+import CountryCodeSelect from "./CountryCodeSelect";
 
 function RegisterForm() {
   const carouselRef = useRef();
@@ -22,21 +24,14 @@ function RegisterForm() {
   const [currentSlide, setCurrentSlide] = useState();
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [submitLoader, setSubmitLoader] = useState(false);
-  const [countryCodes, setCountryCodes] = useState([]);
-const [mainCode, setMainCode] = useState("+91");
 
-// split helper
-const splitNumber = (num) => {
-  if (!num) return { code: "+91", number: "" };
-
-  const match = num.match(/^(\+\d{1,3})(\d{6,12})$/);
-  if (match) {
-    return { code: match[1], number: match[2] };
-  }
-  return { code: "+91", number: num.replace(/\D/g, "") };
-};
-
-
+  // Use country code hook
+  const {
+    countryCodes,
+    selectedCountryCode,
+    setSelectedCountryCode,
+    formatPhoneNumber,
+  } = useCountryCode();
 
   const onValuesChange = (_, allValues) => {
     // Check if all required fields in the form have valid values
@@ -61,41 +56,16 @@ const splitNumber = (num) => {
   // }, []);
 
   useEffect(() => {
-  getCoursesOutsideAuth()
-    .then((res) => {
-      const data = res?.data || [];
-      const filtered = data.filter(
-        (course) => course?.name === "DSAT - Scholarship Test"
-      );
-      setOptions(filtered);
-    })
-    .catch((err) => console.log(err));
-}, []);
-
-useEffect(() => {
-  fetch("https://restcountries.com/v3.1/all?fields=idd")
-    .then((res) => res.json())
-    .then((data) => {
-      const codes = data
-        .map((c) => {
-          const root = c.idd?.root;
-          const suffixes = c.idd?.suffixes;
-          if (!root || !suffixes) return [];
-          return suffixes.map((s) => `${root}${s}`);
-        })
-        .flat()
-        .filter(Boolean);
-
-      const uniqueCodes = [...new Set(codes)].sort((a, b) =>
-        a.localeCompare(b)
-      );
-
-      setCountryCodes(uniqueCodes);
-      setMainCode("+91"); // default
-    })
-    .catch(console.error);
-}, []);
-
+    getCoursesOutsideAuth()
+      .then((res) => {
+        const data = res?.data || [];
+        const filtered = data.filter(
+          (course) => course?.name === "DSAT - Scholarship Test"
+        );
+        setOptions(filtered);
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
 
   const onChange = (currentSlide) => {
@@ -108,21 +78,23 @@ useEffect(() => {
   };
 
   function handleSubmit(formData) {
-  setSubmitLoader(true);
-
-  const finalPayload = {
-    ...formData,
-    phone_number: `${mainCode}${formData.phone_number}`, // ✅ join code + number
-  };
-
-  registerStudent(finalPayload)
-    .then(() => {
-      setShowOtpModal(true);
-    })
-    .catch(console.log)
-    .finally(() => setSubmitLoader(false));
-}
-
+    setSubmitLoader(true);
+    // Format phone number with country code
+    if (formData.phone_number) {
+      formData.phone_number = formatPhoneNumber(formData.phone_number);
+    }
+    registerStudent(formData)
+      .then((res) => {
+        // Modal.success({
+        //   title: res.data.message,
+        //   // onOk: router.push("/login"),
+        //   onOk:
+        // });
+        setShowOtpModal(true);
+      })
+      .catch((err) => console.log(err))
+      .finally(() => setSubmitLoader(false));
+  }
 
   const handlePhoneNumberChange = (e) => {
     // Replace non-numeric characters with an empty string
@@ -139,6 +111,21 @@ useEffect(() => {
         onValuesChange={onValuesChange}
         layout="vertical"
       >
+        <style jsx global>{`
+          .register-form .ant-input-group-addon {
+            background-color: transparent !important;
+            border-top: none !important;
+            border-right: none !important;
+            border-left: none !important;
+            padding-right: 8px !important;
+            border-bottom: solid 1px #eaeaea;
+            border-radius: 0 !important;
+          }
+          .register-form .ant-input-group > .ant-input:not(:first-child):not(:last-child) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+          }
+        `}</style>
         {/* <Carousel ref={carouselRef} afterChange={onChange} dotPosition="bottom"> */}
         <div>
           <Form.Item
@@ -175,7 +162,7 @@ useEffect(() => {
             <Input.Password />
           </Form.Item> */}
           <Row>
-            <Col span={12} className="p-2">
+            <Col span={10} className="p-2">
               <Form.Item
                 label="Name"
                 name="name"
@@ -189,53 +176,49 @@ useEffect(() => {
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={12} className="p-2">
-             <Form.Item
-  label="Contact Number"
-  name="phone_number"
-  rules={[
-    { required: true, message: "Please enter your contact number!" },
-    {
-      validator(_, value) {
-        if (!value) {
-          return Promise.reject(
-            new Error("Please enter your contact number!")
-          );
-        }
-        if (!/^\d{10}$/.test(value)) {
-          return Promise.reject(
-            new Error("Contact number must be exactly 10 digits long")
-          );
-        }
-        return Promise.resolve();
-      },
-    },
-  ]}
->
-  <Input
-    addonBefore={
-      <select
-        value={mainCode}
-        onChange={(e) => setMainCode(e.target.value)}
-        className="border-0 bg-transparent outline-none"
-      >
-        {countryCodes.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-      </select>
-    }
-    maxLength={10}
-    placeholder="Enter 10 digit number"
-    onChange={(e) =>
-      form.setFieldsValue({
-        phone_number: e.target.value.replace(/\D/g, ""),
-      })
-    }
-  />
-</Form.Item>
-
+            <Col span={14} className="p-2">
+              <Form.Item
+                label="Contact Number"
+                name="phone_number"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please enter your contact number!",
+                  },
+                  () => ({
+                    validator(_, value) {
+                      if (!value) {
+                        return Promise.reject(
+                          new Error("Please enter your contact number!")
+                        );
+                      }
+                      if (!/^\d{10}$/.test(value)) {
+                        return Promise.reject(
+                          new Error(
+                            "Contact number must be exactly 10 digits long"
+                          )
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  }),
+                ]}
+              >
+                <Input
+                  addonBefore={
+                    <CountryCodeSelect
+                      countryCodes={countryCodes}
+                      value={selectedCountryCode}
+                      onChange={(value) => setSelectedCountryCode(value)}
+                    />
+                  }
+                  type="tel"
+                  maxLength={10}
+                  onChange={handlePhoneNumberChange}
+                  placeholder="Enter 10 digit number"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
             </Col>
           </Row>
           <Row className="">

@@ -36,6 +36,16 @@ import PracticeTestsList_admin_uer from "@/components/PracticeTestsList_admin_ue
 
 const { confirm } = Modal;
 
+// Helper to format phone number with space
+const formatPhoneNumberDisplay = (text) => {
+  if (!text) return <span className="text-gray-400">N/A</span>;
+  const match = String(text).match(/^(\+\d+)(\d{10})$/);
+  if (match) {
+    return <>{match[1]} {match[2]}</>;
+  }
+  return <>{text}</>;
+};
+
 function AllUsersTable({ tabKey, api }) {
   const [loading, setLoading] = useState(false);
   const [dataList, setDataList] = useState([]);
@@ -263,7 +273,7 @@ function AllUsersTable({ tabKey, api }) {
         title: "Contact Number",
         dataIndex: "phone_number",
         key: "phone_number",
-        render: (text) => <>{text}</>,
+        render: (text) => formatPhoneNumberDisplay(text),
       },
     ];
     const nestedData = [
@@ -476,7 +486,7 @@ function AllUsersTable({ tabKey, api }) {
         sorter: (a, b) => a.role_label.localeCompare(b.role_label),
         key: "phone_number",
         //...getColumnSearchProps("phone_number"),
-        render: (text) => <>{text}</>,
+        render: (text) => formatPhoneNumberDisplay(text),
         width: 150,
       },
 
