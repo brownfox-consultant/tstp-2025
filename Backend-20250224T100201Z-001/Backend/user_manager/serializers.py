@@ -96,6 +96,7 @@ class TempUserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'phone_number', 'name', 'courses']
 
 
+
 class RoleSerializer(serializers.ModelSerializer):
     label = serializers.SerializerMethodField()
 
@@ -232,12 +233,12 @@ class ApproveStudentSubscriptionSerializer(serializers.Serializer):
     # Optional parent fields
     father_id = serializers.IntegerField(required=False)
     father_email = serializers.EmailField(required=False)
-    father_phone_number = serializers.CharField(max_length=10, required=False)
+    father_phone_number = serializers.CharField(max_length=16, required=False)
     father_name = serializers.CharField(max_length=30, required=False)
 
     mother_id = serializers.IntegerField(required=False)
     mother_email = serializers.EmailField(required=False)
-    mother_phone_number = serializers.CharField(max_length=10, required=False)
+    mother_phone_number = serializers.CharField(max_length=16, required=False)
     mother_name = serializers.CharField(max_length=30, required=False)
 
     def validate(self, data):
@@ -309,6 +310,8 @@ class LoginSerializer(serializers.ModelSerializer):
             else "FREE"
         )
 
+
+
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -318,11 +321,10 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
 class StudentUpdateSerializer(serializers.Serializer):
     faculties = serializers.ListField(
-    child=serializers.IntegerField(),
-    required=False
-)
+        child=serializers.IntegerField(),
+        required=False
+    )
     mentor = serializers.IntegerField(required=False, allow_null=True)
-
     courses = CourseSubscriptionSerializer(many=True, required=False)
 
     def update(self, instance, validated_data):
@@ -359,4 +361,5 @@ class StudentUpdateSerializer(serializers.Serializer):
                 )
 
         return instance
+
 

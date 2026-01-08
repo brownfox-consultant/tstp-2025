@@ -127,7 +127,11 @@ class TempUserManager(UserManager):
 
 class TempUser(AbstractBaseUser):
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(validators=[phone_regex], max_length=10, unique=True)
+    phone_number = models.CharField(
+        validators=[phone_regex],
+        max_length=16,   # allow +<country><number>
+        unique=True
+    )
     name = models.CharField(max_length=30, blank=True)
     courses = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

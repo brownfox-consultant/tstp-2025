@@ -164,10 +164,19 @@ function CreateUserForm() {
       .then((res) => {
         form.resetFields();
         if (roleState != 5) {
-          Modal.success({
-            content: "User created successfully,Once Parent and Course details are added, User Registartion email will be sent to activate the account",
-            onOk: () => router.back(),
-          });
+          if (roleName === "student") {
+  Modal.success({
+    content:
+      "User created successfully, Once Parent and Course details are added, User Registration email will be sent to activate the account",
+    onOk: () => router.back(),
+  });
+} else {
+  Modal.success({
+    content: "User created successfully",
+    onOk: () => router.back(),
+  });
+}
+
         } else {
           window.sessionStorage.setItem(
             "approveStudentDetails",

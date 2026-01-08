@@ -22,6 +22,21 @@ function RegisterForm() {
   const [currentSlide, setCurrentSlide] = useState();
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [submitLoader, setSubmitLoader] = useState(false);
+  const [countryCodes, setCountryCodes] = useState([]);
+const [mainCode, setMainCode] = useState("+91");
+
+// split helper
+const splitNumber = (num) => {
+  if (!num) return { code: "+91", number: "" };
+
+  const match = num.match(/^(\+\d{1,3})(\d{6,12})$/);
+  if (match) {
+    return { code: match[1], number: match[2] };
+  }
+  return { code: "+91", number: num.replace(/\D/g, "") };
+};
+
+
 
   const onValuesChange = (_, allValues) => {
     // Check if all required fields in the form have valid values
@@ -57,6 +72,31 @@ function RegisterForm() {
     .catch((err) => console.log(err));
 }, []);
 
+useEffect(() => {
+  fetch("https://restcountries.com/v3.1/all?fields=idd")
+    .then((res) => res.json())
+    .then((data) => {
+      const codes = data
+        .map((c) => {
+          const root = c.idd?.root;
+          const suffixes = c.idd?.suffixes;
+          if (!root || !suffixes) return [];
+          return suffixes.map((s) => `${root}${s}`);
+        })
+        .flat()
+        .filter(Boolean);
+
+      const uniqueCodes = [...new Set(codes)].sort((a, b) =>
+        a.localeCompare(b)
+      );
+
+      setCountryCodes(uniqueCodes);
+      setMainCode("+91"); // default
+    })
+    .catch(console.error);
+}, []);
+
+
 
   const onChange = (currentSlide) => {
     setCurrentSlide(currentSlide);
@@ -68,19 +108,21 @@ function RegisterForm() {
   };
 
   function handleSubmit(formData) {
-    setSubmitLoader(true);
-    registerStudent(formData)
-      .then((res) => {
-        // Modal.success({
-        //   title: res.data.message,
-        //   // onOk: router.push("/login"),
-        //   onOk:
-        // });
-        setShowOtpModal(true);
-      })
-      .catch((err) => console.log(err))
-      .finally(() => setSubmitLoader(false));
-  }
+  setSubmitLoader(true);
+
+  const finalPayload = {
+    ...formData,
+    phone_number: `${mainCode}${formData.phone_number}`, // ✅ join code + number
+  };
+
+  registerStudent(finalPayload)
+    .then(() => {
+      setShowOtpModal(true);
+    })
+    .catch(console.log)
+    .finally(() => setSubmitLoader(false));
+}
+
 
   const handlePhoneNumberChange = (e) => {
     // Replace non-numeric characters with an empty string
@@ -148,35 +190,52 @@ function RegisterForm() {
               </Form.Item>
             </Col>
             <Col span={12} className="p-2">
-              <Form.Item
-                label="Contact Number"
-                name="phone_number"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please enter your contact number!",
-                  },
-                  () => ({
-                    validator(_, value) {
-                      if (!value) {
-                        return Promise.reject(
-                          new Error("Please enter your contact number!")
-                        );
-                      }
-                      if (!/^\d{10}$/.test(value)) {
-                        return Promise.reject(
-                          new Error(
-                            "Contact number must be exactly 10 digits long"
-                          )
-                        );
-                      }
-                      return Promise.resolve();
-                    },
-                  }),
-                ]}
-              >
-                <Input maxLength={10} onChange={handlePhoneNumberChange} />
-              </Form.Item>
+             <Form.Item
+  label="Contact Number"
+  name="phone_number"
+  rules={[
+    { required: true, message: "Please enter your contact number!" },
+    {
+      validator(_, value) {
+        if (!value) {
+          return Promise.reject(
+            new Error("Please enter your contact number!")
+          );
+        }
+        if (!/^\d{10}$/.test(value)) {
+          return Promise.reject(
+            new Error("Contact number must be exactly 10 digits long")
+          );
+        }
+        return Promise.resolve();
+      },
+    },
+  ]}
+>
+  <Input
+    addonBefore={
+      <select
+        value={mainCode}
+        onChange={(e) => setMainCode(e.target.value)}
+        className="border-0 bg-transparent outline-none"
+      >
+        {countryCodes.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+    }
+    maxLength={10}
+    placeholder="Enter 10 digit number"
+    onChange={(e) =>
+      form.setFieldsValue({
+        phone_number: e.target.value.replace(/\D/g, ""),
+      })
+    }
+  />
+</Form.Item>
+
             </Col>
           </Row>
           <Row className="">

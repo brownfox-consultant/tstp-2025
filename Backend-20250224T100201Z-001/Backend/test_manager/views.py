@@ -165,7 +165,6 @@ from course_manager.models import CourseEnrollment
 
 
 
-
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.get_all()
     serializer_class = TestSerializer
@@ -1763,6 +1762,7 @@ class TestViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+
     @action(detail=True, methods=['POST'], url_path='take-test')
     def take_test(self, request, pk=None, *args, **kwargs):
         test = Test.get_test_by_id(test_id=pk)
@@ -2856,7 +2856,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                 subject_data['subject_max_score'] = 800
                 subject_data['subject_score'] = score_record.total_score
                 total_score += score_record.total_score
-
+                print("score_record.total_score",score_record.total_score)
             response_data['subjects'].append(subject_data)
 
         response_data['total_score'] = total_score
@@ -3600,7 +3600,6 @@ class ResultViewSet(viewsets.ModelViewSet):
 
         response = []
 
-        # All subjects in this course
         course_subjects = CourseSubjects.objects.filter(course=course)
 
         for cs in course_subjects:
@@ -3613,32 +3612,30 @@ class ResultViewSet(viewsets.ModelViewSet):
             if not practice_results.exists():
                 continue
 
-            total_correct = practice_results.aggregate(
-                Sum("correct_answer_count")
-            )["correct_answer_count__sum"] or 0
+            answers = PracticeQuestionAnswer.objects.filter(
+                practice_test_result__in=practice_results
+            )
 
-            total_wrong = practice_results.aggregate(
-                Sum("incorrect_answer_count")
-            )["incorrect_answer_count__sum"] or 0
+            total_questions = answers.count()
 
-            total_time = practice_results.aggregate(
-                Sum("time_taken")
-            )["time_taken__sum"] or 0
+            if total_questions == 0:
+                continue
+
+            total_correct = answers.filter(is_correct=True).count()
+            total_wrong = answers.filter(is_correct=False, is_skipped=False).count()
+            total_skip = answers.filter(is_skipped=True).count()
+
+            # ✅ Exact total time (per question)
+            total_time = answers.aggregate(
+                total=Sum("time_taken")
+            )["total"] or 0
+
+            # ✅ Exact average
+            avg_time = round(total_time / total_questions, 2)
 
             last_practice_date = practice_results.aggregate(
                 Max("created_at")
             )["created_at__max"]
-
-            attempted = total_correct + total_wrong
-            total_questions = PracticeQuestionAnswer.objects.filter(
-                practice_test_result__in=practice_results
-            ).count()
-
-            total_skip = max(0, total_questions - attempted)
-
-            avg_time = round(
-                total_time / attempted, 2
-            ) if attempted else 0
 
             response.append({
                 "subject_name": cs.subject.name,
@@ -3646,15 +3643,17 @@ class ResultViewSet(viewsets.ModelViewSet):
                 "total_correct": total_correct,
                 "total_wrong": total_wrong,
                 "total_skip": total_skip,
-                "total_time_seconds": total_time,
-                "avg_time_per_question": avg_time
+                "total_time_seconds": total_time,        # ✅ 60
+                "avg_time_per_question": avg_time        # ✅ 20
             })
 
         return Response({
-            "test_type": "self_practice",
+            "test_type": "practice",
             "results": response
         })
 
+
+    
     @action(
     detail=False,
     methods=["GET"],
@@ -3666,53 +3665,74 @@ class ResultViewSet(viewsets.ModelViewSet):
         course_id = request.GET.get("course_id")
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {"error": "student_id and course_id are required"},
+                status=400
+            )
 
         student = get_object_or_404(User, id=student_id)
         course = get_object_or_404(Course, id=course_id)
 
+        # -----------------------------
+        # 1. Total questions per subject (DB)
+        # -----------------------------
+        course_subjects = CourseSubjects.objects.filter(course=course)
+
+        total_questions_map = {}
+        for cs in course_subjects:
+            subject_name = cs.subject.name
+            total_questions_map[subject_name] = Question.objects.filter(
+                course_subject=cs
+            ).count()
+
+        # -----------------------------
+        # 2. All FL test submissions of student
+        # -----------------------------
         submissions = TestSubmission.objects.filter(
             student=student,
             test__course=course,
+            test__test_type=Test.EXAM,   # Full length
             status=TestSubmission.COMPLETED
         )
 
-        subjects_data = {}
+        # -----------------------------
+        # 3. Count attempted questions
+        # -----------------------------
+        attempted_qs = QuestionAnswer.objects.filter(
+            result__test_submission__in=submissions,
+            is_skipped=False
+        ).values(
+            "course_subject__subject__name",
+            "question"
+        ).distinct()
 
-        for submission in submissions:
-            test = submission.test
-            result = submission.result
+        attempted_map = {}
+        for row in attempted_qs:
+            subject = row["course_subject__subject__name"]
+            attempted_map[subject] = attempted_map.get(subject, 0) + 1
 
-            sections = Section.objects.filter(test=test)
-
-            for section in sections:
-                subject_name = section.course_subject.subject.name
-                subjects_data.setdefault(subject_name, {"answered": 0, "total": 0})
-
-                for sub_section in section.sub_sections:
-                    question_ids = sub_section.get("questions", [])
-                    subjects_data[subject_name]["total"] += len(question_ids)
-
-                    answered = QuestionAnswer.objects.filter(
-                        result=result,
-                        course_subject=section.course_subject,
-                        section_id=sub_section["id"],
-                        is_skipped=False
-                    ).count()
-
-                    subjects_data[subject_name]["answered"] += answered
-
+        # -----------------------------
+        # 4. Build response
+        # -----------------------------
         response = {}
-        for subject, data in subjects_data.items():
+
+        for subject, total in total_questions_map.items():
+            answered = attempted_map.get(subject, 0)
+            unanswered = max(0, total - answered)
+
             response[subject] = {
-                "answered": data["answered"],
-                "unanswered": max(0, data["total"] - data["answered"])
+                "answered": answered,
+                "unanswered": unanswered,
+                "total": total,
+                "done": answered,
+                "pending": unanswered
             }
 
         return Response({
             "test_type": "fullLength",
             "subjects": response
         })
+
 
 
     @action(
@@ -3726,31 +3746,60 @@ class ResultViewSet(viewsets.ModelViewSet):
         course_id = request.GET.get("course_id")
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {"error": "student_id and course_id are required"},
+                status=400
+            )
 
         student = get_object_or_404(User, id=student_id)
         course = get_object_or_404(Course, id=course_id)
 
-        subjects_data = {}
+        # -----------------------------
+        # 1. Total questions per subject (DB)
+        # -----------------------------
+        course_subjects = CourseSubjects.objects.filter(course=course)
 
-        practice_results = PracticeQuestionAnswer.objects.filter(
+        total_questions_map = {}
+        for cs in course_subjects:
+            subject_name = cs.subject.name
+            total_questions_map[subject_name] = Question.objects.filter(
+                course_subject=cs
+            ).count()
+
+        # -----------------------------
+        # 2. All attempted practice questions (unique)
+        # -----------------------------
+        attempted_qs = PracticeQuestionAnswer.objects.filter(
             practice_test_result__practice_test__student=student,
-            practice_test_result__practice_test__course_subject__course=course
-        ).select_related("practice_test_result__practice_test__course_subject")
+            practice_test_result__practice_test__course_subject__course=course,
+            is_skipped=False
+        ).values(
+            "practice_test_result__practice_test__course_subject__subject__name",
+            "question"
+        ).distinct()
 
-        for qa in practice_results:
-            subject_name = qa.practice_test_result.practice_test.course_subject.subject.name
-            subjects_data.setdefault(subject_name, {"answered": 0, "total": 0})
+        attempted_map = {}
+        for row in attempted_qs:
+            subject = row[
+                "practice_test_result__practice_test__course_subject__subject__name"
+            ]
+            attempted_map[subject] = attempted_map.get(subject, 0) + 1
 
-            subjects_data[subject_name]["total"] += 1
-            if not qa.is_skipped:
-                subjects_data[subject_name]["answered"] += 1
-
+        # -----------------------------
+        # 3. Build response
+        # -----------------------------
         response = {}
-        for subject, data in subjects_data.items():
+
+        for subject, total in total_questions_map.items():
+            answered = attempted_map.get(subject, 0)
+            unanswered = max(0, total - answered)
+
             response[subject] = {
-                "answered": data["answered"],
-                "unanswered": max(0, data["total"] - data["answered"])
+                "answered": answered,
+                "unanswered": unanswered,
+                "total": total,
+                "done": answered,
+                "pending": unanswered
             }
 
         return Response({
@@ -3758,7 +3807,7 @@ class ResultViewSet(viewsets.ModelViewSet):
             "subjects": response
         })
 
-        
+
     @action(
     detail=False,
     methods=["GET"],
@@ -3844,7 +3893,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                     "test_id": None,
                     "test_type": "PRACTICE",
                     "date": r.created_at.strftime("%Y-%m-%d"),
-                    "time": round((r.time_taken or 0) / 60, 2),
+                    "time": round((r.time_taken or 0) / 60,2),
                     "questions": r.question_answers.count(),
                     "details": "Practice Test Activity"
                 })
@@ -3859,7 +3908,8 @@ class ResultViewSet(viewsets.ModelViewSet):
             "count": len(results),
             "results": results
         })
-    
+
+
     @action(
     detail=False,
     methods=["GET"],
@@ -4017,7 +4067,7 @@ class ResultViewSet(viewsets.ModelViewSet):
             "accordionData": accordion_data
         })
 
-
+    
     @action(
     detail=False,
     methods=["GET"],
@@ -4658,6 +4708,7 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_201_CREATED
         )
+
 
 
     @permission_classes([IsAdminOrMentorOrFacultyOrStudentOrParent])

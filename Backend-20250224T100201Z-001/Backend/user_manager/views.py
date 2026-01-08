@@ -20,6 +20,7 @@ from user_manager.models import User
 from django.db.models import Case, When, Value, CharField, Exists, OuterRef
 from course_manager.models import CourseEnrollment
 
+
 from course_manager.models import Course, CourseEnrollment
 from notification_manager.models import Notification, NotificationTemplate
 from notification_manager.utils import send_notification
@@ -464,7 +465,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['POST'], permission_classes=[IsAdmin],
-            url_path='approve_student_subscription')
+        url_path='approve_student_subscription')
     def approve_student_subscription(self, request):
         serializer = ApproveStudentSubscriptionSerializer(data=request.data)
         try:
@@ -472,7 +473,6 @@ class UserViewSet(viewsets.ModelViewSet):
             data = serializer.validated_data
 
             is_temp_user = data['is_temp_user']
-            student_metadata = None
 
             if is_temp_user:
                 student_metadata = self._process_temp_user(data)
@@ -482,9 +482,47 @@ class UserViewSet(viewsets.ModelViewSet):
             if 'error' in student_metadata:
                 return get_error_response(student_metadata['error'])
 
-            return Response(data={'detail': 'Student subscription approved successfully'}, status=status.HTTP_200_OK)
+            # ---------------------------------------------------------
+            #  SEND WELCOME + RESET PASSWORD EMAIL
+            # ---------------------------------------------------------
+            if is_temp_user:
+                user = TempUser.objects.get(id=data["student"])
+            else:
+                user = User.objects.get(id=data["student"])
+
+            # Welcome Email
+            send_notification.delay(
+                notification_name=Notification.REGISTRATION_NOTIFICATION,
+                params={NotificationTemplate.USER_NAME: user.name},
+                user_id=user.id
+            )
+
+            # Reset Password Email
+            # notification_params = {
+            #     NotificationTemplate.USER_NAME: user.name,
+            #     NotificationTemplate.RESET_LINK: f"{settings.FRONTEND_URL}/reset-password?token=example-token"
+            # }
+
+            # send_notification.delay(
+            #     notification_name=Notification.FORGOT_PASSWORD_NOTIFICATION,
+            #     params=notification_params,
+            #     user_id=user.id
+            # )
+
+            # ---------------------------------------------------------
+
+            return Response(
+                data={'detail': 'Student subscription approved successfully'},
+                status=status.HTTP_200_OK
+            )
+
         except Exception as e:
-            return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
+            return get_error_response_for_serializer(
+                logger=self.logger,
+                serializer=serializer,
+                data=request.data
+            )
+
 
     @action(detail=False, methods=['POST'], permission_classes=[ChangePasswordPermission])
     def change_password(self, request, pk=None):
