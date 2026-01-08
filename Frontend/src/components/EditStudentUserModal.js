@@ -1,5 +1,6 @@
 import { editUser, getUsersByRole } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
+import { useCountryCode } from "@/hooks/useCountryCode";
 import { EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Form, Input, Modal, Row, Select } from "antd";
 import { useForm } from "antd/es/form/Form";
@@ -17,6 +18,23 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState([]);
   const { roles } = useGlobalContext();
+
+  const {
+    countryCodes,
+    selectedCountryCode: studentCountryCode,
+    setSelectedCountryCode: setStudentCountryCode,
+    parsePhoneNumber,
+  } = useCountryCode("+91", recordData?.phone_number);
+
+  const {
+    selectedCountryCode: fatherCountryCode,
+    setSelectedCountryCode: setFatherCountryCode,
+  } = useCountryCode("+91", recordData?.parent_details?.father?.phone_number);
+
+  const {
+    selectedCountryCode: motherCountryCode,
+    setSelectedCountryCode: setMotherCountryCode,
+  } = useCountryCode("+91", recordData?.parent_details?.mother?.phone_number);
 
   useEffect(() => {
     if (isModalOpen) {
@@ -73,6 +91,9 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
 
   const finalPayload = {
     ...formData,
+    phone_number: `${studentCountryCode}${formData.phone_number}`,
+    father_phone_number: formData.father_phone_number ? `${fatherCountryCode}${formData.father_phone_number}` : undefined,
+    mother_phone_number: formData.mother_phone_number ? `${motherCountryCode}${formData.mother_phone_number}` : undefined,
     courses: formattedCourses,
   };
 
@@ -108,14 +129,14 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
     return {
       name: data?.name,
       email: data?.email,
-      phone_number: data?.phone_number,
+      phone_number: parsePhoneNumber(data?.phone_number),
       mentor: data?.mentor_details?.id,
       faculties: data?.faculty_details?.map((faculty) => faculty.id),
       father_email: data?.parent_details?.father?.email,
-      father_phone_number: data?.parent_details?.father?.phone_number,
+      father_phone_number: parsePhoneNumber(data?.parent_details?.father?.phone_number),
       father_name: data?.parent_details?.father?.name,
       mother_email: data?.parent_details?.mother?.email,
-      mother_phone_number: data?.parent_details?.mother?.phone_number,
+      mother_phone_number: parsePhoneNumber(data?.parent_details?.mother?.phone_number),
       mother_name: data?.parent_details?.mother?.name,
       courses: data?.course_details?.map((course_detail) => {
   const {
@@ -141,6 +162,59 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
 
   return (
     <>
+
+      <style jsx global>{`
+        /* Country Code Select Styling */
+        .country-code-select .ant-select-selector {
+          border: none !important;
+          border-right: 1px solid #E5E7EB !important;
+          box-shadow: none !important;
+          background: transparent !important;
+          padding: 0 12px 0 12px !important;
+          margin-right: 12px !important;
+        }
+        .country-code-select .ant-select-selection-search {
+          left: 8px !important;
+        }
+        .country-code-select .ant-select-selection-item {
+          padding: 0 !important;
+          font-weight: 500;
+          color: #374151;
+        }
+        .country-code-select .ant-select-arrow {
+          color: #6B7280;
+          right: 0 !important;
+        }
+        .country-code-select:hover .ant-select-selector {
+          border-right: 1px solid #D1D5DB !important;
+        }
+        .country-code-select.ant-select-focused .ant-select-selector {
+          border-right: 1px solid #0071BC !important;
+        }
+        /* Phone Input Unified Styling */
+        .phone-input-wrapper .ant-input-wrapper {
+          border: 1px solid #d9d9d9;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+        .phone-input-wrapper .ant-input-wrapper:hover {
+          border-color: #4096ff;
+        }
+        .phone-input-wrapper .ant-input-wrapper:focus-within {
+          border-color: #0071BC;
+          box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.1);
+        }
+        .phone-input-wrapper .ant-input {
+          border: none !important;
+          box-shadow: none !important;
+          padding-left: 12px !important;
+        }
+        .phone-input-wrapper .ant-input-group-addon {
+          border: none !important;
+          background: transparent !important;
+          padding: 0 !important;
+        }
+      `}</style>
       <EditOutlined onClick={showModal} className="mr-2" />
       <Modal
         title={<div className="text-lg font-semibold mb-5">Edit User:</div>}
@@ -214,7 +288,43 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
                   },
                 ]}
               >
-                <Input maxLength={10} onChange={handlePhoneNumberChange} />
+                <Input
+                  maxLength={10}
+                  onChange={handlePhoneNumberChange}
+                  className="rounded-lg phone-input-wrapper"
+                  addonBefore={
+                    <Select
+                      showSearch
+                      value={studentCountryCode}
+                      onChange={(value) => setStudentCountryCode(value)}
+                      style={{ width: 90 }}
+                      bordered={false}
+                      optionLabelProp="label"
+                      dropdownMatchSelectWidth={false}
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (option.countryName || '').toLowerCase().includes(input.toLowerCase()) ||
+                        String(option.value).includes(input)
+                      }
+                      dropdownStyle={{ zIndex: 10000, width: 300 }}
+                      className="country-code-select"
+                    >
+                      {countryCodes.map((country) => (
+                        <Select.Option
+                          key={country.cca2}
+                          value={country.code}
+                          label={country.code}
+                          countryName={country.name}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{country.name}</span>
+                            <span className="text-gray-400">({country.code})</span>
+                          </div>
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  }
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -296,7 +406,43 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
       wrapperCol={{ span: 14 }}
       rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
     >
-      <Input maxLength={10} placeholder="Father Phone" />
+      <Input
+        maxLength={10}
+        placeholder="Father Phone"
+        className="rounded-lg phone-input-wrapper"
+        addonBefore={
+          <Select
+            showSearch
+            value={fatherCountryCode}
+            onChange={(value) => setFatherCountryCode(value)}
+            style={{ width: 90 }}
+            bordered={false}
+            optionLabelProp="label"
+            dropdownMatchSelectWidth={false}
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              (option.countryName || '').toLowerCase().includes(input.toLowerCase()) ||
+              String(option.value).includes(input)
+            }
+            dropdownStyle={{ zIndex: 10000, width: 300 }}
+            className="country-code-select"
+          >
+            {countryCodes.map((country) => (
+              <Select.Option
+                key={country.cca2}
+                value={country.code}
+                label={country.code}
+                countryName={country.name}
+              >
+                <div className="flex items-center gap-2">
+                  <span>{country.name}</span>
+                  <span className="text-gray-400">({country.code})</span>
+                </div>
+              </Select.Option>
+            ))}
+          </Select>
+        }
+      />
     </Form.Item>
   </Col>
 </Row>
@@ -337,7 +483,43 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
       wrapperCol={{ span: 14 }}
       rules={[{ pattern: /^\d{10}$/, message: "Must be 10 digits" }]}
     >
-      <Input maxLength={10} placeholder="Mother Phone" />
+      <Input
+        maxLength={10}
+        placeholder="Mother Phone"
+        className="rounded-lg phone-input-wrapper"
+        addonBefore={
+          <Select
+            showSearch
+            value={motherCountryCode}
+            onChange={(value) => setMotherCountryCode(value)}
+            style={{ width: 90 }}
+            bordered={false}
+            optionLabelProp="label"
+            dropdownMatchSelectWidth={false}
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              (option.countryName || '').toLowerCase().includes(input.toLowerCase()) ||
+              String(option.value).includes(input)
+            }
+            dropdownStyle={{ zIndex: 10000, width: 300 }}
+            className="country-code-select"
+          >
+            {countryCodes.map((country) => (
+              <Select.Option
+                key={country.cca2}
+                value={country.code}
+                label={country.code}
+                countryName={country.name}
+              >
+                <div className="flex items-center gap-2">
+                  <span>{country.name}</span>
+                  <span className="text-gray-400">({country.code})</span>
+                </div>
+              </Select.Option>
+            ))}
+          </Select>
+        }
+      />
     </Form.Item>
   </Col>
 </Row>

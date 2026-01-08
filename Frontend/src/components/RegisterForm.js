@@ -11,6 +11,8 @@ import { useEffect, useRef } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import OtpModal from "./OtpModal";
+import { useCountryCode } from "@/hooks/useCountryCode";
+import CountryCodeSelect from "./CountryCodeSelect";
 
 function RegisterForm() {
   const carouselRef = useRef();
@@ -22,6 +24,14 @@ function RegisterForm() {
   const [currentSlide, setCurrentSlide] = useState();
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [submitLoader, setSubmitLoader] = useState(false);
+
+  // Use country code hook
+  const {
+    countryCodes,
+    selectedCountryCode,
+    setSelectedCountryCode,
+    formatPhoneNumber,
+  } = useCountryCode();
 
   const onValuesChange = (_, allValues) => {
     // Check if all required fields in the form have valid values
@@ -46,16 +56,16 @@ function RegisterForm() {
   // }, []);
 
   useEffect(() => {
-  getCoursesOutsideAuth()
-    .then((res) => {
-      const data = res?.data || [];
-      const filtered = data.filter(
-        (course) => course?.name === "DSAT - Scholarship Test"
-      );
-      setOptions(filtered);
-    })
-    .catch((err) => console.log(err));
-}, []);
+    getCoursesOutsideAuth()
+      .then((res) => {
+        const data = res?.data || [];
+        const filtered = data.filter(
+          (course) => course?.name === "DSAT - Scholarship Test"
+        );
+        setOptions(filtered);
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
 
   const onChange = (currentSlide) => {
@@ -69,6 +79,10 @@ function RegisterForm() {
 
   function handleSubmit(formData) {
     setSubmitLoader(true);
+    // Format phone number with country code
+    if (formData.phone_number) {
+      formData.phone_number = formatPhoneNumber(formData.phone_number);
+    }
     registerStudent(formData)
       .then((res) => {
         // Modal.success({
@@ -97,6 +111,21 @@ function RegisterForm() {
         onValuesChange={onValuesChange}
         layout="vertical"
       >
+        <style jsx global>{`
+          .register-form .ant-input-group-addon {
+            background-color: transparent !important;
+            border-top: none !important;
+            border-right: none !important;
+            border-left: none !important;
+            padding-right: 8px !important;
+            border-bottom: solid 1px #eaeaea;
+            border-radius: 0 !important;
+          }
+          .register-form .ant-input-group > .ant-input:not(:first-child):not(:last-child) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+          }
+        `}</style>
         {/* <Carousel ref={carouselRef} afterChange={onChange} dotPosition="bottom"> */}
         <div>
           <Form.Item
@@ -133,7 +162,7 @@ function RegisterForm() {
             <Input.Password />
           </Form.Item> */}
           <Row>
-            <Col span={12} className="p-2">
+            <Col span={10} className="p-2">
               <Form.Item
                 label="Name"
                 name="name"
@@ -147,7 +176,7 @@ function RegisterForm() {
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={12} className="p-2">
+            <Col span={14} className="p-2">
               <Form.Item
                 label="Contact Number"
                 name="phone_number"
@@ -175,7 +204,20 @@ function RegisterForm() {
                   }),
                 ]}
               >
-                <Input maxLength={10} onChange={handlePhoneNumberChange} />
+                <Input
+                  addonBefore={
+                    <CountryCodeSelect
+                      countryCodes={countryCodes}
+                      value={selectedCountryCode}
+                      onChange={(value) => setSelectedCountryCode(value)}
+                    />
+                  }
+                  type="tel"
+                  maxLength={10}
+                  onChange={handlePhoneNumberChange}
+                  placeholder="Enter 10 digit number"
+                  style={{ width: '100%' }}
+                />
               </Form.Item>
             </Col>
           </Row>

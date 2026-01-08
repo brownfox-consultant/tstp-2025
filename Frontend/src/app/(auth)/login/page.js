@@ -73,7 +73,7 @@ function LoginPage() {
       
       {/* Right Side - Form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-10">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 lg:p-10 relative overflow-hidden">
+        <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl p-6 lg:p-10 relative overflow-hidden">
           
           {/* Top Gradient Bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-400" />

@@ -10,12 +10,14 @@ import {
   Form,
   Input,
   Modal,
+  Select as AntSelect,
 } from "antd";
 import { useForm } from "antd/es/form/Form";
 import { useParams, useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import dayjs from 'dayjs';
 import Select, { components } from "react-select";
+import { useCountryCode } from "@/hooks/useCountryCode";
 
 // Custom Dropdown Indicator with rotating arrow
 const DropdownIndicator = (props) => {
@@ -97,10 +99,17 @@ function CreateUserForm() {
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
-  const [countryCodes, setCountryCodes] = useState([]);
-  const [selectedCountryCode, setSelectedCountryCode] = useState("+91");
-  const [altCountryCode, setAltCountryCode] = useState("+91");
+  const {
+    countryCodes,
+    selectedCountryCode,
+    setSelectedCountryCode,
+    formatPhoneNumber,
+  } = useCountryCode("+91");
 
+  const {
+    selectedCountryCode: altCountryCode,
+    setSelectedCountryCode: setAltCountryCode,
+  } = useCountryCode("+91");
 
   const handlePhoneNumberChange = (e, name) => {
     const filtered = e.target.value.replace(/\D/g, "");
@@ -112,31 +121,6 @@ function CreateUserForm() {
     getCoursesInsideAuth()
       .then((res) => setCourseOptions(res.data))
       .catch(console.log);
-  }, []);
-
-  useEffect(() => {
-    fetch("https://restcountries.com/v3.1/all?fields=idd")
-      .then((res) => res.json())
-      .then((data) => {
-        const codes = data
-          .map((c) => {
-            const root = c.idd?.root;
-            const suffixes = c.idd?.suffixes;
-            if (!root || !suffixes) return [];
-            return suffixes.map((s) => `${root}${s}`);
-          })
-          .flat()
-          .filter(Boolean);
-
-        const uniqueCodes = [...new Set(codes)].sort((a, b) =>
-          a.localeCompare(b)
-        );
-
-        setCountryCodes(uniqueCodes);
-        setSelectedCountryCode("+91");
-        setAltCountryCode("+91");
-      })
-      .catch(console.error);
   }, []);
 
 
@@ -232,6 +216,10 @@ function CreateUserForm() {
               display: flex !important;
               align-items: center !important;
             }
+            .ant-input-group-addon {
+              background-color: transparent !important;
+              border: none !important;
+            }
             .ant-input-affix-wrapper .ant-input {
               height: auto !important;
               min-height: auto !important;
@@ -265,6 +253,56 @@ function CreateUserForm() {
             }
             .ant-select-open .ant-select-arrow {
               transform: rotate(180deg) !important;
+            }
+            /* Country Code Select Styling */
+            .country-code-select .ant-select-selector {
+              border: none !important;
+              border-right: 1px solid #E5E7EB !important;
+              box-shadow: none !important;
+              background: transparent !important;
+              padding: 0 12px 0 12px !important;
+              margin-right: 12px !important;
+            }
+            .country-code-select .ant-select-selection-search {
+              left: 8px !important;
+            }
+            .country-code-select .ant-select-selection-item {
+              padding: 0 !important;
+              font-weight: 500;
+              color: #374151;
+            }
+            .country-code-select .ant-select-arrow {
+              color: #6B7280;
+              right: 0 !important;
+            }
+            .country-code-select:hover .ant-select-selector {
+              border-right: 1px solid #D1D5DB !important;
+            }
+            .country-code-select.ant-select-focused .ant-select-selector {
+              border-right: 1px solid #0071BC !important;
+            }
+            /* Phone Input Unified Styling */
+            .phone-input-wrapper .ant-input-wrapper {
+              border: 1px solid #d9d9d9;
+              border-radius: 8px;
+              transition: all 0.2s;
+            }
+            .phone-input-wrapper .ant-input-wrapper:hover {
+              border-color: #4096ff;
+            }
+            .phone-input-wrapper .ant-input-wrapper:focus-within {
+              border-color: #0071BC;
+              box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.1);
+            }
+            .phone-input-wrapper .ant-input {
+              border: none !important;
+              box-shadow: none !important;
+              padding-left: 12px !important;
+            }
+            .phone-input-wrapper .ant-input-group-addon {
+              border: none !important;
+              background: transparent !important;
+              padding: 0 !important;
             }
           `}</style>
           {/* Personal Details Card */}
@@ -312,22 +350,41 @@ function CreateUserForm() {
                 >
                   <Input
                     addonBefore={
-                      <select
+                      <AntSelect
+                        showSearch
                         value={selectedCountryCode}
-                        onChange={(e) => setSelectedCountryCode(e.target.value)}
-                        className="border-0 bg-transparent outline-none"
+                        onChange={(value) => setSelectedCountryCode(value)}
+                        style={{ width: 90 }}
+                        bordered={false}
+                        optionLabelProp="label"
+                        dropdownMatchSelectWidth={false}
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (option.countryName || '').toLowerCase().includes(input.toLowerCase()) ||
+                          String(option.value).includes(input)
+                        }
+                        dropdownStyle={{ zIndex: 10000, width: 300 }}
+                        className="country-code-select"
                       >
-                        {countryCodes.map((code) => (
-                          <option key={code} value={code}>
-                            {code}
-                          </option>
+                        {countryCodes.map((country) => (
+                          <AntSelect.Option 
+                            key={country.cca2} 
+                            value={country.code} 
+                            label={country.code}
+                            countryName={country.name}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>{country.name}</span>
+                              <span className="text-gray-400">({country.code})</span>
+                            </div>
+                          </AntSelect.Option>
                         ))}
-                      </select>
+                      </AntSelect>
                     }
                     maxLength={10}
                     onChange={(e) => handlePhoneNumberChange(e, "phone_number")}
                     placeholder="Enter 10 digit number"
-                    className="h-11 rounded-lg"
+                    className="h-11 rounded-lg phone-input-wrapper"
                   />
                 </Form.Item>
 
@@ -339,22 +396,41 @@ function CreateUserForm() {
                 >
                   <Input
                     addonBefore={
-                      <select
+                      <AntSelect
+                        showSearch
                         value={altCountryCode}
-                        onChange={(e) => setAltCountryCode(e.target.value)}
-                        className="border-0 bg-transparent outline-none"
+                        onChange={(value) => setAltCountryCode(value)}
+                        style={{ width: 90 }}
+                        bordered={false}
+                        optionLabelProp="label"
+                        dropdownMatchSelectWidth={false}
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (option.countryName || '').toLowerCase().includes(input.toLowerCase()) ||
+                          String(option.value).includes(input)
+                        }
+                        dropdownStyle={{ zIndex: 10000, width: 300 }}
+                        className="country-code-select"
                       >
-                        {countryCodes.map((code) => (
-                          <option key={code} value={code}>
-                            {code}
-                          </option>
+                        {countryCodes.map((country) => (
+                          <AntSelect.Option 
+                            key={country.cca2} 
+                            value={country.code} 
+                            label={country.code}
+                            countryName={country.name}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>{country.name}</span>
+                              <span className="text-gray-400">({country.code})</span>
+                            </div>
+                          </AntSelect.Option>
                         ))}
-                      </select>
+                      </AntSelect>
                     }
                     maxLength={10}
                     onChange={(e) => handlePhoneNumberChange(e, "alternative_number")}
                     placeholder="Enter alternative number"
-                    className="h-11 rounded-lg"
+                    className="h-11 rounded-lg phone-input-wrapper"
                   />
                 </Form.Item>
 

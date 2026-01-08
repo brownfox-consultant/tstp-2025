@@ -1,0 +1,267 @@
+[
+  {
+    "name": "Afghanistan",
+    "cca2": "AF",
+    "code": "+93"
+  },
+  {
+    "name": "Albania",
+    "cca2": "AL",
+    "code": "+355"
+  },
+  {
+    "name": "Algeria",
+    "cca2": "DZ",
+    "code": "+213"
+  },
+  {
+    "name": "Argentina",
+    "cca2": "AR",
+    "code": "+54"
+  },
+  {
+    "name": "Australia",
+    "cca2": "AU",
+    "code": "+61"
+  },
+  {
+    "name": "Austria",
+    "cca2": "AT",
+    "code": "+43"
+  },
+  {
+    "name": "Bangladesh",
+    "cca2": "BD",
+    "code": "+880"
+  },
+  {
+    "name": "Belgium",
+    "cca2": "BE",
+    "code": "+32"
+  },
+  {
+    "name": "Brazil",
+    "cca2": "BR",
+    "code": "+55"
+  },
+  {
+    "name": "Canada",
+    "cca2": "CA",
+    "code": "+1"
+  },
+  {
+    "name": "China",
+    "cca2": "CN",
+    "code": "+86"
+  },
+  {
+    "name": "Denmark",
+    "cca2": "DK",
+    "code": "+45"
+  },
+  {
+    "name": "Egypt",
+    "cca2": "EG",
+    "code": "+20"
+  },
+  {
+    "name": "Finland",
+    "cca2": "FI",
+    "code": "+358"
+  },
+  {
+    "name": "France",
+    "cca2": "FR",
+    "code": "+33"
+  },
+  {
+    "name": "Germany",
+    "cca2": "DE",
+    "code": "+49"
+  },
+  {
+    "name": "Greece",
+    "cca2": "GR",
+    "code": "+30"
+  },
+  {
+    "name": "Hong Kong",
+    "cca2": "HK",
+    "code": "+852"
+  },
+  {
+    "name": "India",
+    "cca2": "IN",
+    "code": "+91"
+  },
+  {
+    "name": "Indonesia",
+    "cca2": "ID",
+    "code": "+62"
+  },
+  {
+    "name": "Iran",
+    "cca2": "IR",
+    "code": "+98"
+  },
+  {
+    "name": "Iraq",
+    "cca2": "IQ",
+    "code": "+964"
+  },
+  {
+    "name": "Ireland",
+    "cca2": "IE",
+    "code": "+353"
+  },
+  {
+    "name": "Israel",
+    "cca2": "IL",
+    "code": "+972"
+  },
+  {
+    "name": "Italy",
+    "cca2": "IT",
+    "code": "+39"
+  },
+  {
+    "name": "Japan",
+    "cca2": "JP",
+    "code": "+81"
+  },
+  {
+    "name": "Malaysia",
+    "cca2": "MY",
+    "code": "+60"
+  },
+  {
+    "name": "Mexico",
+    "cca2": "MX",
+    "code": "+52"
+  },
+  {
+    "name": "Netherlands",
+    "cca2": "NL",
+    "code": "+31"
+  },
+  {
+    "name": "New Zealand",
+    "cca2": "NZ",
+    "code": "+64"
+  },
+  {
+    "name": "Nigeria",
+    "cca2": "NG",
+    "code": "+234"
+  },
+  {
+    "name": "Norway",
+    "cca2": "NO",
+    "code": "+47"
+  },
+  {
+    "name": "Pakistan",
+    "cca2": "PK",
+    "code": "+92"
+  },
+  {
+    "name": "Philippines",
+    "cca2": "PH",
+    "code": "+63"
+  },
+  {
+    "name": "Poland",
+    "cca2": "PL",
+    "code": "+48"
+  },
+  {
+    "name": "Portugal",
+    "cca2": "PT",
+    "code": "+351"
+  },
+  {
+    "name": "Russia",
+    "cca2": "RU",
+    "code": "+7"
+  },
+  {
+    "name": "Saudi Arabia",
+    "cca2": "SA",
+    "code": "+966"
+  },
+  {
+    "name": "Singapore",
+    "cca2": "SG",
+    "code": "+65"
+  },
+  {
+    "name": "South Africa",
+    "cca2": "ZA",
+    "code": "+27"
+  },
+  {
+    "name": "South Korea",
+    "cca2": "KR",
+    "code": "+82"
+  },
+  {
+    "name": "Spain",
+    "cca2": "ES",
+    "code": "+34"
+  },
+  {
+    "name": "Sri Lanka",
+    "cca2": "LK",
+    "code": "+94"
+  },
+  {
+    "name": "Sweden",
+    "cca2": "SE",
+    "code": "+46"
+  },
+  {
+    "name": "Switzerland",
+    "cca2": "CH",
+    "code": "+41"
+  },
+  {
+    "name": "Taiwan",
+    "cca2": "TW",
+    "code": "+886"
+  },
+  {
+    "name": "Thailand",
+    "cca2": "TH",
+    "code": "+66"
+  },
+  {
+    "name": "Turkey",
+    "cca2": "TR",
+    "code": "+90"
+  },
+  {
+    "name": "Ukraine",
+    "cca2": "UA",
+    "code": "+380"
+  },
+  {
+    "name": "United Arab Emirates",
+    "cca2": "AE",
+    "code": "+971"
+  },
+  {
+    "name": "United Kingdom",
+    "cca2": "GB",
+    "code": "+44"
+  },
+  {
+    "name": "United States",
+    "cca2": "US",
+    "code": "+1"
+  },
+  {
+    "name": "Vietnam",
+    "cca2": "VN",
+    "code": "+84"
+  }
+]

@@ -5,6 +5,8 @@ import React, { useEffect, useState } from "react";
 import { editUser, getUserDetails } from "@/app/services/authService";
 import { useForm } from "antd/es/form/Form";
 import ChangePasswordModal from "./ChangePasswordModal";
+import { useCountryCode } from "@/hooks/useCountryCode";
+import CountryCodeSelect from "./CountryCodeSelect";
 
 function ProfileComponent() {
   const { id } = useParams();
@@ -15,6 +17,15 @@ function ProfileComponent() {
   const [updated, setUpdated] = useState(false);
   const [form] = useForm();
   const [isSaveDisabled, setIsSaveDisabled] = useState(true);
+
+  // Use country code hook
+  const {
+    countryCodes,
+    selectedCountryCode,
+    setSelectedCountryCode,
+    parsePhoneNumber,
+    formatPhoneNumber,
+  } = useCountryCode("+91", userData?.phone_number);
 
   const formFields = ["name", "email", "phone_number"];
 
@@ -30,16 +41,19 @@ function ProfileComponent() {
   const formInitialValues = {
     name: userData.name,
     email: userData.email,
-    phone_number: userData.phone_number,
+    phone_number: parsePhoneNumber(userData.phone_number),
   };
 
   function handleSave() {
     if (form.isFieldsTouched(formFields)) {
       form.validateFields(formFields).then(() => {
         setSaveLoading(true);
-        let payload = {
-          ...form.getFieldsValue(formFields),
-        };
+        let formData = form.getFieldsValue(formFields);
+        // Prepend country code to phone number using hook
+        if (formData.phone_number) {
+          formData.phone_number = formatPhoneNumber(formData.phone_number);
+        }
+        let payload = { ...formData };
 
         editUser(id, payload)
           .then((res) => {
@@ -102,6 +116,12 @@ function ProfileComponent() {
 
         {/* Main Profile Card */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <style jsx global>{`
+            .ant-input-group-addon {
+              background-color: transparent !important;
+              border: none !important;
+            }
+          `}</style>
           {/* Cover Banner with Pattern */}
           <div className="h-40 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 relative overflow-hidden">
             {/* Decorative circles */}
@@ -252,10 +272,18 @@ function ProfileComponent() {
                       className="mb-0"
                     >
                       <Input 
+                        prefix={null}
+                        addonBefore={
+                          <CountryCodeSelect
+                            countryCodes={countryCodes}
+                            value={selectedCountryCode}
+                            onChange={(value) => setSelectedCountryCode(value)}
+                          />
+                        }
                         placeholder="Enter your phone number"
                         maxLength={10}
                         onChange={handlePhoneNumberChange}
-                        className="h-11 rounded-full border border-green-200 bg-green-50/50 text-base font-medium px-4 hover:border-green-300 focus:border-green-400"
+                        className="h-11 rounded-lg border-green-200 bg-green-50/50 text-base font-medium hover:border-green-300 focus:border-green-400"
                       />
                     </Form.Item>
                   </div>

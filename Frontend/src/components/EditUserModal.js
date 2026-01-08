@@ -4,6 +4,7 @@ import { Form, Modal, Select, Input, Button, DatePicker, Row, Col } from "antd";
 import { useForm } from "antd/es/form/Form";
 import { editUser, getRoles, getUsersByRole } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
+import { useCountryCode } from "@/hooks/useCountryCode";
 
 function EditUserModal({ recordData, updated, setUpdated }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,6 +17,14 @@ function EditUserModal({ recordData, updated, setUpdated }) {
   const [loading, setLoading] = useState(false);
   const { roles } = useGlobalContext();
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+
+  const {
+    countryCodes,
+    selectedCountryCode,
+    setSelectedCountryCode,
+    parsePhoneNumber,
+    formatPhoneNumber,
+  } = useCountryCode("+91", recordData?.phone_number);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -60,7 +69,13 @@ function EditUserModal({ recordData, updated, setUpdated }) {
   function handleSubmit(formData) {
     setLoading(true);
 
-    editUser(recordData.id, formData)
+    // Format phone number with country code
+    const payload = {
+      ...formData,
+      phone_number: `${selectedCountryCode}${formData.phone_number}`
+    };
+
+    editUser(recordData.id, payload)
       .then((res) => {
         form.resetFields();
 
@@ -88,6 +103,58 @@ function EditUserModal({ recordData, updated, setUpdated }) {
 
   return (
     <>
+      <style jsx global>{`
+        /* Country Code Select Styling */
+        .country-code-select .ant-select-selector {
+          border: none !important;
+          border-right: 1px solid #E5E7EB !important;
+          box-shadow: none !important;
+          background: transparent !important;
+          padding: 0 12px 0 12px !important;
+          margin-right: 12px !important;
+        }
+        .country-code-select .ant-select-selection-search {
+          left: 8px !important;
+        }
+        .country-code-select .ant-select-selection-item {
+          padding: 0 !important;
+          font-weight: 500;
+          color: #374151;
+        }
+        .country-code-select .ant-select-arrow {
+          color: #6B7280;
+          right: 0 !important;
+        }
+        .country-code-select:hover .ant-select-selector {
+          border-right: 1px solid #D1D5DB !important;
+        }
+        .country-code-select.ant-select-focused .ant-select-selector {
+          border-right: 1px solid #0071BC !important;
+        }
+        /* Phone Input Unified Styling */
+        .phone-input-wrapper .ant-input-wrapper {
+          border: 1px solid #d9d9d9;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+        .phone-input-wrapper .ant-input-wrapper:hover {
+          border-color: #4096ff;
+        }
+        .phone-input-wrapper .ant-input-wrapper:focus-within {
+          border-color: #0071BC;
+          box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.1);
+        }
+        .phone-input-wrapper .ant-input {
+          border: none !important;
+          box-shadow: none !important;
+          padding-left: 12px !important;
+        }
+        .phone-input-wrapper .ant-input-group-addon {
+          border: none !important;
+          background: transparent !important;
+          padding: 0 !important;
+        }
+      `}</style>
       <EditOutlined onClick={showModal} className="mr-2" />
       <Modal
         width={480}
@@ -104,6 +171,7 @@ function EditUserModal({ recordData, updated, setUpdated }) {
           onFinish={handleSubmit}
           initialValues={{
             ...recordData,
+            phone_number: parsePhoneNumber(recordData?.phone_number),
             course: recordData?.course_details?.course_name,
           }}
           onFieldsChange={onFieldsChange}
@@ -165,7 +233,43 @@ function EditUserModal({ recordData, updated, setUpdated }) {
                   },
                 ]}
               >
-                <Input maxLength={10} onChange={handlePhoneNumberChange} />
+                <Input
+                  maxLength={10}
+                  onChange={handlePhoneNumberChange}
+                  className="rounded-lg phone-input-wrapper"
+                  addonBefore={
+                    <Select
+                      showSearch
+                      value={selectedCountryCode}
+                      onChange={(value) => setSelectedCountryCode(value)}
+                      style={{ width: 90 }}
+                      bordered={false}
+                      optionLabelProp="label"
+                      dropdownMatchSelectWidth={false}
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (option.countryName || '').toLowerCase().includes(input.toLowerCase()) ||
+                        String(option.value).includes(input)
+                      }
+                      dropdownStyle={{ zIndex: 10000, width: 300 }}
+                      className="country-code-select"
+                    >
+                      {countryCodes.map((country) => (
+                        <Select.Option
+                          key={country.cca2}
+                          value={country.code}
+                          label={country.code}
+                          countryName={country.name}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{country.name}</span>
+                            <span className="text-gray-400">({country.code})</span>
+                          </div>
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  }
+                />
               </Form.Item>
             </Col>
           </Row>
