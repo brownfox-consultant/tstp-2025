@@ -104,7 +104,7 @@ function ProfileComponent() {
   }
 
   return (
-   <div className="w-full md:w-full">
+    <div className="w-full md:w-full">
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="mb-8 text-right lg:text-left">
@@ -128,7 +128,7 @@ function ProfileComponent() {
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full"></div>
             <div className="absolute right-20 top-20 w-24 h-24 bg-white/10 rounded-full"></div>
             <div className="absolute left-10 bottom-0 w-32 h-32 bg-white/5 rounded-full"></div>
-            
+
             {/* Action Buttons - Top Right */}
             <div className="absolute top-4 right-4 flex gap-2">
               <ChangePasswordModal />
@@ -141,7 +141,7 @@ function ProfileComponent() {
                       flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm
                       backdrop-blur-md transition-all duration-200
                       ${isSaveDisabled || saveLoading
-                        ? 'bg-white/30 text-white/60 cursor-not-allowed' 
+                        ? 'bg-white/30 text-white/60 cursor-not-allowed'
                         : 'bg-white text-green-600 hover:bg-green-50 shadow-lg'}
                     `}
                   >
@@ -225,7 +225,7 @@ function ProfileComponent() {
                       rules={[{ required: true, message: "Please enter your name" }]}
                       className="mb-0"
                     >
-                      <Input 
+                      <Input
                         placeholder="Enter your name"
                         className="h-11 rounded-full border border-orange-200 bg-orange-50/50 text-base font-medium px-4 hover:border-orange-300 focus:border-orange-400"
                       />
@@ -248,7 +248,7 @@ function ProfileComponent() {
                       ]}
                       className="mb-0"
                     >
-                      <Input 
+                      <Input
                         placeholder="Enter your email"
                         className="h-11 rounded-full border border-blue-200 bg-blue-50/50 text-base font-medium px-4 hover:border-blue-300 focus:border-blue-400"
                       />
@@ -271,7 +271,7 @@ function ProfileComponent() {
                       ]}
                       className="mb-0"
                     >
-                      <Input 
+                      <Input
                         prefix={null}
                         addonBefore={
                           <CountryCodeSelect
@@ -331,5 +331,6 @@ function ProfileComponent() {
     </div>
   );
 }
+
 
 export default ProfileComponent;

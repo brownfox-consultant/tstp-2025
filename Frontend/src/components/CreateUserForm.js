@@ -149,18 +149,17 @@ function CreateUserForm() {
         form.resetFields();
         if (roleState != 5) {
           if (roleName === "student") {
-  Modal.success({
-    content:
-      "User created successfully, Once Parent and Course details are added, User Registration email will be sent to activate the account",
-    onOk: () => router.back(),
-  });
-} else {
-  Modal.success({
-    content: "User created successfully",
-    onOk: () => router.back(),
-  });
-}
-
+            Modal.success({
+              content:
+                "User created successfully, Once Parent and Course details are added, User Registration email will be sent to activate the account",
+              onOk: () => router.back(),
+            });
+          } else {
+            Modal.success({
+              content: "User created successfully",
+              onOk: () => router.back(),
+            });
+          }
         } else {
           window.sessionStorage.setItem(
             "approveStudentDetails",
@@ -376,9 +375,9 @@ function CreateUserForm() {
                         className="country-code-select"
                       >
                         {countryCodes.map((country) => (
-                          <AntSelect.Option 
-                            key={country.cca2} 
-                            value={country.code} 
+                          <AntSelect.Option
+                            key={country.cca2}
+                            value={country.code}
                             label={country.code}
                             countryName={country.name}
                           >
@@ -422,9 +421,9 @@ function CreateUserForm() {
                         className="country-code-select"
                       >
                         {countryCodes.map((country) => (
-                          <AntSelect.Option 
-                            key={country.cca2} 
-                            value={country.code} 
+                          <AntSelect.Option
+                            key={country.cca2}
+                            value={country.code}
                             label={country.code}
                             countryName={country.name}
                           >

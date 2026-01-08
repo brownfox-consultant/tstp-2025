@@ -472,8 +472,8 @@ function PracticeTestForm() {
                       <div className="border border-gray-200 rounded-lg p-4 transition-all cursor-pointer" onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F59405'; e.currentTarget.style.backgroundColor = '#FFF5E6'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
                         <Radio value="BOTH" className="w-full">
                           <div>
-                            <div className="font-medium text-gray-900">Both</div>
-                            <div className="text-sm text-gray-500">Mix of incorrect and unanswered questions</div>
+                            <div className="font-medium text-gray-900">Answered + Unanswered</div>
+                            <div className="text-sm text-gray-500">Mix of Answered and Unanswered questions</div>
                           </div>
                         </Radio>
                       </div>
