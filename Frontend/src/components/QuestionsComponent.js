@@ -5,7 +5,7 @@ import { Tabs, Input, Button } from "antd";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { SearchOutlined, FilterOutlined } from "@ant-design/icons";
-import axios from "axios"; 
+import axios from "axios";
 import { BASE_URL } from "@/app/constants/apiConstants";
 function QuestionsComponent() {
   const router = useRouter();
@@ -19,39 +19,39 @@ function QuestionsComponent() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState({});
   const [topics, setTopics] = useState([]);
-const [difficultyList, setDifficultyList] = useState([]);
-const [questionTypeList, setQuestionTypeList] = useState([]);
+  const [difficultyList, setDifficultyList] = useState([]);
+  const [questionTypeList, setQuestionTypeList] = useState([]);
   const [testTypeList, setTestTypeList] = useState([]);
   const [questionSubtypeList, setQuestionSubtypeList] = useState([]);
 
-  
-  useEffect(() => {
-  // Fetch course list
-  getCoursesInsideAuth()
-    .then((res) => {
-      setCourses(res.data);
-      if (res.data.length > 0) {
-        setActiveCourseKey(res.data[0].name);
-      }
-    })
-    .catch(console.error);
 
-  // Fetch constants
-  axios
-    .get(`${BASE_URL}/api/course/constants/`, {
-      withCredentials: true,
-    })
-    .then((res) => {
-      console.log("constants API response1:", res.data);
-      setTopics(res.data.topics);
-      setDifficultyList(res.data.difficultyList);
-      setQuestionTypeList(res.data.questionTypeList);
-      setTestTypeList(res.data.testTypeList);
-      setQuestionSubtypeList(res.data.questionSubtypeList);
-      
-    })
-    .catch(console.error);
-}, []);
+  useEffect(() => {
+    // Fetch course list
+    getCoursesInsideAuth()
+      .then((res) => {
+        setCourses(res.data);
+        if (res.data.length > 0) {
+          setActiveCourseKey(res.data[0].name);
+        }
+      })
+      .catch(console.error);
+
+    // Fetch constants
+    axios
+      .get(`${BASE_URL}/api/course/constants/`, {
+        withCredentials: true,
+      })
+      .then((res) => {
+        console.log("constants API response1:", res.data);
+        setTopics(res.data.topics);
+        setDifficultyList(res.data.difficultyList);
+        setQuestionTypeList(res.data.questionTypeList);
+        setTestTypeList(res.data.testTypeList);
+        setQuestionSubtypeList(res.data.questionSubtypeList);
+
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     getCoursesInsideAuth()
@@ -64,7 +64,7 @@ const [questionTypeList, setQuestionTypeList] = useState([]);
       .catch((err) => console.log(err));
   }, []);
 
-  
+
 
 
   const onChange = (key) => {
@@ -107,7 +107,7 @@ const [questionTypeList, setQuestionTypeList] = useState([]);
         <Button icon={<FilterOutlined />} onClick={() => setShowAdvanced(true)}>
           Advanced Search
         </Button>
-          
+
       </div>
 
       <Tabs
@@ -129,19 +129,17 @@ const [questionTypeList, setQuestionTypeList] = useState([]);
         />
       )}
 
-    <AdvancedSearchModal
-  open={showAdvanced}
-  onClose={() => setShowAdvanced(false)}
-  onApply={handleApplyAdvanced}
-  currentFilters={filters}
-  topics={topics}
-  difficultyList={difficultyList}
-  questionTypeList={questionTypeList}
-  testTypeList={testTypeList}
-  questionSubtypeList={questionSubtypeList}
-/>
-
-
+      <AdvancedSearchModal
+        open={showAdvanced}
+        onClose={() => setShowAdvanced(false)}
+        onApply={handleApplyAdvanced}
+        currentFilters={filters}
+        topics={topics}
+        difficultyList={difficultyList}
+        questionTypeList={questionTypeList}
+        testTypeList={testTypeList}
+        questionSubtypeList={questionSubtypeList}
+      />
     </>
   );
 }

@@ -201,7 +201,7 @@ function QuestionsComponent2({ courses }) {
   return (
     <div className="space-y-6">
       {/* 🔍 Search & Actions Card */}
-      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+      <div className="">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           
           {/* Left Side: Search & Filter */}
@@ -221,7 +221,7 @@ function QuestionsComponent2({ courses }) {
               className="px-5 rounded-lg border-gray-200 hover:border-blue-400 hover:text-blue-600 font-medium flex items-center justify-center gap-2"
               style={{ height: '48px' }}
             >
-              Advanced Search 
+              Advanced Search for {calculateCurrentKey()}
             </Button>
           </div>
 
@@ -292,6 +292,8 @@ function QuestionsComponent2({ courses }) {
         open={showAdvanced}
         onClose={() => setShowAdvanced(false)}
         onApply={handleApplyAdvanced}
+        selectedCourseName={calculateCurrentKey()}
+        selectedCourseId={courses.find(c => c.name === calculateCurrentKey())?.id}
         currentFilters={{
           difficulty: searchParams.get("difficulty")?.split(",") || [],
           question_type: searchParams.get("question_type")?.split(",") || [],
