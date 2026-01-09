@@ -4578,7 +4578,8 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         # =====================================================
         query_filters = Q(
             course_subject_id=course_subject_id,
-            test_type=Question.SELF_PRACTICE_TEST_TYPE
+            test_type=Question.SELF_PRACTICE_TEST_TYPE,
+            is_active=True
         )
 
         # ---------------- Topic Filter ----------------
