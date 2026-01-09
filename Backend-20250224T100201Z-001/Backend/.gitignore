@@ -9,6 +9,9 @@ venv/
 env/
 .venv/
 
+# Ignore Django migration files
+sTest/settings.py
+
 # Ignore logs folder completely
 logs/
 *.log
