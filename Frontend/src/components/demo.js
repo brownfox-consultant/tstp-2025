@@ -389,44 +389,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
 
-          {/* Course & Student Selectors */}
-          <Select
-            className="w-52 text-sm"
-            value={courses.find((c) => c.id.toString() === selectedCourse)}
-            onChange={(opt) => setSelectedCourse(opt?.id.toString())}
-            options={courses}
-            getOptionLabel={(e) => e.name}
-            getOptionValue={(e) => e.id.toString()}
-            placeholder="Select Course"
-            components={{ DropdownIndicator }}
-          />
-
-          {/* Test Scores */}
-          <Select
-            className="w-48 text-sm"
-            value={students.find((s) => s.id.toString() === selectedStudent)}
-            onChange={(opt) => setSelectedStudent(opt?.id.toString())}
-            options={students}
-            getOptionLabel={(e) => e.name}
-            getOptionValue={(e) => e.id.toString()}
-            placeholder="Select Student"
-            components={{ DropdownIndicator }}
-          />
-
-          {/* Test Selector */}
-          <Select
-            className="w-48 text-sm"
-            value={tests.find((t) => t.id.toString() === selectedTest)}
-            onChange={(opt) => setSelectedTest(opt?.id.toString())}
-            options={[{ id: "", name: "All Tests" }, ...tests]}
-            getOptionLabel={(e) => e.name}
-            getOptionValue={(e) => e.id.toString()}
-            placeholder="Select Test"
-            components={{ DropdownIndicator }}
-          />
         </div>
       </div>
 
@@ -512,14 +475,14 @@ export default function Dashboard() {
                   )}
                 </tbody>
               </table>
-              <div className="px-5 py-3 bg-gray-50 border-t-2 border-gray-400 text-sm text-[#805830] rounded-xl">
+              <div className="px-5 py-3 bg-gray-50 text-sm text-[#805830">
                 Showing {questionCounts.length} records
               </div>
             </div>
           </div>
 
           {/* Charts Grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {/* Student Count Chart */}
             <div className="bg-white shadow-md rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
@@ -537,33 +500,49 @@ export default function Dashboard() {
             </div>
 
             {/* Test Scores Chart */}
-            <div className="bg-white shadow-md rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-[#2E2725]">Test Scores</h3>
-              </div>
-              {barPercentData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={barPercentData} barSize={40}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
-                    <YAxis domain={[0, 100]} tick={{ fill: '#805830', fontSize: 12 }} />
-                    <Tooltip cursor={{ fill: 'transparent' }} />
-                    <Bar dataKey="value" fill="#70D9E4" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-[280px] text-gray-400">
-                  <NoDataChartIcon className="w-12 h-12 mb-3 text-gray-300" />
-                  <span className="text-sm font-medium">No data available</span>
-                </div>
-              )}
-            </div>
+
           </div>
 
           {/* Time Spent Chart */}
           <div className="bg-white shadow-md rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#2E2725]">Time Spent vs Score</h3>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+              <div className="flex items-center gap-4 justify-between w-full">
+                <div>
+                <h3 className="text-lg font-bold text-[#2E2725]">Time Spent vs Score</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Select
+                    className="w-40 text-sm"
+                    value={courses.find((c) => c.id.toString() === selectedCourse)}
+                    onChange={(opt) => setSelectedCourse(opt?.id.toString())}
+                    options={courses}
+                    getOptionLabel={(e) => e.name}
+                    getOptionValue={(e) => e.id.toString()}
+                    placeholder="Select Course"
+                    components={{ DropdownIndicator }}
+                  />
+                  <Select
+                    className="w-40 text-sm"
+                    value={students.find((s) => s.id.toString() === selectedStudent)}
+                    onChange={(opt) => setSelectedStudent(opt?.id.toString())}
+                    options={students}
+                    getOptionLabel={(e) => e.name}
+                    getOptionValue={(e) => e.id.toString()}
+                    placeholder="Select Student"
+                    components={{ DropdownIndicator }}
+                  />
+                  <Select
+                    className="w-40 text-sm"
+                    value={tests.find((t) => t.id.toString() === selectedTest)}
+                    onChange={(opt) => setSelectedTest(opt?.id.toString())}
+                    options={[{ id: "", name: "All Tests" }, ...tests]}
+                    getOptionLabel={(e) => e.name}
+                    getOptionValue={(e) => e.id.toString()}
+                    placeholder="Select Test"
+                    components={{ DropdownIndicator }}
+                  />
+                </div>
+              </div>
               {timeSpentData.length > 0 && (
                 <div className="flex gap-3">
                   <div className="flex items-center gap-2">
