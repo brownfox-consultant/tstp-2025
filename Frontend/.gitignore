@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+
+# Ignore API constants (contains base URL / secrets)
+src/app/constants/apiConstants.js
+
 # Build output
 dist/
 build/

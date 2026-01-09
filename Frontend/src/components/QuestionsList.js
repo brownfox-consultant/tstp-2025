@@ -270,75 +270,8 @@ function QuestionsList({
     return text ? <Tag bordered={false}>{questionSubtypeMap[text]}</Tag> : "-";
   },
 },
-    {
-      title: "Question Type",
-      dataIndex: "question_type",
-      key: "question_type",
-      align: "center",
-      filters: questionTypeFilters,
-      defaultFilteredValue: searchParams.get("question_type") || null,
-      filterIcon: (filtered) =>
-        filtered && searchParams.get("question_type") ? (
-          <FilterFilled />
-        ) : (
-          <FilterOutlined style={{ color: "gray" }} />
-        ),
-      onFilter: (value, record) => record.question_type.indexOf(value) === 0,
-      render: (text) => {
-        return <Tag bordered={false}>{questionTypeMap[text]}</Tag>;
-      },
-    },
-    {
-      title: "Test Type",
-      dataIndex: "test_type",
-      key: "test_type",
-      align: "center",
-      filters: testTypeFilters,
-      filterIcon: (filtered) =>
-        filtered && searchParams.get("test_type") ? (
-          <FilterFilled />
-        ) : (
-          <FilterOutlined style={{ color: "gray" }} />
-        ),
-      defaultFilteredValue: searchParams.get("test_type") || null,
-      render: (text) => {
-        return text == "FULL_LENGTH_TEST"
-          ? "Full Length Test"
-          : "Practice Questions";
-      },
-    },
-    {
-      title: "Topic",
-      dataIndex: "topic",
-      key: "topic",
-      filterIcon: (filtered) =>
-        filtered && searchParams.get("topic") ? (
-          <FilterFilled />
-        ) : (
-          <FilterOutlined style={{ color: "gray" }} />
-        ),
-      defaultFilteredValue: searchParams.get("topic") || null,
-      filters: topics.map(({ id, name }) => {
-        return { value: id, text: name };
-      }),
-    },
-    {
-      title: "Sub Topic",
-      dataIndex: "sub_topic",
-      key: "sub_topic",
-      filters: getAllSubTopics(topics),
-      filterIcon: (filtered) =>
-        filtered && searchParams.get("sub_topic") ? (
-          <FilterFilled />
-        ) : (
-          <FilterOutlined style={{ color: "gray" }} />
-        ),
-      defaultFilteredValue: searchParams.get("sub_topic") || null,
-      render: (text) => {
-        return <div>{text ? text : "-"}</div>;
-      },
-    },
- {
+
+{
  title: "Is Active",
   dataIndex: "is_active",
   key: "is_active",
@@ -408,6 +341,75 @@ function QuestionsList({
     );
   },
     },
+    {
+      title: "Question Type",
+      dataIndex: "question_type",
+      key: "question_type",
+      align: "center",
+      filters: questionTypeFilters,
+      defaultFilteredValue: searchParams.get("question_type") || null,
+      filterIcon: (filtered) =>
+        filtered && searchParams.get("question_type") ? (
+          <FilterFilled />
+        ) : (
+          <FilterOutlined style={{ color: "gray" }} />
+        ),
+      onFilter: (value, record) => record.question_type.indexOf(value) === 0,
+      render: (text) => {
+        return <Tag bordered={false}>{questionTypeMap[text]}</Tag>;
+      },
+    },
+    {
+      title: "Test Type",
+      dataIndex: "test_type",
+      key: "test_type",
+      align: "center",
+      filters: testTypeFilters,
+      filterIcon: (filtered) =>
+        filtered && searchParams.get("test_type") ? (
+          <FilterFilled />
+        ) : (
+          <FilterOutlined style={{ color: "gray" }} />
+        ),
+      defaultFilteredValue: searchParams.get("test_type") || null,
+      render: (text) => {
+        return text == "FULL_LENGTH_TEST"
+          ? "Full Length Test"
+          : "Practice Questions";
+      },
+    },
+    {
+      title: "Topic",
+      dataIndex: "topic",
+      key: "topic",
+      filterIcon: (filtered) =>
+        filtered && searchParams.get("topic") ? (
+          <FilterFilled />
+        ) : (
+          <FilterOutlined style={{ color: "gray" }} />
+        ),
+      defaultFilteredValue: searchParams.get("topic") || null,
+      filters: topics.map(({ id, name }) => {
+        return { value: id, text: name };
+      }),
+    },
+    {
+      title: "Sub Topic",
+      dataIndex: "sub_topic",
+      key: "sub_topic",
+      filters: getAllSubTopics(topics),
+      filterIcon: (filtered) =>
+        filtered && searchParams.get("sub_topic") ? (
+          <FilterFilled />
+        ) : (
+          <FilterOutlined style={{ color: "gray" }} />
+        ),
+      defaultFilteredValue: searchParams.get("sub_topic") || null,
+      render: (text) => {
+        return <div>{text ? text : "-"}</div>;
+      },
+    },
+ 
 
     {
   title: "Created By",
