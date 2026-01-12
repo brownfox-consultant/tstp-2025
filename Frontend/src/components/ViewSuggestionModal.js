@@ -108,22 +108,22 @@ function ViewSuggestionModal({
             <div className="flex justify-center mt-4">
               {suggestionData?.status == "IN_REVIEW" && role == "admin" ? (
                 <div className="flex gap-3">
-                  <Button
+                  <button
                     onClick={handleApprove}
                     type="primary"
                     size="large"
                     className="min-w-[120px] h-11 rounded-lg font-medium bg-green-500 border-green-500 hover:bg-green-600 hover:border-green-600"
                   >
                     Approve
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     onClick={handleReject}
                     danger
                     size="large"
                     className="min-w-[120px] h-11 rounded-lg font-medium"
                   >
                     Reject
-                  </Button>
+                  </button>
                 </div>
               ) : (
                 <Button

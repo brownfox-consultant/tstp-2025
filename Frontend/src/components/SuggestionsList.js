@@ -1,13 +1,14 @@
-import { getSuggestionsList } from "@/app/services/authService";
+import { getSuggestionsList, getSubjectTopics } from "@/app/services/authService";
 import { Input, Table, Button, Modal } from "antd";
 import React, { useEffect, useState } from "react";
 import ViewSuggestionModal from "./ViewSuggestionModal";
 import SuggestionStatusTag from "./SuggestionStatusTag";
 import dayjs from "dayjs";
-import { EyeTwoTone, EditOutlined, ReloadOutlined, SearchOutlined, FilterOutlined } from "@ant-design/icons";
+import { EyeTwoTone, EditOutlined, ReloadOutlined } from "@ant-design/icons";
 import { usePathname } from "next/navigation";
 import MathContent from "./MathContent";
-import AdvancedSearchModal1 from "./AdvancedSearchModal1"; // adjust path if needed
+import AdvancedSearchModal1 from "./AdvancedSearchModal1";
+import EditQuestionForm from "./EditQuestionForm";
 
 const { Search } = Input;
 
@@ -17,7 +18,6 @@ function SuggestionsList() {
   const [skeletonLoading, setSkeletonLoading] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [current, setCurrent] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,10 +25,11 @@ function SuggestionsList() {
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [sorterState, setSorterState] = useState(null); // ✅ added this to track sorting
-  
+
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editQuestionUrl, setEditQuestionUrl] = useState("");
+  const [editQuestionData, setEditQuestionData] = useState(null);
+  const [topicOptions, setTopicOptions] = useState([]);
 
   // ✅ Map frontend column key → backend field
   const SORT_FIELD_MAP = {
@@ -50,7 +51,7 @@ function SuggestionsList() {
     const fetchData = async () => {
       setSkeletonLoading(true);
 
-      const params = { page: current, size: pageSize };
+      const params = { page: current };
 
       // include filters
       if (advancedFilters?.course?.length) params.course = advancedFilters.course.join(",");
@@ -84,7 +85,7 @@ function SuggestionsList() {
     };
 
     fetchData();
-  }, [current, pageSize, advancedFilters, sorterState, updated]);
+  }, [current, advancedFilters, sorterState, updated]);
 
   // ✅ local search
   const handleSearch = (value, dataToFilter = suggestionsData) => {
@@ -178,18 +179,29 @@ function SuggestionsList() {
             <Button
               type="text"
               icon={<EditOutlined style={{ color: "#1890ff" }} />}
-              onClick={() => {
-                const userId = localStorage.getItem("id");
-                setEditQuestionUrl(`/${role}/${userId}/questions/${record.question.id}/edit`);
+              onClick={async () => {
+                // Get course_subject id from the record
+                const courseSubjectId = record.question.course_subject || record.course_subject_id;
+                
+                // Fetch topic options if we have a course subject id
+                if (courseSubjectId) {
+                  try {
+                    const res = await getSubjectTopics(courseSubjectId);
+                    setTopicOptions(
+                      res.data.map((option) => ({ ...option, label: option.name }))
+                    );
+                  } catch (err) {
+                    console.error("Failed to fetch topics:", err);
+                    setTopicOptions([]);
+                  }
+                } else {
+                  setTopicOptions([]);
+                }
+                
+                setEditQuestionData(record.question);
                 setIsEditModalOpen(true);
               }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                color: "#1890ff",
-                fontWeight: 500,
-              }}
+              style={{ color: "#1890ff", fontWeight: 500 }}
             >
               Edit
             </Button>
@@ -201,67 +213,34 @@ function SuggestionsList() {
 
   return (
     <div>
-      {/* Search Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 shadow-sm">
-        <div className="flex items-center gap-4">
-          {/* Search Input */}
-          <div className="relative flex-1 max-w-md">
-            <SearchOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, email, etc..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-gray-700 placeholder-gray-400 text-sm"
-            />
-          </div>
-
-          {/* Advanced Search Button */}
-          <button
-            onClick={() => setIsAdvancedSearchOpen(true)}
-            className="h-10 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium text-sm hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center gap-2"
-          >
-            <FilterOutlined className="text-gray-500" />
-            Advanced Search
-          </button>
-        </div>
+      <div className="flex items-center gap-4 mb-4">
+        <Search
+          placeholder="Search questions"
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+          style={{ width: 300 }}
+          allowClear
+        />
+        <Button onClick={() => setIsAdvancedSearchOpen(true)}>Advanced Search</Button>
       </div>
 
       <Table
+        footer={() => (
+          <div className="flex justify-end mr-5">
+            Page {current} of {totalPages} (Total: {total} records)
+          </div>
+        )}
         loading={skeletonLoading}
         dataSource={filteredData}
         columns={cols}
         rowKey={(record) => record.id}
         pagination={{
-          current: current,
-          pageSize: pageSize,
+          showSizeChanger: false,
+          pageSize: 10,
           total: total,
-          showSizeChanger: true,
-          pageSizeOptions: ["10", "20", "50", "100"],
-          showQuickJumper: { goButton: <span style={{ marginLeft: "4px" }}>Page</span> },
-          showTotal: (total) => (
-            <span style={{ fontWeight: 500, color: "#666", marginRight: "8px" }}>
-              Total {total} suggestions
-            </span>
-          ),
-          onChange: (page, newPageSize) => {
-            if (newPageSize !== pageSize) {
-              setPageSize(newPageSize);
-              setCurrent(1); // Reset to first page when page size changes
-            } else {
-              setCurrent(page);
-            }
-          },
-          locale: { 
-            jump_to: "Go to",
-            page: "",
-          },
+          onChange: (page) => setCurrent(page),
         }}
         onChange={(pagination, filters, sorter) => {
-          // Handle page change from pagination
-          if (pagination.current !== current) {
-            setCurrent(pagination.current);
-          }
           // ✅ detect sorting and set state for API call
           if (sorter.order && sorter.columnKey) {
             const backendField = SORT_FIELD_MAP[sorter.columnKey] || sorter.columnKey;
@@ -274,55 +253,6 @@ function SuggestionsList() {
         scroll={{ x: "max-content" }}
       />
 
-      {/* Custom Pagination Styles */}
-      <style jsx global>{`
-        .ant-pagination {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .ant-pagination-item {
-          min-width: 32px;
-          height: 32px;
-          line-height: 30px;
-          border-radius: 6px;
-          border: 1px solid #e0e0e0;
-          background: #fff;
-        }
-        .ant-pagination-item a {
-          color: #333;
-        }
-        .ant-pagination-item-active {
-          border: 2px solid #f5a623 !important;
-          background: #fffaf0 !important;
-        }
-        .ant-pagination-item-active a {
-          color: #f5a623 !important;
-        }
-        .ant-pagination-prev .ant-pagination-item-link,
-        .ant-pagination-next .ant-pagination-item-link {
-          border-radius: 6px;
-          border: 1px solid #e0e0e0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .ant-pagination-options {
-          margin-left: 8px;
-        }
-        .ant-select-selector {
-          border-radius: 6px !important;
-        }
-        .ant-pagination-options-quick-jumper {
-          margin-left: 8px;
-        }
-        .ant-pagination-options-quick-jumper input {
-          width: 50px;
-          border-radius: 6px;
-          text-align: center;
-        }
-      `}</style>
-
       <AdvancedSearchModal1
         open={isAdvancedSearchOpen}
         onClose={() => setIsAdvancedSearchOpen(false)}
@@ -330,68 +260,106 @@ function SuggestionsList() {
         data={suggestionsData}
       />
 
-      {/* Edit Question Modal */}
+      {/* Edit Question Modal - Modern UI */}
       <Modal
         open={isEditModalOpen}
-        title={
-          <div style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: "10px",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}>
-            <EditOutlined style={{ color: "#1890ff" }} />
-            Edit Question
-          </div>
-        }
         onCancel={() => {
           setIsEditModalOpen(false);
-          setEditQuestionUrl("");
-          // Trigger refresh after closing
+          setEditQuestionData(null);
           setUpdated((prev) => !prev);
         }}
-        width="95%"
-        style={{ top: 20 }}
-        footer={
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                setUpdated((prev) => !prev);
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
-              Refresh List
-            </Button>
-            <Button
-              type="primary"
+        width={1300}
+        centered
+        footer={null}
+        closable={false}
+        className="edit-question-modal"
+        styles={{
+          body: { padding: 0 },
+          content: { borderRadius: '16px', overflow: 'hidden' }
+        }}
+      >
+        {/* Header with Gradient */}
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <EditOutlined className="text-white text-xl" />
+              </div>
+              <div>
+                <h2 className="text-black text-xl font-bold m-0">Edit Question</h2>
+                <p className="text-black text-sm m-0">
+                  {editQuestionData?.topic && `Topic: ${editQuestionData.topic}`}
+                </p>
+              </div>
+            </div>
+            <button
               onClick={() => {
                 setIsEditModalOpen(false);
-                setEditQuestionUrl("");
+                setEditQuestionData(null);
                 setUpdated((prev) => !prev);
               }}
+              className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 cursor-pointer border-0"
             >
-              Done
-            </Button>
+              <span className="text-white text-lg">×</span>
+            </button>
           </div>
-        }
-        destroyOnClose
-      >
-        <iframe
-          src={editQuestionUrl}
-          style={{
-            width: "100%",
-            height: "75vh",
-            border: "none",
-            borderRadius: "8px",
-          }}
-          title="Edit Question"
-        />
+        </div>
+
+        {/* Form Content */}
+        <div className="p-6 max-h-[70vh] overflow-y-auto bg-gray-50">
+          {editQuestionData && (
+            <EditQuestionForm
+              initialValues={editQuestionData}
+              action="edit"
+              topicOptionsParam={topicOptions}
+              subTopicOptionsParam={
+                topicOptions.find((t) => t.name === editQuestionData.topic)?.subtopics || []
+              }
+              courseSubId={editQuestionData.course_subject || editQuestionData.course_subject_id}
+              role={role}
+              updated={updated}
+              setUpdated={setUpdated}
+              hideButtons={true}
+              closeModal={() => {
+                setIsEditModalOpen(false);
+                setEditQuestionData(null);
+                setUpdated((prev) => !prev);
+              }}
+            />
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-6 pt-4 bg-white border-t border-gray-200 flex items-center justify-center gap-3">
+          <Button
+            type="primary"
+            onClick={() => {
+              // Submit the form programmatically
+              document.querySelector('.edit-question-modal form')?.dispatchEvent(
+                new Event('submit', { cancelable: true, bubbles: true })
+              );
+            }}
+          >
+            Update
+          </Button>
+          <Button
+            onClick={() => {
+              setIsEditModalOpen(false);
+              setEditQuestionData(null);
+              setUpdated((prev) => !prev);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              // Trigger preview - handled by form's preview button logic
+              document.querySelector('.edit-question-modal .preview-btn')?.click();
+            }}
+          >
+            Preview Question
+          </Button>
+        </div>
       </Modal>
     </div>
   );

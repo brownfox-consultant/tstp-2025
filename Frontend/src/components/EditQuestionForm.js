@@ -45,6 +45,9 @@ function EditQuestionForm({
   courseSubId,
   page,
   courseSubjectId,
+  hideButtons = false,
+  closeModal,
+  setUpdated,
 }) {
   console.log("page",page)
   const [form] = useForm();
@@ -443,10 +446,15 @@ function EditQuestionForm({
       }).then((res) => {
         Modal.success({
           title: "Edited successfully",
-          onOk: () =>
-        router.push(
-          `/admin/questions/questions?course_subject_id=${courseSubjectId}&page=${page}`
-        ),
+          onOk: () => {
+            if (closeModal) {
+              closeModal();
+            } else {
+              router.push(
+                `/admin/questions/questions?course_subject_id=${courseSubjectId}&page=${page}`
+              );
+            }
+          },
         });
       });
     } else {
@@ -456,7 +464,13 @@ function EditQuestionForm({
       }).then((res) => {
         Modal.success({
           title: "Suggestion raised",
-          onOk: () => router.back(),
+          onOk: () => {
+            if (closeModal) {
+              closeModal();
+            } else {
+              router.back();
+            }
+          },
         });
       });
     }
@@ -1066,6 +1080,7 @@ function EditQuestionForm({
             </Form.Item>
           </Col> */}
         </Row>
+{!hideButtons && (
 <Form.Item className="flex justify-center space-x-2">
   <Button type="primary" htmlType="submit">
     {pathname.includes("admin") ? "Update" : "Suggest"}
@@ -1080,7 +1095,7 @@ function EditQuestionForm({
 
  
 
-<Button type="default" className="ml-2" onClick={handlePreview}>
+<Button type="default" className="ml-2 preview-btn" onClick={handlePreview}>
     Preview Question
   </Button>
 
@@ -1093,6 +1108,19 @@ function EditQuestionForm({
 
 
 </Form.Item>
+)}
+
+{/* Hidden preview elements for external trigger */}
+{hideButtons && (
+  <>
+    <button type="button" className="preview-btn hidden" onClick={handlePreview} />
+    <PreviewQuestionModal
+      visible={previewVisible}
+      onClose={() => setPreviewVisible(false)}
+      questionData={previewData}
+    />
+  </>
+)}
 
 
       </Form>
