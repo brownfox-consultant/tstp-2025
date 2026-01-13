@@ -269,6 +269,7 @@ export default function AdvancedSearchModal1({ open, onClose, onApply, data = []
       title={null}
       footer={null}
       width={1000}
+      centered
       className="p-0 rounded-xl overflow-hidden"
       bodyStyle={{ padding: 0 }}
       closeIcon={null}

@@ -343,6 +343,7 @@ export default function AdvancedSearchModal({
       title={null} // Custom Header used below
       footer={null} // Custom Footer used below
       width={1200}
+      centered
       className="p-0 rounded-xl overflow-hidden"
       bodyStyle={{ padding: 0 }}
       closeIcon={null}
