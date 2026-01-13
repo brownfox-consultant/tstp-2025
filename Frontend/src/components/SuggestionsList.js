@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import ViewSuggestionModal from "./ViewSuggestionModal";
 import SuggestionStatusTag from "./SuggestionStatusTag";
 import dayjs from "dayjs";
-import { EyeTwoTone, EditOutlined, ReloadOutlined, SearchOutlined, FilterOutlined } from "@ant-design/icons";
+import { EyeTwoTone, EditOutlined, ReloadOutlined, SearchOutlined, FilterOutlined, CloseOutlined } from "@ant-design/icons";
 import { usePathname, useRouter } from "next/navigation";
 import MathContent from "./MathContent";
 import AdvancedSearchModal1 from "./AdvancedSearchModal1";
@@ -288,16 +288,16 @@ function SuggestionsList() {
           content: { borderRadius: '16px', overflow: 'hidden' }
         }}
       >
-        {/* Header with Gradient */}
-        <div>
+        {/* Header */}
+        <div className="mb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <EditOutlined className="text-white text-xl" />
+              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                <EditOutlined className="text-[#F59405] text-xl" />
               </div>
               <div>
                 <h2 className="text-black text-xl font-bold m-0">Edit Question</h2>
-                <p className="text-black text-sm m-0">
+                <p className="text-gray-500 text-sm m-0">
                   {editQuestionData?.topic && `Topic: ${editQuestionData.topic}`}
                 </p>
               </div>
@@ -308,9 +308,9 @@ function SuggestionsList() {
                 setEditQuestionData(null);
                 setUpdated((prev) => !prev);
               }}
-              className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 cursor-pointer border-0"
+              className="w-8 h-8 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 cursor-pointer border-0 rounded-md bg-transparent"
             >
-              <span className="text-white text-lg">×</span>
+              <span className="text-gray-500 text-lg"><CloseOutlined /></span>
             </button>
           </div>
         </div>
@@ -329,12 +329,12 @@ function SuggestionsList() {
               role={role}
               updated={updated}
               setUpdated={setUpdated}
-              hideButtons={true}
+              hideButtons={false}
               closeModal={() => {
                 const courseSubjectId = editQuestionData.course_subject || editQuestionData.course_subject_id;
                 setIsEditModalOpen(false);
                 setEditQuestionData(null);
-                // Redirect to questions page
+                setUpdated((prev) => !prev);
                 router.push(`/admin/questions/questions?course_subject_id=${courseSubjectId}&page=1`);
               }}
             />
@@ -342,36 +342,7 @@ function SuggestionsList() {
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 pt-4 bg-white border-t border-gray-200 flex items-center justify-center gap-3">
-          <Button
-            type="primary"
-            onClick={() => {
-              // Submit the form programmatically
-              document.querySelector('.edit-question-modal form')?.dispatchEvent(
-                new Event('submit', { cancelable: true, bubbles: true })
-              );
-            }}
-          >
-            Update
-          </Button>
-          <Button
-            onClick={() => {
-              setIsEditModalOpen(false);
-              setEditQuestionData(null);
-              setUpdated((prev) => !prev);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              // Trigger preview - handled by form's preview button logic
-              document.querySelector('.edit-question-modal .preview-btn')?.click();
-            }}
-          >
-            Preview Question
-          </Button>
-        </div>
+
       </Modal>
     </div>
   );

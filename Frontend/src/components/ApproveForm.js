@@ -2,27 +2,24 @@ import { approveStudent, getUsersByRole } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
 import {
   CloseOutlined,
-  PlusCircleOutlined,
   PlusCircleTwoTone,
   PlusOutlined,
-  DownOutlined,
+  UserAddOutlined,
+  UserOutlined, 
+  MailOutlined,
+  HomeOutlined
 } from "@ant-design/icons";
 import {
   Button,
-  Card,
   Col,
-  DatePicker,
   Divider,
-  Drawer,
   Form,
   Input,
   Modal,
-  Popover,
-  Radio,
   Row,
+  Select as AntSelect,
 } from "antd";
-import Select, { components } from "react-select";
-import { ChevronIcon } from "./icons/dashboard-icons";
+import ReactSelect, { components } from "react-select";
 import { useForm } from "antd/es/form/Form";
 import dayjs from "dayjs";
 import { useState, useEffect } from "react";
@@ -30,6 +27,75 @@ import CourseMetaDetailsForm from "./CourseMetaDetailsForm";
 import { getCoursesInsideAuth } from "@/app/services/courseService";
 import { useParams, useRouter } from "next/navigation";
 import { useMediaQuery } from "react-responsive";
+import { useCountryCode } from "@/hooks/useCountryCode";
+
+const { Option } = AntSelect;
+
+// Wrapper component to bridge Ant Design Form (value=ID) and React Select (value=Object)
+const IdSelect = ({ value, onChange, options, ...props }) => {
+  // Find the full option object based on the ID value passed by Form.Item
+  const selectedOption = options?.find(opt => opt.value === value) || null;
+  
+  return (
+    <ReactSelect
+      {...props}
+      options={options}
+      value={selectedOption}
+      onChange={(val) => {
+        // Pass only the ID back to the Form
+        onChange(val?.value || null);
+      }}
+    />
+  );
+};
+
+// Custom Dropdown Indicator with SVG (Consistent with CreateUserForm and CourseMetaDetailsForm)
+const DropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <svg
+        className={`w-4 h-4 transition-transform duration-200 ${props.selectProps.menuIsOpen ? 'rotate-180' : ''}`}
+        fill="none"
+        stroke="#805830"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </components.DropdownIndicator>
+  );
+};
+
+// Global Custom Select Styles
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: '44px', // Match the h-11 class used in AntD inputs (approx 44px)
+    borderColor: state.isFocused ? '#F59405' : '#D1D5DB', // Using the orange theme color
+    boxShadow: state.isFocused ? '0 0 0 1px #F59405' : 'none',
+    '&:hover': {
+      borderColor: '#F59405',
+    },
+    borderRadius: '0.5rem',
+    backgroundColor: 'white',
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected
+      ? '#F59405'
+      : state.isFocused
+        ? '#FFF7E6' // Light orange
+        : 'white',
+    color: state.isSelected ? 'white' : '#1F2937',
+    cursor: 'pointer',
+    '&:active': {
+      backgroundColor: '#F59405',
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+};
 
 function ApproveForm({
   data,
@@ -41,10 +107,10 @@ function ApproveForm({
   const [mentorOptions, setMentorOptions] = useState([]);
   const [parentOptions, setParentOptions] = useState([]);
   const [showFatherForm, setShowFatherForm] = useState(
-    data?.parent_details?.father?.name
+    !!data?.parent_details?.father?.name
   );
   const [showMotherForm, setShowMotherForm] = useState(
-    data?.parent_details?.mother?.name
+    !!data?.parent_details?.mother?.name
   );
   const [approveLoader, setApproveLoader] = useState(false);
   const [form] = useForm();
@@ -52,11 +118,45 @@ function ApproveForm({
   const { roles } = useGlobalContext();
   const [courses, setCourses] = useState([]);
   const router = useRouter();
-  const isMobile = useMediaQuery({
-    query: "(max-width: 768px)",
-  });
+
 
   const { id, testId } = useParams();
+
+  // Use the hook to get country codes list
+  const { countryCodes } = useCountryCode();
+
+  const prefixSelector = (name) => (
+    <Form.Item name={name} noStyle initialValue="+91">
+      <AntSelect
+        showSearch
+        style={{ width: 90 }}
+        bordered={false}
+        optionLabelProp="label"
+        dropdownMatchSelectWidth={false}
+        optionFilterProp="children"
+        filterOption={(input, option) =>
+          (option.countryName || '').toLowerCase().includes(input.toLowerCase()) ||
+          String(option.value).includes(input)
+        }
+        dropdownStyle={{ zIndex: 10000, width: 300 }}
+        className="country-code-select"
+      >
+        {countryCodes.map((country) => (
+          <AntSelect.Option
+            key={country.cca2}
+            value={country.code}
+            label={country.code}
+            countryName={country.name}
+          >
+            <div className="flex items-center gap-2">
+              <span>{country.name}</span>
+              <span className="text-gray-400">({country.code})</span>
+            </div>
+          </AntSelect.Option>
+        ))}
+      </AntSelect>
+    </Form.Item>
+  );
 
   useEffect(() => {
     getCoursesInsideAuth()
@@ -64,74 +164,84 @@ function ApproveForm({
         setCourses(res.data);
       })
       .catch((err) => console.log(err));
-
-    // return () => {
-    //   window.sessionStorage.removeItem("requireParentDetails");
-    // };
   }, []);
 
   useEffect(() => {
     if (Array.isArray(roles) && roles.length != 0) {
-      getUsersByRole({
-        role: roles.find(({ name }) => name == "faculty").id,
-      }).then((res) => {
-        setFacultyOptions(
-          res.data.results.map((user) => {
-            return {
+      const facultyRole = roles.find(({ name }) => name == "faculty");
+      if (facultyRole) {
+        getUsersByRole({ role: facultyRole.id }).then((res) => {
+          setFacultyOptions(
+            res.data.results.map((user) => ({
               label: user.name,
               value: user.id,
-            };
-          })
-        );
-      });
-
-      getUsersByRole({
-        role: roles.find(({ name }) => name == "mentor").id,
-      }).then((res) => {
-        setMentorOptions(
-          res.data.results.map((user) => {
-            return {
-              label: user.name,
-              value: user.id,
-            };
-          })
-        );
-      });
-
-      requireParentDetails &&
-        getUsersByRole({
-          role: roles.find(({ name }) => name == "parent").id,
-        }).then((res) => {
-          setParentOptions(
-            res.data.results.map((user) => {
-              return {
-                label: user.name,
-                value: user.id,
-              };
-            })
+            }))
           );
         });
+      }
+
+      const mentorRole = roles.find(({ name }) => name == "mentor");
+      if (mentorRole) {
+        getUsersByRole({ role: mentorRole.id }).then((res) => {
+          setMentorOptions(
+            res.data.results.map((user) => ({
+              label: user.name,
+              value: user.id,
+            }))
+          );
+        });
+      }
+
+      if (requireParentDetails) {
+        const parentRole = roles.find(({ name }) => name == "parent");
+        if (parentRole) {
+          getUsersByRole({ role: parentRole.id }).then((res) => {
+            setParentOptions(
+              res.data.results.map((user) => ({
+                label: user.name,
+                value: user.id,
+              }))
+            );
+          });
+        }
+      }
     }
-  }, [roles]);
+  }, [roles, requireParentDetails]);
 
   const onFinish = (values) => {
     setApproveLoader(true);
+    
+    // Combine country code and phone number
+    const fatherPhone = values.father_phone_number && values.father_country_code 
+      ? `${values.father_country_code}${values.father_phone_number}`
+      : values.father_phone_number;
+      
+    const motherPhone = values.mother_phone_number && values.mother_country_code 
+      ? `${values.mother_country_code}${values.mother_phone_number}`
+      : values.mother_phone_number;
+
     let payload = {
       ...values,
+      father_phone_number: fatherPhone,
+      mother_phone_number: motherPhone,
       is_temp_user,
       student: data.id,
       courses: values.courses.map((course) => {
-  return {
-    ...course,
-    subscription_start_date: dayjs(course.subscription_start_date).format("YYYY-MM-DD"),
-    subscription_end_date: dayjs(course.subscription_end_date).format("YYYY-MM-DD"),
-  };
-}),
-
-      // subscription_start_date:
-      //   values.subscription_start_date.format("YYYY-MM-DD"),
-      // subscription_end_date: values.subscription_end_date.format("YYYY-MM-DD"),
+        return {
+          ...course,
+          subscription_start_date: dayjs(course.subscription_start_date).format(
+            "YYYY-MM-DD"
+          ),
+          subscription_end_date: dayjs(course.subscription_end_date).format(
+            "YYYY-MM-DD"
+          ),
+        };
+      }),
     };
+
+    // Clean up auxiliary fields used for country codes
+    delete payload.father_country_code;
+    delete payload.mother_country_code;
 
     approveStudent(payload)
       .then((res) => {
@@ -202,23 +312,51 @@ function ApproveForm({
     setIsSubmitDisabled(!isFormValid);
   };
 
-  // const userInitialValues = {
-  //   mentor: data?.mentor_details?.id,
-  //   faculty: data?.faculty_details?.id,
-  //   name: data?.name,
-
-  // };
+  // Helper to parse phone number into country code and number
+  const parsePhoneNumber = (fullNumber) => {
+    if (!fullNumber) return { code: "+91", number: "" };
+    
+    // Sort codes by length desc to match +971 before +9
+    // Use countryCodes from hook or fallback if not ready map logic
+    if (countryCodes.length > 0) {
+       const sortedCodes = [...countryCodes].sort((a, b) => b.code.length - a.code.length);
+       for (const { code } of sortedCodes) {
+         if (fullNumber.startsWith(code)) {
+           return { 
+             code: code, 
+             number: fullNumber.slice(code.length) 
+           };
+         }
+       }
+    } else {
+        // Fallback for initial render if hook data isn't ready
+        if (fullNumber.startsWith('+91')) return { code: '+91', number: fullNumber.slice(3) };
+    }
+    
+    if (!fullNumber.startsWith('+')) {
+         return { code: "+91", number: fullNumber };
+    }
+    
+    return { code: "+91", number: fullNumber };
+  };
 
   const getUserInitialValues = (data) => {
+    const fatherPhone = parsePhoneNumber(data?.parent_details?.father?.phone_number);
+    const motherPhone = parsePhoneNumber(data?.parent_details?.mother?.phone_number);
+
     return {
       name: data?.name,
       mentor: data?.mentor_details?.id,
       faculty: data?.faculty_details?.id,
       father_email: data?.parent_details?.father?.email,
-      father_phone_number: data?.parent_details?.father?.phone_number,
+      father_phone_number: fatherPhone.number,
+      father_country_code: fatherPhone.code,
       father_name: data?.parent_details?.father?.name,
+      father_id: data?.parent_details?.father?.id, 
+      mother_id: data?.parent_details?.mother?.id,
       mother_email: data?.parent_details?.mother?.email,
-      mother_phone_number: data?.parent_details?.mother?.phone_number,
+      mother_phone_number: motherPhone.number,
+      mother_country_code: motherPhone.code,
       mother_name: data?.parent_details?.mother?.name,
       courses: data?.course_details
         ? data?.course_details.map((course_detail) => {
@@ -249,22 +387,95 @@ function ApproveForm({
 
   const userInitalValues = getUserInitialValues(data);
 
-  // Custom Dropdown Indicator for react-select
-  const DropdownIndicator = (props) => {
-    return (
-      <components.DropdownIndicator {...props}>
-        <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
-      </components.DropdownIndicator>
-    );
-  };
-
-  // Custom components for react-select
+  // Custom components for react-select (pass DropdownIndicator here)
   const customComponents = {
     DropdownIndicator,
   };
 
   return (
     <>
+      {/* Global style for consistent input heights and clean selectors */}
+      <style jsx global>{`
+        .ant-form-item {
+          margin-bottom: 0 !important;
+        }
+        .ant-input, 
+        .ant-input-affix-wrapper,
+        .ant-picker,
+        .ant-select-selector {
+          min-height: 44px !important;
+          height: 44px !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+        .ant-input-group-addon {
+          background-color: transparent !important;
+          border: none !important;
+        }
+        .ant-input-affix-wrapper .ant-input {
+          height: auto !important;
+          min-height: auto !important;
+        }
+        .ant-input-affix-wrapper .ant-input-prefix {
+          display: flex;
+          align-items: center;
+          margin-right: 8px;
+        }
+        .ant-select-selection-search-input {
+          height: 42px !important;
+        }
+        /* Country Code Select Styling */
+        .country-code-select .ant-select-selector {
+          border: none !important;
+          border-right: 1px solid #E5E7EB !important;
+          box-shadow: none !important;
+          background: transparent !important;
+          padding: 0 12px 0 12px !important;
+          margin-right: 12px !important;
+        }
+        .country-code-select .ant-select-selection-search {
+          left: 8px !important;
+        }
+        .country-code-select .ant-select-selection-item {
+          padding: 0 !important;
+          font-weight: 500;
+          color: #374151;
+        }
+        .country-code-select .ant-select-arrow {
+          color: #6B7280;
+          right: 0 !important;
+        }
+        .country-code-select:hover .ant-select-selector {
+          border-right: 1px solid #D1D5DB !important;
+        }
+        .country-code-select.ant-select-focused .ant-select-selector {
+          border-right: 1px solid #0071BC !important;
+        }
+        /* Any other global styles from CreateUserForm if needed */
+        .phone-input-wrapper .ant-input-wrapper {
+          border: 1px solid #d9d9d9;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+        .phone-input-wrapper .ant-input-wrapper:hover {
+          border-color: #4096ff;
+        }
+        .phone-input-wrapper .ant-input-wrapper:focus-within {
+           border-color: #0071BC;
+           box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.1);
+        }
+        .phone-input-wrapper .ant-input {
+           border: none !important;
+           box-shadow: none !important;
+           padding-left: 12px !important;
+        }
+        .phone-input-wrapper .ant-input-group-addon {
+           border: none !important;
+           background: transparent !important;
+           padding: 0 !important;
+        }
+      `}</style>
+
       <Form
         form={form}
         onFinish={onFinish}
@@ -293,17 +504,15 @@ function ApproveForm({
                 label={<div className="text-base font-semibold text-gray-700">Faculty</div>}
                 name="faculty"
               >
-                <Select
+                <IdSelect
                   placeholder="Select Faculty"
                   options={facultyOptions}
                   components={customComponents}
+                  styles={customSelectStyles}
                   isClearable
                   isSearchable
                   menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                  onChange={(selected) => {
-                    form.setFieldValue('faculty', selected?.value || null);
-                  }}
-                  value={facultyOptions.find(opt => opt.value === form.getFieldValue('faculty')) || null}
+                  
                 />
               </Form.Item>
             </Col>
@@ -313,17 +522,15 @@ function ApproveForm({
                 label={<div className="text-base font-semibold text-gray-700">Mentor</div>}
                 name="mentor"
               >
-                <Select
+                <IdSelect
                   placeholder="Select Mentor"
                   options={mentorOptions}
                   components={customComponents}
+                  styles={customSelectStyles}
                   isClearable
                   isSearchable
                   menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                  onChange={(selected) => {
-                    form.setFieldValue('mentor', selected?.value || null);
-                  }}
-                  value={mentorOptions.find(opt => opt.value === form.getFieldValue('mentor')) || null}
+                  
                 />
               </Form.Item>
             </Col>
@@ -339,13 +546,18 @@ function ApproveForm({
             </div>
             <Divider className="my-2 border-gray-200" />
 
-            <Row gutter={[16, 16]}>
+            <Row gutter={[24, 24]}>
               {/* Father Details */}
               <Col xs={24} xl={12}>
                 {showFatherForm ? (
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200 h-full">
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="text-base font-bold text-gray-800">Father Details</div>
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-200 h-full shadow-sm">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-2">
+                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                           <UserAddOutlined />
+                         </div>
+                         <div className="text-lg font-bold text-gray-800">Father Details</div>
+                      </div>
                       <Button
                         type="text"
                         icon={<CloseOutlined />}
@@ -358,7 +570,7 @@ function ApproveForm({
                           form.validateFields();
                           setShowFatherForm(false);
                         }}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-gray-400 hover:text-red-500 hover:bg-red-50"
                       />
                     </div>
                     
@@ -366,79 +578,80 @@ function ApproveForm({
                       <Col xs={24}>
                         <Form.Item
                           name="father_name"
-                          label={<div className="text-sm font-semibold text-gray-700">Name</div>}
+                          label={<div className="text-sm font-semibold text-gray-600">Full Name</div>}
                           rules={[{ required: true, message: "Please input father name!" }]}
-                          style={{ marginBottom: 8 }}
+                          className="mb-3"
                         >
-                          <Input placeholder="Enter father's name" className="h-10" />
+                          <Input placeholder="e.g. John Doe" className="h-10 rounded-lg bg-white/80" />
                         </Form.Item>
                       </Col>
                       
                       <Col xs={24}>
                         <Form.Item
-                          label={<div className="text-sm font-semibold text-gray-700">Email</div>}
+                          label={<div className="text-sm font-semibold text-gray-600">Email Address</div>}
                           name="father_email"
                           rules={[
-                            { required: true, message: "Please input your father's email!" },
-                            { type: "email", message: "The input is not a valid email!" },
+                            { required: true, message: "Please input father's email!" },
+                            { type: "email", message: "Invalid email format!" },
                           ]}
-                          style={{ marginBottom: 8 }}
+                          className="mb-3"
                         >
-                          <Input placeholder="Enter father's email" className="h-10" />
+                          <Input placeholder="e.g. john@example.com" className="h-10 rounded-lg bg-white/80" />
                         </Form.Item>
                       </Col>
                       
                       <Col xs={24}>
                         <Form.Item
-                          label={<div className="text-sm font-semibold text-gray-700">Contact Number</div>}
+                          label={<div className="text-sm font-semibold text-gray-600">Contact Number</div>}
                           name="father_phone_number"
                           rules={[
-                            { required: true, message: "Please enter father's contact number!" },
-                            { pattern: /^\d{10}$/, message: "Contact number must be exactly 10 digits long" },
+                            { required: true, message: "Please enter phone number!" },
                           ]}
-                          style={{ marginBottom: 0 }}
+                          className="mb-0"
                         >
                           <Input
+                            addonBefore={prefixSelector("father_country_code")}
                             maxLength={10}
                             onChange={handleFatherPhoneNumberChange}
-                            placeholder="Enter 10-digit phone number"
-                            className="h-10"
+                            placeholder="Phone number"
+                            className="h-10 rounded-lg bg-white/80 phone-input-wrapper"
                           />
                         </Form.Item>
                       </Col>
                     </Row>
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col justify-center">
+                  <div className="h-full flex flex-col gap-4">
                     <Form.Item
-                      label={<div className="text-sm font-semibold text-gray-700">Father</div>}
+                      label={<div className="text-base font-semibold text-gray-700">Father</div>}
                       name="father_id"
-                      style={{ marginBottom: 8 }}
+                      className="mb-0"
                     >
-                      <Select
-                        placeholder="Select Father"
+                      <IdSelect
+                        placeholder="Search & Select Father"
                         options={parentOptions}
                         components={customComponents}
+                        styles={customSelectStyles}
                         isClearable
                         isSearchable
                         isDisabled={showFatherForm}
                         menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                        onChange={(selected) => {
-                          form.setFieldValue('father_id', selected?.value || null);
-                        }}
-                        value={parentOptions.find(opt => opt.value === form.getFieldValue('father_id')) || null}
+
                       />
                     </Form.Item>
+                    
+                    <div className="text-center text-gray-400 text-sm my-1">- OR -</div>
+                    
                     <Button
                       type="dashed"
-                      icon={<PlusCircleTwoTone />}
+                      icon={<PlusCircleTwoTone twoToneColor="#1890ff" />}
                       onClick={() => {
                         form.setFieldValue("father_id", null);
-                        setShowFatherForm(!showFatherForm);
+                        setShowFatherForm(true);
                       }}
-                      className="h-10 border-2 border-dashed border-blue-300 hover:border-blue-500 hover:text-blue-600 font-medium w-full"
+                      className="h-14 border-2 border-dashed border-blue-200 bg-blue-50/30 hover:bg-blue-50 hover:border-blue-400 text-gray-600 hover:text-blue-600 font-semibold text-base w-full rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
                     >
-                      Add Father Details
+                      Add New Father Details
                     </Button>
                   </div>
                 )}
@@ -447,9 +660,14 @@ function ApproveForm({
               {/* Mother Details */}
               <Col xs={24} xl={12}>
                 {showMotherForm ? (
-                  <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200 h-full">
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="text-base font-bold text-gray-800">Mother Details</div>
+                  <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-5 border border-pink-200 h-full shadow-sm">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-2">
+                         <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600">
+                           <UserAddOutlined />
+                         </div>
+                         <div className="text-lg font-bold text-gray-800">Mother Details</div>
+                      </div>
                       <Button
                         type="text"
                         icon={<CloseOutlined />}
@@ -462,7 +680,7 @@ function ApproveForm({
                           form.validateFields();
                           setShowMotherForm(false);
                         }}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-gray-400 hover:text-red-500 hover:bg-red-50"
                       />
                     </div>
                     
@@ -470,80 +688,80 @@ function ApproveForm({
                       <Col xs={24}>
                         <Form.Item
                           name="mother_name"
-                          label={<div className="text-sm font-semibold text-gray-700">Name</div>}
-                          rules={[{ required: true, message: "Please input your name!" }]}
-                          style={{ marginBottom: 8 }}
+                          label={<div className="text-sm font-semibold text-gray-600">Full Name</div>}
+                          rules={[{ required: true, message: "Please input mother name!" }]}
+                          className="mb-3"
                         >
-                          <Input placeholder="Enter mother's name" className="h-10" />
+                          <Input placeholder="e.g. Jane Doe" className="h-10 rounded-lg bg-white/80" />
                         </Form.Item>
                       </Col>
                       
                       <Col xs={24}>
                         <Form.Item
-                          label={<div className="text-sm font-semibold text-gray-700">Email</div>}
+                          label={<div className="text-sm font-semibold text-gray-600">Email Address</div>}
                           name="mother_email"
                           rules={[
-                            { required: true, message: "Please input your mother's email!" },
-                            { type: "email", message: "The input is not a valid email!" },
+                            { required: true, message: "Please input mother's email!" },
+                            { type: "email", message: "Invalid email format!" },
                           ]}
-                          style={{ marginBottom: 8 }}
+                          className="mb-3"
                         >
-                          <Input placeholder="Enter mother's email" className="h-10" />
+                          <Input placeholder="e.g. jane@example.com" className="h-10 rounded-lg bg-white/80" />
                         </Form.Item>
                       </Col>
                       
                       <Col xs={24}>
                         <Form.Item
-                          label={<div className="text-sm font-semibold text-gray-700">Contact Number</div>}
+                          label={<div className="text-sm font-semibold text-gray-600">Contact Number</div>}
                           name="mother_phone_number"
                           rules={[
-                            { required: true, message: "Please enter mother's contact number!" },
-                            { pattern: /^\d{10}$/, message: "Contact number must be exactly 10 digits long" },
+                            { required: true, message: "Please enter phone number!" },
                           ]}
-                          style={{ marginBottom: 0 }}
+                          className="mb-0"
                         >
                           <Input
+                            addonBefore={prefixSelector("mother_country_code")}
                             maxLength={10}
                             onChange={handleMotherPhoneNumberChange}
-                            placeholder="Enter 10-digit phone number"
-                            className="h-10"
+                            placeholder="Phone number"
+                            className="h-10 rounded-lg bg-white/80 phone-input-wrapper"
                           />
                         </Form.Item>
                       </Col>
                     </Row>
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col justify-center">
-                    <Form.Item
-                      label={<div className="text-sm font-semibold text-gray-700">Mother</div>}
+                  <div className="h-full flex flex-col gap-4">
+                     <Form.Item
+                      label={<div className="text-base font-semibold text-gray-700">Mother</div>}
                       name="mother_id"
-                      style={{ marginBottom: 8 }}
+                      className="mb-0"
                     >
-                      <Select
-                        placeholder="Select Mother"
+                      <IdSelect
+                        placeholder="Search & Select Mother"
                         options={parentOptions}
                         components={customComponents}
+                        styles={customSelectStyles}
                         isClearable
                         isSearchable
                         isDisabled={showMotherForm}
                         menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                        onChange={(selected) => {
-                          form.setFieldValue('mother_id', selected?.value || null);
-                        }}
-                        value={parentOptions.find(opt => opt.value === form.getFieldValue('mother_id')) || null}
+
                       />
                     </Form.Item>
+                    
+                    <div className="text-center text-gray-400 text-sm my-1">- OR -</div>
+
                     <Button
                       type="dashed"
-                      icon={<PlusCircleTwoTone />}
+                      icon={<PlusCircleTwoTone twoToneColor="#eb2f96" />}
                       onClick={() => {
                         form.setFieldValue("mother_id", null);
-                        form.validateFields();
-                        setShowMotherForm(!showMotherForm);
+                        setShowMotherForm(true);
                       }}
-                      className="h-10 border-2 border-dashed border-pink-300 hover:border-pink-500 hover:text-pink-600 font-medium w-full"
+                       className="h-14 border-2 border-dashed border-pink-200 bg-pink-50/30 hover:bg-pink-50 hover:border-pink-400 text-gray-600 hover:text-pink-600 font-semibold text-base w-full rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
                     >
-                      Add Mother Details
+                      Add New Mother Details
                     </Button>
                   </div>
                 )}

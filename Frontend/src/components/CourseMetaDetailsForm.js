@@ -1,8 +1,57 @@
 import { CloseOutlined } from "@ant-design/icons";
-import { Card, Col, DatePicker, Divider, Form, Radio, Row, Select, Button } from "antd";
+import { Card, Col, DatePicker, Divider, Form, Radio, Row, Button } from "antd";
 import { useForm } from "antd/es/form/Form";
 import dayjs from "dayjs";
 import React, { useState } from "react";
+import ReactSelect, { components } from "react-select";
+
+// Redefining DropdownIndicator and styles to match ApproveForm/CreateUserForm consistency.
+
+const DropdownIndicator = (props) => {
+  return (
+    <components.DropdownIndicator {...props}>
+      <svg
+        className={`w-4 h-4 transition-transform duration-200 ${props.selectProps.menuIsOpen ? 'rotate-180' : ''}`}
+        fill="none"
+        stroke="#805830"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </components.DropdownIndicator>
+  );
+};
+
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: '40px', // Match the h-10 class
+    borderColor: state.isFocused ? '#F59405' : '#D1D5DB', // Using the orange theme color
+    boxShadow: state.isFocused ? '0 0 0 1px #F59405' : 'none',
+    '&:hover': {
+      borderColor: '#F59405',
+    },
+    borderRadius: '0.5rem',
+    backgroundColor: 'white',
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected
+      ? '#F59405'
+      : state.isFocused
+        ? '#FFF7E6' // Light orange
+        : 'white',
+    color: state.isSelected ? 'white' : '#1F2937',
+    cursor: 'pointer',
+    '&:active': {
+      backgroundColor: '#F59405',
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+};
 
 function CourseMetaDetailsForm({
   add,
@@ -15,14 +64,11 @@ function CourseMetaDetailsForm({
   remove,
 }) {
   const [form] = useForm();
+  
+  // Note: Form.List handles the form instance from the parent, no need to create a new one here unless for local usage.
+  // The 'name' prop usually contains the field key path.
 
-  const [selectedCourse, setSelectedCourse] = useState(courses[0]);
-
-  const handleDateChange = (name, date, dateString) => {
-    // Manually set the value of the date field in the format YYYY-MM-DD
-
-    form.setFieldsValue({ apple: dateString });
-  };
+  const courseOptions = courses?.map((course) => ({ value: course.name, label: course.name }));
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-4 border-2 border-gray-200 shadow-sm" key={key}>
@@ -48,16 +94,10 @@ function CourseMetaDetailsForm({
             rules={[{ required: true, message: "Please select a course!" }]}
             style={{ marginBottom: 0 }}
           >
-            <Select
-              onChange={(v) => setSelectedCourse(v)}
-              value={selectedCourse}
-              placeholder="Select Course"
-              size="large"
-              className="h-10"
-              options={courses?.map((course) => {
-                return { value: course.name, label: course.name };
-              })}
-            />
+             {/* Using a render props pattern or wrapper to handle value binding if needed. 
+                 Since the value coming from form is likely just the string name, we need to map it to the object for ReactSelect.
+             */}
+             <CourseSelectWrapper options={courseOptions} />
           </Form.Item>
         </Col>
         
@@ -118,7 +158,6 @@ function CourseMetaDetailsForm({
                 // Can not select days before today and today
                 return current && current < dayjs().endOf("day");
               }}
-              onChange={handleDateChange}
             />
           </Form.Item>
         </Col>
@@ -126,5 +165,22 @@ function CourseMetaDetailsForm({
     </div>
   );
 }
+
+// Wrapper to handle AntD Form integration
+const CourseSelectWrapper = ({ value, onChange, options }) => {
+  const selectedOption = options?.find(opt => opt.value === value) || null;
+  return (
+    <ReactSelect
+      value={selectedOption}
+      onChange={(val) => onChange(val?.value)}
+      options={options}
+      placeholder="Select Course"
+      components={{ DropdownIndicator }}
+      styles={customSelectStyles}
+      isClearable
+      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+    />
+  );
+};
 
 export default CourseMetaDetailsForm;
