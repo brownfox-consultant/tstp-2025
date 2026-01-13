@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import ViewSuggestionModal from "./ViewSuggestionModal";
 import SuggestionStatusTag from "./SuggestionStatusTag";
 import dayjs from "dayjs";
-import { EyeTwoTone, EditOutlined, ReloadOutlined } from "@ant-design/icons";
-import { usePathname } from "next/navigation";
+import { EyeTwoTone, EditOutlined, ReloadOutlined, SearchOutlined, FilterOutlined } from "@ant-design/icons";
+import { usePathname, useRouter } from "next/navigation";
 import MathContent from "./MathContent";
 import AdvancedSearchModal1 from "./AdvancedSearchModal1";
 import EditQuestionForm from "./EditQuestionForm";
@@ -86,6 +86,8 @@ function SuggestionsList() {
 
     fetchData();
   }, [current, advancedFilters, sorterState, updated]);
+
+  const router = useRouter();
 
   // ✅ local search
   const handleSearch = (value, dataToFilter = suggestionsData) => {
@@ -213,15 +215,23 @@ function SuggestionsList() {
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-4">
-        <Search
-          placeholder="Search questions"
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
+        <Input
+          placeholder="Search questions..."
+          prefix={<SearchOutlined className="text-gray-400" />}
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
-          style={{ width: 300 }}
           allowClear
+          className="max-w-[450px] h-12 rounded-lg border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm text-base"
         />
-        <Button onClick={() => setIsAdvancedSearchOpen(true)}>Advanced Search</Button>
+        <Button 
+          className="px-5 rounded-lg border-gray-200 hover:border-blue-400 hover:text-blue-600 font-medium flex items-center justify-center gap-2 hover:bg-blue-50 transition-all shadow-sm"
+          onClick={() => setIsAdvancedSearchOpen(true)}
+          icon={<FilterOutlined />}
+          style={{ height: '48px' }}
+        >
+          Advanced Search
+        </Button>
       </div>
 
       <Table
@@ -321,9 +331,11 @@ function SuggestionsList() {
               setUpdated={setUpdated}
               hideButtons={true}
               closeModal={() => {
+                const courseSubjectId = editQuestionData.course_subject || editQuestionData.course_subject_id;
                 setIsEditModalOpen(false);
                 setEditQuestionData(null);
-                setUpdated((prev) => !prev);
+                // Redirect to questions page
+                router.push(`/admin/questions/questions?course_subject_id=${courseSubjectId}&page=1`);
               }}
             />
           )}

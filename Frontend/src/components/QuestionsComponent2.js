@@ -233,7 +233,7 @@ function QuestionsComponent2({ courses }) {
                 onClick={handleDownload}
                 icon={loading ? <LoadingOutlined /> : <DownloadOutlined />}
                 disabled={loading}
-                className="h-11 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 font-medium shadow-sm border-none flex items-center gap-2"
+                className="h-10 px-5 rounded-md font-medium shadow-sm border-none flex items-center gap-2"
               >
                 {loading ? "Downloading..." : "Download Report"}
               </Button>

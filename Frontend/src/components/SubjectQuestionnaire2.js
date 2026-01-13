@@ -57,7 +57,7 @@ function SubjectQuestionnaire2({ course, subjectsData, role }) {
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => router.push(`${pathname}/create`)}
-              className="bg-blue-600 hover:bg-blue-700 font-medium shadow-sm h-10 px-6 rounded-lg flex items-center gap-2"
+              className="font-medium shadow-sm h-9 px-4 rounded-md flex items-center gap-2"
             >
               Add Question
             </Button>

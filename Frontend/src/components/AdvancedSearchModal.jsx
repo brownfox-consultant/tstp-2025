@@ -1,6 +1,6 @@
 import { Modal, Checkbox, Divider, Tag, Input, Button, Radio, Select } from "antd";
 import { useEffect, useState } from "react";
-import { SearchOutlined, FilterOutlined } from "@ant-design/icons";
+import { SearchOutlined, FilterOutlined, CloseOutlined } from "@ant-design/icons";
 
 // --- 1. DATA & HELPER FUNCTIONS (UNCHANGED) ---
 const keywordMap = [
@@ -145,11 +145,6 @@ export default function AdvancedSearchModal({
       <div className="flex flex-col h-full">
         {renderSubjectRadio()}
         <div className="overflow-y-auto bg-gray-50 p-4 rounded-lg border border-gray-100 flex flex-col">
-          <Checkbox.Group
-            value={localFilters.sub_topic || []}
-            onChange={(vals) => setLocalFilters((prev) => ({ ...prev, sub_topic: vals }))}
-            className="w-full"
-          >
             {subjectsToRender.sort().map((subject) => (
               <div key={subject} className="mb-3" style={{width: "100%"}}>
                 <h3 className="font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1">{subject}</h3>
@@ -157,17 +152,31 @@ export default function AdvancedSearchModal({
                   <div key={topicName} className="mb-4">
                     <strong className="text-gray-600 text-sm block mb-2">{topicName}</strong>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
-                       {grouped[subject][topicName].map((sub) => (
-                         <Checkbox key={`sub-${sub.id}`} value={sub.id} className="text-sm text-gray-700 hover:text-blue-600 border border-gray-200 rounded-md p-2 hover:bg-blue-50 transition-colors">
-                           {sub.name}
-                         </Checkbox>
-                       ))}
+                       {grouped[subject][topicName].map((sub) => {
+                         const isChecked = (localFilters.sub_topic || []).includes(sub.id);
+                         return (
+                           <Checkbox 
+                             key={`sub-${sub.id}`} 
+                             checked={isChecked}
+                             onChange={(e) => {
+                               const val = sub.id;
+                               const currentList = localFilters.sub_topic || [];
+                               const newList = e.target.checked 
+                                 ? [...currentList, val] 
+                                 : currentList.filter(v => v !== val);
+                               setLocalFilters(prev => ({ ...prev, sub_topic: newList }));
+                             }}
+                             className="text-sm text-gray-700 hover:text-blue-600 border border-gray-200 rounded-md p-2 hover:bg-blue-50 transition-colors"
+                           >
+                             {sub.name}
+                           </Checkbox>
+                         );
+                       })}
                      </div>
                   </div>
                 ))}
               </div>
             ))}
-          </Checkbox.Group>
         </div>
       </div>
     );
@@ -182,24 +191,33 @@ export default function AdvancedSearchModal({
       <div className="flex flex-col h-full">
         {renderSubjectRadio()}
         <div className="overflow-y-auto bg-gray-50 p-4 rounded-lg border border-gray-100">
-           <Checkbox.Group
-            value={localFilters.topic || []}
-            onChange={(vals) => setLocalFilters((prev) => ({ ...prev, topic: vals }))}
-            className="w-full"
-          >
-            {subjectsToRender.sort().map((subject) => (
-              <div key={subject} className="mb-3" style={{width: "100%"}}>
-                <h3 className="font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1">{subject}</h3>
-                <div className="pl-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
-                  {grouped[subject].map((t) => (
-                    <Checkbox key={t.id} value={t.id} className="text-gray-700 hover:text-blue-600 border border-gray-200 rounded-md p-2 hover:bg-blue-50 transition-colors">
-                      {t.name}
-                    </Checkbox>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </Checkbox.Group>
+             {subjectsToRender.sort().map((subject) => (
+               <div key={subject} className="mb-3" style={{width: "100%"}}>
+                 <h3 className="font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1">{subject}</h3>
+                 <div className="pl-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+                   {grouped[subject].map((t) => {
+                     const isChecked = (localFilters.topic || []).includes(t.id);
+                     return (
+                       <Checkbox 
+                         key={t.id} 
+                         checked={isChecked}
+                         onChange={(e) => {
+                           const val = t.id;
+                           const currentList = localFilters.topic || [];
+                           const newList = e.target.checked 
+                             ? [...currentList, val] 
+                             : currentList.filter(v => v !== val);
+                           setLocalFilters(prev => ({ ...prev, topic: newList }));
+                         }}
+                         className="text-gray-700 hover:text-blue-600 border border-gray-200 rounded-md p-2 hover:bg-blue-50 transition-colors"
+                       >
+                         {t.name}
+                       </Checkbox>
+                     );
+                   })}
+                 </div>
+               </div>
+             ))}
         </div>
       </div>
     );
@@ -335,11 +353,11 @@ export default function AdvancedSearchModal({
         <div className=" shrink-0">
           <div className="flex justify-between items-center">
              <h2 className="text-xl font-bold text-gray-800 m-0">Advanced Search {selectedCourseName ? `for ${selectedCourseName}` : ""}</h2>
-             <Button type="text" onClick={onClose} className="text-gray-500 hover:text-red-500">✕</Button>
+             <button type="text" onClick={onClose} className="text-gray-500 hover:text-red-500 bg-transparent text-lg"><CloseOutlined /></button>
           </div>
           
           {/* Active Filters Container - Looks like a search bar */}
-          <div className="min-h-[51px] bg-white border border-gray-300 rounded-md p-2 flex flex-wrap gap-2 items-center shadow-inner my-3">
+          <div className="min-h-[51px] max-h-[100px] overflow-y-auto bg-white border border-gray-300 rounded-md p-2 flex flex-wrap gap-2 items-center shadow-inner my-3">
             <span className="text-gray-400 text-sm select-none px-1">
                <FilterOutlined /> Filters:
             </span>
