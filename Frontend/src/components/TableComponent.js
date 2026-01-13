@@ -354,7 +354,6 @@ function TableComponent({
               {record.question_type == "READING_COMPREHENSION" && (
                 <>
                   {" "}
-                  <div className="font-bold mb-3">Reading Passage:</div>
                   <div className="bg-white border-2 p-2 rounded-md">
                     <MathContent
                       cls={"p-2"}

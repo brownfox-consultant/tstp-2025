@@ -1,10 +1,10 @@
-import { Input, Tabs, Button, Spin } from "antd";
-import { 
-  LoadingOutlined, 
-  DownloadOutlined, 
-  CopyOutlined, 
+import { Input, Tabs, Button, Spin, Tooltip } from "antd";
+import {
+  LoadingOutlined,
+  DownloadOutlined,
+  CopyOutlined,
   HistoryOutlined,
-  SearchOutlined, 
+  SearchOutlined,
   FilterOutlined
 } from "@ant-design/icons";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -82,7 +82,7 @@ function QuestionsComponent2({ courses }) {
     }
   }, [courses, role]);
 
- const handleDownload = async () => {
+  const handleDownload = async () => {
     const courseSubjectId = Number(searchParams.get("course_subject_id"));
 
     let selectedCourse = null;
@@ -171,39 +171,39 @@ function QuestionsComponent2({ courses }) {
   };
 
   const handleApplyAdvanced = (filters) => {
-  console.log("Filters from modal:", filters);
-  [
-    "difficulty", "question_type", "test_type", "topic",
-    "sub_topic", "option_text", "question_text", "srno", "is_active","question_subtype"
-  ].forEach((key) => {
-    updatedSearchParams.delete(key);
-  });
+    console.log("Filters from modal:", filters);
+    [
+      "difficulty", "question_type", "test_type", "topic",
+      "sub_topic", "option_text", "question_text", "srno", "is_active", "question_subtype"
+    ].forEach((key) => {
+      updatedSearchParams.delete(key);
+    });
 
-  if (filters.difficulty?.length) updatedSearchParams.set("difficulty", filters.difficulty.join(","));
-  if (filters.question_type?.length) updatedSearchParams.set("question_type", filters.question_type.join(","));
-  if (filters.test_type?.length) updatedSearchParams.set("test_type", filters.test_type.join(","));
-  if (filters.topic?.length) updatedSearchParams.set("topic", filters.topic.join(","));
-  if (filters.sub_topic?.length) updatedSearchParams.set("sub_topic", filters.sub_topic.join(","));
-  if (filters.question_subtype?.length) updatedSearchParams.set("question_subtype", filters.question_subtype.join(","));
-  if (filters.option_text) updatedSearchParams.set("option_text", filters.option_text);
-  if (filters.question_text) updatedSearchParams.set("question_text", filters.question_text);
-  if (filters.srno) updatedSearchParams.set("srno", filters.srno);
-  
+    if (filters.difficulty?.length) updatedSearchParams.set("difficulty", filters.difficulty.join(","));
+    if (filters.question_type?.length) updatedSearchParams.set("question_type", filters.question_type.join(","));
+    if (filters.test_type?.length) updatedSearchParams.set("test_type", filters.test_type.join(","));
+    if (filters.topic?.length) updatedSearchParams.set("topic", filters.topic.join(","));
+    if (filters.sub_topic?.length) updatedSearchParams.set("sub_topic", filters.sub_topic.join(","));
+    if (filters.question_subtype?.length) updatedSearchParams.set("question_subtype", filters.question_subtype.join(","));
+    if (filters.option_text) updatedSearchParams.set("option_text", filters.option_text);
+    if (filters.question_text) updatedSearchParams.set("question_text", filters.question_text);
+    if (filters.srno) updatedSearchParams.set("srno", filters.srno);
+
     if (filters.is_active?.length) {
-    updatedSearchParams.set("is_active", filters.is_active[0] === true ? "true" : "false");
-  }
+      updatedSearchParams.set("is_active", filters.is_active[0] === true ? "true" : "false");
+    }
 
-  updatedSearchParams.set("page", "1");
-  router.replace(`${pathname}?${updatedSearchParams.toString()}`);
-  setShowAdvanced(false);
-};
+    updatedSearchParams.set("page", "1");
+    router.replace(`${pathname}?${updatedSearchParams.toString()}`);
+    setShowAdvanced(false);
+  };
 
   return (
     <div className="space-y-6">
       {/* 🔍 Search & Actions Card */}
       <div className="">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          
+
           {/* Left Side: Search & Filter */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-2xl">
             <Input
@@ -215,8 +215,8 @@ function QuestionsComponent2({ courses }) {
               className="rounded-lg border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm"
               style={{ height: '48px', width: '100%' }}
             />
-            <Button 
-              icon={<FilterOutlined />} 
+            <Button
+              icon={<FilterOutlined />}
               onClick={() => setShowAdvanced(true)}
               className="px-5 rounded-lg border-gray-200 hover:border-blue-400 hover:text-blue-600 font-medium flex items-center justify-center gap-2"
               style={{ height: '48px' }}
@@ -233,23 +233,24 @@ function QuestionsComponent2({ courses }) {
                 onClick={handleDownload}
                 icon={loading ? <LoadingOutlined /> : <DownloadOutlined />}
                 disabled={loading}
-                className="h-11 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 font-medium shadow-sm border-none flex items-center gap-2"
+                className="h-10 px-5 rounded-md font-medium shadow-sm border-0 flex items-center gap-2 bg-[#F59405] hover:bg-[#E08904]"
               >
                 {loading ? "Downloading..." : "Download Report"}
               </Button>
 
-              <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100">
-                <Button
-                  type="text"
-                  icon={<HistoryOutlined />}
-                  onClick={() => router.push(`${pathname}/logs`)}
-                  className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
-                  title="View Questions Log"
-                >
-                  Log
-                </Button>
+              <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+                <Tooltip title="View the history logs of question changes">
+                  <Button
+                    type="text"
+                    icon={<HistoryOutlined />}
+                    onClick={() => router.push(`${pathname}/logs`)}
+                    className="rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-50 h-9 px-3  font-bold"
+                  >
+                    Log
+                  </Button>
+                </Tooltip>
 
-                <div className="w-px h-6 bg-gray-200"></div>
+                <div className="w-px h-5 bg-gray-200 mx-1"></div>
 
                 <Button
   type="text"
@@ -297,6 +298,37 @@ function QuestionsComponent2({ courses }) {
   Duplicates
 </Button>
 
+                <Tooltip title="Export a CSV of duplicate questions">
+                  <Button
+                    type="text"
+                    icon={loading ? <LoadingOutlined /> : <CopyOutlined />}
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        const response = await axios.get(
+                          `${BASE_URL}/api/question/duplicates/?export=csv`,
+                          { responseType: "blob", withCredentials: true }
+                        );
+
+                        const url = window.URL.createObjectURL(new Blob([response.data]));
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.setAttribute("download", "duplicate_questions.csv");
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                      } catch (error) {
+                        console.error("Error downloading duplicate questions:", error);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-50 h-9 px-3 font-bold"
+                  >
+                    Duplicates
+                  </Button>
+                </Tooltip>
               </div>
             </div>
           )}
@@ -316,13 +348,13 @@ function QuestionsComponent2({ courses }) {
           test_type: searchParams.get("test_type")?.split(",") || [],
           topic: getArrayParam("topic"),
           sub_topic: getArrayParam("sub_topic"),
-          question_subtype: searchParams.get("question_subtype")?.split(",") || [], 
+          question_subtype: searchParams.get("question_subtype")?.split(",") || [],
           option_text: searchParams.get("option_text") || "",
           question_text: searchParams.get("question_text") || "",
           srno: searchParams.get("srno") || "",
           is_active: searchParams.get("is_active")
-           ? [searchParams.get("is_active") === "true" ? true : false]
-           : [],
+            ? [searchParams.get("is_active") === "true" ? true : false]
+            : [],
         }}
         topics={topics}
         difficultyList={difficultyList}
@@ -344,7 +376,7 @@ function QuestionsComponent2({ courses }) {
           />
         </div>
       </div>
-      
+
       {/* Custom Tabs Styling */}
       <style jsx global>{`
         .custom-tabs .ant-tabs-nav .ant-tabs-tab {

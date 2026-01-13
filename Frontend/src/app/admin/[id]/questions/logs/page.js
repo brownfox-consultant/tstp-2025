@@ -11,7 +11,7 @@ import {
   Button,
   Row,
   Col,
-  Modal,
+  Modal,                  
   Select,
   Statistic,
   Tag,
@@ -132,14 +132,17 @@ export default function QuestionLogsPage() {
 
 
   return (
-    <div style={{ padding: 20 }}>
-      <div className="text-xl font-bold mb-5 flex align-middle">
-        <LeftOutlined
-          className="mr-2 text-base hover:font-extrabold cursor-pointer"
+    <div>
+      <div className="flex justify-between items-center mb-3">
+        <h1 className="text-2xl font-bold text-gray-800 m-0">Question Logs</h1>
+        <button
           onClick={handleBack}
-        />
-         <h1 className="text-2xl font-semibold mb-2">Question Logs</h1>
-        </div>
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm cursor-pointer"
+        >
+          <LeftOutlined className="text-sm" />
+          <span className="font-medium">Back</span>
+        </button>
+      </div>
      
       
       

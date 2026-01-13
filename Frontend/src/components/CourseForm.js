@@ -179,7 +179,7 @@ function CourseForm({ courseData = {}, isEdit = false }) {
   };
 
   return (
-    <div className="h-[78vh] border border-gray-300 mt-8 rounded-lg">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mt-6 h-[calc(90vh-100px)]">
       <Form
         form={form}
         name="course_form"
@@ -189,7 +189,8 @@ function CourseForm({ courseData = {}, isEdit = false }) {
         className="h-full flex flex-col"
       >
         <div className="flex h-full">
-          <div className="w-1/2 flex p-6 border-r border-gray-300 relative">
+          {/* Left Side - Configuration */}
+          <div className="w-1/3 flex flex-col p-6 border-r border-gray-100 bg-gray-50/50 relative">
             <div className="flex flex-col w-full">
               <Form.Item
                 label={<div className="">Course Name</div>}
@@ -208,22 +209,16 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                 <Input placeholder="Course Name"></Input>
               </Form.Item>
               <div className="flex items-center justify-between mt-4">
-                <h3 className="text-left text-lg font-bold">Add Subject</h3>
+                <h3 className="text-left text-lg font-bold text-gray-800">Subjects</h3>
                 {showSubjectForm ? (
                   <div
-                    className="flex items-center cursor-pointer"
+                    className="flex items-center cursor-pointer hover:bg-orange-50 px-3 py-1.5 rounded-full transition-all duration-200"
                     /* onClick={() => add()} */
                     onClick={handleAddSubjectClick}
                   >
-                    <Image
-                      src={plusIcon}
-                      alt="Add Subject"
-                      width={20} // Adjust the size as per your need
-                      height={20}
-                    />
+                    <PlusOutlined className="text-[#F59405] mr-2" />
                     <span
-                      className="ml-2 font-semibold"
-                      style={{ color: "#f59403" }}
+                      className="font-semibold text-[#F59405]"
                     >
                       Add Subject
                     </span>
@@ -234,11 +229,11 @@ function CourseForm({ courseData = {}, isEdit = false }) {
             {showSubjectForm && (
               <Form.List name="subjects">
                 {(fields, { remove }) => (
-                  <div className="absolute left-5 right-5 mt-32">
+                  <div className="flex-1 overflow-y-auto mt-4 pr-2 space-y-3">
                     {fields.map((field) => (
                       <div
                         key={field.key}
-                        className="w-full border border-orange-300 bg-orange-50 text-orange-500 p-4 rounded-lg mb-2 group"
+                        className="w-full bg-white border border-gray-200 hover:border-[#F59405] hover:shadow-md p-4 rounded-xl group transition-all duration-200"
                         style={{
                           position: "relative",
                           display: "flex",
@@ -246,15 +241,13 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                           justifyContent: "space-between",
                         }}
                       >
-                        {`Subject ${field.name + 1}`}
+                       <span className="font-semibold text-gray-700 group-hover:text-[#F59405] transition-colors">
+                          {`Subject ${field.name + 1}`}
+                       </span>
 
-                        <Image
-                          className="cursor-pointer hidden group-hover:block"
-                          src={deleteIcon}
-                          alt="delete"
-                          width={20}
-                          height={20}
-                          onClick={() => handleDeleteSubject(remove, field.name)} // confirmation before delete
+                        <DeleteOutlined 
+                          className="cursor-pointer text-gray-400 hover:text-red-500 text-lg opacity-0 group-hover:opacity-100 transition-all"
+                          onClick={() => handleDeleteSubject(remove, field.name)}
                         />
 
                       </div>
@@ -273,9 +266,10 @@ function CourseForm({ courseData = {}, isEdit = false }) {
             )}
           </div>
 
+          {/* Right Side - Subject Details */}
           <div
-            className="w-1/2 flex overflow-y-auto h-full m-2"
-            style={{ maxHeight: "calc(87vh - 100px)", overflowY: "auto" }}
+            className="w-2/3 flex overflow-y-auto h-full p-6"
+            style={{ maxHeight: "calc(90vh - 100px)", overflowY: "auto" }}
           >
             {showSubjectForm && (
               <Form.Item rules={[
@@ -293,105 +287,50 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                             Subject {field.name + 1}
                           </h3>
                           <Card
-                            hoverable
+                            hoverable={false}
+                            bordered={false}
                             size="small"
-                            className="mx-2 bg-gray-50 rounded-lg m-4"
-                          /* extra={
-                            <CloseOutlined
-                              onClick={() => {
-                                remove(field.name);
-                                setAddSubjectCount(addSubjectCount - 1);
-                              }}
-                            />
-                          } */
+                            className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2 mb-6"
                           >
                             <Row gutter={16}>
                               <Col span={24}>
-                                <Form.Item
-                                  label={
-                                    <p
-                                      style={{
-                                        fontSize: "16px",
-                                        fontWeight: 500,
-                                        color: "#344054",
-                                      }}
-                                    >
-                                      Subject name
-                                    </p>
-                                  }
-                                  //label="Subject Name"
-                                  rules={[
-                                    {
-                                      required: true,
-                                      message: "Required",
-                                    },
-                                  ]}
-                                  labelCol={{ span: 24 }}
-                                  wrapperCol={{ span: 24 }}
-                                  labelStyle={{
-                                    fontSize: "0.875rem",
-                                    fontWeight: 500,
-                                    color: "#344054",
-                                  }}
-                                >
-                                  <Radio.Group
-                                    onChange={handleOptionChange}
-                                    value={selectedOption}
-                                    className="flex justify-between w-full"
+                                  <Form.Item
+                                    label={<span className="text-sm font-semibold text-gray-700">Subject Type</span>}
+                                    rules={[{ required: true, message: "Required" }]}
+                                    labelCol={{ span: 24 }}
+                                    wrapperCol={{ span: 24 }}
+                                    className="mb-4"
                                   >
-                                    <div
-                                      className={`flex-1 border border-gray-300 rounded-md p-2 mr-2 ${selectedOption === "select_existing"
-                                          ? "bg-orange-50 border-orange-300"
-                                          : ""
-                                        }`}
+                                    <Radio.Group
+                                      onChange={handleOptionChange}
+                                      value={selectedOption}
+                                      className="flex w-full gap-4"
                                     >
-                                      <Radio
-                                        value="select_existing"
-                                        className={`w-full text-center ${selectedOption === "select_existing"
-                                            ? "text-orange-500"
-                                            : ""
-                                          }`}
-                                      >
-                                        <p
-                                          style={{
-                                            fontSize: "16px",
-                                            fontWeight: 500,
-                                            color: "#344054",
-                                          }}
-                                        >
-                                          Select from existing
-                                        </p>
-                                      </Radio>
-                                    </div>
-                                    <div
-                                      className={`flex-1 border border-gray-300 rounded-md p-2 ${selectedOption === "add_new"
-                                          ? "bg-orange-50 text-orange-500 border-orange-300"
-                                          : ""
+                                      <div
+                                        className={`flex-1 border rounded-xl p-3 cursor-pointer text-center transition-all ${
+                                          selectedOption === "select_existing"
+                                          ? "bg-orange-50 border-[#F59405] text-[#F59405]"
+                                          : "border-gray-200 hover:border-gray-300 text-gray-600"
                                         }`}
-                                    >
-                                      <Radio
-                                        value="add_new"
-                                        className={`w-full text-center ${selectedOption === "add_new"
-                                            ? "text-orange-500"
-                                            : ""
-                                          }`}
                                       >
-                                        <p
-                                          style={{
-                                            fontSize: "16px",
-                                            fontWeight: 500,
-                                            color:
-                                              selectedOption === "add_new"
-                                                ? "#f59403"
-                                                : "#344054",
-                                          }}
-                                        >
-                                          Add new
-                                        </p>
-                                      </Radio>
-                                    </div>
-                                  </Radio.Group>
-                                </Form.Item>
+                                        <Radio value="select_existing" className="w-full text-center">
+                                          <span className="font-medium text-base">Select from existing</span>
+                                        </Radio>
+                                      </div>
+                                      
+                                      <div
+                                        className={`flex-1 border rounded-xl p-3 cursor-pointer text-center transition-all ${
+                                          selectedOption === "add_new"
+                                          ? "bg-orange-50 border-[#F59405] text-[#F59405]"
+                                          : "border-gray-200 hover:border-gray-300 text-gray-600"
+                                        }`}
+                                      >
+                                        <Radio value="add_new" className="w-full text-center">
+                                          <span className="font-medium text-base">Add new</span>
+                                        </Radio>
+                                      </div>
+                                    </Radio.Group>
+                                  </Form.Item>
 
                                 {selectedOption === "select_existing" ? (
                                   <Form.Item
@@ -431,42 +370,15 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                   </Form.Item>
                                 )}
 
-                                <Row gutter={16}>
+                                <Row gutter={16} className="mt-4">
                                   <Col span={24} md={8}>
-                                    <div
-                                      className="label"
-                                      style={{
-                                        fontSize: "16px",
-                                        fontWeight: 500,
-                                        color: "#344054",
-                                      }}
-                                    >
-                                      Marks on Correct
-                                    </div>
+                                    <label className="text-sm font-semibold text-gray-700 mb-1 block">Marks on Correct</label>
                                   </Col>
                                   <Col span={24} md={8}>
-                                    <div
-                                      className="label"
-                                      style={{
-                                        fontSize: "16px",
-                                        fontWeight: 500,
-                                        color: "#344054",
-                                      }}
-                                    >
-                                      Marks on Incorrect
-                                    </div>
+                                    <label className="text-sm font-semibold text-gray-700 mb-1 block">Marks on Incorrect</label>
                                   </Col>
                                   <Col span={24} md={8}>
-                                    <div
-                                      className="label"
-                                      style={{
-                                        fontSize: "16px",
-                                        fontWeight: 500,
-                                        color: "#344054",
-                                      }}
-                                    >
-                                      Order
-                                    </div>
+                                    <label className="text-sm font-semibold text-gray-700 mb-1 block">Order</label>
                                   </Col>
                                 </Row>
                                 <Row gutter={16}>
@@ -552,48 +464,34 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                   {/* Render "Add Section" next to the header only if subFields.length > 0 */}
                                   {subFields.length > 0 && (
                                     <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                      }}
+                                      className="flex items-center cursor-pointer hover:bg-orange-50 px-3 py-1 rounded-full transition-all"
+                                      onClick={() => subOpt.add()}
                                     >
-                                      <Image
-                                        src={plusIcon}
-                                        alt="Add section"
-                                        width={20}
-                                        height={20}
-                                        onClick={() => subOpt.add()} // Add section on click
-                                      />
-                                      <span
-                                        className="ml-1 font-semibold mr-2"
-                                        style={{
-                                          color: "#f59403",
-                                          cursor: "pointer",
-                                        }}
-                                        onClick={() => subOpt.add()} // Add section on click
-                                      >
-                                        Add section
-                                      </span>
+                                      <PlusOutlined className="text-[#F59405] mr-1" />
+                                      <span className="font-semibold text-[#F59405]">Add section</span>
                                     </div>
                                   )}
                                 </div>
 
                                 <Card
-                                  hoverable
+                                  hoverable={false}
+                                  bordered={false}
                                   size="small"
-                                  className="mx-2 bg-gray-50 rounded-lg m-4 mt-2"
+                                  className="bg-gray-50 rounded-xl border border-gray-200 p-2 mt-4"
                                   style={{ position: "relative" }}
                                 >
                                   <Row gutter={16} className="w-full">
                                     <Col span={24}>
                                       <Row className="justify-center h-full w-full">
                                         {subFields.length === 0 ? (
-                                          <Col className="w-full text-center">
+                                          <Col className="w-full text-center py-4">
                                             <Button
                                               type="dashed"
                                               onClick={() => subOpt.add()}
+                                              className="w-full h-12 border-2 border-dashed border-gray-300 hovered-border-[#F59405] text-gray-500 hover:text-[#F59405] rounded-xl flex items-center justify-center gap-2 text-lg font-medium"
+                                              icon={<PlusOutlined />}
                                             >
-                                              + Add Section
+                                              Add Section
                                             </Button>
                                           </Col>
                                         ) : (
@@ -613,24 +511,13 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                                   marginBottom: "8px",
                                                 }}
                                               >
-                                                <span
-                                                  style={{ fontSize: "16px" }}
-                                                >
-                                                  Section Name
-                                                </span>
+                                                <span className="text-sm font-semibold text-gray-700">Section Name</span>
 
                                                 <div
-                                                  style={{ cursor: "pointer" }}
-                                                  onClick={() =>
-                                                    subOpt.remove(subField.name)
-                                                  }
+                                                  className="cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
+                                                  onClick={() => subOpt.remove(subField.name)}
                                                 >
-                                                  <Image
-                                                    src={simpledeleteIcon}
-                                                    alt="Delete"
-                                                    width={20}
-                                                    height={20}
-                                                  />
+                                                  <DeleteOutlined className="text-lg" />
                                                 </div>
                                               </div>
 
@@ -652,17 +539,12 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                                                 />
                                               </Form.Item>
 
-                                              {/* Questions and Time Limit */}
-                                              <Row gutter={32} className="mb-2">
+                                              <Row gutter={32} className="mb-1">
                                                 <Col span={24} md={12}>
-                                                  <div className="label">
-                                                    No. of Questions
-                                                  </div>
+                                                  <label className="text-sm font-semibold text-gray-700 block">No. of Questions</label>
                                                 </Col>
                                                 <Col span={24} md={12}>
-                                                  <div className="label">
-                                                    Time Limit
-                                                  </div>
+                                                  <label className="text-sm font-semibold text-gray-700 block">Time Limit</label>
                                                 </Col>
                                               </Row>
                                               <Row gutter={16}>
