@@ -83,25 +83,6 @@ function QuestionsComponent2({ courses }) {
   }, [courses, role]);
 
   const handleDownload = async () => {
-
-    //     const courseSubjectId = Number(searchParams.get("course_subject_id"));
-
-    // if (!courseSubjectId) {
-    //   console.error("course_subject_id not found");
-    //   return;
-    // }
-
-    // const response = await axios.get(
-    //   ${BASE_URL}/api/question/duplicates/,
-    //   {
-    //     params: {
-    //       export: "csv",
-    //       course_subject_id: courseSubjectId,   // ✅ PASSING HERE
-    //     },
-    //     responseType: "blob",
-    //     withCredentials: true,
-    //   }
-    // );
     const courseSubjectId = Number(searchParams.get("course_subject_id"));
 
     let selectedCourse = null;
@@ -318,52 +299,53 @@ function QuestionsComponent2({ courses }) {
 </Button>
 
                 <Tooltip title="Export a CSV of duplicate questions">
-                  <Button
-                    type="text"
-                    icon={loading ? <LoadingOutlined /> : <CopyOutlined />}
-                    onClick={async () => {
-                      try {
-                        setLoading(true);
+  <Button
+    type="text"
+    icon={loading ? <LoadingOutlined /> : <CopyOutlined />}
+    disabled={loading}
+    className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
+    title="Export Duplicate Questions"
+    onClick={async () => {
+      try {
+        setLoading(true);
 
-                        const courseSubjectId = Number(searchParams.get("course_subject_id"));
+        const courseSubjectId = Number(searchParams.get("course_subject_id"));
 
-                        if (!courseSubjectId) {
-                          console.error("course_subject_id not found");
-                          return;
-                        }
+        if (!courseSubjectId) {
+          console.error("course_subject_id not found");
+          return;
+        }
 
-                        const response = await axios.get(
-                          `${BASE_URL}/api/question/duplicates/`,
-                          {
-                            params: {
-                              export: "csv",
-                              course_subject_id: courseSubjectId,
-                            },
-                            responseType: "blob",
-                            withCredentials: true,
-                          }
-                        );
+        const response = await axios.get(
+          `${BASE_URL}/api/question/duplicates/`,
+          {
+            params: {
+              export: "csv",
+              course_subject_id: courseSubjectId,   // ✅ PASSED
+            },
+            responseType: "blob",
+            withCredentials: true,
+          }
+        );
 
-                        const url = window.URL.createObjectURL(new Blob([response.data]));
-                        const link = document.createElement("a");
-                        link.href = url;
-                        link.setAttribute("download", "duplicate_questions.csv");
-                        document.body.appendChild(link);
-                        link.click();
-                        link.remove();
-                      } catch (error) {
-                        console.error("Error downloading duplicate questions:", error);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    disabled={loading}
-                    className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
-                    title="Export Duplicate Questions"
-                  >
-                    Duplicates
-                  </Button>
-                </Tooltip>
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "duplicate_questions.csv");
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch (error) {
+        console.error("Error downloading duplicate questions:", error);
+      } finally {
+        setLoading(false);
+      }
+    }}
+  >
+    Duplicates
+  </Button>
+</Tooltip>
+
               </div>
             </div>
           )}
