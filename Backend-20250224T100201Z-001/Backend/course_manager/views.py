@@ -458,9 +458,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='duplicates')
     def find_duplicates(self, request):
         """
-        Find duplicate questions (same description + options).
+        Find duplicate questions (same description + options)
+        ONLY within the same course_subject.
         Supports ?export=csv or ?export=xlsx.
-        Shows 2-row break between duplicate groups.
         """
         import csv, json, datetime
         from openpyxl import Workbook
@@ -468,80 +468,121 @@ class QuestionViewSet(viewsets.ModelViewSet):
         from django.http import HttpResponse
         from collections import defaultdict
 
-        # Step 1: Find duplicates by description + options
+        course_subject_id = request.GET.get("course_subject_id")
+
+        if not course_subject_id:
+            return Response(
+                {"error": "course_subject_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # =====================================================
+        # Step 1: Find duplicates INSIDE the SAME course_subject
+        # =====================================================
         duplicates = (
-            Question.objects.values("description", "options")
+            Question.objects
+            .filter(course_subject_id=course_subject_id)
+            .values("description", "options")
             .annotate(count=Count("id"))
             .filter(count__gt=1)
         )
 
-        # Step 2: Get all matching questions
+        if not duplicates:
+            return Response([], status=status.HTTP_200_OK)
+
+        # =====================================================
+        # Step 2: Get only matching questions from same subject
+        # =====================================================
         duplicate_questions = (
             Question.objects.filter(
+                course_subject_id=course_subject_id,
                 description__in=[d["description"] for d in duplicates],
             )
             .select_related("course_subject__course", "course_subject__subject")
             .order_by("description", "srno")
         )
 
-        # Step 3: Group by (description, options as JSON string)
+        # =====================================================
+        # Step 3: Group by (description + options)
+        # =====================================================
         grouped = defaultdict(list)
+
         for q in duplicate_questions:
             try:
-                options_key = json.dumps(q.options, sort_keys=True) if isinstance(q.options, (list, dict)) else str(q.options)
+                options_key = json.dumps(q.options, sort_keys=True)
             except Exception:
                 options_key = str(q.options)
+
             grouped[(q.description, options_key)].append(q)
 
         export_format = request.GET.get("export")
 
-        # ===== CSV EXPORT =====
+        # =====================================================
+        # CSV EXPORT
+        # =====================================================
         if export_format == "csv":
             response = HttpResponse(content_type="text/csv")
             response["Content-Disposition"] = 'attachment; filename="duplicate_questions.csv"'
             writer = csv.writer(response)
-            writer.writerow(["Srno", "Course", "Subject", "Question Type", "Subtype", "Difficulty", "Test Type"])
 
-            for _, questions in grouped.items():
-                if len(questions) < 2:
-                    continue  # skip non-duplicates
-                for q in questions:
-                    writer.writerow([
-                        q.srno,
-                        q.course_subject.course.name if q.course_subject else "",
-                        q.course_subject.subject.name if q.course_subject else "",
-                        q.question_type,
-                        q.question_subtype,
-                        q.difficulty,
-                        q.test_type,
-                    ])
-                writer.writerow([])  # blank line
-                writer.writerow([])  # second blank line
-
-            return response
-
-        # ===== XLSX EXPORT =====
-        elif export_format == "xlsx":
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Duplicates"
-            ws.append(["Srno", "Course", "Subject", "Question Type", "Subtype", "Difficulty", "Test Type"])
+            writer.writerow([
+                "Srno", "Course", "Subject",
+                "Question Type", "Subtype",
+                "Difficulty", "Test Type"
+            ])
 
             for _, questions in grouped.items():
                 if len(questions) < 2:
                     continue
+
                 for q in questions:
-                    ws.append([
+                    writer.writerow([
                         q.srno,
-                        q.course_subject.course.name if q.course_subject else "",
-                        q.course_subject.subject.name if q.course_subject else "",
+                        q.course_subject.course.name,
+                        q.course_subject.subject.name,
                         q.question_type,
                         q.question_subtype,
                         q.difficulty,
                         q.test_type,
                     ])
-                ws.append([])  # blank line
-                ws.append([])  # blank line
+
+                # 2 blank rows between groups
+                writer.writerow([])
+                writer.writerow([])
+
+            return response
+
+        # =====================================================
+        # XLSX EXPORT
+        # =====================================================
+        elif export_format == "xlsx":
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Duplicates"
+
+            ws.append([
+                "Srno", "Course", "Subject",
+                "Question Type", "Subtype",
+                "Difficulty", "Test Type"
+            ])
+
+            for _, questions in grouped.items():
+                if len(questions) < 2:
+                    continue
+
+                for q in questions:
+                    ws.append([
+                        q.srno,
+                        q.course_subject.course.name,
+                        q.course_subject.subject.name,
+                        q.question_type,
+                        q.question_subtype,
+                        q.difficulty,
+                        q.test_type,
+                    ])
+
+                ws.append([])
+                ws.append([])
 
             response = HttpResponse(
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -551,10 +592,13 @@ class QuestionViewSet(viewsets.ModelViewSet):
             wb.save(response)
             return response
 
-        # ===== JSON fallback =====
+        # =====================================================
+        # JSON fallback
+        # =====================================================
         from .serializers import QuestionListSerializer
         serializer = QuestionListSerializer(duplicate_questions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 

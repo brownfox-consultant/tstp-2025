@@ -271,6 +271,52 @@ function QuestionsComponent2({ courses }) {
 
                 <div className="w-px h-5 bg-gray-200 mx-1"></div>
 
+                <Button
+  type="text"
+  icon={loading ? <LoadingOutlined /> : <CopyOutlined />}
+  onClick={async () => {
+    try {
+      setLoading(true);
+
+      const courseSubjectId = Number(searchParams.get("course_subject_id"));
+
+      if (!courseSubjectId) {
+        console.error("course_subject_id not found");
+        return;
+      }
+
+      const response = await axios.get(
+        `${BASE_URL}/api/question/duplicates/`,
+        {
+          params: {
+            export: "csv",
+            course_subject_id: courseSubjectId, // ✅
+          },
+          responseType: "blob",
+          withCredentials: true,
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "duplicate_questions.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error downloading duplicate questions:", error);
+    } finally {
+      setLoading(false);
+    }
+  }}
+  disabled={loading}
+  className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
+  title="Export Duplicate Questions"
+>
+  Duplicates
+</Button>
+
                 <Tooltip title="Export a CSV of duplicate questions">
                   <Button
                     type="text"

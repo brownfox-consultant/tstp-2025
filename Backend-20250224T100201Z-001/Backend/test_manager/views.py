@@ -2079,31 +2079,39 @@ class TestViewSet(viewsets.ModelViewSet):
                 existing_selected_questions = test_submission.selected_question_ids.get(section_key)
 
                 if not existing_selected_questions:
-                    answered_questions, _ = AnsweredQuestions.objects.get_or_create(
-                        student=test_submission.student,
-                        course_subject_id=course_subject_id
+                    excluded_question_ids = self.get_all_used_question_ids(
+                        test_submission.student,
+                        course_subject_id
                     )
 
                     question_ids = self.select_questions_for_section(
                         course_subject_id, section, section_id,
                         sub_section, test, test_submission,
-                        excluded_question_ids=answered_questions.questions
+                        excluded_question_ids=excluded_question_ids
                     )
 
-                    # ✅ Ensure RC questions last in DYNAMIC
+                    # RC last
                     question_objs = Question.objects.filter(id__in=question_ids)
                     rc_questions = [q.id for q in question_objs if q.question_subtype == "READING_COMPREHENSION"]
                     other_questions = [q.id for q in question_objs if q.question_subtype != "READING_COMPREHENSION"]
                     question_ids = other_questions + rc_questions
 
-                    # Save after ordering
+                    # Save
                     test_submission.selected_question_ids[section_key] = question_ids
                     test_submission.save()
 
-                    answered_questions.questions.extend(question_ids)
+                    # ✅ FIXED
+                    answered_questions, _ = AnsweredQuestions.objects.get_or_create(
+                        student=test_submission.student,
+                        course_subject_id=course_subject_id
+                    )
+                    answered_questions.questions = list(
+                        set(answered_questions.questions + question_ids)
+                    )
                     answered_questions.save()
                 else:
                     question_ids = existing_selected_questions
+
 
             # --------------------- FLAT ---------------------
             elif test.format_type == Test.FLAT:
@@ -2251,6 +2259,50 @@ class TestViewSet(viewsets.ModelViewSet):
             return {'VERY_HARD': 0.1, 'HARD': 0.2, 'MODERATE': 0.4, 'EASY': 0.2, 'VERY_EASY': 0.1}
 
         return {'VERY_HARD': 0.1, 'HARD': 0.2, 'MODERATE': 0.3, 'EASY': 0.2, 'VERY_EASY': 0.2}
+
+
+    def get_all_used_question_ids(self, student, course_subject_id):
+        used_ids = set()
+
+        # 1️⃣ Full length tests
+        qa_ids = QuestionAnswer.objects.filter(
+            result__test_submission__student=student,
+            course_subject_id=course_subject_id
+        ).values_list('question_id', flat=True)
+        used_ids.update(qa_ids)
+
+        # 2️⃣ Practice tests
+        pqa_ids = PracticeQuestionAnswer.objects.filter(
+            practice_test_result__practice_test__student=student,
+            practice_test_result__practice_test__course_subject_id=course_subject_id
+        ).values_list('question_id', flat=True)
+        used_ids.update(pqa_ids)
+
+        # 3️⃣ Cache table
+        try:
+            aq = AnsweredQuestions.objects.get(
+                student=student,
+                course_subject_id=course_subject_id
+            )
+            used_ids.update(aq.questions)
+        except AnsweredQuestions.DoesNotExist:
+            pass
+
+        # 4️⃣ From selected_question_ids (via Section → Test)
+        submissions = TestSubmission.objects.filter(
+            student=student,
+            test__in=Section.objects.filter(
+                course_subject_id=course_subject_id
+            ).values_list('test_id', flat=True)
+        )
+
+        for sub in submissions:
+            for q_list in sub.selected_question_ids.values():
+                used_ids.update(q_list)
+
+        return list(used_ids)
+
+
 
     @action(detail=True, methods=['POST'], permission_classes=[IsAdmin], url_path='reassign-expired-test')
     def reassign_expired_test(self, request, pk=None):
