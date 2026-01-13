@@ -279,13 +279,12 @@ function SuggestionsList() {
           setUpdated((prev) => !prev);
         }}
         width={1300}
-        centered
         footer={null}
         closable={false}
         className="edit-question-modal"
         styles={{
-          body: { padding: 0 },
-          content: { borderRadius: '16px', overflow: 'hidden' }
+          content: { borderRadius: '16px', overflow: 'hidden' },
+          top: '20',
         }}
       >
         {/* Header */}

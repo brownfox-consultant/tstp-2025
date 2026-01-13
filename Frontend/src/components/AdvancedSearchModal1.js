@@ -269,12 +269,12 @@ export default function AdvancedSearchModal1({ open, onClose, onApply, data = []
       title={null}
       footer={null}
       width={1000}
-      centered
+      style={{ top: 20 }}
       className="p-0 rounded-xl overflow-hidden"
       bodyStyle={{ padding: 0 }}
       closeIcon={null}
     >
-      <div className="flex flex-col h-[80vh] md:h-[600px] bg-white">
+      <div className="flex flex-col h-[450px] bg-white">
         
         {/* 1. Header & Applied Filters */}
         <div className="shrink-0  pb-4">

@@ -343,12 +343,12 @@ export default function AdvancedSearchModal({
       title={null} // Custom Header used below
       footer={null} // Custom Footer used below
       width={1200}
-      centered
+      style={{ top: 20 }}
       className="p-0 rounded-xl overflow-hidden"
       bodyStyle={{ padding: 0 }}
       closeIcon={null}
     >
-      <div className="flex flex-col h-[85vh] md:h-[700px] bg-white">
+      <div className="flex flex-col h-[600px] bg-white">
         
         {/* 1. Header & Applied Filters Bar (Sticky Top) */}
         <div className=" shrink-0">
@@ -433,7 +433,7 @@ export default function AdvancedSearchModal({
         </div>
 
         {/* 3. Footer Action Bar */}
-        <div className="border-t border-gray-200 p-4 bg-white flex justify-end gap-3 shrink-0">
+        <div className=" pt-4 bg-white flex justify-end gap-3 shrink-0">
            <Button onClick={onClose} size="large" className="hover:bg-gray-50">
              Cancel
            </Button>
