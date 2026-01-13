@@ -83,6 +83,25 @@ function QuestionsComponent2({ courses }) {
   }, [courses, role]);
 
   const handleDownload = async () => {
+
+    //     const courseSubjectId = Number(searchParams.get("course_subject_id"));
+
+    // if (!courseSubjectId) {
+    //   console.error("course_subject_id not found");
+    //   return;
+    // }
+
+    // const response = await axios.get(
+    //   ${BASE_URL}/api/question/duplicates/,
+    //   {
+    //     params: {
+    //       export: "csv",
+    //       course_subject_id: courseSubjectId,   // ✅ PASSING HERE
+    //     },
+    //     responseType: "blob",
+    //     withCredentials: true,
+    //   }
+    // );
     const courseSubjectId = Number(searchParams.get("course_subject_id"));
 
     let selectedCourse = null;
@@ -259,9 +278,24 @@ function QuestionsComponent2({ courses }) {
                     onClick={async () => {
                       try {
                         setLoading(true);
+
+                        const courseSubjectId = Number(searchParams.get("course_subject_id"));
+
+                        if (!courseSubjectId) {
+                          console.error("course_subject_id not found");
+                          return;
+                        }
+
                         const response = await axios.get(
-                          `${BASE_URL}/api/question/duplicates/?export=csv`,
-                          { responseType: "blob", withCredentials: true }
+                          `${BASE_URL}/api/question/duplicates/`,
+                          {
+                            params: {
+                              export: "csv",
+                              course_subject_id: courseSubjectId,
+                            },
+                            responseType: "blob",
+                            withCredentials: true,
+                          }
                         );
 
                         const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -278,7 +312,8 @@ function QuestionsComponent2({ courses }) {
                       }
                     }}
                     disabled={loading}
-                    className="rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-50 h-9 px-3 font-bold"
+                    className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
+                    title="Export Duplicate Questions"
                   >
                     Duplicates
                   </Button>
