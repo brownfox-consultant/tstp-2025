@@ -3725,59 +3725,65 @@ class ResultViewSet(viewsets.ModelViewSet):
         student = get_object_or_404(User, id=student_id)
         course = get_object_or_404(Course, id=course_id)
 
-        # -----------------------------
-        # 1. Total questions per subject (DB)
-        # -----------------------------
-        course_subjects = CourseSubjects.objects.filter(course=course)
-
-        total_questions_map = {}
-        for cs in course_subjects:
-            subject_name = cs.subject.name
-            total_questions_map[subject_name] = Question.objects.filter(
-                course_subject=cs
-            ).count()
-
-        # -----------------------------
-        # 2. All FL test submissions of student
-        # -----------------------------
-        submissions = TestSubmission.objects.filter(
-            student=student,
-            test__course=course,
-            test__test_type=Test.EXAM,   # Full length
-            status=TestSubmission.COMPLETED
+        # ------------------------------------------------
+        # 1️⃣ FULL LENGTH DB TOTAL (SOURCE OF TRUTH)
+        # ------------------------------------------------
+        full_length_totals = (
+            Question.objects
+            .filter(
+                course_subject__course=course,
+                test_type=Question.FULL_LENGTH_TEST_TYPE
+            )
+            .values("course_subject__subject__name")
+            .annotate(total=Count("id"))
         )
 
-        # -----------------------------
-        # 3. Count attempted questions
-        # -----------------------------
-        attempted_qs = QuestionAnswer.objects.filter(
-            result__test_submission__in=submissions,
-            is_skipped=False
-        ).values(
-            "course_subject__subject__name",
-            "question"
-        ).distinct()
+        total_questions_map = {
+            row["course_subject__subject__name"]: row["total"]
+            for row in full_length_totals
+        }
+
+        # ------------------------------------------------
+        # 2️⃣ STUDENT ANSWERED FULL LENGTH QUESTIONS
+        # ------------------------------------------------
+        attempted_qs = (
+            QuestionAnswer.objects
+            .filter(
+                result__test_submission__student=student,
+                result__test_submission__test__course=course,
+                result__test_submission__test__test_type=Test.EXAM,
+                is_skipped=False
+            )
+            .values(
+                "course_subject__subject__name",
+                "question"
+            )
+            .distinct()
+        )
 
         attempted_map = {}
         for row in attempted_qs:
             subject = row["course_subject__subject__name"]
             attempted_map[subject] = attempted_map.get(subject, 0) + 1
 
-        # -----------------------------
-        # 4. Build response
-        # -----------------------------
+        # ------------------------------------------------
+        # 3️⃣ BUILD RESPONSE
+        # ------------------------------------------------
         response = {}
 
-        for subject, total in total_questions_map.items():
+        for cs in CourseSubjects.objects.filter(course=course):
+            subject = cs.subject.name
+
+            total = total_questions_map.get(subject, 0)
             answered = attempted_map.get(subject, 0)
-            unanswered = max(0, total - answered)
+            pending = max(0, total - answered)
 
             response[subject] = {
-                "answered": answered,
-                "unanswered": unanswered,
-                "total": total,
-                "done": answered,
-                "pending": unanswered
+                "total": total,        # ✅ FULL LENGTH DB TOTAL
+                "answered": answered,  # student answered
+                "unanswered": pending,
+                "pending": pending,
+                "done": answered
             }
 
         return Response({
@@ -3806,58 +3812,71 @@ class ResultViewSet(viewsets.ModelViewSet):
         student = get_object_or_404(User, id=student_id)
         course = get_object_or_404(Course, id=course_id)
 
-        # -----------------------------
-        # 1. Total questions per subject (DB)
-        # -----------------------------
-        course_subjects = CourseSubjects.objects.filter(course=course)
+        # ------------------------------------------------
+        # 1️⃣ PRACTICE DB TOTAL (SOURCE OF TRUTH)
+        # ------------------------------------------------
+        practice_totals = (
+            Question.objects
+            .filter(
+                course_subject__course=course,
+                test_type=Question.SELF_PRACTICE_TEST_TYPE
+            )
+            .values("course_subject__subject__name")
+            .annotate(total=Count("id"))
+        )
 
-        total_questions_map = {}
-        for cs in course_subjects:
-            subject_name = cs.subject.name
-            total_questions_map[subject_name] = Question.objects.filter(
-                course_subject=cs
-            ).count()
+        total_questions_map = {
+            row["course_subject__subject__name"]: row["total"]
+            for row in practice_totals
+        }
 
-        # -----------------------------
-        # 2. All attempted practice questions (unique)
-        # -----------------------------
-        attempted_qs = PracticeQuestionAnswer.objects.filter(
-            practice_test_result__practice_test__student=student,
-            practice_test_result__practice_test__course_subject__course=course,
-            is_skipped=False
-        ).values(
-            "practice_test_result__practice_test__course_subject__subject__name",
-            "question"
-        ).distinct()
+        # ------------------------------------------------
+        # 2️⃣ STUDENT ANSWERED PRACTICE QUESTIONS
+        # ------------------------------------------------
+        attempted_qs = (
+            PracticeQuestionAnswer.objects
+            .filter(
+                practice_test_result__practice_test__student=student,
+                practice_test_result__practice_test__course_subject__course=course,
+                is_skipped=False
+            )
+            .values(
+                "practice_test_result__practice_test__course_subject__subject__name",
+                "question"
+            )
+            .distinct()
+        )
 
         attempted_map = {}
         for row in attempted_qs:
-            subject = row[
-                "practice_test_result__practice_test__course_subject__subject__name"
-            ]
+            subject = row["practice_test_result__practice_test__course_subject__subject__name"]
             attempted_map[subject] = attempted_map.get(subject, 0) + 1
 
-        # -----------------------------
-        # 3. Build response
-        # -----------------------------
+        # ------------------------------------------------
+        # 3️⃣ BUILD RESPONSE
+        # ------------------------------------------------
         response = {}
 
-        for subject, total in total_questions_map.items():
+        for cs in CourseSubjects.objects.filter(course=course):
+            subject = cs.subject.name
+
+            total = total_questions_map.get(subject, 0)
             answered = attempted_map.get(subject, 0)
-            unanswered = max(0, total - answered)
+            pending = max(0, total - answered)
 
             response[subject] = {
-                "answered": answered,
-                "unanswered": unanswered,
-                "total": total,
-                "done": answered,
-                "pending": unanswered
+                "total": total,        # ✅ PRACTICE DB TOTAL
+                "answered": answered,  # student answered
+                "unanswered": pending,
+                "pending": pending,
+                "done": answered
             }
 
         return Response({
             "test_type": "self_practice",
             "subjects": response
         })
+
 
 
     @action(
