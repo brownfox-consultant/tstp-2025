@@ -479,7 +479,7 @@ function QuestionsList({
                     const courseSubjectId = record.course_subject || searchParams.get("course_subject_id");
                     if (courseSubjectId) {
                       getSubjectTopics(courseSubjectId).then(res => {
-                        setTopicOptions(res.data.map(opt => ({ ...opt, label: opt.name })));
+                        setTopicOptions(res.data.map(opt => ({ ...opt, label: opt.name, value: opt.name })));
                       });
                     }
                     setEditQuestionData(record);
@@ -759,6 +759,7 @@ function QuestionsList({
         <div className="p-6 max-h-[70vh] overflow-y-auto bg-gray-50">
           {editQuestionData && (
             <EditQuestionForm
+              key={editQuestionData.id}
               initialValues={editQuestionData}
               action="edit"
               topicOptionsParam={topicOptions}

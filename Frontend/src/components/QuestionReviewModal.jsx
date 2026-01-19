@@ -6,7 +6,7 @@ import { getQuestionDetails } from "@/app/services/authService";
 import MathContent from "./MathContent";
 import GridInOptions from "./question-list/gridin-options";
 import RaiseDoubtModal from "./RaiseDoubtModal_qutions_review_model";
-import { alphatbetArray,timeInMMSS } from "@/utils/utils";
+import { alphatbetArray, timeInMMSS } from "@/utils/utils";
 
 function QuestionReviewModal({
   open,
@@ -35,7 +35,7 @@ function QuestionReviewModal({
   useEffect(() => {
     if (open) {
       const idx = questionsList.findIndex((q) => q.question_id === questionId);
-     
+
       setCurrentIndex(idx >= 0 ? idx : 0);
       setCurrentQuestionId(questionId);
       setCurrentSelectedOptions(
@@ -51,16 +51,16 @@ function QuestionReviewModal({
       setData(null);
       let params = {};
 
-if (testType === "FULL_LENGTH_TEST") {
-  params.test_submission_id = testSubmissionId;
-} else {
-  params.practice_test_result_id = testSubmissionId;
-}
-console.log("testType",testType)
-  console.log("testId",testId)
-  console.log("params.test_submission_id",params.test_submission_id)
-  console.log("params.practice_test_result_id",params.practice_test_result_id)
-      getQuestionDetails(currentQuestionId,params).then((res) => {
+      if (testType === "FULL_LENGTH_TEST") {
+        params.test_submission_id = testSubmissionId;
+      } else {
+        params.practice_test_result_id = testSubmissionId;
+      }
+      console.log("testType", testType)
+      console.log("testId", testId)
+      console.log("params.test_submission_id", params.test_submission_id)
+      console.log("params.practice_test_result_id", params.practice_test_result_id)
+      getQuestionDetails(currentQuestionId, params).then((res) => {
         setData(res.data.detail);
       });
     }
@@ -74,7 +74,7 @@ console.log("testType",testType)
       setCurrentIndex(newIndex);
       setCurrentQuestionId(newQuestion.question_id);
       setCurrentSelectedOptions(newQuestion.selected_options || []);
-      setCurrentSrno(newQuestion.db_Srno  || newIndex + 1);
+      setCurrentSrno(newQuestion.db_Srno || newIndex + 1);
     }
   };
 
@@ -84,10 +84,10 @@ console.log("testType",testType)
         width={data?.question_type === "MCQ" ? "80rem" : "64rem"}
         open={open}
         title={
-  role === "student"
-    ? `Reviewing Question ${currentIndex + 1}`
-    : `Reviewing Question ${currentIndex + 1} (Question Id: ${currentSrno})`
-}
+          role === "student"
+            ? `Reviewing Question ${currentIndex + 1}`
+            : `Reviewing Question ${currentIndex + 1} (Question Id: ${currentSrno})`
+        }
 
         onCancel={() => {
           setShowDoubt(false);
@@ -111,80 +111,80 @@ console.log("testType",testType)
         }
       >
         {/* Bubble Navigation */}
-{questionsList.length > 0 && (
-  <div className="flex flex-wrap gap-1 mb-4 justify-center">
-    {questionsList.map((q, i) => {
-      let type = "blank";
-      if (!q.is_skipped && q.result === true) type = "correct";
-      else if (!q.is_skipped && q.result === false) type = "incorrect";
+        {questionsList.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4 justify-center">
+            {questionsList.map((q, i) => {
+              let type = "blank";
+              if (!q.is_skipped && q.result === true) type = "correct";
+              else if (!q.is_skipped && q.result === false) type = "incorrect";
 
-      let bgColor = "bg-gray-300 border border-gray-500 text-black";
-      if (type === "correct") bgColor = "bg-green-500 text-white";
-      else if (type === "incorrect") bgColor = "bg-red-500 text-white";
+              let bgColor = "bg-gray-300 border border-gray-500 text-black";
+              if (type === "correct") bgColor = "bg-green-500 text-white";
+              else if (type === "incorrect") bgColor = "bg-red-500 text-white";
 
-      const isActive = i === currentIndex;
+              const isActive = i === currentIndex;
 
-      return (
-        <button
-  key={q.question_id}
-  className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center 
+              return (
+                <button
+                  key={q.question_id}
+                  className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center 
     ${bgColor} ${isActive ? "ring-4 ring-yellow-400 shadow-lg scale-110" : ""}`}
-  title={`Q${i + 1} - ${type}`}
-  onClick={() => {
-    setCurrentIndex(i);
-    setCurrentQuestionId(q.question_id);
-    setCurrentSelectedOptions(q.selected_options || []);
-    setCurrentSrno(q.db_Srno  || i + 1);
-  }}
->
-  {i + 1}
-</button>
+                  title={`Q${i + 1} - ${type}`}
+                  onClick={() => {
+                    setCurrentIndex(i);
+                    setCurrentQuestionId(q.question_id);
+                    setCurrentSelectedOptions(q.selected_options || []);
+                    setCurrentSrno(q.db_Srno || i + 1);
+                  }}
+                >
+                  {i + 1}
+                </button>
 
-      );
-    })}
-  </div>
-)}
+              );
+            })}
+          </div>
+        )}
         {!data ? (
           <Loading />
         ) : (
           <>
             {/* Question / passage */}
-              {/* Meta info - single line / compact */}
+            {/* Meta info - single line / compact */}
             <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
-          <div className="flex items-center flex-wrap gap-10 my-2 text-xs md:text-sm text-gray-800">
-          
-            <span className="flex items-center gap-1">
-              <span className="font-bold">Difficulty:</span> {data.difficulty || "N/A"}
-            </span>
-          
-            <span className="text-gray-400">|</span>
-          
-            <span className="flex items-center gap-1">
-              <span className="font-bold">Question Type:</span> {data.question_type || "N/A"}
-            </span>
-          
-            <span className="text-gray-400">|</span>
-          
-            <span className="flex items-center gap-1">
-              <span className="font-bold">Topic:</span> {data.topic || "N/A"}
-            </span>
-          
-            <span className="text-gray-400">|</span>
-          
-            <span className="flex items-center gap-1">
-              <span className="font-bold">Sub Topic:</span> {data.sub_topic || "N/A"}
-            </span>
-          
-            <span className="text-gray-400">|</span>
-          
-            <span className="flex items-center gap-1">
-              <span className="font-bold">Total Time:</span>
-              {data.time_taken ? timeInMMSS(data.time_taken) : "0s"}
-            </span>
-          
-          </div>
-          
-           <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
+            <div className="flex items-center flex-wrap gap-10 my-2 text-xs md:text-sm text-gray-800">
+
+              <span className="flex items-center gap-1">
+                <span className="font-bold">Difficulty:</span> {data.difficulty || "N/A"}
+              </span>
+
+              <span className="text-gray-400">|</span>
+
+              <span className="flex items-center gap-1">
+                <span className="font-bold">Question Type:</span> {data.question_type || "N/A"}
+              </span>
+
+              <span className="text-gray-400">|</span>
+
+              <span className="flex items-center gap-1">
+                <span className="font-bold">Topic:</span> {data.topic || "N/A"}
+              </span>
+
+              <span className="text-gray-400">|</span>
+
+              <span className="flex items-center gap-1">
+                <span className="font-bold">Sub Topic:</span> {data.sub_topic || "N/A"}
+              </span>
+
+              <span className="text-gray-400">|</span>
+
+              <span className="flex items-center gap-1">
+                <span className="font-bold">Total Time:</span>
+                {data.time_taken ? timeInMMSS(data.time_taken) : "0s"}
+              </span>
+
+            </div>
+
+            <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
 
 
 
@@ -197,13 +197,13 @@ console.log("testType",testType)
                   />
                 </div>
               )}
-              
+
               <div className="question-desc my-4 flex-1">
                 <MathContent cls="px-2" content={data.description} />
               </div>
             </div>
 
-           
+
 
             {/* MCQ options */}
             {data.question_type === "MCQ" && (
@@ -216,10 +216,10 @@ console.log("testType",testType)
                       chosen && is_correct
                         ? "font-bold bg-green-200 border-2 rounded-lg p-2"
                         : chosen
-                        ? "font-bold bg-red-200 border-2 rounded-lg p-2"
-                        : is_correct
-                        ? "font-bold bg-green-200 border-2 rounded-lg p-2"
-                        : "bg-white border-2 rounded-lg p-2";
+                          ? "font-bold bg-red-200 border-2 rounded-lg p-2"
+                          : is_correct
+                            ? "font-bold bg-green-200 border-2 rounded-lg p-2"
+                            : "bg-white border-2 rounded-lg p-2";
 
                     return (
                       <div key={idx} className="flex gap-1 items-start">

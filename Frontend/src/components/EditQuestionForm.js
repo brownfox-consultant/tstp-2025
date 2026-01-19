@@ -449,7 +449,7 @@ function EditQuestionForm({
       getSubjectTopics(selectedCourseSubject).then((res) => {
         setTopicOptions(
           res.data.map((option) => {
-            return { ...option, label: option.name };
+            return { ...option, label: option.name, value: option.name };
           })
         );
       });
@@ -459,6 +459,22 @@ function EditQuestionForm({
       form.setFieldValue("sub_topic", null);
     }
   }, [selectedCourseSubject]);
+
+  useEffect(() => {
+    if (topicOptionsParam) {
+      setTopicOptions(topicOptionsParam);
+    }
+  }, [topicOptionsParam]);
+
+  useEffect(() => {
+    if (subTopicOptionsParam) {
+      const formattedSubTopics = subTopicOptionsParam.map((sub) => {
+        const label = typeof sub === "object" ? sub.name : sub;
+        return { ...sub, value: label, label: label };
+      });
+      setSubTopicOptions(formattedSubTopics);
+    }
+  }, [subTopicOptionsParam]);
 
   useEffect(() => {
     if (

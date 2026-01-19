@@ -11,7 +11,7 @@ import {
   Button,
   Row,
   Col,
-  Modal,                  
+  Modal,
   Select,
   Statistic,
   Tag,
@@ -104,31 +104,30 @@ export default function QuestionLogsPage() {
     }
   }, [currentQuestionId]);
 
- const columns = [
-  { title: "Question Id", dataIndex: "srno", key: "srno" },
-  { title: "User", dataIndex: "user", key: "user" },
-  {
-    title: "Action",
-    dataIndex: "action",
-    key: "action",
-    render: (action) => {
-      const color = action === "Added" ? "green" : "blue";
-      return <Tag color={color}>{action}</Tag>;
+  const columns = [
+    { title: "Question Id", dataIndex: "srno", key: "srno" },
+    { title: "User", dataIndex: "user", key: "user" },
+    {
+      title: "Action",
+      dataIndex: "action",
+      key: "action",
+      render: (action) => {
+        const color = action === "Added" ? "green" : "blue";
+        return <Tag color={color}>{action}</Tag>;
+      },
     },
-  },
-  {
-    title: "Timestamp",
-    dataIndex: "timestamp",
-    key: "timestamp",
-    render: (text) => dayjs(text).format("DD MMM YYYY, hh:mm A"),
-  },
-  {
-    title: "IP Address",   // ✅ New column
-    dataIndex: "ip_address",
-    key: "ip_address",
-   },
-  
-];
+    {
+      title: "Timestamp",
+      dataIndex: "timestamp",
+      key: "timestamp",
+      render: (text) => dayjs(text).format("DD MMM YYYY, hh:mm A"),
+    },
+    {
+      title: "IP Address",   // ✅ New column
+      dataIndex: "ip_address",
+      key: "ip_address",
+    },
+  ];
 
 
   return (
@@ -143,9 +142,9 @@ export default function QuestionLogsPage() {
           <span className="font-medium">Back</span>
         </button>
       </div>
-     
-      
-      
+
+
+
       {/* Filters */}
       <Card style={{ marginBottom: 20 }} title="Filters">
         <Row gutter={[16, 16]} align="middle">
@@ -204,7 +203,7 @@ export default function QuestionLogsPage() {
         <Card style={{ marginBottom: 20 }} title="Daily Summary">
           <Row gutter={16}>
             <Col span={6}>
-              <Statistic title="Date Range" valueStyle={{ fontSize: "20px" }}  value={dailyCount.date_range} />
+              <Statistic title="Date Range" valueStyle={{ fontSize: "20px" }} value={dailyCount.date_range} />
             </Col>
             <Col span={6}>
               <Statistic title="Total Added" value={dailyCount.total_added} />
@@ -212,7 +211,7 @@ export default function QuestionLogsPage() {
             <Col span={6}>
               <Statistic title="Total Updated" value={dailyCount.total_updated} />
             </Col>
-             <Col span={6}>
+            <Col span={6}>
               <Statistic title="Total Suggestions" value={dailyCount.total_suggestions || 0} />
             </Col>
           </Row>
@@ -266,7 +265,7 @@ export default function QuestionLogsPage() {
         )}
       </Card>
 
-      
+
       {/* Reviewing Question Modal */}
       <Modal
         width={modalData.question_type === "MCQ" ? "80rem" : "64rem"}
@@ -275,8 +274,8 @@ export default function QuestionLogsPage() {
         onCancel={() => {
           setShowModal(false);
           setModalData({});
-            setCurrentQuestionId(null);
-            setCurrentSrno(null);
+          setCurrentQuestionId(null);
+          setCurrentSrno(null);
           setSelectedOptions([]);
         }}
         footer={null}
