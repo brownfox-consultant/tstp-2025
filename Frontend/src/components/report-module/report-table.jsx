@@ -428,7 +428,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
       <div className="overflow-x-auto">
         <Table
           pagination={false}
-          className="my-4"
+          className="border-gray-200 border rounded"
           columns={questionViewCols}
           dataSource={questions_data}
           scroll={{ x: 'max-content' }}
@@ -441,11 +441,16 @@ function ReportTable({ sectionData, testSubmissionId }) {
         width={modalData.question_type === "MCQ" ? "80rem" : "64rem"}
         open={showModal}
         title={
-          role === "student"
-            ? `Reviewing Question ${currentQuestionIndex + 1}`
-            : `Reviewing Question ${currentQuestionIndex + 1} (Question Id : ${modalData?.srno})`
+          <div className="flex items-center gap-2">
+            <span>Reviewing Question {currentQuestionIndex + 1}</span>
+            {role !== "student" && modalData?.srno && (
+              <>
+                <span className="text-gray-400">|</span>
+                <span className="text-sm text-gray-500">Question Id: {modalData.srno}</span>
+              </>
+            )}
+          </div>
         }
-
 
         onCancel={() => {
           setShowModal(false);
@@ -455,14 +460,21 @@ function ReportTable({ sectionData, testSubmissionId }) {
           setCurrentQuestionIndex(null);
         }}
         footer={
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center w-full">
             <button
               disabled={!questions_data.length || currentQuestionIndex === 0}
               onClick={() => handleNavigation(-1)}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Previous
+              ← Previous
             </button>
+
+            <RaiseDoubtModal
+              question={currentQuestionId}
+              section={section_id}
+              course_subject={course_subject_id}
+              test={test_id}
+            />
 
             <button
               disabled={
@@ -470,9 +482,9 @@ function ReportTable({ sectionData, testSubmissionId }) {
                 currentQuestionIndex === questions_data.length - 1
               }
               onClick={() => handleNavigation(1)}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              Next →
             </button>
           </div>
         }
@@ -482,43 +494,47 @@ function ReportTable({ sectionData, testSubmissionId }) {
         ) : (
           <>
 
-            {/* ===== Question Meta Info (Compact Inline) ===== */}
-            {/* ===== Question Meta Info (Horizontal Line) ===== */}
-            <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
-            <div className="flex items-center flex-wrap gap-10 my-2 text-xs md:text-sm text-gray-800">
+            {/* Question Metadata */}
+            <div className="border-b border-gray-200 pb-3 mb-4">
+              <div className="flex items-center flex-wrap gap-6 text-sm text-gray-700">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900">Difficulty:</span>
+                  <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium">
+                    {modalData.difficulty || "N/A"}
+                  </span>
+                </div>
 
-              <span className="flex items-center gap-1">
-                <span className="font-bold">Difficulty:</span> {modalData.difficulty || "N/A"}
-              </span>
+                <span className="text-gray-300">•</span>
 
-              <span className="text-gray-400">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900">Question Type:</span>
+                  <span>{modalData.question_type || "N/A"}</span>
+                </div>
 
-              <span className="flex items-center gap-1">
-                <span className="font-bold">Question Type:</span> {modalData.question_type || "N/A"}
-              </span>
+                <span className="text-gray-300">•</span>
 
-              <span className="text-gray-400">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900">Topic:</span>
+                  <span>{modalData.topic || "N/A"}</span>
+                </div>
 
-              <span className="flex items-center gap-1">
-                <span className="font-bold">Topic:</span> {modalData.topic || "N/A"}
-              </span>
+                <span className="text-gray-300">•</span>
 
-              <span className="text-gray-400">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900">Sub Topic:</span>
+                  <span>{modalData.sub_topic || "N/A"}</span>
+                </div>
 
-              <span className="flex items-center gap-1">
-                <span className="font-bold">Sub Topic:</span> {modalData.sub_topic || "N/A"}
-              </span>
+                <span className="text-gray-300">•</span>
 
-              <span className="text-gray-400">|</span>
-
-              <span className="flex items-center gap-1">
-                <span className="font-bold">Total Time:</span>
-                {modalData.time_taken ? timeInMMSS(modalData.time_taken) : "0s"}
-              </span>
-
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900">Total Time:</span>
+                  <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                    {modalData.time_taken ? timeInMMSS(modalData.time_taken) : "0s"}
+                  </span>
+                </div>
+              </div>
             </div>
-
-            <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
 
 
 
@@ -597,27 +613,6 @@ function ReportTable({ sectionData, testSubmissionId }) {
               </>
             )}
 
-            {/* Raise Doubt Button */}
-            {/* {role === "student"  && test_type === "FULL_LENGTH_TEST" && (
-    <div className="w-full flex justify-center my-8">
-      <RaiseDoubtModal
-        question={currentQuestionId}
-        section={section_id}
-        course_subject={course_subject_id}
-        test={test_id}
-      />
-    </div>
-  )} */}
-            {role === "student" && (
-              <div className="w-full flex justify-center my-8">
-                <RaiseDoubtModal
-                  question={currentQuestionId}
-                  section={section_id}
-                  course_subject={course_subject_id}
-                  test={test_id}
-                />
-              </div>
-            )}
           </>
 
         )}

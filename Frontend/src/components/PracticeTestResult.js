@@ -272,24 +272,34 @@ function PracticeTestResult() {
           }}
           footer={
             <div className="flex justify-between w-full">
-              <Button
+              <button
                 icon={<LeftOutlined />}
                 disabled={currentQuestionIndex === 0}
                 onClick={() => handleNavigation(-1)}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
               >
                 Previous
-              </Button>
-
-              <Button
+              </button>
+              {role === "student" && (
+                // <div className="w-full flex justify-center my-8">
+                <button
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
+                  onClick={() => setShowDoubt(true)}
+                >
+                  Raise a doubt
+                </button>
+                // </div>
+              )}
+              <button
                 type="primary"
                 icon={<CaretRightOutlined />}
                 iconPosition="end"
-                className="bg-black hover:!bg-gray-800"
                 disabled={currentQuestionIndex === questionsList.length - 1}
                 onClick={() => handleNavigation(1)}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
               >
                 Next
-              </Button>
+              </button>
             </div>
           }
         >
@@ -398,16 +408,7 @@ function PracticeTestResult() {
               )}
 
               {/* Raise doubt button */}
-              {role === "student" && (
-                <div className="w-full flex justify-center my-8">
-                  <button
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
-                    onClick={() => setShowDoubt(true)}
-                  >
-                    Raise a doubt
-                  </button>
-                </div>
-              )}
+
             </>
           )}
         </Modal>

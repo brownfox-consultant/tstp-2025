@@ -5,7 +5,6 @@ import React, { useState } from "react";
 const { TextArea } = Input;
 
 function RaiseDoubtModal({ test, question, section, course_subject }) {
-  console.log("test, question, section, course_subject",test, question, section, course_subject)
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +22,7 @@ function RaiseDoubtModal({ test, question, section, course_subject }) {
         setValue();
         setOpen(false);
         notification.success({
-          message: "Doubt raised.",
+          message: "Doubt submitted successfully!",
         });
       })
       .catch((err) => console.log(err))
@@ -32,15 +31,15 @@ function RaiseDoubtModal({ test, question, section, course_subject }) {
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <Button
-        type="primary"
+      <button
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);
         }}
+        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
       >
         Raise a doubt
-      </Button>
+      </button>
       <Modal
         open={open}
         onCancel={() => setOpen(false)}

@@ -22,10 +22,10 @@ import {
 import React, { useEffect, useState, useRef } from "react";
 import EditStudentUserModal from "../EditStudentUserModal";
 import EditUserModal from "../EditUserModal";
-import Image from "next/image";
-import downArrowIcon from "../../../public/icons/down-arrow.svg";
-import arrowUpCircle from "../../../public/icons/arrowupcircle.svg";
-import arrowDownCircle from "../../../public/icons/arrowdowncircle.svg";
+// import Image from "next/image";
+// import downArrowIcon from "../../../public/icons/down-arrow.svg";
+// import arrowUpCircle from "../../../public/icons/arrowupcircle.svg";
+// import arrowDownCircle from "../../../public/icons/arrowdowncircle.svg";
 import { useRouter, usePathname } from "next/navigation";
 import { deleteUser } from "@/app/services/authService";
 import axios from "axios";
