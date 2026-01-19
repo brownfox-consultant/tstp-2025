@@ -4144,7 +4144,7 @@ class ResultViewSet(viewsets.ModelViewSet):
         response = {
             "overall_score": 0,
             "math_score": 0,
-            "english_score": 0,   # ✅ renamed
+            "english_score": 0,
             "highest_score": 0,
             "improvement": 0,
             "tests": []
@@ -4167,8 +4167,11 @@ class ResultViewSet(viewsets.ModelViewSet):
             )
 
             previous_overall = None
+            total_full_length_tests = 0   # ✅ ADDED
 
             for submission in submissions:
+                total_full_length_tests += 1   # ✅ ADDED
+
                 test = submission.test
                 result = submission.result
 
@@ -4179,9 +4182,8 @@ class ResultViewSet(viewsets.ModelViewSet):
 
                 for section in sections:
                     course_subject = section.course_subject
-                    subject_name = course_subject.subject.name.lower()
+                    subject_name = section.course_subject.subject.name.lower()
 
-                    # 👇 EXACT SAME AS details API
                     section_1_correct = 0
                     section_2_correct = 0
 
@@ -4230,13 +4232,13 @@ class ResultViewSet(viewsets.ModelViewSet):
                 response["math_score"] = math_score
                 response["english_score"] = english_score
 
+            # ✅ SAME AS PRACTICE
+            response["total_full_length_tests"] = total_full_length_tests
 
         # =====================================================
-        # ✅ PRACTICE TEST (NO CombinedScore)
+        # ✅ PRACTICE TEST
         # =====================================================
         elif test_type == "PRACTICE":
-
-            response["tests"] = []
 
             total_correct = 0
             total_incorrect = 0
@@ -4279,13 +4281,11 @@ class ResultViewSet(viewsets.ModelViewSet):
                     (test_correct / test_total_questions) * 100
                 ) if test_total_questions > 0 else 0
 
-                # ---- subject wise score ----
                 if subject_name == "math":
                     response["math_score"] += test_correct
                 elif subject_name == "english":
                     response["english_score"] += test_correct
 
-                # ---- highest & improvement ----
                 response["highest_score"] = max(response["highest_score"], test_correct)
 
                 if previous_score is not None:
@@ -4293,7 +4293,6 @@ class ResultViewSet(viewsets.ModelViewSet):
 
                 previous_score = test_correct
 
-                # ---- totals ----
                 total_correct += test_correct
                 total_incorrect += test_incorrect
                 total_questions += test_total_questions
@@ -4308,7 +4307,6 @@ class ResultViewSet(viewsets.ModelViewSet):
                     "date": r.created_at.strftime("%Y-%m-%d"),
                 })
 
-            # ---- overall summary ----
             response["overall_score"] = total_correct
             response["total_practice_tests"] = len(response["tests"])
             response["total_correct"] = total_correct
@@ -4318,12 +4316,11 @@ class ResultViewSet(viewsets.ModelViewSet):
                 (total_correct / total_questions) * 100
             ) if total_questions > 0 else 0
 
-
-
         else:
             return Response({"error": "Invalid test_type"}, status=400)
 
         return Response(response)
+
 
 
 class PracticeTestViewSet(viewsets.ModelViewSet):
