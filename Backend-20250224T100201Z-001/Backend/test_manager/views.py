@@ -3726,13 +3726,14 @@ class ResultViewSet(viewsets.ModelViewSet):
         course = get_object_or_404(Course, id=course_id)
 
         # ------------------------------------------------
-        # 1️⃣ FULL LENGTH DB TOTAL (SOURCE OF TRUTH)
+        # 1️⃣ FULL LENGTH DB TOTAL (ONLY ACTIVE QUESTIONS)
         # ------------------------------------------------
         full_length_totals = (
             Question.objects
             .filter(
                 course_subject__course=course,
-                test_type=Question.FULL_LENGTH_TEST_TYPE
+                test_type=Question.FULL_LENGTH_TEST_TYPE,
+                is_active=True                 # ✅ ONLY ACTIVE
             )
             .values("course_subject__subject__name")
             .annotate(total=Count("id"))
@@ -3744,7 +3745,7 @@ class ResultViewSet(viewsets.ModelViewSet):
         }
 
         # ------------------------------------------------
-        # 2️⃣ STUDENT ANSWERED FULL LENGTH QUESTIONS
+        # 2️⃣ STUDENT ANSWERED (ONLY ACTIVE QUESTIONS)
         # ------------------------------------------------
         attempted_qs = (
             QuestionAnswer.objects
@@ -3752,7 +3753,8 @@ class ResultViewSet(viewsets.ModelViewSet):
                 result__test_submission__student=student,
                 result__test_submission__test__course=course,
                 result__test_submission__test__test_type=Test.EXAM,
-                is_skipped=False
+                is_skipped=False,
+                question__is_active=True       # ✅ ONLY ACTIVE
             )
             .values(
                 "course_subject__subject__name",
@@ -3779,8 +3781,8 @@ class ResultViewSet(viewsets.ModelViewSet):
             pending = max(0, total - answered)
 
             response[subject] = {
-                "total": total,        # ✅ FULL LENGTH DB TOTAL
-                "answered": answered,  # student answered
+                "total": total,        # ✅ active full-length only
+                "answered": answered,
                 "unanswered": pending,
                 "pending": pending,
                 "done": answered
@@ -3813,13 +3815,14 @@ class ResultViewSet(viewsets.ModelViewSet):
         course = get_object_or_404(Course, id=course_id)
 
         # ------------------------------------------------
-        # 1️⃣ PRACTICE DB TOTAL (SOURCE OF TRUTH)
+        # 1️⃣ PRACTICE DB TOTAL (ACTIVE QUESTIONS ONLY)
         # ------------------------------------------------
         practice_totals = (
             Question.objects
             .filter(
                 course_subject__course=course,
-                test_type=Question.SELF_PRACTICE_TEST_TYPE
+                test_type=Question.SELF_PRACTICE_TEST_TYPE,
+                is_active=True                       # ✅ ONLY ACTIVE
             )
             .values("course_subject__subject__name")
             .annotate(total=Count("id"))
@@ -3831,14 +3834,15 @@ class ResultViewSet(viewsets.ModelViewSet):
         }
 
         # ------------------------------------------------
-        # 2️⃣ STUDENT ANSWERED PRACTICE QUESTIONS
+        # 2️⃣ STUDENT ANSWERED PRACTICE (ACTIVE ONLY)
         # ------------------------------------------------
         attempted_qs = (
             PracticeQuestionAnswer.objects
             .filter(
                 practice_test_result__practice_test__student=student,
                 practice_test_result__practice_test__course_subject__course=course,
-                is_skipped=False
+                is_skipped=False,
+                question__is_active=True            # ✅ ONLY ACTIVE
             )
             .values(
                 "practice_test_result__practice_test__course_subject__subject__name",
@@ -3865,8 +3869,8 @@ class ResultViewSet(viewsets.ModelViewSet):
             pending = max(0, total - answered)
 
             response[subject] = {
-                "total": total,        # ✅ PRACTICE DB TOTAL
-                "answered": answered,  # student answered
+                "total": total,        # ✅ ACTIVE PRACTICE DB TOTAL
+                "answered": answered,
                 "unanswered": pending,
                 "pending": pending,
                 "done": answered
