@@ -1,5 +1,5 @@
 import { CloseOutlined } from "@ant-design/icons";
-import { Col, Form, Row, Button } from "antd";
+import { Col, Form, Row, Button, Radio } from "antd";
 import React, { useEffect, useState } from "react";
 import ReactSelect, { components } from "react-select";
 import { ChevronIcon } from "./icons/dashboard-icons";
@@ -268,6 +268,13 @@ function QuestionMetaDataCard({
               {...restField}
               label={<span className="text-sm font-semibold text-gray-700">Sub Topic</span>}
               name={[name, "sub_topic"]}
+              required
+              rules={[
+                {
+                  required: true,
+                  message: "Please select a sub topic",
+                },
+              ]}
               className="!mb-0"
             >
               <FormReactSelect
@@ -284,7 +291,7 @@ function QuestionMetaDataCard({
         </Row>
 
         <Row gutter={[24, 24]}>
-          <Col md={8} span={24}>
+          <Col md={12} lg={6} span={24}>
             <Form.Item
               label={<span className="text-sm font-semibold text-gray-700">Test Type</span>}
               name={[name, "test_type"]}
@@ -307,7 +314,7 @@ function QuestionMetaDataCard({
               />
             </Form.Item>
           </Col>
-          <Col md={8} span={24}>
+          <Col md={12} lg={6} span={24}>
             <Form.Item
               label={<span className="text-sm font-semibold text-gray-700">Difficulty</span>}
               name={[name, "difficulty"]}
@@ -331,7 +338,7 @@ function QuestionMetaDataCard({
               />
             </Form.Item>
           </Col>
-          <Col md={8} span={24}>
+          <Col md={12} lg={6} span={24}>
             <Form.Item
               label={
                 <span className="text-sm font-semibold text-gray-700">Show Calculator</span>
@@ -348,14 +355,33 @@ function QuestionMetaDataCard({
               ]}
               className="!mb-0"
             >
-              <FormReactSelect
-                placeholder="Show Calculator"
-                options={showCalculatorOptions}
-                styles={customSelectStyles}
-                components={{ DropdownIndicator }}
-                classNamePrefix="react-select"
-                menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-              />
+              <Radio.Group>
+                <Radio value={true}>Yes</Radio>
+                <Radio value={false}>No</Radio>
+              </Radio.Group>
+            </Form.Item>
+          </Col>
+          <Col md={12} lg={6} span={24}>
+            <Form.Item
+              label={
+                <span className="text-sm font-semibold text-gray-700">Status</span>
+              }
+              name={[name, "is_active"]}
+              initialValue={false}
+              wrapperCol={{ span: 24 }}
+              required
+              rules={[
+                {
+                  required: true,
+                  message: "Please select status",
+                },
+              ]}
+              className="!mb-0"
+            >
+              <Radio.Group>
+                <Radio value={true}>Active</Radio>
+                <Radio value={false}>Inactive</Radio>
+              </Radio.Group>
             </Form.Item>
           </Col>
         </Row>
