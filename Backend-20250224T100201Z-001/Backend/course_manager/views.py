@@ -44,7 +44,7 @@ from django.db.models import Q
 import datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import CourseFilter
-from .utils import build_question_availability_map
+from .utils import build_question_availability_map, get_question_signature
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -1024,25 +1024,73 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     @permission_classes([IsAdmin])
     def update(self, request, pk=None, *args, **kwargs):
-        instance = Question.objects.get(id=pk)
-        context = {'request': request}
-        serializer = self.get_serializer(instance, data=request.data, partial=True, context=context)
 
         try:
-            serializer.is_valid(raise_exception=True)
-            updated_question = serializer.save(updated_by=request.user, updated_at=timezone.now())
+            base_question = Question.objects.select_related(
+                'topic', 'sub_topic'
+            ).get(id=pk)
+        except Question.DoesNotExist:
+            return get_error_response("Invalid question id")
 
-            # ✅ Log the edit
-            QuestionLog.objects.create(
-                question=updated_question,
-                user=request.user,
-                action='EDIT',
-                ip_address=self.get_client_ip(request)
-            )
+        # ✅ courses selected from frontend
+        course_subject_ids = request.data.get('course_subject_ids')
 
-            return Response(serializer.data)
-        except Exception as e:
-            return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
+        if not course_subject_ids or not isinstance(course_subject_ids, list):
+            return get_error_response("course_subject_ids must be provided as a list")
+
+        # 🔑 OLD signature (to find same questions)
+        old_signature = get_question_signature(base_question)
+
+        # 🔍 Find matching questions across selected courses
+        candidate_questions = Question.objects.select_related(
+            'topic', 'sub_topic'
+        ).filter(
+            course_subject_id__in=course_subject_ids
+        )
+
+        questions_to_update = []
+        for q in candidate_questions:
+            if get_question_signature(q) == old_signature:
+                questions_to_update.append(q)
+
+        if not questions_to_update:
+            return get_error_response("No matching questions found to update")
+
+        context = {'request': request}
+
+        updated_questions = []
+
+        # 🔒 ATOMIC UPDATE
+        with transaction.atomic():
+            for question in questions_to_update:
+                serializer = self.get_serializer(
+                    question,
+                    data=request.data,
+                    partial=True,
+                    context=context
+                )
+                serializer.is_valid(raise_exception=True)
+
+                updated_question = serializer.save(
+                    updated_by=request.user,
+                    updated_at=timezone.now()
+                )
+
+                updated_questions.append(updated_question)
+
+                # ✅ Log update
+                QuestionLog.objects.create(
+                    question=updated_question,
+                    user=request.user,
+                    action='EDIT',
+                    ip_address=self.get_client_ip(request)
+                )
+
+        return Response({
+            "message": "Questions updated successfully",
+            "updated_count": len(updated_questions),
+            "updated_question_ids": [q.id for q in updated_questions]
+        })
 
 
     def perform_update(self, serializer):
