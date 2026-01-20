@@ -34,4 +34,12 @@ def build_question_availability_map(questions):
 
     return signature_map
 
+def get_question_signature(question):
+    return (
+        question.description,
+        json.dumps(question.options, sort_keys=True),
+        question.topic.name if question.topic else None,
+        question.sub_topic.name if question.sub_topic else None
+    )
+
 
