@@ -104,7 +104,7 @@ function QuestionMetaDataCard({
     },
   ];
 
-  const [form] = useForm();
+  const form = Form.useFormInstance();
 
   const [selectedCourse, setSelectedCourse] = useState(courses[0]);
   const [selectedCourseSubject, setSelectedCourseSubject] = useState();
@@ -131,7 +131,7 @@ function QuestionMetaDataCard({
 
       setSelectedCourseSubject();
       setSelectedTopic();
-      form.setFieldValue("course_subject", null);
+      form.setFieldValue([name, "course_subject"], null);
     }
   }, [courses, selectedCourse]);
 
@@ -146,8 +146,8 @@ function QuestionMetaDataCard({
       });
 
       setSelectedTopic();
-      form.setFieldValue("topic", null);
-      form.setFieldValue("sub_topic", null);
+      form.setFieldValue([name, "topic"], null);
+      form.setFieldValue([name, "sub_topic"], null);
     }
   }, [selectedCourseSubject]);
 
@@ -183,6 +183,18 @@ function QuestionMetaDataCard({
                 {
                   required: true,
                   message: "Please select a course",
+                },
+                {
+                  validator: (_, value) => {
+                    const questionsData = form.getFieldValue("questions_data") || [];
+                    const isDuplicate = questionsData.some(
+                      (item, idx) => idx !== name && item?.course === value
+                    );
+                    if (isDuplicate) {
+                      return Promise.reject(new Error("You cannot select the same course twice"));
+                    }
+                    return Promise.resolve();
+                  },
                 },
               ]}
               className="!mb-0"
