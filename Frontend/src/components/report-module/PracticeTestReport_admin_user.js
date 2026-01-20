@@ -3,14 +3,14 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import ReportTable from "./report-table";
 import Loading from "@/app/loading";
-import BookmarkIcon from "../../../public/bookmark2.svg";
-import {
-  CheckCircleTwoTone,
-  CloseCircleTwoTone,
-  LeftOutlined,
-} from "@ant-design/icons";
+// import BookmarkIcon from "../../../public/bookmark2.svg";
+// import {
+//   CheckCircleTwoTone,
+//   CloseCircleTwoTone,
+//   LeftOutlined,
+// } from "@ant-design/icons";
 import { timeInMMSS } from "@/utils/utils";
-import Image from "next/image";
+// import Image from "next/image";
 import ReportStats from "./report-stats";
 import { BackIcon, ReportCalendarIcon as CalendarIcon, UserIcon, ClockIcon, FlagIcon, CorrectIcon, IncorrectIcon } from "@/components/icons/report-icons";
 
@@ -31,14 +31,14 @@ function PracticeTestReport({ practiceTestId, onClose }) {
   return Object.keys(resultData).length == 0 ? (
     <Loading />
   ) : (
-    <div className="min-h-screen">
+    <div>
       {/* Header Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <div className="bg-gray-200 rounded-2xl shadow-sm border border-gray-100 p-6 mb-2">
         {/* Top Row - Title and Student Info */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           {/* Left Side - Back + Title */}
           <div className="flex items-start gap-3">
-            <button 
+            <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors mt-1"
             >
@@ -46,9 +46,7 @@ function PracticeTestReport({ practiceTestId, onClose }) {
             </button>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <span className="text-[#F59403]">Practice Test</span>
-                <span className="text-gray-400">-</span>
-                <span>{resultData.name}</span>
+                <span className="text-[#F59403]">{resultData.name}</span>
               </h1>
               <div className="flex items-center gap-2 mt-1 text-gray-500 text-sm">
                 <CalendarIcon />
@@ -56,7 +54,7 @@ function PracticeTestReport({ practiceTestId, onClose }) {
                 <span className="font-medium text-gray-700">
                   {new Date(resultData.testDate).toDateString()}
                 </span>
-              </div>
+              </div> 
             </div>
           </div>
 
@@ -134,7 +132,7 @@ function PracticeTestReport({ practiceTestId, onClose }) {
 
       {/* Report Table */}
       <ReportTable sectionData={resultData} testSubmissionId={practiceTestId} />
-      <ReportStats sectionData={resultData} testSubmissionId={practiceTestId}/>
+      {/* <ReportStats sectionData={resultData} testSubmissionId={practiceTestId} /> */}
     </div>
   );
 }
