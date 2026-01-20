@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from sTest.aws_client import AwsStorageClient
 from .models import Course, Question, CourseSubjects, CourseEnrollment, Subject, Material, SubTopic, Topic
+import json
+from .utils import build_question_availability_map
 
 
 class CourseSubjectsSerializer(serializers.ModelSerializer):
@@ -195,6 +197,8 @@ class QuestionListSerializer(serializers.ModelSerializer):
     topic = serializers.CharField(source='topic.name')
     sub_topic = serializers.CharField(source='sub_topic.name', allow_null=True)
 
+    available_in_other_courses = serializers.SerializerMethodField()
+    available_courses = serializers.SerializerMethodField()
 
     created_by = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
@@ -206,38 +210,70 @@ class QuestionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            'srno','id','description','course_subject',
-            'reading_comprehension_passage','question_type',
-            'question_subtype','options','has_suggestion',
-            'topic','sub_topic','difficulty','test_type',
-            'is_active','show_calculator','directions','explanation','time_taken',
-            'created_by','created_at','updated_by','updated_at'
+            'srno', 'id', 'description', 'course_subject',
+            'reading_comprehension_passage', 'question_type',
+            'question_subtype', 'options', 'has_suggestion',
+            'topic', 'sub_topic', 'difficulty', 'test_type',
+            'is_active', 'show_calculator', 'directions',
+            'explanation', 'time_taken',
+            'created_by', 'created_at',
+            'updated_by', 'updated_at',
+            'available_in_other_courses',
+            'available_courses'
         ]
 
+    # 🔑 SAME QUESTION SIGNATURE
+    def _get_signature(self, obj):
+        return (
+            obj.description,
+            json.dumps(obj.options, sort_keys=True),
+            obj.topic.name if obj.topic else None,
+            obj.sub_topic.name if obj.sub_topic else None
+        )
+
+    def get_available_courses(self, obj):
+        availability_map = self.context.get('availability_map', {})
+        return availability_map.get(self._get_signature(obj), [])
+
+    def get_available_in_other_courses(self, obj):
+        return len(self.get_available_courses(obj)) > 1
+
+    # -------- Audit fields --------
+    def get_created_by(self, obj):
+        log = obj.logs.filter(action="ADD").order_by("timestamp").first()
+        return log.user.name if log else None
+
+    def get_created_at(self, obj):
+        log = obj.logs.filter(action="ADD").order_by("timestamp").first()
+        return log.timestamp if log else None
+
+    def get_updated_by(self, obj):
+        log = obj.logs.filter(action="EDIT").order_by("-timestamp").first()
+        return log.user.name if log else None
+
+    def get_updated_at(self, obj):
+        log = obj.logs.filter(action="EDIT").order_by("-timestamp").first()
+        return log.timestamp if log else None
+
+    # -------- Time taken (unchanged) --------
     def get_time_taken(self, obj):
-        request = self.context.get('request')
         test_submission_id = self.context.get('test_submission_id')
         practice_test_result_id = self.context.get('practice_test_result_id')
-        print("test_submission_id",test_submission_id)
-        print("practice_test_result_id",practice_test_result_id)
-        # FULL LENGTH TEST
+
         if test_submission_id:
             from test_manager.models import QuestionAnswer
             ans = QuestionAnswer.objects.filter(
-            question=obj,
-            result__test_submission__id=test_submission_id
-        ).first()
-
+                question=obj,
+                result__test_submission__id=test_submission_id
+            ).first()
             if ans:
                 return (
-                    (getattr(ans, 'first_time_taken', 0) or 0) +
-                    (getattr(ans, 'second_time_taken', 0) or 0) +
-                    (getattr(ans, 'third_time_taken', 0) or 0)
+                    (ans.first_time_taken or 0) +
+                    (ans.second_time_taken or 0) +
+                    (ans.third_time_taken or 0)
                 )
             return 0
 
-
-        # PRACTICE TEST
         if practice_test_result_id:
             from test_manager.models import PracticeQuestionAnswer
             ans = PracticeQuestionAnswer.objects.filter(

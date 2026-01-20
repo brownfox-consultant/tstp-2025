@@ -44,6 +44,7 @@ from django.db.models import Q
 import datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import CourseFilter
+from .utils import build_question_availability_map
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -271,37 +272,95 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['GET'], permission_classes=[IsAdminOrContentDeveloperOrFaculty],
-            url_path='(?P<course_subject_id>\d+)/questions')
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAdminOrContentDeveloperOrFaculty],
+    url_path='(?P<course_subject_id>\\d+)/questions'
+)
     def list_questions_by_subject(self, request, course_subject_id=None):
+
         if not course_subject_id:
-            self.logger.exception('Error processing the request because no course subject id was provided')
-            return get_error_response('Subject is mandatory')
+            return get_error_response('course_subject_id is mandatory')
 
-        questions = Question.get_questions_for_subject(course_subject_id=course_subject_id)
-        topics = Topic.objects.filter(course_subject_id=course_subject_id)
+        # 1️⃣ Resolve base course_subject
+        try:
+            base_cs = CourseSubjects.objects.select_related(
+                'course', 'subject'
+            ).get(id=course_subject_id)
+        except CourseSubjects.DoesNotExist:
+            return get_error_response('Invalid course_subject_id')
 
-        # Apply dynamic filtering
-        filter_backends = [DjangoFilterBackend]
+        # 2️⃣ QUESTIONS TO DISPLAY (same course + same subject)
+        display_course_subject_ids = CourseSubjects.objects.filter(
+            course=base_cs.course,
+            subject=base_cs.subject
+        ).values_list('id', flat=True)
+
+        questions = (
+            Question.objects
+            .filter(course_subject_id__in=display_course_subject_ids)
+            .select_related(
+                'course_subject__course',
+                'course_subject__subject',
+                'topic',
+                'sub_topic'
+            )
+        )
+
+        topics = Topic.objects.filter(
+            course_subject_id__in=display_course_subject_ids
+        )
+
+        # 3️⃣ APPLY FILTERS
         filterset = QuestionFilter(request.GET, queryset=questions)
         if not filterset.is_valid():
             return get_error_response('Invalid filter parameters')
 
         filtered_questions = filterset.qs
 
-        # Apply pagination
+        # 4️⃣ GLOBAL AVAILABILITY (ALL COURSES, SAME SUBJECT)
+        all_course_subject_ids = CourseSubjects.objects.filter(
+            subject=base_cs.subject
+        ).values_list('id', flat=True)
+
+        all_questions = (
+            Question.objects
+            .filter(course_subject_id__in=all_course_subject_ids)
+            .select_related(
+                'course_subject__course',
+                'course_subject__subject',
+                'topic',
+                'sub_topic'
+            )
+        )
+
+        availability_map = build_question_availability_map(all_questions)
+
+        # 5️⃣ PAGINATION
         paginator = CustomPageNumberPagination()
         paginator.page_size = 15
         paginated_questions = paginator.paginate_queryset(filtered_questions, request)
 
-        questions_serializer = QuestionListSerializer(paginated_questions, many=True)
+        # 6️⃣ SERIALIZE
+        questions_serializer = QuestionListSerializer(
+            paginated_questions,
+            many=True,
+            context={
+                'request': request,
+                'availability_map': availability_map
+            }
+        )
+
         topics_serializer = TopicSerializer(topics, many=True)
 
-        # Return the paginated response with topics
         return paginator.get_paginated_response({
+            'same_course': base_cs.course.name,
+            'same_subject': base_cs.subject.name,
             'questions': questions_serializer.data,
             'topics': topics_serializer.data
         })
+
 
     @action(detail=False, methods=['GET'], permission_classes=[IsAdminOrContentDeveloperOrFacultyOrStudent],
             url_path='(?P<course_subject_id>\d+)/topics')
