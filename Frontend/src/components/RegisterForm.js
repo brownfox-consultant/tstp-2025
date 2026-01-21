@@ -110,6 +110,7 @@ function RegisterForm() {
         onFinish={handleSubmit}
         onValuesChange={onValuesChange}
         layout="vertical"
+        size="large"
       >
         <style jsx global>{`
           .register-form .ant-input-group-addon {
@@ -118,32 +119,46 @@ function RegisterForm() {
             border-right: none !important;
             border-left: none !important;
             padding-right: 8px !important;
-            border-bottom: solid 1px #eaeaea;
+            border-bottom: solid 1px #d9d9d9;
             border-radius: 0 !important;
           }
           .register-form .ant-input-group > .ant-input:not(:first-child):not(:last-child) {
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
           }
+           /* Ensure Select takes full width */
+          .ant-select {
+            width: 100% !important;
+          }
+          .register-form .ant-select-selector {
+            border-radius: 0 !important;
+          }
         `}</style>
+
         {/* <Carousel ref={carouselRef} afterChange={onChange} dotPosition="bottom"> */}
-        <div>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              {
-                required: true,
-                message: "Please input your email!",
-              },
-              {
-                type: "email",
-                message: "The input is not a valid email!",
-              },
-            ]}
-          >
-            <Input />
-          </Form.Item>
+
+        <div className="w-full">
+          {/* Email Field - Full Width */}
+          <Row>
+            <Col span={24}>
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please input your email!",
+                  },
+                  {
+                    type: "email",
+                    message: "The input is not a valid email!",
+                  },
+                ]}
+              >
+                <Input placeholder="Enter your email" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           {/* <Form.Item
             label="Password"
@@ -161,8 +176,10 @@ function RegisterForm() {
           >
             <Input.Password />
           </Form.Item> */}
-          <Row>
-            <Col span={10} className="p-2">
+
+          {/* Name and Phone - Stacked on Mobile, Side-by-Side on Tablet/Desktop */}
+          <Row gutter={[16, 0]}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 label="Name"
                 name="name"
@@ -173,13 +190,15 @@ function RegisterForm() {
                   },
                 ]}
               >
-                <Input />
+                <Input placeholder="Enter your full name" />
               </Form.Item>
             </Col>
-            <Col span={14} className="p-2">
+
+            <Col xs={24} sm={12}>
               <Form.Item
                 label="Contact Number"
                 name="phone_number"
+
                 rules={[
                   {
                     required: true,
@@ -215,16 +234,24 @@ function RegisterForm() {
                   type="tel"
                   maxLength={10}
                   onChange={handlePhoneNumberChange}
-                  placeholder="Enter 10 digit number"
+                  placeholder="10 digit number"
                   style={{ width: '100%' }}
+                  className="!m-0 !p-0"
                 />
               </Form.Item>
             </Col>
           </Row>
-          <Row className="">
-            <Col span={18} className="p-2">
+
+          {/* Course Selection - Full Width */}
+          <Row>
+            <Col span={24}>
               <Form.Item label="Course" name="courses" required>
-                <Select className="w-24" mode="multiple">
+                <Select
+                  mode="multiple"
+                  placeholder="Select a course"
+                  style={{ width: '100%' }}
+                  className="!rounded-none"
+                >
                   {options &&
                     options.map(({ id, name }) => {
                       return (
@@ -237,6 +264,7 @@ function RegisterForm() {
               </Form.Item>
             </Col>
           </Row>
+
           {/* <Form.Item
             label="Confirm Password"
             name="confirmPassword"
@@ -275,6 +303,7 @@ function RegisterForm() {
             <Input.Password />
           </Form.Item> */}
         </div>
+
         {/* <div>
           <Row>
             <Col span={12} className="p-2">
@@ -434,11 +463,12 @@ function RegisterForm() {
           onClick={handleNext}
         />
       </Row> */}
-        <Row className="justify-evenly mt-5">
+
+        <Row className="mt-4">
           <Button
             loading={submitLoader}
             disabled={!formCompleted}
-            className="justify-center w-full py-3"
+            className="w-full h-11 text-base font-semibold shadow-md hover:shadow-lg transition-shadow"
             type="primary"
             htmlType="submit"
           >
@@ -446,6 +476,7 @@ function RegisterForm() {
           </Button>
         </Row>
       </Form>
+
       {showOtpModal && (
         <OtpModal
           open={showOtpModal}

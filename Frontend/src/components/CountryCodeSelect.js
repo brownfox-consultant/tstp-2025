@@ -4,6 +4,7 @@ import { Select } from 'antd';
 /**
  * CountryCodeSelect Component
  * A dropdown for selecting country codes with search functionality
+ * Shows country name + code for better UX
  */
 const CountryCodeSelect = ({ countryCodes, value, onChange }) => {
   return (
@@ -14,8 +15,8 @@ const CountryCodeSelect = ({ countryCodes, value, onChange }) => {
           border-right: 1px solid #E5E7EB !important;
           box-shadow: none !important;
           background: transparent !important;
-          padding: 0 12px 0 0 !important;
-          margin-right: 12px !important;
+          padding: 0 18px 0 0 !important;
+          margin-right: 24px !important;
         }
         .country-code-select .ant-select-selection-search {
           left: 0 !important;
@@ -35,23 +36,53 @@ const CountryCodeSelect = ({ countryCodes, value, onChange }) => {
         .country-code-select .ant-select-focused .ant-select-selector {
           border-right: 1px solid #0071BC !important;
         }
+        /* Dropdown styling */
+        .country-code-dropdown .ant-select-item-option-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .country-code-dropdown .country-flag {
+          font-size: 18px;
+        }
+        .country-code-dropdown .country-name {
+          flex: 1;
+          font-weight: 500;
+          color: #374151;
+        }
+        .country-code-dropdown .country-code {
+          color: #6B7280;
+          font-size: 13px;
+        }
       `}</style>
       <Select
         showSearch
         value={value}
         onChange={onChange}
         className="country-code-select"
-        style={{ width: 90 }}
+        popupClassName="country-code-dropdown"
+        style={{ width: 120 }}
         bordered={false}
-        optionFilterProp="children"
-        filterOption={(input, option) =>
-          option.children.toLowerCase().includes(input.toLowerCase())
-        }
-        dropdownStyle={{ zIndex: 10000 }}
+        placeholder="+91"
+        optionFilterProp="label"
+        filterOption={(input, option) => {
+          const searchText = input.toLowerCase();
+          const countryName = option.label?.toLowerCase() || '';
+          const countryCode = option.value?.toLowerCase() || '';
+          return countryName.includes(searchText) || countryCode.includes(searchText);
+        }}
+        dropdownStyle={{ zIndex: 10000, minWidth: 280 }}
       >
         {countryCodes.map((country) => (
-          <Select.Option key={country.cca2} value={country.code}>
-            {country.code}
+          <Select.Option 
+            key={country.cca2} 
+            value={country.code}
+            label={country.name}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <span className="country-name">{country.name}</span>
+              <span className="country-code">{country.code}</span>
+            </div>
           </Select.Option>
         ))}
       </Select>

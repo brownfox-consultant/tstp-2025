@@ -72,20 +72,29 @@
   }
 }
 
-.register-form {
-  .ant-carousel .slick-dots li button {
-    background: rgb(54, 77, 121);
-    opacity: 0.3;
-  }
+/* Mobile and Tablet Responsive Styles */
+@media (max-width: 1024px) {
+  .login-form,
+  .register-form {
+    .ant-input,
+    .ant-input-password input,
+    .ant-input-number,
+    .ant-picker {
+      min-height: 44px !important;
+      font-size: 16px !important; /* Prevents zoom on iOS */
+    }
 
-  .ant-carousel .slick-dots li.slick-active button {
-    background: rgb(54, 77, 121);
-    opacity: 1;
-  }
+    .ant-btn {
+      min-height: 44px !important;
+      font-size: 16px !important;
+    }
 
-  .slick-dots.slick-dots-bottom {
+    .ant-form-item-label > label {
+      font-size: 14px;
+    }
   }
 }
+
 
 .ql-editor {
   min-height: 100px;

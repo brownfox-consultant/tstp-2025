@@ -74,18 +74,16 @@ function ForgotPasswordForm() {
         <InfoCircleOutlined /> We will send a password reset link to this email.
       </div>
 
-      <Form.Item>
-        <div className="mt-10 flex justify-center">
-          <Button
-            loading={loading}
-            className="center"
-            type="primary"
-            htmlType="submit"
-            icon={<SendOutlined rotate={-45} />}
-          >
-            Send Link
-          </Button>
-        </div>
+      <Form.Item className="!mt-3 !mb-0">
+        <Button
+          loading={loading}
+          className="w-full h-11 text-base font-semibold"
+          type="primary"
+          htmlType="submit"
+          icon={<SendOutlined rotate={-45} />}
+        >
+          Send Link
+        </Button>
       </Form.Item>
     </Form>
   );

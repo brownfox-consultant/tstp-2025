@@ -176,14 +176,9 @@ function LoginForm({ handleNext }) {
             </span>
           </div>
 
-          <Form.Item
-            wrapperCol={{
-              offset: 10,
-              span: 16,
-            }}
-          >
+          <Form.Item className="!mt-3 !mb-0">
             <Button
-              className="center"
+              className="w-full h-11 text-base font-semibold "
               type="primary"
               htmlType="submit"
               loading={buttonLoading}
