@@ -31,10 +31,10 @@ function Page() {
   // Redirect if questions are missing
 
   useEffect(() => {
-  console.log("Redux state updated:");
-  console.log("isTestCompleted:", isTestCompleted);
-  console.log("isSectionCompleted:", isSectionCompleted);
-}, [isTestCompleted, isSectionCompleted]);
+    // console.log("Redux state updated:");
+    // console.log("isTestCompleted:", isTestCompleted);
+    // console.log("isSectionCompleted:", isSectionCompleted);
+  }, [isTestCompleted, isSectionCompleted]);
 
   useEffect(() => {
     if (questions.length === 0 && !isSectionCompleted) {
@@ -65,7 +65,7 @@ function Page() {
       {questionsStatus === "idle" && (
         <div className="w-full h-screen mx-auto grid grid-cols-1 grid-rows-layout">
           <TestHeader />
-          <main className="w-full max-h-full overflow-y-scroll py-10">
+          <main className="w-full max-h-full overflow-y-scroll py-3 lg:py-10 px-3">
             {isReviewPage ? (
               <ReviewComponent />
             ) : (
@@ -74,30 +74,30 @@ function Page() {
 
                 {/* TIMEUP Modal */}
                 <TimeupModal openModal={isTimeUp} />
-                
-                  {/* Feedback Modal (conditionally triggered) */}
-                  
-                  {(() => {
-  console.log("DEBUG → isTestCompleted:", isTestCompleted);
-  console.log("DEBUG → isSectionCompleted:", isSectionCompleted);
-  console.log("DEBUG → testSubmissionId:", testSubmissionId);
-  return testSubmissionId && (
-    <TestFeedbackModal
-      modalOpen={isTestCompleted && isSectionCompleted}
-      test_submission_id={testSubmissionId}
-      onClose={() => {
-        exitFullScreen();
-        if (testType === "practice") {
-          router.replace(`/student/${id}/test/practice/${testId}/result`);
-        } else {
-          router.replace(
-            `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
-          );
-        }
-      }}
-    />
-  );
-})()}
+
+                {/* Feedback Modal (conditionally triggered) */}
+
+                {(() => {
+                  // console.log("DEBUG → isTestCompleted:", isTestCompleted);
+                  // console.log("DEBUG → isSectionCompleted:", isSectionCompleted);
+                  // console.log("DEBUG → testSubmissionId:", testSubmissionId);
+                  return testSubmissionId && (
+                    <TestFeedbackModal
+                      modalOpen={isTestCompleted && isSectionCompleted}
+                      test_submission_id={testSubmissionId}
+                      onClose={() => {
+                        exitFullScreen();
+                        if (testType === "practice") {
+                          router.replace(`/student/${id}/test/practice/${testId}/result`);
+                        } else {
+                          router.replace(
+                            `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
+                          );
+                        }
+                      }}
+                    />
+                  );
+                })()}
               </>
             )}
           </main>

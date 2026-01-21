@@ -92,13 +92,13 @@ const SectionSegmentLabel = ({ data }) => {
       </div>
 
       {/* Chart + Stats Row */}
-      <div className="flex gap-4 items-start">
+      <div className="flex gap-4 items-start flex-col md:flex-row">
         {/* Donut Chart */}
-        <div className="w-60 h-60 flex-shrink-0">
+        <div className="md:w-60 w-full h-60 flex-shrink-0">
           <Pie data={pieData} options={pieOptions} />
         </div>
 
-        <div className="flex-1">
+        <div className="md:flex-1 w-full">
           <div className="grid grid-cols-2 gap-2 flex-1">
             {/* Correct */}
             <div className="flex items-center gap-2 p-2.5 bg-green-50 rounded-xl">

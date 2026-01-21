@@ -141,7 +141,7 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
               const bubbles = generateBubbleData(section);
 
               return (
-                <div key={index} className="flex items-center gap-3">
+                <div key={index} className="flex items-center gap-3 flex-wrap">
                   <div className="w-20 md:w-24 text-xs font-semibold text-gray-500 shrink-0">{section.name}</div>
                   <div className="flex gap-1.5 flex-wrap">
                     {bubbles.map((bubble) => {

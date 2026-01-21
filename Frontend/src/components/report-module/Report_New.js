@@ -232,7 +232,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${activeTab === tab
+              className={`flex-1 md:min-w-[120px] min-w-[80px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${activeTab === tab
                 ? 'bg-gradient-to-r from-primary-color to-orange-500 text-white shadow-lg shadow-orange-200'
                 : 'bg-transparent text-gray-600 hover:bg-gray-100'
                 }`}

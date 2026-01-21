@@ -19,11 +19,11 @@ function DirectionsDropdown({ dropdownVisible, setDropdownVisible }) {
       <Menu.Item key="instructions">
         <div className="px-10 py-3 h-full flex flex-col gap-10 justify-between w-full">
           <div
-  className="mt-3"
-  dangerouslySetInnerHTML={{
-  __html: question?.directions || instructions,
-}}
-></div>
+            className="mt-3"
+            dangerouslySetInnerHTML={{
+              __html: question?.directions || instructions,
+            }}
+          ></div>
 
           <div className="w-full text-end m-3">
             <Button
@@ -53,7 +53,7 @@ function DirectionsDropdown({ dropdownVisible, setDropdownVisible }) {
         arrow="bottomRight"
         placement="bottomLeft"
         overlayClassName="bg-white h-50 max-w-3xl"
-       // menu={textOverlay} // <-- Use "menu" instead of "overlay"
+        // menu={textOverlay} // <-- Use "menu" instead of "overlay"
         overlay={textOverlay}
         trigger={["click"]}
       >

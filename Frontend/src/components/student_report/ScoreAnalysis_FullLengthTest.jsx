@@ -106,16 +106,16 @@ export default function ScoreAnalysis_FullLengthTest({
 
       setChartData(chart);
       setSummary({
-  overall_score: data.overall_score ?? 0,
-  math_score: data.math_score ?? 0,
-  english_score: data.english_score ?? 0,
-  highest_score: data.highest_score ?? 0,
-  improvement: data.improvement ?? 0,
-  percentage: percentage || 0,
-  max_score: maxScore,
-  total_full_length_tests: data.total_full_length_tests ?? 0, // ✅ ADD
-  total_practice_tests: data.total_practice_tests ?? 0,       // ✅ ADD (future use)
-});
+        overall_score: data.overall_score ?? 0,
+        math_score: data.math_score ?? 0,
+        english_score: data.english_score ?? 0,
+        highest_score: data.highest_score ?? 0,
+        improvement: data.improvement ?? 0,
+        percentage: percentage || 0,
+        max_score: maxScore,
+        total_full_length_tests: data.total_full_length_tests ?? 0, // ✅ ADD
+        total_practice_tests: data.total_practice_tests ?? 0,       // ✅ ADD (future use)
+      });
 
 
     } catch (err) {
@@ -169,7 +169,7 @@ export default function ScoreAnalysis_FullLengthTest({
 
       {/* ================= SCORE CHART ================= */}
       <div className="card-layout">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">
+        <h3 className="lg:text-xl text-base font-bold text-gray-800 mb-4">
           Full-Length Test - {courseName} Analysis
         </h3>
 
@@ -260,71 +260,67 @@ export default function ScoreAnalysis_FullLengthTest({
         )}
       </div>
 
-      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-      {/* ================= SUMMARY CARDS ================= */}
-     {/* ================= SUMMARY CARDS ================= */}
-<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Total Full-Length Tests */}
+        <div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#FFF8EB] to-[#FFF0D4] flex flex-col justify-between">
+          <h4 className="text-sm font-semibold uppercase text-[#805830]">
+            Total Full-Length Tests
+          </h4>
+          <div className="text-5xl font-black text-[#F59403] mt-2">
+            {summary.total_full_length_tests}
+          </div>
+          <p className="text-xs text-[#805830] mt-1">
+            Tests completed
+          </p>
+        </div>
 
-  {/* Total Full-Length Tests */}
-  <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-[#FFF8EB] to-[#FFF0D4] flex flex-col justify-between">
-    <h4 className="text-sm font-semibold uppercase text-[#805830]">
-      Total Full-Length Tests
-    </h4>
-    <div className="text-5xl font-black text-[#F59403] mt-2">
-      {summary.total_full_length_tests}
-    </div>
-    <p className="text-xs text-[#805830] mt-1">
-      Tests completed
-    </p>
-  </div>
+        {/* Percentage */}
+        <div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#EBF4FF] to-[#D4E4FF] flex flex-col justify-between">
+          <h4 className="text-sm font-semibold uppercase text-[#1e40af]">
+            {courseName} Percentage
+          </h4>
+          <div className="text-5xl font-black text-[#3b82f6]">
+            {summary.percentage}%
+          </div>
+          <div className="mt-3 w-full bg-blue-100 rounded-full h-2">
+            <div
+              className="h-2 rounded-full"
+              style={{
+                width: `${summary.percentage}%`,
+                background: "linear-gradient(90deg, #3b82f6, #60a5fa)",
+              }}
+            />
+          </div>
+        </div>
 
-  {/* Percentage */}
-  <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-[#EBF4FF] to-[#D4E4FF] flex flex-col justify-between">
-    <h4 className="text-sm font-semibold uppercase text-[#1e40af]">
-      {courseName} Percentage
-    </h4>
-    <div className="text-5xl font-black text-[#3b82f6]">
-      {summary.percentage}%
-    </div>
-    <div className="mt-3 w-full bg-blue-100 rounded-full h-2">
-      <div
-        className="h-2 rounded-full"
-        style={{
-          width: `${summary.percentage}%`,
-          background: "linear-gradient(90deg, #3b82f6, #60a5fa)",
-        }}
-      />
-    </div>
-  </div>
+        {/* Highest Score */}
+        <div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#E8F4FC] to-[#D4F1F9] flex flex-col justify-between">
+          <h4 className="text-sm font-semibold uppercase text-[#2E2725]">
+            Highest Score in {courseName}
+          </h4>
+          <div className="text-5xl font-black text-[#0071BC]">
+            {summary.highest_score}
+          </div>
+          <div className="text-sm text-[#70D9E4]">
+            out of {summary.max_score}
+          </div>
+        </div>
 
-  {/* Highest Score */}
-  <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-[#E8F4FC] to-[#D4F1F9] flex flex-col justify-between">
-    <h4 className="text-sm font-semibold uppercase text-[#2E2725]">
-      Highest Score in {courseName}
-    </h4>
-    <div className="text-5xl font-black text-[#0071BC]">
-      {summary.highest_score}
-    </div>
-    <div className="text-sm text-[#70D9E4]">
-      out of {summary.max_score}
-    </div>
-  </div>
+        {/* Improvement */}
+        <div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] flex flex-col justify-between">
+          <h4 className="text-sm font-semibold uppercase text-[#065f46]">
+            Score Improvement
+          </h4>
+          <div className="text-5xl font-black text-[#10b981]">
+            {summary.improvement > 0 ? `+${summary.improvement}` : summary.improvement}
+          </div>
+          <p className="text-xs text-[#047857]">
+            Compared to last 2 tests
+          </p>
+        </div>
 
-  {/* Improvement */}
-  <div className="p-6 rounded-2xl shadow-lg bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] flex flex-col justify-between">
-    <h4 className="text-sm font-semibold uppercase text-[#065f46]">
-      Score Improvement
-    </h4>
-    <div className="text-5xl font-black text-[#10b981]">
-      {summary.improvement > 0 ? `+${summary.improvement}` : summary.improvement}
-    </div>
-    <p className="text-xs text-[#047857]">
-      Compared to last 2 tests
-    </p>
-  </div>
-
-</div>
+      </div>
 
     </div>
   );

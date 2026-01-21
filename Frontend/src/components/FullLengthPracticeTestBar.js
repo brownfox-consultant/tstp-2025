@@ -16,7 +16,7 @@ const CustomLegend = (props) => {
   const { payload } = props;
 
   return (
-    <div className="flex justify-between items-center w-full mb-4">
+    <div className="flex justify-between items-center w-full mb-4 flex-wrap">
       <h3 className="text-xl font-semibold ml-4">
         Full Length vs Practice Questions
       </h3>

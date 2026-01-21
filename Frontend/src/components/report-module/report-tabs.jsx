@@ -7,7 +7,7 @@ function ReportTabs({ options, selectedValue, handleChange }) {
         <div
           key={option.value}
           onClick={() => handleChange(option.value)}
-          className="flex-1 min-w-[550px] cursor-pointer"
+          className="flex-1 md:min-w-[550px] min-w-full cursor-pointer"
         >
           {option.label}
         </div>

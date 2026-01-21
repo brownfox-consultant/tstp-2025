@@ -13,7 +13,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import Report from "@/components/report-module";
 import ReportNew from "../report-module/Report_New";
 import TestFeedbackModal from "@/components/test-module/test-feedback-modal";
-import { Modal} from "antd";
+import { Modal } from "antd";
 
 
 function TestFooter() {
@@ -61,61 +61,61 @@ function TestFooter() {
   }
 
 
-  
-
- async function handleFinish() {
-  if (testType == "practice") {
-    console.log("practice");
-  } else {
-    if (!isTimeUp) {
-      Modal.warning({
-        title: "⏳ Time is not over",
-        content: (
-          <div style={{ fontSize: "18px", textAlign: "center" }}>
-            Please wait until the timer finishes to submit the test.
-          </div>
-        ),
-        centered: true, // ✅ Center the modal
-        width: 500, // ✅ Make it larger
-        okText: "Okay",
-        okButtonProps: {
-          style: { fontSize: "16px", padding: "6px 20px" }, // ✅ Larger button
-        },
-      });
-      return;
-    }
-  }
-
-  try {
-    await dispatch(sectionComplete({ via: "FINISH" })).unwrap();
-    setFinishTriggered(true);
-  } catch (error) {
-    console.log("Exit Error", error);
-  }
-}
 
 
-useEffect(() => {
-  if (!finishTriggered) return;
-
-  const timer = setTimeout(() => {
-    if (isTestCompleted && isSectionCompleted) {
-      if (testType == "practice") {
-        exitFullScreen();
-        router.replace(`/student/${id}/test/practice/${testId}/result`);
-      } else {
-        exitFullScreen();
-        window.sessionStorage.setItem("test_submission_id", testSubmissionId);
-        setSubmissionId(testSubmissionId);
+  async function handleFinish() {
+    if (testType == "practice") {
+      console.log("practice");
+    } else {
+      if (!isTimeUp) {
+        Modal.warning({
+          title: "⏳ Time is not over",
+          content: (
+            <div style={{ fontSize: "18px", textAlign: "center" }}>
+              Please wait until the timer finishes to submit the test.
+            </div>
+          ),
+          centered: true, 
+          width: 500, 
+          okText: "Okay",
+          okButtonProps: {
+            style: { fontSize: "16px", padding: "6px 20px" },
+          },
+        });
+        return;
       }
-    } else if (isSectionCompleted) {
-      router.replace(`/student/${id}/test/${testId}/begin`);
     }
-    setFinishTriggered(false);
-  }, 500); // 0.5 second delay for Redux state update
 
-  return () => clearTimeout(timer);
-}, [finishTriggered, isTestCompleted, isSectionCompleted]);
+    try {
+      await dispatch(sectionComplete({ via: "FINISH" })).unwrap();
+      setFinishTriggered(true);
+    } catch (error) {
+      console.log("Exit Error", error);
+    }
+  }
+
+
+  useEffect(() => {
+    if (!finishTriggered) return;
+
+    const timer = setTimeout(() => {
+      if (isTestCompleted && isSectionCompleted) {
+        if (testType == "practice") {
+          exitFullScreen();
+          router.replace(`/student/${id}/test/practice/${testId}/result`);
+        } else {
+          exitFullScreen();
+          window.sessionStorage.setItem("test_submission_id", testSubmissionId);
+          setSubmissionId(testSubmissionId);
+        }
+      } else if (isSectionCompleted) {
+        router.replace(`/student/${id}/test/${testId}/begin`);
+      }
+      setFinishTriggered(false);
+    }, 500); // 0.5 second delay for Redux state update
+
+    return () => clearTimeout(timer);
+  }, [finishTriggered, isTestCompleted, isSectionCompleted]);
 
 
 
@@ -137,8 +137,8 @@ useEffect(() => {
         <ReportNew testSubmissionId={submissionId} />
       ) : (
         <>
-          <footer className="w-full h-16 bg-neutral-100 grid grid-cols-3 row-span-1 border-t-2 border-dashed border-black px-10">
-            <div className="user-name h-fit  my-auto">{username}</div>
+          <footer className="w-full py-3 bg-white grid grid-cols-2 row-span-1 border-t-2 border-dashed border-black px-2 lg:px-10">
+            {/* <div className="user-name h-fit my-auto text-black">{username}</div> */}
             <div className="section-map text-center h-fit my-auto">
               <SectionMapDropdown onChangeQuestion={handleClick} />
             </div>
@@ -149,19 +149,19 @@ useEffect(() => {
                 }
                 onClick={() => handleClick("PREV")}
                 className="mx-1"
-                shape="round"
+                shape="round-md"
                 type="primary"
               >
                 Back
               </Button>
               {currentQuestionIndex == totalQuestionsCount - 1 &&
-              isReviewPage ? (
+                isReviewPage ? (
                 <Button
                   onClick={handleFinish}
                   className="mx-1"
-                  shape="round"
-                      type="primary"
-                      // disabled={!isTimeUp}
+                  shape="round-md"
+                  type="primary"
+                // disabled={!isTimeUp}
                 >
                   Finish
                 </Button>
@@ -170,29 +170,29 @@ useEffect(() => {
                   disabled={isReviewPage}
                   onClick={() => handleClick("NEXT")}
                   className="mx-1"
-                  shape="round"
+                  shape="round-md"
                   type="primary"
                 >
                   Next
                 </Button>
               )}
-              </div>
-              {testType !== "practice" && (
-  <TestFeedbackModal
-    modalOpen={isTestCompleted && isSectionCompleted}
-    test_submission_id={testSubmissionId}
-    onClose={() => {
-      exitFullScreen();
-      if (testType === "practice") {
-        router.replace(`/student/${id}/test/practice/${testId}/result`);
-      } else {
-        router.replace(
-          `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
-        );
-      }
-    }}
-  />
-)}
+            </div>
+            {testType !== "practice" && (
+              <TestFeedbackModal
+                modalOpen={isTestCompleted && isSectionCompleted}
+                test_submission_id={testSubmissionId}
+                onClose={() => {
+                  exitFullScreen();
+                  if (testType === "practice") {
+                    router.replace(`/student/${id}/test/practice/${testId}/result`);
+                  } else {
+                    router.replace(
+                      `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
+                    );
+                  }
+                }}
+              />
+            )}
           </footer>
         </>
       )}

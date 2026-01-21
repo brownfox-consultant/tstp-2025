@@ -78,29 +78,100 @@ function TestHeader() {
   useHotkeys("alt+k", () => setAreShortcutsVisible((prev) => !prev));
 
   return (
-    <header className="w-full min-h-16 bg-neutral-100 border-b-2 border-dashed border-black px-10 py-2 flex flex-row justify-between">
-      <div className="w-full grid grid-cols-3">
-        <div>
-          <div className="section-name text-lg flex flex-col font-semibold">
-            <span>{name}</span>
+    <header className="w-full bg-neutral-100 border-b-2 border-dashed border-black">
+      <div className="lg:hidden w-full px-3 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <span className="text-lg font-semibold text-gray-800 me-2">{name}</span>
             {currentSection && (
-              <span className="text-sm text-gray-600">
-                {`Sub : ${subjectName}`}  {sectionName && `Sec : ${sectionName}`}
+              <span className="text-xs text-gray-800">
+                {`Sub: ${subjectName}`} {sectionName && `| Sec: ${sectionName}`}
               </span>
-              
             )}
           </div>
+          <div className="flex-shrink-0">
+            {timeLeft ? <TestTimer expiryTimestamp={time} /> : <TestStopwatch />}
+          </div>
+        </div>
+
+        {/* Row 2: Directions and Action Buttons */}
+        <div className="flex items-center justify-between">
           <DirectionsDropdown
             dropdownVisible={dropdownVisible}
             setDropdownVisible={setDropdownVisible}
           />
+
+          <div className="flex items-center gap-1">
+            {isCalculatorAllowed && (
+              <CalculatorComponent
+                showCalculator={isCalculatorVisible}
+                setShowCalculator={setIsCalculatorVisible}
+              />
+            )}
+            {isCalculatorAllowed && (
+              <ReferenceSheet
+                isOpen={isReferenceSheetVisible}
+                setIsOpen={setIsReferenceSheetVisible}
+              />
+            )}
+            <ShortcutsReference
+              isOpen={areShortcutsVisible}
+              setIsOpen={setAreShortcutsVisible}
+            />
+            <ExitExamModal
+              setOpenModal={setIsExamExitModalVisble}
+              openModal={isExamExitModalVisble}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Layout (>= lg) */}
+      <div className="hidden lg:grid lg:grid-cols-3 lg:gap-4 px-10 py-3">
+        {/* Left Column: Test Name & Directions */}
+        <div className="flex flex-row items-center gap-4">
+          {/* Text Block */}
+          <div className="flex flex-col justify-center">
+            <span className="text-lg font-semibold leading-tight">
+              {name}
+            </span>
+
+            {currentSection && (
+              <div className="flex items-center text-xs md:text-sm text-gray-500 font-medium mt-0.5">
+                <span className="whitespace-nowrap">
+                  <span className="hidden sm:inline text-gray-400 font-normal">Sub: </span>
+                  {subjectName}
+                </span>
+
+                {sectionName && (
+                  <>
+                    <span className="mx-2 text-gray-300">|</span>
+                    <span className="whitespace-nowrap">
+                      <span className="hidden sm:inline text-gray-400 font-normal">Sec: </span>
+                      {sectionName}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Dropdown Button */}
+          <div className="">
+            <DirectionsDropdown
+              dropdownVisible={dropdownVisible}
+              setDropdownVisible={setDropdownVisible}
+            />
+          </div>
         </div>
 
-        <div className="text-center">
+        {/* Center Column: Timer */}
+        <div className="flex items-center justify-center">
           {timeLeft ? <TestTimer expiryTimestamp={time} /> : <TestStopwatch />}
         </div>
 
-        <div className="flex flex-row items-end justify-end">
+        {/* Right Column: Action Buttons */}
+        <div className="flex items-center justify-end gap-2">
           {isCalculatorAllowed && (
             <CalculatorComponent
               showCalculator={isCalculatorVisible}

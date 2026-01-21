@@ -1,5 +1,5 @@
 "use client";
-
+import { ArrowLeftOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import { useState } from "react";
 
 function levelForSeconds(sec) {
@@ -91,10 +91,11 @@ export default function Heatmap({ dateWise = [] }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <button 
-          className="px-5 py-2.5 rounded-full font-semibold text-sm border-2 border-orange-500 text-orange-500 bg-transparent hover:bg-orange-50 transition-all"
+          className="lg:px-5 lg:py-2.5 px-3 py-1.5 rounded-full font-semibold text-sm border-2 border-orange-500 text-orange-500 bg-transparent hover:bg-orange-50 transition-all flex items-center gap-2"
           onClick={() => setMonthOffset(monthOffset + 1)}
         >
-          ← Prev
+          <ArrowLeftOutlined className="text-base" />
+          <span className="hidden md:inline">Prev</span>
         </button>
         
         <div className="flex flex-col items-center">
@@ -107,7 +108,7 @@ export default function Heatmap({ dateWise = [] }) {
         </div>
         
         <button 
-          className={`px-5 py-2.5 rounded-full font-semibold text-sm border-2 transition-all ${
+          className={`lg:px-5 lg:py-2.5 px-3 py-1.5 rounded-full font-semibold text-sm border-2 transition-all flex items-center gap-2 ${
             isCurrentMonth 
               ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed" 
               : "bg-orange-500 border-orange-500 text-white hover:bg-orange-600"
@@ -115,14 +116,15 @@ export default function Heatmap({ dateWise = [] }) {
           onClick={() => setMonthOffset(monthOffset - 1)}
           disabled={isCurrentMonth}
         >
-          Next →
+          <span className="hidden md:inline">Next</span>
+          <ArrowRightOutlined className="text-base" />
         </button>
       </div>
 
       {/* Weekdays */}
       <div className="grid grid-cols-7 gap-2 md:gap-3 mb-2 md:mb-3">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-          <div key={day} className="text-center text-sm font-semibold text-gray-400 py-2">
+          <div key={day} className="text-center text-base font-semibold text-gray-400 py-2">
             {day}
           </div>
         ))}
@@ -136,7 +138,7 @@ export default function Heatmap({ dateWise = [] }) {
           ) : (
             <div
               key={`day-${d.dayLabel}`}
-              className={`aspect-square rounded-xl flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg cursor-pointer ${levelClasses[levelForSeconds(d.seconds)]}`}
+              className={`aspect-square rounded-md lg:rounded-xl flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg cursor-pointer ${levelClasses[levelForSeconds(d.seconds)]}`}
             >
               <span className="text-base md:text-lg font-bold">{d.dayLabel}</span>
               {d.seconds > 0 && (

@@ -40,7 +40,7 @@ export function TestTimer({ expiryTimestamp }) {
   }, [isRunning]);
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="flex flex-row items-center justify-center gap-2">
       <div className="text-lg">
         {showTime ? (
           <div>
@@ -52,9 +52,9 @@ export function TestTimer({ expiryTimestamp }) {
           <ClockCircleOutlined />
         )}
       </div>
-      <Button size="small" shape="round" onClick={handleClick}>
+      <button onClick={handleClick} className="text-sm font-semibold border border-slate-200 px-3 py-1 rounded">
         {showTime ? "Hide" : "Show"}
-      </Button>
+      </button>
 
       {/* <p>{isRunning ? "Running" : "Not running"}</p> */}
       {/* <div className="flex flex-row gap-2">

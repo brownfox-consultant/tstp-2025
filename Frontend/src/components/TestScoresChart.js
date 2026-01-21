@@ -133,9 +133,9 @@ export default function TestScoresChart({ dateRange }) {
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between flex-wrap items-center mb-4">
         <h2 className="text-xl font-semibold mb-2 md:mb-0">Test Scores</h2>
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-3">
           {/* Course Dropdown */}
-          <div className="w-64 text-sm">
+          <div className="w-40 text-sm">
             <Select
               placeholder="Select Course"
               options={courses.map((c) => ({ label: c.name, value: c.id }))}
@@ -160,7 +160,7 @@ export default function TestScoresChart({ dateRange }) {
           </div>
 
           {/* Subject Dropdown */}
-          <div className="w-64 text-sm">
+          <div className="w-40 text-sm">
             <Select
               placeholder="Select Subject"
               options={[
@@ -185,7 +185,7 @@ export default function TestScoresChart({ dateRange }) {
       </div>
 
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={testScoreData} barSize={40} barCategoryGap="20%">
+        <BarChart data={testScoreData} barSize={30} barCategoryGap="20%">
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="test" />
           <YAxis />

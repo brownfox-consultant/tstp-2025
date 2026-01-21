@@ -260,6 +260,7 @@ function PracticeTestResult() {
 
         {/* Question Review Modal */}
         <Modal
+          centered
           width={(selectedListQuestion?.question_type === "MCQ" || modalData?.question_type === "MCQ") ? "70rem" : "64rem"}
           open={isModalOpen}
           title={
@@ -311,7 +312,7 @@ function PracticeTestResult() {
             <>
               {/* ===== Question Meta Info (Compact Inline) ===== */}
               <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
-              <div className="flex items-center flex-wrap gap-10 my-2 text-xs md:text-sm text-gray-800">
+              <div className="flex items-center flex-wrap gap-2 my-2 text-xs md:text-sm text-gray-800">
                 <span className="flex items-center gap-1">
                   <span className="font-bold">Difficulty:</span> {modalData.difficulty || "N/A"}
                 </span>
@@ -335,7 +336,7 @@ function PracticeTestResult() {
               </div>
               <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
 
-              <div className="w-full flex gap-8">
+              <div className="w-full flex md:flex-row flex-col gap-4 mt-4">
                 {/* Reading Comprehension Passage */}
                 {modalData.question_subtype === "READING_COMPREHENSION" && (
                   <div className="flex-1 mx-auto border overflow-y-scroll overflow-x-hidden max-h-full p-3 rounded-md bg-gray-50 border-gray-200">
@@ -348,8 +349,8 @@ function PracticeTestResult() {
                 )}
 
                 {/* Question Description */}
-                <div className="flex-1 my-4 pl-1">
-                  <span className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-2">Question</span>
+                <div className="flex-1 pl-1 border border-gray-200 max-h-full p-3 rounded-md bg-gray-50">
+                  <span className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-2 ">Question</span>
                   <MathContent content={modalData.description} />
                 </div>
               </div>

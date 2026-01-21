@@ -117,7 +117,7 @@ function PracticeTestsList() {
       title: "Test Name",
       dataIndex: "test_name",
       align: "left",
-      width: 180,
+      width: 80,
       sorter: false,
       render: (text) => <span className="font-semibold text-gray-800">{highlightText(text || "-", debouncedSearchTerm)}</span>,
     },
@@ -127,7 +127,7 @@ function PracticeTestsList() {
       dataIndex: "course",
       align: "center",
       render: (text) => <Tag color="blue">{text}</Tag>,
-      width: 150,
+      width: 110,
       sorter: true,
       sorter: { multiple: 1 },
     },
@@ -137,7 +137,7 @@ function PracticeTestsList() {
       dataIndex: "subject",
       align: "center",
       render: (text) => <Tag color="cyan">{text}</Tag>,
-      width: 150,
+      width: 110,
       sorter: true,
       sorter: { multiple: 2 },
     },
@@ -147,7 +147,7 @@ function PracticeTestsList() {
       dataIndex: "created_at",
       align: "center",
       render: (text) => <span className="text-gray-600">{dayjs(text).format("MMM D, YYYY h:mm A")}</span>,
-      width: 200,
+      width: 170,
       sorter: true,
       sorter: { multiple: 3 },
     },
@@ -155,7 +155,7 @@ function PracticeTestsList() {
       key: "score_summary",
       title: "Performance",
       align: "center",
-      width: 250,
+      width: 140,
       render: (_, record) => (
         <div className="flex justify-center gap-4 text-xs font-medium">
           <div className="flex flex-col items-center">
@@ -179,7 +179,7 @@ function PracticeTestsList() {
       dataIndex: "time_taken",
       align: "center",
       render: (_, record) => <span className="text-gray-600 font-mono">{convertSecondsToTime(record.time_taken)}</span>,
-      width: 120,
+      width: 80,
       sorter: true,
       sorter: { multiple: 6 },
     },
@@ -188,7 +188,8 @@ function PracticeTestsList() {
       title: "Action",
       dataIndex: "action",
       align: "center",
-      width: 120,
+      fixed: 'right',
+      width: 50,
       render: (_, record) => {
         const { id } = record;
         const userId = pathname.split("/")[2];
@@ -259,14 +260,14 @@ function PracticeTestsList() {
         <PracticeTestForm onBack={() => setCreateTest(false)} />
       ) : (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col flex-wrap sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <h1 className="lg:text-2xl text-xl font-bold text-gray-800 flex items-center gap-2">
                 Practice Tests History
               </h1>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="w-full sm:w-64">
                 <Input
                   placeholder="Search by test name..."
@@ -319,6 +320,7 @@ function PracticeTestsList() {
                 rowClassName="hover:bg-blue-50/30 transition-colors duration-200"
                 onChange={handleTableChange}
                 size="middle"
+                scroll={{ x: 1000 }}
               />
             </div>
 

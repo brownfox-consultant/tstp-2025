@@ -128,7 +128,7 @@ export default function UtilisationOfResources({
             <p className="text-xl font-bold text-green-700">{answered}</p>
           </div>
           <div className="text-center bg-red-100 rounded-xl p-3">
-            <p className="text-xs text-red-600">PENDING</p>
+            <p className="text-xs text-red-600">Unanswered</p>
             <p className="text-xl font-bold text-red-700">{unanswered}</p>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function UtilisationOfResources({
 
   return (
     <div className="w-full pb-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto px-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
         {data.English && (
           <ChartCard
             title="English"

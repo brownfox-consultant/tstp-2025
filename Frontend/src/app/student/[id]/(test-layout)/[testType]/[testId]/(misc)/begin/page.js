@@ -6,7 +6,7 @@ import TestLoading from "../../loading";
 function page() {
   return (
     <Suspense fallback={<TestLoading />}>
-      <div className="w-100 py-10 px-48">
+      <div className="max-w-7xl mx-auto p-10">
         <ActualTestComponent />
       </div>
     </Suspense>

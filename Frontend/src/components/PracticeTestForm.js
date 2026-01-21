@@ -1,6 +1,6 @@
 "use client";
 
-import { LeftOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { Button, Col, Divider, Form, Row, notification, Radio, Input } from "antd";
 import { useForm } from "antd/es/form/Form";
@@ -280,14 +280,14 @@ function PracticeTestForm() {
       <div className="max-w-7xl  mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Custom Practice</h1>
-            <p className="text-gray-600">Customize your practice test by selecting topics and difficulties</p>
+            <h1 className="lg:text-2xl text-xl font-bold text-gray-900 mb-2">Create Custom Practice</h1>
+            <p className="text-gray-600 hidden lg:block">Customize your practice test by selecting topics and difficulties</p>
           </div>
           <Button
             onClick={() => window.location.reload()}
-            className="flex items-center gap-2 h-10 px-4 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 h-10 px-4 border border-gray-300 rounded-cl hover:bg-gray-50"
           >
-            <LeftOutlined className="text-sm" />
+            <ArrowLeftOutlined className="text-sm" />
             Back
           </Button>
         </div>
@@ -366,14 +366,39 @@ function PracticeTestForm() {
                       <ReactSelect
                         isMulti
                         closeMenuOnSelect={false}
+                        hideSelectedOptions={false}
+                        blurInputOnSelect={false}
                         value={topicOptions?.filter((opt) => selectedTopic?.includes(opt.value)) || []}
                         onChange={(selected) => {
-                          const values = selected ? selected.map((s) => s.value) : [];
-                          setSelectedTopic(values.length === 0 ? null : values);
-                          setSubTopicOptions(getSubtopicOptionsFromValues(values));
-                          form.setFieldValue("topic", values);
+                          // Check if "Select All" or "Unselect All" was clicked
+                          const hasSelectAll = selected?.some(s => s.value === 'SELECT_ALL');
+                          const hasUnselectAll = selected?.some(s => s.value === 'UNSELECT_ALL');
+                          
+                          if (hasSelectAll) {
+                            // Select all topics
+                            const allValues = topicOptions.filter(opt => opt.value !== 'SELECT_ALL').map(opt => opt.value);
+                            setSelectedTopic(allValues);
+                            setSubTopicOptions(getSubtopicOptionsFromValues(allValues));
+                            form.setFieldValue("topic", allValues);
+                          } else if (hasUnselectAll) {
+                            // Unselect all topics
+                            setSelectedTopic(null);
+                            setSubTopicOptions([]);
+                            form.setFieldValue("topic", []);
+                          } else {
+                            const values = selected ? selected.map((s) => s.value) : [];
+                            setSelectedTopic(values.length === 0 ? null : values);
+                            setSubTopicOptions(getSubtopicOptionsFromValues(values));
+                            form.setFieldValue("topic", values);
+                          }
                         }}
-                        options={topicOptions}
+                        options={[
+                          // Show "Unselect All" if all are selected, otherwise "Select All"
+                          selectedTopic?.length === topicOptions?.length
+                            ? { value: 'UNSELECT_ALL', label: '✗ Unselect All Topics' }
+                            : { value: 'SELECT_ALL', label: '✓ Select All Topics', name: 'Select All' },
+                          ...topicOptions
+                        ]}
                         placeholder="Select topics..."
                         components={{ DropdownIndicator }}
                         styles={customSelectStyles}
@@ -392,13 +417,36 @@ function PracticeTestForm() {
                         <ReactSelect
                           isMulti
                           closeMenuOnSelect={false}
+                          hideSelectedOptions={false}
+                          blurInputOnSelect={false}
                           value={subTopicOptions?.filter((opt) => selectedSubTopic?.includes(opt.id)).map(({ id, name }) => ({ label: name, value: id })) || []}
                           onChange={(selected) => {
-                            const values = selected ? selected.map((s) => s.value) : [];
-                            setSelectedSubTopic(values);
-                            form.setFieldValue("sub_topic", values);
+                            // Check if "Select All" or "Unselect All" was clicked
+                            const hasSelectAll = selected?.some(s => s.value === 'SELECT_ALL');
+                            const hasUnselectAll = selected?.some(s => s.value === 'UNSELECT_ALL');
+                            
+                            if (hasSelectAll) {
+                              // Select all sub-topics
+                              const allValues = subTopicOptions.map(opt => opt.id);
+                              setSelectedSubTopic(allValues);
+                              form.setFieldValue("sub_topic", allValues);
+                            } else if (hasUnselectAll) {
+                              // Unselect all sub-topics
+                              setSelectedSubTopic([]);
+                              form.setFieldValue("sub_topic", []);
+                            } else {
+                              const values = selected ? selected.map((s) => s.value) : [];
+                              setSelectedSubTopic(values);
+                              form.setFieldValue("sub_topic", values);
+                            }
                           }}
-                          options={subTopicOptions?.map(({ id, name }) => ({ label: name, value: id }))}
+                          options={[
+                            // Show "Unselect All" if all are selected, otherwise "Select All"
+                            selectedSubTopic?.length === subTopicOptions?.length && subTopicOptions?.length > 0
+                              ? { value: 'UNSELECT_ALL', label: '✗ Unselect All Sub-Topics' }
+                              : { value: 'SELECT_ALL', label: '✓ Select All Sub-Topics' },
+                            ...subTopicOptions?.map(({ id, name }) => ({ label: name, value: id }))
+                          ]}
                           placeholder="Choose sub-topics..."
                           components={{ DropdownIndicator }}
                           styles={customSelectStyles}
@@ -414,13 +462,36 @@ function PracticeTestForm() {
                         <ReactSelect
                           isMulti
                           closeMenuOnSelect={false}
+                          hideSelectedOptions={false}
+                          blurInputOnSelect={false}
                           value={difficultyOptions?.filter((opt) => selectedDifficulty?.includes(opt.value)) || []}
                           onChange={(selected) => {
-                            const values = selected ? selected.map((s) => s.value) : [];
-                            setSelectedDifficulty(values);
-                            form.setFieldValue("difficulty", values);
+                            // Check if "Select All" or "Unselect All" was clicked
+                            const hasSelectAll = selected?.some(s => s.value === 'SELECT_ALL');
+                            const hasUnselectAll = selected?.some(s => s.value === 'UNSELECT_ALL');
+                            
+                            if (hasSelectAll) {
+                              // Select all difficulty levels
+                              const allValues = difficultyOptions.map(opt => opt.value);
+                              setSelectedDifficulty(allValues);
+                              form.setFieldValue("difficulty", allValues);
+                            } else if (hasUnselectAll) {
+                              // Unselect all difficulty levels
+                              setSelectedDifficulty([]);
+                              form.setFieldValue("difficulty", []);
+                            } else {
+                              const values = selected ? selected.map((s) => s.value) : [];
+                              setSelectedDifficulty(values);
+                              form.setFieldValue("difficulty", values);
+                            }
                           }}
-                          options={difficultyOptions}
+                          options={[
+                            // Show "Unselect All" if all are selected, otherwise "Select All"
+                            selectedDifficulty?.length === difficultyOptions?.length
+                              ? { value: 'UNSELECT_ALL', label: '✗ Unselect All Difficulty Levels' }
+                              : { value: 'SELECT_ALL', label: '✓ Select All Difficulty Levels' },
+                            ...difficultyOptions
+                          ]}
                           placeholder="Choose difficulty..."
                           components={{ DropdownIndicator }}
                           styles={customSelectStyles}

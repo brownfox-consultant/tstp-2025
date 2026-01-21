@@ -422,7 +422,7 @@ function DashboardLayout({ children }) {
       {isMobile && !mobileMenuOpen && (
         <button
           onClick={handleToggle}
-          className="fixed top-4 left-4 z-50 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center"
+          className="fixed top-4 left-0 z-50 w-6 h-10 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center"
           aria-label="Open menu"
         >
           <MenuUnfoldOutlined className="text-primary-color" />

@@ -181,7 +181,7 @@ const ChartsSection = ({ chartData }) => (
   <div className="flex flex-wrap gap-6">
 
     {/* HORIZONTAL BAR CHART */}
-    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[450px]">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 md:min-w-[450px] min-w-[350px]">
       <h3 className="font-bold mb-4">Topic Progress Comparison</h3>
 
       <div className="h-[300px]">
@@ -209,7 +209,7 @@ const ChartsSection = ({ chartData }) => (
     </div>
 
     {/* VERTICAL COLUMN BAR CHART (replaced Radar) */}
-    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[450px]">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 md:min-w-[450px] min-w-[350px]">
       <h3 className="font-bold mb-4">Skills Overview</h3>
 
       <div className="h-[300px]">

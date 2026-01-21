@@ -53,7 +53,7 @@ const ShortcutsReference = ({ isOpen, setIsOpen }) => {
     <div>
       <div
         onClick={toggleModal}
-        className="flex flex-col gap-2 justify-center text-sm items-center cursor-pointer p-2 rounded hover:bg-black/5"
+        className="flex flex-row gap-2 justify-center text-sm items-center cursor-pointer p-2 rounded hover:bg-black/5"
       >
         <KeyboardShortcut />
         Keyboard Shortcuts

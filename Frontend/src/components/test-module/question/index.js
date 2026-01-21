@@ -36,7 +36,7 @@ function Question() {
         // defaultSize={parseInt(window.localStorage.getItem("splitPos"), "50%")}
         // onChange={(size) => window.localStorage.setItem("splitPos", size)}
       >
-        <div className="p-10 overflow-x-hidden max-h-full overflow-y-scroll max-w-2xl mx-auto">
+        <div className="p-6 lg:p-10 overflow-x-hidden max-h-full overflow-y-scroll max-w-2xl mx-auto">
           <div
             onClick={() => setSize(size == "66%" ? "50%" : "66%")}
             className="absolute right-2 top-2 cursor-pointer"
@@ -55,7 +55,7 @@ function Question() {
             content={question?.reading_comprehension_passage}
           />
         </div>
-        <div className="p-10 overflow-x-hidden max-h-full overflow-y-scroll max-w-2xl mx-auto">
+        <div className="p-6 lg:p-10 overflow-x-hidden max-h-full overflow-y-scroll max-w-2xl mx-auto">
           <div
             onClick={() => setSize(size == "33%" ? "50%" : "33%")}
             className="absolute left-2 top-2 cursor-pointer"
@@ -81,11 +81,11 @@ function Question() {
         minSize={size}
         style={{ maxHeight: "80%" }}
         resizerClassName="cursor-col-resize"
-        resizerStyle={{ width: "4px", border: "2px solid gray" }}
+        resizerStyle={{ width: "20px", border: "5px solid black" }}
         // defaultSize={parseInt(window.localStorage.getItem("splitPos"), "50%")}
         // onChange={(size) => window.localStorage.setItem("splitPos", size)}
       >
-        <div className="p-10 overflow-x-hidden max-h-full overflow-y-scroll max-w-2xl mx-auto">
+        <div className="p-6 lg:p-10 overflow-x-hidden max-h-full overflow-y-scroll max-w-2xl mx-auto">
           <div
             onClick={() => setSize(size == "66%" ? "50%" : "66%")}
             className="absolute right-2 top-2 cursor-pointer"
@@ -102,7 +102,7 @@ function Question() {
           <MathContent cls={"p-4"} content={question?.directions} />
         </div>
 
-        <div className="p-10 overflow-x-hidden max-h-full overflow-y-scroll max-w-2xl mx-auto">
+        <div className="p-6 lg:p-10 overflow-x-hidden max-h-full overflow-y-scroll max-w-2xl mx-auto">
           <div
             onClick={() => setSize(size == "33%" ? "50%" : "33%")}
             className="absolute left-2 top-2 cursor-pointer"

@@ -81,52 +81,54 @@ export default function StatusOfDoubts({
   return (
     <div className="w-full">
       <div className="flex flex-col xxl:flex-row gap-6">
-        
+
         {/* ================= LEFT SIDE: GRAPH ================= */}
         <div className="flex-1 rounded-2xl shadow-sm border p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between mb-2 gap-y-2">
             <h2 className="text-xl font-extrabold text-dark flex items-center gap-2">
-              <span className="p-2 bg-gray-500 text-white rounded-lg text-lg"><FaChartLine /></span>
+              <span className="hidden lg:inline-flex p-2 bg-gray-500 text-white rounded-lg text-lg">
+                <FaChartLine />
+              </span>
               Doubt Analytics
             </h2>
-             {/* Custom Legend */}
-            <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#ff9f43]"></span>
-                    <span className="text-dark text-sm font-bold">Raised</span>
-                </div>
-                 <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#00d2d3]"></span>
-                    <span className="text-dark text-sm font-bold">Solved</span>
-                </div>
+            {/* Custom Legend */}
+            <div className="flex items-center gap-6 ">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#ff9f43]"></span>
+                <span className="text-dark text-sm font-bold">Raised</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#00d2d3]"></span>
+                <span className="text-dark text-sm font-bold">Solved</span>
+              </div>
             </div>
           </div>
 
           <div className="h-[380px] w-full mt-auto">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={doubtsData} 
+              <BarChart
+                data={doubtsData}
                 margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
                 barGap={8}
                 barCategoryGap="20%"
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={{ stroke: '#333' }} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="month"
+                  axisLine={{ stroke: '#333' }}
+                  tickLine={false}
                   tick={{ fill: 'black', fontSize: 12, fontWeight: 500, dy: 10 }}
                 />
-                <YAxis 
-                   axisLine={false} 
-                   tickLine={false} 
-                   tick={{ fill: '#888', fontSize: 12 }} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#888', fontSize: 12 }}
                 />
-                <Tooltip 
-                     cursor={{ fill: 'transparent' }} 
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
-                    itemStyle={{ color: '#000' }}
-                    labelStyle={{ color: '#000', marginBottom: '0.5rem' }}
+                <Tooltip
+                  cursor={{ fill: 'transparent' }}
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
+                  itemStyle={{ color: '#000' }}
+                  labelStyle={{ color: '#000', marginBottom: '0.5rem' }}
                 />
                 <Bar dataKey="raised" fill="#ff9f43" radius={[4, 4, 0, 0]} barSize={50}>
                   <LabelList dataKey="raised" position="top" fill="#000" fontSize={12} fontWeight={600} />
@@ -141,7 +143,7 @@ export default function StatusOfDoubts({
 
         {/* ================= RIGHT SIDE: STATS ================= */}
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          
+
           {/* STAT 1: RAISED */}
           <NewStatCard
             icon={<FaQuestionCircle />}
@@ -162,8 +164,8 @@ export default function StatusOfDoubts({
             borderClass="border-cyan-100"
           />
 
-           {/* STAT 3: RATE */}
-           <NewStatCard
+          {/* STAT 3: RATE */}
+          <NewStatCard
             value={`${summary.resolution_rate}%`}
             label="Resolution Rate"
             bgClass="bg-green-50"
@@ -174,14 +176,14 @@ export default function StatusOfDoubts({
 
           {/* AVERAGE TIME */}
           <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-2xl p-6 shadow-md relative overflow-hidden h-full">
-             <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">
-                <FaClock />
-             </div>
-             <p className="text-blue-100 font-medium text-sm mb-1 uppercase tracking-wide">Avg. Resolution Time</p>
-             <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black">{avgResolutionTime}</span>
-                <span className="text-lg font-bold opacity-80">Hours</span>
-             </div>
+            <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl">
+              <FaClock />
+            </div>
+            <p className="text-blue-100 font-medium text-sm mb-1 uppercase tracking-wide">Avg. Resolution Time</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-black">{avgResolutionTime}</span>
+              <span className="text-lg font-bold opacity-80">Hours</span>
+            </div>
           </div>
 
         </div>
@@ -194,13 +196,13 @@ export default function StatusOfDoubts({
 function NewStatCard({ icon, value, label, bgClass, textClass, borderClass, subText }) {
   return (
     <div className={`flex items-center p-5 rounded-2xl border ${bgClass} ${borderClass} transition-transform hover:scale-[1.02] duration-300`}>
-       <div className={`p-3 rounded-xl bg-white shadow-sm text-2xl ${textClass}`}>
-          {icon || <span className="font-bold text-lg">%</span>}
-       </div>
-       <div className="ml-4 flex flex-col">
-          <span className={`text-2xl font-black ${textClass}`}>{value}</span>
-          <span className="text-sm font-semibold text-gray-500">{label}</span>
-       </div>
+      <div className={`p-3 rounded-xl bg-white shadow-sm text-2xl ${textClass}`}>
+        {icon || <span className="font-bold text-lg">%</span>}
+      </div>
+      <div className="ml-4 flex flex-col">
+        <span className={`text-2xl font-black ${textClass}`}>{value}</span>
+        <span className="text-sm font-semibold text-gray-500">{label}</span>
+      </div>
     </div>
   );
 }
