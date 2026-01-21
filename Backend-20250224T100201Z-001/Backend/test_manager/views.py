@@ -988,114 +988,227 @@ class TestViewSet(viewsets.ModelViewSet):
 
     
 
-    @action(detail=False, methods=['GET'], permission_classes=[AllowAny], url_path='key-strengths')
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[AllowAny],
+    url_path="key-strengths"
+)
     def get_key_strengths(self, request):
         from user_manager.models import User
-        from test_manager.models import TestSubmission, Result, QuestionAnswer
-        from datetime import datetime, timedelta
-        from collections import defaultdict
+        from test_manager.models import (
+            TestSubmission, Result, QuestionAnswer,
+            PracticeTestResult, PracticeQuestionAnswer
+        )
 
-        course_id = request.query_params.get('course_id')
-        student_id = request.query_params.get('student_id')
-        test_id = request.query_params.get('test_id')  # ✅ new param
-        date_range = request.query_params.get('date_range', 'last_six_month')
-        start_date_str = request.query_params.get('start_date')
-        end_date_str = request.query_params.get('end_date')
+        # --------------------------------------------------
+        # Query Params
+        # --------------------------------------------------
+        course_id = request.query_params.get("course_id")
+        student_id = request.query_params.get("student_id")
+        test_type = request.query_params.get("test_type")  # PRACTICE | EXAM | ASSIGNMENT
+        test_id = request.query_params.get("test_id")
 
+        date_range = request.query_params.get("date_range", "last_six_month")
+        start_date_str = request.query_params.get("start_date")
+        end_date_str = request.query_params.get("end_date")
+
+        # --------------------------------------------------
+        # Validation
+        # --------------------------------------------------
         if not course_id or student_id is None:
-            return Response({"error": "Both course_id and student_id are required"}, status=400)
+            return Response(
+                {"error": "course_id and student_id are required"},
+                status=400
+            )
 
         try:
             course_id = int(course_id)
         except ValueError:
             return Response({"error": "Invalid course_id"}, status=400)
 
-        # 🧑‍🎓 Handle student(s)
+        VALID_TEST_TYPES = ["PRACTICE", "EXAM", "ASSIGNMENT"]
+        if test_type and test_type not in VALID_TEST_TYPES:
+            return Response(
+                {"error": f"Invalid test_type. Allowed: {VALID_TEST_TYPES}"},
+                status=400
+            )
+
+        # --------------------------------------------------
+        # Students
+        # --------------------------------------------------
         if student_id == "":
-            students = User.objects.filter(role_id=5)  # All students
+            students = User.objects.filter(role_id=5)
         else:
             try:
-                student = User.objects.get(id=student_id, role_id=5)
-                students = [student]
+                students = [User.objects.get(id=student_id, role_id=5)]
             except User.DoesNotExist:
                 return Response({"error": "Invalid student_id"}, status=400)
 
-        # 📅 Date filtering
+        # --------------------------------------------------
+        # Date Range
+        # --------------------------------------------------
         today = datetime.today()
+
         try:
             if start_date_str and end_date_str:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
                 end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
             else:
-                if date_range == 'today':
+                if date_range == "today":
                     start_date = today.replace(hour=0, minute=0, second=0, microsecond=0)
                     end_date = today + timedelta(days=1)
-                elif date_range == 'last_week':
+                elif date_range == "last_week":
                     start_date = today - timedelta(days=7)
                     end_date = today + timedelta(days=1)
-                elif date_range == 'last_month':
+                elif date_range == "last_month":
                     start_date = today - timedelta(days=30)
                     end_date = today + timedelta(days=1)
-                elif date_range == 'last_six_month':
+                else:  # last_six_month
                     start_date = today - timedelta(days=180)
                     end_date = today + timedelta(days=1)
-                else:
-                    start_date = today - timedelta(days=30)
-                    end_date = today + timedelta(days=1)
         except ValueError:
-            return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
+            return Response(
+                {"error": "Invalid date format. Use YYYY-MM-DD"},
+                status=400
+            )
 
-        # Data containers
+        # --------------------------------------------------
+        # Aggregation Containers
+        # --------------------------------------------------
         topic_correct = defaultdict(int)
         topic_total = defaultdict(int)
         topic_section = {}
+
         section_correct = defaultdict(int)
         section_total = defaultdict(int)
 
-        # Filter by course, student(s), and optionally test
-        test_submissions = TestSubmission.objects.filter(
-            student__in=students,
-            status=TestSubmission.COMPLETED,
-            test__course_id=course_id,
-            completion_date__gte=start_date,
-            completion_date__lt=end_date
-        )
+        # ==================================================
+        # 🔵 PRACTICE TEST LOGIC (NO SECTIONS)
+        # ==================================================
+        if test_type == "PRACTICE":
+            practice_results = PracticeTestResult.objects.filter(
+                practice_test__student__in=students,
+                practice_test__course_subject__course_id=course_id,
+                created_at__gte=start_date,
+                created_at__lt=end_date
+            )
 
-        if test_id:  # ✅ filter by test_id
-            test_submissions = test_submissions.filter(test_id=test_id)
+            practice_answers = PracticeQuestionAnswer.objects.filter(
+                practice_test_result__in=practice_results
+            ).select_related(
+                "question",
+                "question__topic",
+                "question__course_subject__subject"
+            )
 
-        results = Result.objects.filter(test_submission__in=test_submissions)
-        question_answers = QuestionAnswer.objects.filter(result__in=results)
+            for ans in practice_answers:
+                topic = ans.question.topic
+                subject_name = (
+                    ans.question.course_subject.subject.name
+                    if ans.question.course_subject and ans.question.course_subject.subject
+                    else "General"
+                )
 
-        for ans in question_answers:
-            topic = ans.question.topic
-            subject = ans.question.course_subject.subject.name if ans.question.course_subject and ans.question.course_subject.subject else "General"
+                if not topic:
+                    continue
 
-            if topic:
                 topic_name = topic.name
-                section = "Math" if "Math" in subject else "English" if "English" in subject else "General"
 
-                topic_section[topic_name] = section
+                if "Math" in subject_name:
+                    section = "Math"
+                elif "English" in subject_name:
+                    section = "English"
+                else:
+                    section = "General"
+
                 topic_total[topic_name] += 1
+                section_total[section] += 1
+                topic_section[topic_name] = section
+
                 if ans.is_correct:
                     topic_correct[topic_name] += 1
-
-                section_total[section] += 1
-                if ans.is_correct:
                     section_correct[section] += 1
 
+        # ==================================================
+        # 🟢 FULL LENGTH / ASSIGNMENT LOGIC (HAS SECTIONS)
+        # ==================================================
+        else:
+            test_submissions = TestSubmission.objects.filter(
+                student__in=students,
+                status=TestSubmission.COMPLETED,
+                test__course_id=course_id,
+                completion_date__gte=start_date,
+                completion_date__lt=end_date
+            )
+
+            if test_type:
+                test_submissions = test_submissions.filter(test__test_type=test_type)
+
+            if test_id:
+                test_submissions = test_submissions.filter(test_id=test_id)
+
+            results = Result.objects.filter(test_submission__in=test_submissions)
+
+            question_answers = QuestionAnswer.objects.filter(
+                result__in=results
+            ).select_related(
+                "question",
+                "question__topic",
+                "question__course_subject__subject"
+            )
+
+            for ans in question_answers:
+                topic = ans.question.topic
+                subject_name = (
+                    ans.question.course_subject.subject.name
+                    if ans.question.course_subject and ans.question.course_subject.subject
+                    else "General"
+                )
+
+                if not topic:
+                    continue
+
+                topic_name = topic.name
+
+                if "Math" in subject_name:
+                    section = "Math"
+                elif "English" in subject_name:
+                    section = "English"
+                else:
+                    section = "General"
+
+                topic_total[topic_name] += 1
+                section_total[section] += 1
+                topic_section[topic_name] = section
+
+                if ans.is_correct:
+                    topic_correct[topic_name] += 1
+                    section_correct[section] += 1
+
+        # --------------------------------------------------
+        # Build Response
+        # --------------------------------------------------
         topic_data = defaultdict(list)
         for topic, total in topic_total.items():
             correct = topic_correct[topic]
-            score = round((correct / total) * 100, 2) if total > 0 else 0
+            score = round((correct / total) * 100, 2) if total else 0
             section = topic_section.get(topic, "General")
-            topic_data[section].append({"topic": topic, "score": score})
+
+            topic_data[section].append({
+                "topic": topic,
+                "score": score
+            })
 
         section_data = []
         for section, total in section_total.items():
             correct = section_correct[section]
-            score = round((correct / total) * 100, 2) if total > 0 else 0
-            section_data.append({"section": section, "score": score})
+            score = round((correct / total) * 100, 2) if total else 0
+
+            section_data.append({
+                "section": section,
+                "score": score
+            })
 
         return Response({
             "sections": section_data,
