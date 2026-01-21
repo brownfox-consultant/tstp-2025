@@ -130,6 +130,17 @@ function EditQuestionForm({
   const [selectedTopic, setSelectedTopic] = useState(initialValues.topic);
   const [selectedShowCalculatorOption, setSelectedShowCalculatorOption] =
     useState(initialValues.show_calculator);
+  
+  const availableCourseOptions =
+  initialValues.available_courses?.map(c => ({
+    label: `${c.course} (${c.subject})`,
+    value: c.course_subject_id,
+  })) || [];
+
+  const [selectedCourseSubjectIds, setSelectedCourseSubjectIds] = useState(
+  initialValues.available_courses?.map(c => c.course_subject_id) || [courseSubId]
+);
+
 
   const isMobile = useMediaQuery({
     query: "(max-width: 768px)",
@@ -508,25 +519,47 @@ function EditQuestionForm({
       }),
     };
 
+    // if (pathname.includes("admin")) {
+    //   editQuestionService(initialValues.id, {
+    //     ...payload,
+    //     course_subject: courseSubId,
+    //   }).then((res) => {
+    //     Modal.success({
+    //       title: "Edited successfully",
+    //       onOk: () => {
+    //         if (closeModal) {
+    //           closeModal();
+    //         } else {
+    //           router.push(
+    //             `/admin/questions/questions?course_subject_id=${courseSubjectId}&page=${page}`
+    //           );
+    //         }
+    //       },
+    //     });
+    //   });
+    // }
     if (pathname.includes("admin")) {
-      editQuestionService(initialValues.id, {
-        ...payload,
-        course_subject: courseSubId,
-      }).then((res) => {
-        Modal.success({
-          title: "Edited successfully",
-          onOk: () => {
+  editQuestionService(initialValues.id, {
+    ...payload,
+    course_subject_ids: selectedCourseSubjectIds, // 🔥 BULK UPDATE
+  }).then(() => {
+    Modal.success({
+      title: "Question updated successfully",
+      content: `Updated in ${selectedCourseSubjectIds.length} course(s)`,
+      onOk: () => {
             if (closeModal) {
               closeModal();
             } else {
               router.push(
                 `/admin/questions/questions?course_subject_id=${courseSubjectId}&page=${page}`
               );
-            }
-          },
-        });
-      });
-    } else {
+            }},
+    });
+  });
+}
+
+    
+    else {
       makeSuggestion({
         ...payload,
         question: initialValues.id,
@@ -672,6 +705,40 @@ function EditQuestionForm({
                 </Col>
               )}
 
+              {action === "edit" && initialValues.available_in_other_courses && (
+  <Col span={24}>
+    <Form.Item
+      label={
+        <span className="text-sm font-semibold text-gray-700">
+          Update Question In Courses
+        </span>
+      }
+      required
+    >
+      <ReactSelect
+        isMulti
+        options={availableCourseOptions}
+        value={availableCourseOptions.filter(opt =>
+          selectedCourseSubjectIds.includes(opt.value)
+        )}
+        onChange={(selected) =>
+          setSelectedCourseSubjectIds(selected.map(s => s.value))
+        }
+        styles={customSelectStyles}
+        components={{ DropdownIndicator }}
+        classNamePrefix="react-select"
+        menuPortalTarget={
+          typeof document !== "undefined" ? document.body : null
+        }
+      />
+      <p className="text-xs text-gray-500 mt-1">
+        Changes will be applied to all selected courses
+      </p>
+    </Form.Item>
+  </Col>
+)}
+
+
               <Col md={12} lg={6} span={24}>
                 <Form.Item
                   label={
@@ -810,6 +877,33 @@ function EditQuestionForm({
                   </Form.Item>
                 </Col>
               </Row>
+
+              {action === "edit" && pathname.includes("admin") && (
+  <Row gutter={[24, 24]} className="mt-4">
+    <Col md={8} span={24}>
+      <Form.Item
+        label={
+          <span className="text-sm font-semibold text-gray-700">
+            Question Status
+          </span>
+        }
+        name="is_active"
+        required
+        className="!mb-0"
+      >
+        <Radio.Group buttonStyle="solid">
+          <Radio.Button value={true} className="px-6">
+             Active
+          </Radio.Button>
+          <Radio.Button value={false} className="px-6">
+             Inactive
+          </Radio.Button>
+        </Radio.Group>
+      </Form.Item>
+    </Col>
+  </Row>
+)}
+
             </div>
           </div>
         </div>
