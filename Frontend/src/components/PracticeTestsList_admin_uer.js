@@ -2,10 +2,10 @@
 
 import { getPracticeTests } from "@/app/services/authService";
 import { convertSecondsToTime } from "@/utils/utils";
-import { Button, Table, Pagination, Input ,Modal } from "antd";
+import { Button, Table, Pagination, Input, Modal } from "antd";
 import dayjs from "dayjs";
 import React, { useEffect, useState, useRef } from "react";
-import PracticeTestForm from "@/components/PracticeTestForm"; // ✅ IMPORTANT: Import PracticeTestForm
+import PracticeTestForm from "@/components/PracticeTestForm"; 
 import PracticeTestReportComponent from "./PracticeTestReportComponent.js";
 import PracticeTestReport from "./report-module/PracticeTestReport_admin_user.js";
 import EyeIcon from "../../public/icons/eye.svg";
@@ -26,44 +26,44 @@ function PracticeTestsList({ studentId }) {
   const [sortParams, setSortParams] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-    const debounceTimeoutRef = useRef(null);
-    const searchParams = useSearchParams();
-        const studentIdFromParam = searchParams.get("student_id");
+  const debounceTimeoutRef = useRef(null);
+  const searchParams = useSearchParams();
+  const studentIdFromParam = searchParams.get("student_id");
 
   const role = pathname.split("/")[1];
-  console.log("role",role)
-useEffect(() => {
-  const params = {
-    page: current,
-  };
+  console.log("role", role)
+  useEffect(() => {
+    const params = {
+      page: current,
+    };
 
-  if (studentId || studentIdFromParam) {
-    params.student_id = studentId || studentIdFromParam; // <- Pass studentId here
-  }
+    if (studentId || studentIdFromParam) {
+      params.student_id = studentId || studentIdFromParam;
+    }
 
-  if (Object.keys(sortParams).length > 0) {
-    params.ordering = Object.keys(sortParams)
-      .map((key) => (sortParams[key] === "asc" ? key : `-${key}`))
-      .join(",");
-  }
+    if (Object.keys(sortParams).length > 0) {
+      params.ordering = Object.keys(sortParams)
+        .map((key) => (sortParams[key] === "asc" ? key : `-${key}`))
+        .join(",");
+    }
 
-  if (debouncedSearchTerm) {
-    params.search = debouncedSearchTerm;
-  }
+    if (debouncedSearchTerm) {
+      params.search = debouncedSearchTerm;
+    }
 
-  setTableLoading(true);
-  getPracticeTests(params)
-    .then((res) => {
-      const { results, count, current_page, total_pages } = res.data;
-      setCurrent(current_page);
-      setTotal(count);
-      setData(results);
-      setTotalPages(total_pages);
-    })
-    .finally(() => setTableLoading(false));
-}, [current, sortParams, debouncedSearchTerm, studentId]);
+    setTableLoading(true);
+    getPracticeTests(params)
+      .then((res) => {
+        const { results, count, current_page, total_pages } = res.data;
+        setCurrent(current_page);
+        setTotal(count);
+        setData(results);
+        setTotalPages(total_pages);
+      })
+      .finally(() => setTableLoading(false));
+  }, [current, sortParams, debouncedSearchTerm, studentId]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -145,32 +145,32 @@ useEffect(() => {
       title: "",
       dataIndex: "action",
       align: "center",
-     render: (_, record) => {
-  const { id } = record;
-  const userId = pathname.split("/")[2]; // extract ID from URL
+      render: (_, record) => {
+        const { id } = record;
+        const userId = pathname.split("/")[2]; 
 
-       return (
-      
-    <Button
-  type="link"
-  onClick={() => {
-    setPracticeTestId(record.id);
-    setIsModalOpen(true);  // Open modal instead of router.push
-  }}
-  style={{ display: "flex", alignItems: "center" }}
->
-  <Image
-    src={EyeIcon}
-    alt="View Result Icon"
-    width={20}
-    height={20}
-    style={{ marginRight: "8px", verticalAlign: "middle" }}
-  />
-  <span style={{ verticalAlign: "middle" }}>View Result</span>
-</Button>
+        return (
 
-  );
-}
+          <Button
+            type="link"
+            onClick={() => {
+              setPracticeTestId(record.id);
+              setIsModalOpen(true);
+            }}
+            style={{ display: "flex", alignItems: "center" }}
+          >
+            <Image
+              src={EyeIcon}
+              alt="View Result Icon"
+              width={20}
+              height={20}
+              style={{ marginRight: "8px", verticalAlign: "middle" }}
+            />
+            <span style={{ verticalAlign: "middle" }}>View Result</span>
+          </Button>
+
+        );
+      }
     },
   ];
 
@@ -223,25 +223,15 @@ useEffect(() => {
     <>
       {practiceTestReport ? (
         <PracticeTestReportComponent practice_test_id={practiceTestId} />
-      ) : createTest ? ( // ✅ When createTest true, show PracticeTestForm
+      ) : createTest ? ( 
         <PracticeTestForm />
       ) : (
         <>
-          <div className="flex justify-between items-center mb-5 mt-4">
+          <div className="flex justify-between items-center mb-4">
             <Input
               placeholder="Search"
               onChange={handleSearchChange}
-              style={{
-                marginBottom: 8,
-                height: "40px",
-                fontSize: "18px",
-                backgroundImage: `url('/icons/search.svg')`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "10px center",
-                paddingLeft: "40px",
-                backgroundSize: "20px",
-                width: "25%",
-              }}
+              className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600 max-w-lg"
             />
             {/* {role === "student" && (
               <Button
@@ -258,7 +248,7 @@ useEffect(() => {
           <Table
             footer={() => (
               <div className="footer-container">
-                <div className="flex justify-end mr-5">
+                <div className="flex justify-end">
                   Page {current} of {totalPages} (Total: {total} records)
                 </div>
                 <Pagination
@@ -284,25 +274,23 @@ useEffect(() => {
             onChange={handleTableChange}
           />
         </>
-          )}
-       <Modal
-  open={isModalOpen}
-  onCancel={() => setIsModalOpen(false)}
-  footer={null}
-  width="80%"
-  bodyStyle={{ maxHeight: "80vh", overflowY: "auto" }}
->
-  <PracticeTestReport
-    practiceTestId={practiceTestId}
-    onClose={() => setIsModalOpen(false)}
-  />
-</Modal>
+      )}
+      <Modal
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={null}
+        width="88%"
+        bodyStyle={{ maxHeight: "85vh", overflowY: "auto" }}
+        centered
+      >
+        <PracticeTestReport
+          practiceTestId={practiceTestId}
+          onClose={() => setIsModalOpen(false)}
+        />
+      </Modal>
+    </>
 
-
-
-      </>
-      
-    );
+  );
 }
 
 export default PracticeTestsList;

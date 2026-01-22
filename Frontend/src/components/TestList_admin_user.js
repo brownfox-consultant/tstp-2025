@@ -26,8 +26,8 @@ function TestList_admin_user({ studentId }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-    const studentIdFromParam = searchParams.get("student_id");
-    const [scoreMap, setScoreMap] = useState({});
+  const studentIdFromParam = searchParams.get("student_id");
+  const [scoreMap, setScoreMap] = useState({});
 
 
   const role = pathname.split("/")[1];
@@ -120,20 +120,20 @@ function TestList_admin_user({ studentId }) {
       sorter: { multiple: 2 },
     },
     {
-  title: <div className="flex items-center justify-center">Assigned date</div>,
-  key: "assigned_date",
-  dataIndex: "assigned_date",
-  align: "center",
-  render: (_, record) =>
-    record.assigned_date
-      ? dayjs(record.assigned_date).format("MMM D, YYYY h:mm A")
-      : record.created_at
-      ? dayjs(record.created_at).format("MMM D, YYYY h:mm A")
-      : "-",
-  sorter: true,
-  width: 200,
-  sorter: { multiple: 3 },
-},
+      title: <div className="flex items-center justify-center">Assigned date</div>,
+      key: "assigned_date",
+      dataIndex: "assigned_date",
+      align: "center",
+      render: (_, record) =>
+        record.assigned_date
+          ? dayjs(record.assigned_date).format("MMM D, YYYY h:mm A")
+          : record.created_at
+            ? dayjs(record.created_at).format("MMM D, YYYY h:mm A")
+            : "-",
+      sorter: true,
+      width: 200,
+      sorter: { multiple: 3 },
+    },
     {
       title: <div className="flex items-center justify-center">Test taken on</div>,
       key: "completion_date",
@@ -142,31 +142,31 @@ function TestList_admin_user({ studentId }) {
       render: (text) =>
         text ? dayjs(new Date(text)).format("MMM D, YYYY h:mm A") : "-",
       width: 200,
-      },
+    },
     {
-  title: <div className="flex items-center justify-center">Score</div>,
-  key: "score",
-  dataIndex: "test_submission_id",
-  align: "center",
-  render: (submissionId, record) => {
-    if (record.status !== "COMPLETED") return "-";
+      title: <div className="flex items-center justify-center">Score</div>,
+      key: "score",
+      dataIndex: "test_submission_id",
+      align: "center",
+      render: (submissionId, record) => {
+        if (record.status !== "COMPLETED") return "-";
 
-    const score = scoreMap[submissionId];
+        const score = scoreMap[submissionId];
 
-    if (score === undefined) {
-      // Trigger async score fetch
-      getTestResult({ test_submission_id: submissionId }).then((res) => {
-        const totalScore = res.data.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0);
-        setScoreMap((prev) => ({ ...prev, [submissionId]: totalScore }));
-      });
+        if (score === undefined) {
+          // Trigger async score fetch
+          getTestResult({ test_submission_id: submissionId }).then((res) => {
+            const totalScore = res.data.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0);
+            setScoreMap((prev) => ({ ...prev, [submissionId]: totalScore }));
+          });
 
-      return "Loading...";
-    }
+          return "Loading...";
+        }
 
-    return <>{score}</>;
-  },
-  width: 100,
-},
+        return <>{score}</>;
+      },
+      width: 100,
+    },
     {
       title: " ",
       align: "center",
@@ -266,21 +266,11 @@ function TestList_admin_user({ studentId }) {
   };
 
   return (
-    <div className="mt-3">
+    <div className="">
       <Input
         placeholder={`Search`}
         onChange={handleSearchChange}
-        style={{
-          marginBottom: 8,
-          height: "40px",
-          fontSize: "18px",
-          backgroundImage: `url('/icons/search.svg')`,
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "10px center",
-          paddingLeft: "40px",
-          backgroundSize: "20px",
-          width: "25%",
-        }}
+        className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600 max-w-lg"
       />
 
       <Table
@@ -326,7 +316,7 @@ function TestList_admin_user({ studentId }) {
           title="Test Report"
         >
           <Admin_Report_New testSubmissionId={submissionId}
-          onClose={() => setShowResultModal(false)}
+            onClose={() => setShowResultModal(false)}
           />
         </Modal>
       )}

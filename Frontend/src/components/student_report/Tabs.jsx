@@ -76,19 +76,19 @@ const Tabs = ({
   /* Mobile Dropdown View */
   if (isMobile) {
     return (
-      <div className={`tabs-mobile-container ${className}`} ref={dropdownRef}>
+      <div className='bg-white rounded-xl p-5 border-l-4 border-orange-400 shadow-md relative' ref={dropdownRef}>
         {/* Label */}
-        <label className="tabs-mobile-label">Report Type</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">Report Type</label>
         
         {/* Dropdown Button */}
         <button
           type="button"
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className={`tabs-mobile-button ${isDropdownOpen ? 'open' : ''}`}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-lg hover:border-orange-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
         >
-          <span className="tabs-mobile-selected">{activeTabLabel}</span>
+          <span className="text-base font-medium text-gray-800">{activeTabLabel}</span>
           <svg 
-            className={`tabs-mobile-arrow ${isDropdownOpen ? 'rotate' : ''}`}
+            className={`w-5 h-5 text-orange-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
@@ -99,18 +99,30 @@ const Tabs = ({
 
         {/* Dropdown Menu */}
         {isDropdownOpen && (
-          <div className="tabs-mobile-dropdown">
+          <div className="absolute left-0 right-0 mt-2 bg-white border-2 border-orange-300 rounded-xl shadow-xl z-50 max-h-80 overflow-hidden">
             {tabs.map((tab, index) => (
               <div
                 key={tab.value || index}
                 onClick={() => !tab.disabled && handleTabClick(tab.value)}
-                className={`tabs-mobile-option ${active === tab.value ? 'active' : ''} ${tab.disabled ? 'disabled' : ''}`}
+                className={`relative flex items-center justify-between px-5 py-3.5 cursor-pointer transition-all duration-200 ${
+                  active === tab.value 
+                    ? 'bg-gradient-to-r from-orange-400 to-amber-400' 
+                    : 'bg-white hover:bg-orange-50'
+                } ${
+                  tab.disabled 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : ''
+                }`}
               >
-                {tab.icon && <span className="tab-icon">{tab.icon}</span>}
-                <span>{tab.label}</span>
+                <div className="flex items-center gap-3">
+                  {tab.icon && <span className={active === tab.value ? 'text-white' : 'text-orange-500'}>{tab.icon}</span>}
+                  <span className={`text-sm font-medium ${active === tab.value ? 'text-white' : 'text-gray-700'}`}>
+                    {tab.label}
+                  </span>
+                </div>
                 {active === tab.value && (
-                  <svg className="tabs-mobile-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
               </div>

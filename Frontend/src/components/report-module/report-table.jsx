@@ -451,7 +451,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
             )}
           </div>
         }
-
+        centered
         onCancel={() => {
           setShowModal(false);
           setModalData({});
@@ -459,6 +459,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
           setSelectedOptions([]);
           setCurrentQuestionIndex(null);
         }}
+        style={{height:"85vh"}}
         footer={
           <div className="flex justify-between items-center w-full">
             <button

@@ -11,8 +11,8 @@ import Loading from "@/app/loading";
 // } from "@ant-design/icons";
 import { timeInMMSS } from "@/utils/utils";
 // import Image from "next/image";
-import ReportStats from "./report-stats";
-import { BackIcon, ReportCalendarIcon as CalendarIcon, UserIcon, ClockIcon, FlagIcon, CorrectIcon, IncorrectIcon } from "@/components/icons/report-icons";
+// import ReportStats from "./report-stats";
+import { BackIcon, ReportCalendarIcon as CalendarIcon, UserIcon, ClockIcon, FlagIcon, CorrectIcon, IncorrectIcon, EmptyCircleIcon } from "@/components/icons/report-icons";
 
 function PracticeTestReport({ practiceTestId, onClose }) {
   const [resultData, setResultData] = useState({});
@@ -50,11 +50,11 @@ function PracticeTestReport({ practiceTestId, onClose }) {
               </h1>
               <div className="flex items-center gap-2 mt-1 text-gray-500 text-sm">
                 <CalendarIcon />
-                <span>You took this test on:</span>
+                <span>Student took this test on:</span>
                 <span className="font-medium text-gray-700">
                   {new Date(resultData.testDate).toDateString()}
                 </span>
-              </div> 
+              </div>
             </div>
           </div>
 
@@ -71,7 +71,7 @@ function PracticeTestReport({ practiceTestId, onClose }) {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="flex flex-wrap">
           {/* Left - Score Stats */}
           <div className="flex flex-wrap items-center gap-4">
             {/* Correct */}
@@ -92,14 +92,14 @@ function PracticeTestReport({ practiceTestId, onClose }) {
               <span className="text-red-600 font-medium">Incorrect</span>
             </div>
 
-            {/* Blank */}
-            <div className="flex items-center gap-2 text-gray-500">
-              <span className="text-sm">({resultData.section_blank_count} Blank)</span>
+            <div className="flex items-center gap-2 bg-red-50 px-4 py-2.5 rounded-xl">
+              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
+                <EmptyCircleIcon />
+              </div>
+              <span className="font-bold text-red-700 text-lg">{resultData.section_blank_count}</span>
+              <span className="text-red-600 font-medium">Blank</span>
             </div>
-          </div>
 
-          {/* Right - Marked */}
-          <div className="flex justify-start lg:justify-end">
             <div className="flex items-center gap-2 bg-orange-50 px-4 py-2.5 rounded-xl">
               <FlagIcon />
               <span className="font-bold text-orange-700">{resultData.marked}</span>

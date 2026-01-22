@@ -58,13 +58,13 @@ export default function ReportPage() {
         Student Reports
       </div>
 
-      <div className="mb-6 flex items-center gap-4">
+      <div className="mb-6 flex items-center gap-4 flex-wrap">
         <span className="font-semibold text-gray-700">
           Select Student:
         </span>
 
         <Select
-          className="w-80 text-sm"
+          className="w-60 text-sm"
           placeholder="Search by name or email "
           value={students.find((s) => s.id === selectedStudentId)}
           onChange={(opt) => setSelectedStudentId(opt?.id)}

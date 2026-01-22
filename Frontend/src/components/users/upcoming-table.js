@@ -61,15 +61,15 @@ function UpcomingTable({ tabKey, api }) {
       .then((res) => {
         setUpdated(!updated);
         Modal.success({
-            content: "User deleted successfully",
+          content: "User deleted successfully",
         });
       })
       .catch((err) => {
-          console.log("err", err);
-          Modal.error({
-              title: "Error",
-              content: "Failed to delete user. Please try again.",
-          });
+        console.log("err", err);
+        Modal.error({
+          title: "Error",
+          content: "Failed to delete user. Please try again.",
+        });
       });
   };
 
@@ -78,10 +78,10 @@ function UpcomingTable({ tabKey, api }) {
       title: 'Are you sure delete this user?',
       icon: <ExclamationCircleFilled />,
       content: (
-          <div>
-              <p>You are about to delete user: <strong>{record.name}</strong></p>
-              <p className="text-gray-500 text-xs mt-2">This action cannot be undone.</p>
-          </div>
+        <div>
+          <p>You are about to delete user: <strong>{record.name}</strong></p>
+          <p className="text-gray-500 text-xs mt-2">This action cannot be undone.</p>
+        </div>
       ),
       okText: 'Yes, Delete',
       okType: 'danger',
@@ -117,10 +117,10 @@ function UpcomingTable({ tabKey, api }) {
           <>
             {record.course_details.length
               ? record.course_details
-                  .map(({ course }) => {
-                    return course.name;
-                  })
-                  .join(", ")
+                .map(({ course }) => {
+                  return course.name;
+                })
+                .join(", ")
               : "-"}
           </>
         );
@@ -233,37 +233,37 @@ function UpcomingTable({ tabKey, api }) {
       },
       width: 150,
     },
-   {
-  title: " ",
-  key: "val",
-  dataIndex: "val",
-  align: "center",
-  render: (_, record) => {
-    return (
-      <Space>
-        <Button type="primary" onClick={() => handleApproveClick(record)}>
-          Approve
-        </Button>
+    {
+      title: " ",
+      key: "val",
+      dataIndex: "val",
+      align: "center",
+      render: (_, record) => {
+        return (
+          <Space>
+            <Button type="primary" onClick={() => handleApproveClick(record)}>
+              Approve
+            </Button>
 
-        <Button
-          onClick={() => {
-            router.push(`/admin/${id}/users/all/edit/${record.id}`  );
-          }}
-        >
-          Edit
-        </Button>
+            <Button
+              onClick={() => {
+                router.push(`/admin/${id}/users/all/edit/${record.id}`);
+              }}
+            >
+              Edit
+            </Button>
 
-        <Button
-          type="text"
-          className="ml-1 flex items-center justify-center"
-          onClick={() => showDeleteConfirm(record)}
-        >
-          <DeleteTwoTone twoToneColor="#eb2f96" style={{ fontSize: '16px' }} />
-        </Button>
-      </Space>
-    );
-  },
-},
+            <Button
+              type="text"
+              className="ml-1 flex items-center justify-center"
+              onClick={() => showDeleteConfirm(record)}
+            >
+              <DeleteTwoTone twoToneColor="#eb2f96" style={{ fontSize: '16px' }} />
+            </Button>
+          </Space>
+        );
+      },
+    },
 
   ];
 
@@ -326,17 +326,18 @@ function UpcomingTable({ tabKey, api }) {
     <>
       {" "}
       <div className="w-full flex justify-between mb-8">
-        <div>
-        <Input
-  prefix={<SearchOutlined />}
-  placeholder="Search by name, email or phone..."
-  value={searchText}
-  onChange={(e) => {
-    setSearchText(e.target.value);
-    setCurrent(1); // Optional: reset to page 1
-  }}
-  allowClear
-/>
+        <div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
+          <Input
+            prefix={<SearchOutlined />}
+            placeholder="Search by name, email or phone..."
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+              setCurrent(1); // Optional: reset to page 1
+            }}
+            className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600"
+            allowClear
+          />
         </div>
       </div>
       <Table
