@@ -4313,10 +4313,10 @@ class ResultViewSet(viewsets.ModelViewSet):
             )
 
             previous_overall = None
-            total_full_length_tests = 0   # ✅ ADDED
+            total_full_length_tests = 0
 
             for submission in submissions:
-                total_full_length_tests += 1   # ✅ ADDED
+                total_full_length_tests += 1
 
                 test = submission.test
                 result = submission.result
@@ -4328,7 +4328,7 @@ class ResultViewSet(viewsets.ModelViewSet):
 
                 for section in sections:
                     course_subject = section.course_subject
-                    subject_name = section.course_subject.subject.name.lower()
+                    subject_name = course_subject.subject.name.lower()
 
                     section_1_correct = 0
                     section_2_correct = 0
@@ -4365,7 +4365,14 @@ class ResultViewSet(viewsets.ModelViewSet):
                     "test_name": test.name,
                     "math_score": math_score,
                     "english_score": english_score,
-                    "overall_score": overall
+                    "overall_score": overall,
+
+                    # ✅ DATE ADDED
+                    "date": (
+                        submission.completion_date.strftime("%Y-%m-%d")
+                        if submission.completion_date
+                        else submission.assigned_date.strftime("%Y-%m-%d")
+                    )
                 })
 
                 response["highest_score"] = max(response["highest_score"], overall)
@@ -4378,7 +4385,6 @@ class ResultViewSet(viewsets.ModelViewSet):
                 response["math_score"] = math_score
                 response["english_score"] = english_score
 
-            # ✅ SAME AS PRACTICE
             response["total_full_length_tests"] = total_full_length_tests
 
         # =====================================================

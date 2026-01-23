@@ -299,7 +299,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
             { value: 'subject', label: 'Subject Wise Report' },
             { value: 'english', label: 'English Topic Wise Report' },
             { value: 'math', label: 'Math Topic Wise Report' },
-            { value: 'scoreboard', label: 'SCOREBOARD' },
+            // { value: 'scoreboard', label: 'SCOREBOARD' },
             { value: 'resources', label: 'Utilisation of Resources' },
             { value: 'pattern', label: 'Pattern of Usage' },
             { value: 'doubts', label: 'Status of Doubts' },
@@ -434,7 +434,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
         </>
       )}
 
-      {activeReportTab === "scoreboard" && (
+      {/* {activeReportTab === "scoreboard" && (
         testType === "practiceTest" ? <SelfPractice
           student_id={studentId}
           course_id={selectedCourse}
@@ -444,7 +444,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
           course_id={selectedCourse}
           test_type={testType}
         />
-      )}
+      )} */}
 
       {activeReportTab === "doubts" && (
         <StatusOfDoubts

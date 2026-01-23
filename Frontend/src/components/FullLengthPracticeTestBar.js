@@ -120,7 +120,7 @@ function FullLengthPracticeTestBar({ date, start_date, end_date }) {
             tickLine={false}
           />
 
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
 
           <Legend
             content={<CustomLegend />}
