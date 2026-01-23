@@ -29,7 +29,7 @@ function RegisteredTable({ tabKey, api }) {
 
   useEffect(() => {
     setLoading(true);
-    getRegisteredStudents(current,searchText)
+    getRegisteredStudents(current, searchText)
       .then((res) => {
         const { results, count, current_page, total_pages } = res.data;
         setStudentsData(results);
@@ -38,9 +38,9 @@ function RegisteredTable({ tabKey, api }) {
         setTotalPages(total_pages);
       })
       .finally(() => setLoading(false));
-  }, [current,searchText]);
+  }, [current, searchText]);
 
-  
+
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
@@ -244,17 +244,18 @@ function RegisteredTable({ tabKey, api }) {
   return (
     <>
       <div className="w-full flex justify-between mb-2">
-        <div>
-        <Input
-  prefix={<SearchOutlined />}
-  placeholder="Search by name, email or phone"
-  value={searchText}
-  onChange={(e) => {
-    setSearchText(e.target.value);
-    setCurrent(1); // Optional: reset to page 1 when searching
-  }}
-  allowClear
-/>
+        <div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
+          <Input
+            prefix={<SearchOutlined />}
+            placeholder="Search by name, email or phone"
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+              setCurrent(1); // Optional: reset to page 1 when searching
+            }}
+            className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600"
+            allowClear
+          />
         </div>
       </div>
       {/* <UserList

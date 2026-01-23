@@ -21,18 +21,20 @@ function AdminUsersComponent() {
       label: "Upcoming students subscriptions ",
       api: "/user/upcoming-subscription-or-free/",
     },
-  
+
   ];
   return (
-    <div className="flex flex-col gap-2 mb-3">
-      <div className="text-xl font-bold">Users</div>
+    <div className="flex flex-col gap-4 mb-3">
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-gray-800 m-0">Users</h1>
+      </div>
       <div className="w-full">
         <Tabs
-          defaultActiveKey="2"
+          defaultActiveKey="all"
           items={userTabItems.map((item) => {
             return {
               key: item.key,
-              label: <div>{item.label}</div>,
+              label: <div className="font-medium">{item.label}</div>,
               children: <UsersTab tabKey={item.key} api={item.api} />,
             };
           })}

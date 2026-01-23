@@ -10,7 +10,7 @@ function UsersTab({ tabKey, api }) {
       {tabKey == "all" && <AllUsersTable tabKey={tabKey} api={api} />}
       {tabKey == "registered" && <RegisteredTable tabKey={tabKey} api={api} />}
       {tabKey == "upcoming" && <UpcomingTable tabKey={tabKey} api={api} />}
-    
+
     </>
   );
 }

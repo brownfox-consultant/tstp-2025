@@ -1,6 +1,13 @@
 import { createTest } from "@/app/services/authService";
 import { getCoursesOutsideAuth } from "@/app/services/registerStudent";
-import { FileTextOutlined, FormOutlined, AppstoreOutlined, OrderedListOutlined, ThunderboltOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import {
+  FileTextOutlined,
+  FormOutlined,
+  AppstoreOutlined,
+  OrderedListOutlined,
+  ThunderboltOutlined,
+  CheckCircleOutlined,
+} from "@ant-design/icons";
 import { Form, Input, Select, Spin } from "antd";
 import { useForm } from "antd/es/form/Form";
 import { useParams, useRouter } from "next/navigation";
@@ -43,7 +50,7 @@ function CreateTest({ setTestDetails }) {
 
         window.sessionStorage.setItem(
           `test-${res.data.id}`,
-          JSON.stringify(res.data)
+          JSON.stringify(res.data),
         );
         router.push(`/admin/${params.id}/tests/edit/${res.data.id}`);
       })
@@ -53,7 +60,7 @@ function CreateTest({ setTestDetails }) {
   const handleFormatSelect = (value) => {
     setSelectedFormat(value);
     form.setFieldsValue({ format_type: value });
-    form.validateFields(['format_type']);
+    form.validateFields(["format_type"]);
   };
 
   return (
@@ -75,8 +82,14 @@ function CreateTest({ setTestDetails }) {
         .create-test-form .ant-select-selection-search-input {
           height: 46px !important;
         }
-        .create-test-form .ant-select-single .ant-select-selector .ant-select-selection-item,
-        .create-test-form .ant-select-single .ant-select-selector .ant-select-selection-placeholder {
+        .create-test-form
+          .ant-select-single
+          .ant-select-selector
+          .ant-select-selection-item,
+        .create-test-form
+          .ant-select-single
+          .ant-select-selector
+          .ant-select-selection-placeholder {
           line-height: 46px !important;
         }
         .create-test-form .ant-input-affix-wrapper {
@@ -95,9 +108,11 @@ function CreateTest({ setTestDetails }) {
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4 justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-800">Create New Test</h1>
-            <p className="text-sm text-gray-500">Configure your test settings</p>
+            <p className="text-sm text-gray-500">
+              Configure your test settings
+            </p>
           </div>
-          <button 
+          <button
             onClick={() => router.back()}
             className="w-fit px-4 py-2 flex items-center justify-center gap-2 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium shadow-sm transition-all text-sm"
           >
@@ -121,19 +136,25 @@ function CreateTest({ setTestDetails }) {
                 Test configuration
               </h2>
             </div>
-            
+
             {/* Card Body */}
             <div className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Course */}
                 <Form.Item
-                  label={<span className="font-medium text-gray-700 text-sm">Course</span>}
+                  label={
+                    <span className="font-medium text-gray-700 text-sm">
+                      Course
+                    </span>
+                  }
                   name="course"
-                  rules={[{ required: true, message: "Please select a course" }]}
-                  className="mb-0"
+                  rules={[
+                    { required: true, message: "Please select a course" },
+                  ]}
+                  className="!mb-0"
                 >
-                  <Select 
-                    placeholder="Select Course" 
+                  <Select
+                    placeholder="Select Course"
                     size="large"
                     className="w-full"
                     suffixIcon={<AppstoreOutlined className="text-gray-400" />}
@@ -148,84 +169,110 @@ function CreateTest({ setTestDetails }) {
                 </Form.Item>
 
                 {/* Test Name */}
-                <Form.Item 
-                  label={<span className="font-medium text-gray-700 text-sm">Test Name</span>} 
-                  name="name" 
-                  rules={[{ required: true, message: "Please enter test name" }]}
-                  className="mb-0"
+                <Form.Item
+                  label={
+                    <span className="font-medium text-gray-700 text-sm">
+                      Test Name
+                    </span>
+                  }
+                  name="name"
+                  rules={[
+                    { required: true, message: "Please enter test name" },
+                  ]}
+                  className="!mb-0"
                 >
-                  <Input 
+                  <Input
                     prefix={<FormOutlined className="text-gray-400" />}
-                    placeholder="Enter test name" 
+                    placeholder="Enter test name"
                     size="large"
                   />
                 </Form.Item>
 
                 {/* Test Format - Compact Style */}
-                <Form.Item 
-                  label={<span className="font-medium text-gray-700 text-sm">Test Format</span>} 
-                  name="format_type" 
-                  rules={[{ required: true, message: "Please select test format" }]}
-                  className="md:col-span-2 mb-0"
+                <Form.Item
+                  label={
+                    <span className="font-medium text-gray-700 text-sm">
+                      Test Format
+                    </span>
+                  }
+                  name="format_type"
+                  rules={[
+                    { required: true, message: "Please select test format" },
+                  ]}
+                  className="md:col-span-2 !  mb-0"
                 >
                   <div className="grid grid-cols-2 gap-3">
                     {/* Linear Option */}
-                    <div 
+                    <div
                       onClick={() => handleFormatSelect("LINEAR")}
                       className={`
                         cursor-pointer p-3 rounded-lg border transition-all duration-200 flex items-center gap-3
-                        ${selectedFormat === "LINEAR" 
-                          ? "border-blue-600 bg-blue-50 shadow-sm" 
-                          : "border-gray-200 bg-white hover:border-gray-300"
+                        ${
+                          selectedFormat === "LINEAR"
+                            ? "border-blue-600 bg-blue-50 shadow-sm"
+                            : "border-gray-200 bg-white hover:border-gray-300"
                         }
                       `}
                     >
-                      <div className={`
+                      <div
+                        className={`
                         w-8 h-8 rounded-md flex items-center justify-center shrink-0
                         ${selectedFormat === "LINEAR" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-500"}
-                      `}>
+                      `}
+                      >
                         <OrderedListOutlined className="text-base" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h3 className={`font-semibold text-sm ${selectedFormat === "LINEAR" ? "text-blue-600" : "text-gray-700"}`}>
+                          <h3
+                            className={`font-semibold text-sm ${selectedFormat === "LINEAR" ? "text-blue-600" : "text-gray-700"}`}
+                          >
                             Linear
                           </h3>
                           {selectedFormat === "LINEAR" && (
                             <CheckCircleOutlined className="text-blue-600" />
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">Sequential question flow</p>
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">
+                          Sequential question flow
+                        </p>
                       </div>
                     </div>
 
                     {/* Dynamic Option */}
-                    <div 
+                    <div
                       onClick={() => handleFormatSelect("DYNAMIC")}
                       className={`
                         cursor-pointer p-3 rounded-lg border transition-all duration-200 flex items-center gap-3
-                        ${selectedFormat === "DYNAMIC" 
-                          ? "border-blue-600 bg-blue-50 shadow-sm" 
-                          : "border-gray-200 bg-white hover:border-gray-300"
+                        ${
+                          selectedFormat === "DYNAMIC"
+                            ? "border-blue-600 bg-blue-50 shadow-sm"
+                            : "border-gray-200 bg-white hover:border-gray-300"
                         }
                       `}
                     >
-                      <div className={`
+                      <div
+                        className={`
                         w-8 h-8 rounded-md flex items-center justify-center shrink-0
                         ${selectedFormat === "DYNAMIC" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-500"}
-                      `}>
+                      `}
+                      >
                         <ThunderboltOutlined className="text-base" />
                       </div>
                       <div className="flex-1 min-w-0">
-                         <div className="flex items-center justify-between">
-                          <h3 className={`font-semibold text-sm ${selectedFormat === "DYNAMIC" ? "text-blue-600" : "text-gray-700"}`}>
+                        <div className="flex items-center justify-between">
+                          <h3
+                            className={`font-semibold text-sm ${selectedFormat === "DYNAMIC" ? "text-blue-600" : "text-gray-700"}`}
+                          >
                             Dynamic
                           </h3>
                           {selectedFormat === "DYNAMIC" && (
                             <CheckCircleOutlined className="text-blue-600" />
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">Adaptive question flow</p>
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">
+                          Adaptive question flow
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -238,9 +285,9 @@ function CreateTest({ setTestDetails }) {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-2">
-            <button 
+            <button
               type="button"
-              className="h-10 px-6 rounded-lg border border-gray-300 text-gray-700 font-medium bg-white hover:bg-gray-50 transition-all text-sm" 
+              className="h-10 px-6 rounded-lg border border-gray-300 text-gray-700 font-medium bg-white hover:bg-gray-50 transition-all text-sm"
               onClick={() => router.back()}
             >
               Cancel
@@ -250,9 +297,10 @@ function CreateTest({ setTestDetails }) {
               disabled={isSubmitDisabled || createLoading}
               className={`
                 h-10 px-8 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-sm
-                ${isSubmitDisabled || createLoading
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md hover:shadow-lg"
+                ${
+                  isSubmitDisabled || createLoading
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md hover:shadow-lg"
                 }
               `}
             >

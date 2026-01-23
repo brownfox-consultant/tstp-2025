@@ -155,7 +155,7 @@ function AllUsersTable({ tabKey, api }) {
     email: "email",
     phone_number: "phone_number",
     is_active: "is_active",
-    user_type: "user_type", // ✅ FIXED
+    user_type: "user_type", 
   };
 
   const handleTableChange = (pagination, filters, sorter) => {
@@ -661,35 +661,41 @@ function AllUsersTable({ tabKey, api }) {
 
   return (
     <div>
-      <div className="w-full flex justify-between mb-4 mt-2">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 mt-2">
+        {/* Search Input */}
+        <div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
           <Input
-            prefix={<SearchOutlined />}
-            placeholder="Search by name, email, or phone"
+            prefix={<SearchOutlined className="text-gray-400" />}
+            placeholder="Search by name, email, ..."
             value={searchText}
             onChange={(e) => {
               setSearchText(e.target.value);
-              setCurrent(1); // Reset to page 1 on new search
+              setCurrent(1);
             }}
             allowClear
+            className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600"
           />
         </div>
 
+        {/* Action Buttons */}
         {tabKey == "all" && (
-          <div className="">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
-              className="mr-3"
-              size="medium"
+              size="large"
               onClick={() => router.push(`${pathname}/all/create/`)}
               type="primary"
-            // icon={<PlusCircleFilled />}
+              className="h-10 px-4 bg-orange-500 hover:bg-orange-600 border-none rounded-lg font-medium"
             >
               Add new user
             </Button>
-            <Button className="mr-3" size="medium" icon={<UploadOutlined />} onClick={exportToCSV}>
+            <Button
+              size="large"
+              icon={<UploadOutlined />}
+              onClick={exportToCSV}
+              className="h-10 px-4 rounded-lg border-gray-300 hover:border-gray-400 font-medium"
+            >
               Export
             </Button>
-
             <Dropdown
               trigger={["click"]}
               open={isDropdownVisible}
@@ -705,7 +711,12 @@ function AllUsersTable({ tabKey, api }) {
               }}
               placement="bottomLeft"
             >
-              <Button icon={<FilterFilled />}></Button>
+              <Button
+                icon={<FilterFilled />}
+                className="h-10 px-4 rounded-lg border-gray-300 hover:border-gray-400 font-medium"
+              >
+                Filter
+              </Button>
             </Dropdown>
           </div>
         )}

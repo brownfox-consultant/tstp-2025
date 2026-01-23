@@ -1,12 +1,12 @@
 import './ReportNew.css';
 import { getTestResult } from "@/app/services/authService";
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useRouter,useParams } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { LeftOutlined } from "@ant-design/icons";
 import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
 
-const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
+const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   const [activeTab, setActiveTab] = useState("english");
   const [questionMainTab, setQuestionMainTab] = useState("english");
   const [englishSubTab, setEnglishSubTab] = useState("sectionA");
@@ -15,18 +15,6 @@ const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
   const searchParams = useSearchParams();
   const test_submission_id = searchParams.get("test_submission_id");
   const router = useRouter();
-  
-  
-
-  const questionItemStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px 15px",
-    marginBottom: "10px",
-    border: "1px solid #e5e7eb",
-    borderRadius: "10px",
-  };
 
   useEffect(() => {
     setLoading(true);
@@ -143,12 +131,11 @@ const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
       >
         ← Back
       </button> */}
-      
-      <LeftOutlined
-                         className="text-lg cursor-pointer mr-2"
-           onClick={onClose}
-        
-                       />
+
+      {/* <LeftOutlined
+        className="text-lg cursor-pointer mr-2"
+        onClick={onClose}
+      /> */}
 
       <div className="bg-gray-100 rounded-2xl p-4 md:p-6 shadow-md mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -218,12 +205,12 @@ const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
             <div className="w-full h-2 bg-white/30 rounded-full overflow-hidden">
               <div
                 className="h-full bg-white/70 rounded-full transition-all duration-500"
-                style={{ 
+                style={{
                   width: `${(() => {
                     const total = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0);
                     const max = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_max_score || 0), 0);
                     return max > 0 ? Math.round((total / max) * 100) : 0;
-                  })()}%` 
+                  })()}%`
                 }}
               />
             </div>
@@ -286,11 +273,10 @@ const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 md:min-w-[120px] min-w-[80px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
-                activeTab === tab
+              className={`flex-1 md:min-w-[120px] min-w-[80px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${activeTab === tab
                   ? 'bg-gradient-to-r from-[#F59403] to-orange-500 text-white shadow-lg shadow-orange-200'
                   : 'bg-transparent text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               {tab === "english" ? (
                 <>
@@ -322,7 +308,7 @@ const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
       {/* English Analysis */}
       {activeTab === "english" && (
         <>
-          <CurrentTab_New selectedSubject={0} data={resultData} testSubmissionId={testSubmissionId} /> 
+          <CurrentTab_New selectedSubject={0} data={resultData} testSubmissionId={testSubmissionId} />
           {/* <div className="performance-sections">
             <div className="card-section">
               <h3>📘 Reading & Writing Sections</h3>
@@ -405,11 +391,10 @@ const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
             {(resultData?.subjects || []).map((subject) => (
               <button
                 key={subject.name}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
-                  questionMainTab === subject.name
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${questionMainTab === subject.name
                     ? "bg-gradient-to-r from-[#F59403] to-orange-500 text-white shadow-lg shadow-orange-200"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                  }`}
                 onClick={() => {
                   setQuestionMainTab(subject.name);
                   const firstSection = subject.sections?.[0]?.name;
@@ -437,11 +422,10 @@ const Admin_Report_New = ({ testSubmissionId,onClose  }) => {
               ?.sections?.map((section) => (
                 <button
                   key={section.name}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    englishSubTab === section.name
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${englishSubTab === section.name
                       ? "bg-white text-gray-800 shadow-md border border-gray-200"
                       : "bg-transparent text-gray-500 hover:bg-white/50"
-                  }`}
+                    }`}
                   onClick={() => setEnglishSubTab(section.name)}
                 >
                   {section.name}

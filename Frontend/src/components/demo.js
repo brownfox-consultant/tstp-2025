@@ -64,18 +64,18 @@ function StatCard({ title, value, selectedFilter, customStartDate, customEndDate
   return (
     <div
       onClick={handleViewAll}
-      className="relative bg-white rounded-lg p-6 border-2 border-gray-50 shadow-md hover:shadow-lg overflow-hidden group cursor-pointer"
+      className="relative bg-white rounded-lg p-3 sm:p-4 md:p-5 lg:p-6 border-2 border-gray-50 shadow-md hover:shadow-lg overflow-hidden group cursor-pointer transition-all"
     >
-      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientClass}`} />
-      <div className="flex justify-between items-start mb-4">
-        <p className="text-sm font-medium text-gray-500">{title}</p>
+      <div className={`absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r ${gradientClass}`} />
+      <div className="flex justify-between items-start mb-2 sm:mb-3 md:mb-4 gap-2">
+        <p className="text-xs sm:text-sm font-medium text-gray-500 leading-tight">{title}</p>
         <button
-          className="text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent"
+          className="text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent whitespace-nowrap flex-shrink-0"
         >
           View all →
         </button>
       </div>
-      <div className="text-4xl font-bold text-gray-900">{value}</div>
+      <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">{value}</div>
     </div>
   );
 }
@@ -287,113 +287,105 @@ export default function Dashboard() {
     setCustomEndDate("");
     setShowDatePicker(false);
 
-    // Simulate refresh for UX consistency
     setTimeout(() => {
       setIsLoading(false);
     }, 600);
   };
 
   return (
-    <div className="grid gap-6">
+    <div>
       {/* Global Filters */}
-      <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Time Filter Pills */}
-          <div className="flex items-center bg-gray-50 rounded-xl p-1 gap-1">
-            {["last_month", "last_week", "today"].map((val) => (
-              <button
-                key={val}
-                onClick={() => handleFilterChange(val)}
-                className={`dashboard-tab-button ${selectedFilter === val
-                  ? "dashboard-tab-active"
-                  : "dashboard-tab-inactive"
-                  }`}
-              >
-                {val === "last_month" ? "This Month" : val === "last_week" ? "This Week" : "Today"}
-              </button>
-            ))}
+      <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100 mb-6">
+        <div className="flex items-center bg-gray-50 rounded-xl p-1 flex-wrap gap-3">
+          {["last_month", "last_week", "today"].map((val) => (
+            <button
+              key={val}
+              onClick={() => handleFilterChange(val)}
+              className={`dashboard-tab-button ${selectedFilter === val
+                ? "dashboard-tab-active"
+                : "dashboard-tab-inactive"
+                }`}
+            >
+              {val === "last_month" ? "This Month" : val === "last_week" ? "This Week" : "Today"}
+            </button>
+          ))}
 
-            {/* Custom Date Button */}
-            <div className="relative" ref={datePickerRef}>
-              <button
-                onClick={() => {
-                  setShowDatePicker(!showDatePicker);
-                  setSelectedFilter("custom");
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${selectedFilter === "custom"
-                  ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
-                  : "text-[#805830] hover:bg-gray-100"
-                  }`}
-              >
-                <CalendarIcon className="w-4 h-4" />
-                Custom
-              </button>
+          {/* Custom Date Button */}
+          <div className="relative" ref={datePickerRef}>
+            <button
+              onClick={() => {
+                setShowDatePicker(!showDatePicker);
+                setSelectedFilter("custom");
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${selectedFilter === "custom"
+                ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
+                : "text-[#805830] hover:bg-gray-100"
+                }`}
+            >
+              <CalendarIcon className="w-4 h-4" />
+              Custom
+            </button>
 
-              {showDatePicker && (
-                <div className="absolute z-50 mt-2 w-80 bg-gradient-to-br from-white to-[#FFF8F0] border border-gray-200 shadow-md rounded-md p-5 space-y-4 right-0 md:left-0">
-                  <h4 className="font-semibold text-[#2E2725]">Select Date Range</h4>
-                  <ConfigProvider
-                    theme={{
-                      token: {
-                        colorPrimary: '#F59403',
-                        borderRadius: 8,
-                      },
-                    }}
-                  >
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm text-[#805830] font-medium block mb-1">Start Date</label>
-                        <DatePicker
-                          value={customStartDate ? dayjs(customStartDate) : null}
-                          onChange={(date, dateString) => setCustomStartDate(dateString)}
-                          className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
-                          format="YYYY-MM-DD"
-                          placeholder="Select start date"
-                          getPopupContainer={trigger => trigger.parentNode}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm text-[#805830] font-medium block mb-1">End Date</label>
-                        <DatePicker
-                          value={customEndDate ? dayjs(customEndDate) : null}
-                          onChange={(date, dateString) => setCustomEndDate(dateString)}
-                          className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
-                          format="YYYY-MM-DD"
-                          placeholder="Select end date"
-                          getPopupContainer={trigger => trigger.parentNode}
-                        />
-                      </div>
+            {showDatePicker && (
+              <div className="absolute z-50 mt-2 w-80 bg-gradient-to-br from-white to-[#FFF8F0] border border-gray-200 shadow-md rounded-md p-5 space-y-4 right-0 md:left-0">
+                <h4 className="font-semibold text-[#2E2725]">Select Date Range</h4>
+                <ConfigProvider
+                  theme={{
+                    token: {
+                      colorPrimary: '#F59403',
+                      borderRadius: 8,
+                    },
+                  }}
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-[#805830] font-medium block mb-1">Start Date</label>
+                      <DatePicker
+                        value={customStartDate ? dayjs(customStartDate) : null}
+                        onChange={(date, dateString) => setCustomStartDate(dateString)}
+                        className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
+                        format="YYYY-MM-DD"
+                        placeholder="Select start date"
+                        getPopupContainer={trigger => trigger.parentNode}
+                      />
                     </div>
-                  </ConfigProvider>
-                  <div className="flex justify-between pt-2">
-                    <button
-                      onClick={() => {
-                        setCustomStartDate("");
-                        setCustomEndDate("");
-                        setSelectedFilter("last_month");
-                        setShowDatePicker(false);
-                      }}
-                      className="text-sm text-gray-500 hover:text-[#805830] transition-colors bg-transparent"
-                    >
-                      Clear
-                    </button>
-                    <button
-                      onClick={() => setShowDatePicker(false)}
-                      className="px-4 py-1.5 bg-[#2E2725] text-white text-sm rounded-lg hover:bg-[#805830] transition-colors"
-                    >
-                      Apply
-                    </button>
+                    <div>
+                      <label className="text-sm text-[#805830] font-medium block mb-1">End Date</label>
+                      <DatePicker
+                        value={customEndDate ? dayjs(customEndDate) : null}
+                        onChange={(date, dateString) => setCustomEndDate(dateString)}
+                        className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
+                        format="YYYY-MM-DD"
+                        placeholder="Select end date"
+                        getPopupContainer={trigger => trigger.parentNode}
+                      />
+                    </div>
                   </div>
+                </ConfigProvider>
+                <div className="flex justify-between pt-2">
+                  <button
+                    onClick={() => {
+                      setCustomStartDate("");
+                      setCustomEndDate("");
+                      setSelectedFilter("last_month");
+                      setShowDatePicker(false);
+                    }}
+                    className="text-sm text-gray-500 hover:text-[#805830] transition-colors bg-transparent"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => setShowDatePicker(false)}
+                    className="px-4 py-1.5 bg-[#2E2725] text-white text-sm rounded-lg hover:bg-[#805830] transition-colors"
+                  >
+                    Apply
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-
-
         </div>
       </div>
-
-
 
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
@@ -401,7 +393,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-6">
             {SECTIONS.map(({ display, key, route, gradient }) => (
               <StatCard
                 key={display}
@@ -418,9 +410,9 @@ export default function Dashboard() {
           </div>
 
           {/* Question Count Table */}
-          <div className="bg-white shadow-md rounded-xl">
+          <div className="bg-white shadow-md rounded-xl mb-6">
             <div className="p-5 border-b border-white bg-gradient-to-r from-[#2E2725] to-[#805830] rounded-t-xl">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <h3 className="text-md lg:text-xl font-bold text-white flex items-center gap-2">
                 <ClipboardIcon className="w-5 h-5" />
                 Question Count by Course & Subject
               </h3>
@@ -481,36 +473,32 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 gap-6">
-            {/* Student Count Chart */}
-            <div className="bg-white shadow-md rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-[#2E2725]">Student Count by Course</h3>
-              </div>
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={courseChartData} barSize={40}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" interval={0} angle={-15} textAnchor="end" tick={{ fill: '#000000', fontSize: 13, dy: 2, fontWeight: 'bold' }} height={60} />
-                  <YAxis tick={{ fill: '#000000', fontSize: 12 }} />
-                  <Tooltip cursor={{ fill: 'transparent' }} />
-                  <Bar dataKey="value" fill="#F59403" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          {/* Student Count Chart */}
+          <div className="bg-white shadow-md rounded-xl p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-[#2E2725]">Student Count by Course</h3>
             </div>
-
-            {/* Test Scores Chart */}
-
+            <div className="overflow-x-auto overflow-y-hidden">
+              <div style={{ minWidth: courseChartData.length > 3 ? `${courseChartData.length * 100}px` : '100%' }} className="md:min-w-full">
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={courseChartData} barSize={40} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" interval={0} angle={-15} textAnchor="end" tick={{ fill: '#000000', fontSize: 13, dy: 2, fontWeight: 'bold' }} height={60} />
+                    <YAxis tick={{ fill: '#000000', fontSize: 12 }} />
+                    <Tooltip cursor={{ fill: 'transparent' }} />
+                    <Bar dataKey="value" fill="#F59403" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
 
           {/* Time Spent Chart */}
-          <div className="bg-white shadow-md rounded-xl p-5">
+          <div className="bg-white shadow-md rounded-xl p-5 mb-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
-              <div className="flex items-center gap-4 justify-between w-full">
-                <div>
+              <div className="flex items-center gap-4 justify-between w-full flex-wrap">
                 <h3 className="text-lg font-bold text-[#2E2725]">Time Spent vs Score</h3>
-                </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Select
                     className="w-40 text-sm"
                     value={courses.find((c) => c.id.toString() === selectedCourse)}
@@ -557,17 +545,21 @@ export default function Dashboard() {
               )}
             </div>
             {timeSpentData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={timeSpentData} barSize={30}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#805830', fontSize: 12 }} />
-                  <Tooltip cursor={{ fill: 'transparent' }} />
-                  <Legend />
-                  <Bar dataKey="score" fill="#F59403" name="Score" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="time_taken_minutes" fill="#0071BC" name="Minutes" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="overflow-x-auto overflow-y-hidden">
+                <div style={{ minWidth: timeSpentData.length > 3 ? `${timeSpentData.length * 120}px` : '100%' }} className="md:min-w-full">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={timeSpentData} barSize={30} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
+                      <YAxis tick={{ fill: '#805830', fontSize: 12 }} />
+                      <Tooltip cursor={{ fill: 'transparent' }} />
+                      <Legend />
+                      <Bar dataKey="score" fill="#F59403" name="Score" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="time_taken_minutes" fill="#0071BC" name="Minutes" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
                 <NoDataClockIcon className="w-12 h-12 mb-3 text-gray-300" />
@@ -576,7 +568,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100">
+          <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 ">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-lg font-bold text-[#2E2725]">Topic-wise Performance</h3>
             </div>
@@ -664,7 +656,6 @@ export default function Dashboard() {
           </div>
         </>
       )}
-
     </div>
   );
 }
