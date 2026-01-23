@@ -55,25 +55,15 @@ def get_error_response_for_serializer(logger, serializer, data):
 
 
 class CustomPageNumberPagination(PageNumberPagination):
-    page_size = 10  # Default page size
-    page_size_query_param = 'size'  # Allows dynamic page size via the 'size' query param
+    page_size = 10
+    page_size_query_param = 'page_size'  # ✅ STANDARD
+    max_page_size = 100
+    page_query_param = 'page'
 
     def get_paginated_response(self, data):
         return Response({
-            'next': self.get_next_link(),
-            'previous': self.get_previous_link(),
             'count': self.page.paginator.count,
             'total_pages': self.page.paginator.num_pages,
             'current_page': self.page.number,
             'results': data
         })
-
-    def get_page_size(self, request):
-        # Try to fetch the size from the request's query parameters
-        if 'size' in request.query_params:
-            try:
-                return int(request.query_params.get('size'))
-            except (TypeError, ValueError):
-                pass  # If invalid, fall back to default page size
-        # If 'size' param is not present, fall back to the default
-        return self.page_size

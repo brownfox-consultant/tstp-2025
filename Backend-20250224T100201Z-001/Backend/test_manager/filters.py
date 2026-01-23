@@ -121,6 +121,11 @@ class PracticeTestFilter(filters.FilterSet):
             ('result__correct_answer_count', 'correct_count'),  # Sorting by correct answers
             ('result__incorrect_answer_count', 'incorrect_count'),  # Sorting by incorrect answers
             ('result__time_taken', 'time_taken'),  # Sorting by time taken
+            # 🔥 KEY LINES
+            ('correct_count', 'correct_count'),
+            ('incorrect_count', 'incorrect_count'),
+            ('performance', 'performance'),
+            
         )
     )
 

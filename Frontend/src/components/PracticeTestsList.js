@@ -27,6 +27,8 @@ function PracticeTestsList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const debounceTimeoutRef = useRef(null);
+  const [pageSize, setPageSize] = useState(10);
+
 
   const role = pathname.split("/")[1];
 
@@ -66,36 +68,37 @@ function PracticeTestsList() {
   }, []);
 
   useEffect(() => {
-    const params = {
-      page: current,
-    };
-    if (Object.keys(sortParams).length > 0) {
-      params.ordering = Object.keys(sortParams)
-        .map((key) => (sortParams[key] === "asc" ? key : `-${key}`))
-        .join(",");
-    }
-    if (debouncedSearchTerm) {
-      params.search = debouncedSearchTerm;
-    }
+  const params = {
+    page: current,
+    page_size: pageSize,
+  };
 
-    // Add course filter
-    if (selectedCourse) {
-      params.course = selectedCourse; // Assuming API accepts 'course' parameter with course name or ID. Based on PracticeTestForm which uses course name often.
-      // Wait, let's verify if the API expects Name or ID. PracticeTestForm uses name for dropdown value.
-      // Let's assume name for now as existing "Course" column shows name.
-    }
+  if (Object.keys(sortParams).length > 0) {
+    params.ordering = Object.keys(sortParams)
+      .map((key) => (sortParams[key] === "asc" ? key : `-${key}`))
+      .join(",");
+  }
 
-    setTableLoading(true);
-    getPracticeTests(params)
-      .then((res) => {
-        const { results, count, current_page, total_pages } = res.data;
-        setCurrent(current_page);
-        setTotal(count);
-        setData(results);
-        setTotalPages(total_pages);
-      })
-      .finally(() => setTableLoading(false));
-  }, [current, sortParams, debouncedSearchTerm, selectedCourse]);
+  if (debouncedSearchTerm) {
+    params.search = debouncedSearchTerm;
+  }
+
+  if (selectedCourse) {
+    params.course = selectedCourse;
+  }
+
+  setTableLoading(true);
+  getPracticeTests(params)
+    .then((res) => {
+      const { results, count, current_page, total_pages } = res.data;
+      setCurrent(current_page);
+      setTotal(count);
+      setData(results);
+      setTotalPages(total_pages);
+    })
+    .finally(() => setTableLoading(false));
+}, [current, pageSize, sortParams, debouncedSearchTerm, selectedCourse]);
+
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -153,8 +156,10 @@ function PracticeTestsList() {
     },
     {
       key: "score_summary",
+      dataIndex: "performance",
       title: "Performance",
       align: "center",
+      sorter: true,
       width: 140,
       render: (_, record) => (
         <div className="flex justify-center gap-4 text-xs font-medium">
@@ -239,18 +244,36 @@ function PracticeTestsList() {
   };
 
   const handleTableChange = (pagination, filters, sorter) => {
-    let sortObj = {};
-    if (Array.isArray(sorter)) {
-      sorter.forEach((s) => {
-        if (s.order === "ascend") sortObj[s.field] = "asc";
-        else if (s.order === "descend") sortObj[s.field] = "desc";
-      });
-    } else {
-      if (sorter.order === "ascend") sortObj[sorter.field] = "asc";
-      else if (sorter.order === "descend") sortObj[sorter.field] = "desc";
+  let sortObj = {};
+
+  const applySorter = (s) => {
+    if (!s.order) return;
+
+    // 🔥 CUSTOM LOGIC FOR PERFORMANCE COLUMN
+    if (s.field === "performance") {
+      if (s.order === "descend") {
+        // ↓ Best performance → max correct
+        sortObj["correct_count"] = "desc";
+      } else if (s.order === "ascend") {
+        // ↑ Worst performance → max incorrect
+        sortObj["incorrect_count"] = "desc";
+      }
+      return;
     }
-    setSortParams(sortObj);
+
+    // ✅ Normal sorting
+    sortObj[s.field] = s.order === "ascend" ? "asc" : "desc";
   };
+
+  if (Array.isArray(sorter)) {
+    sorter.forEach(applySorter);
+  } else {
+    applySorter(sorter);
+  }
+
+  setSortParams(sortObj);
+};
+
 
   return (
     <>
@@ -326,17 +349,22 @@ function PracticeTestsList() {
 
             <div className="px-6 py-4 flex items-center justify-between border-t border-gray-100 bg-white">
               <span className="text-sm text-gray-500">
-                Showing {((current - 1) * 10) + 1} to {Math.min(current * 10, total)} of {total} entries
+                Showing {((current - 1) * pageSize) + 1} to {Math.min(current * pageSize, total)} of {total} entries
               </span>
               <Pagination
-                current={current}
-                pageSize={10}
-                total={total}
-                itemRender={itemRender}
-                onChange={(page) => setCurrent(page)}
-                showSizeChanger={false}
-                className="custom-pagination"
-              />
+  current={current}
+  pageSize={pageSize}
+  total={total}
+  itemRender={itemRender}
+  onChange={(page, size) => {
+    setCurrent(page);
+    setPageSize(size);
+  }}
+  showSizeChanger
+  pageSizeOptions={[10, 20, 50, 100]}
+  className="custom-pagination"
+/>
+
             </div>
           </Card>
         </div>

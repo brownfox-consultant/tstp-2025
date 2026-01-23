@@ -164,6 +164,11 @@ from user_manager.models import User
 from course_manager.models import CourseEnrollment
 
 
+from django.db.models import (
+    Q, Count, F, IntegerField, FloatField, ExpressionWrapper
+)
+from django.db.models.functions import Coalesce, NullIf
+
 
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.get_all()
@@ -1615,7 +1620,10 @@ class TestViewSet(viewsets.ModelViewSet):
             return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
 
 
-            
+    
+
+
+      
 
     @permission_classes([IsAdminOrMentorOrFacultyOrStudentOrParent])
     def list(self, request):
@@ -1631,6 +1639,8 @@ class TestViewSet(viewsets.ModelViewSet):
             queryset = TestSubmission.objects.filter(student=user).order_by('-assigned_date')
             serializer_class = TestSubmissionSerializer
             filterset = TestSubmissionFilter(data=request.GET, queryset=queryset, request=request)
+
+            
 
 
         elif user.role.name == 'parent':
@@ -4462,7 +4472,7 @@ class ResultViewSet(viewsets.ModelViewSet):
 class PracticeTestViewSet(viewsets.ModelViewSet):
     queryset = PracticeTest.objects.all()
     logger = logging.getLogger('Practice-Test')
-
+    filter_backends = []
 
     @action(detail=True, methods=['POST'], url_path='selection-history')
     def save_selection_history(self, request, pk=None, *args, **kwargs):
@@ -4902,19 +4912,24 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         user = request.user
         student_ids = []
 
+        # ---------------------------------
+        # 1️⃣ BASE QUERYSET (ROLE BASED)
+        # ---------------------------------
+
         if user.role.name == 'student':
-            # Only include practice tests with results
-            practice_tests = PracticeTest.objects.filter(
-                student=user, result__isnull=False
-            ).prefetch_related('result')
+            queryset = PracticeTest.objects.filter(
+                student=user,
+                result__isnull=False
+            )
 
         elif user.role.name in ['parent', 'faculty', 'mentor', 'admin']:
+
             if user.role.name == 'parent':
                 sm = StudentMetadata.objects.filter(Q(father=user) | Q(mother=user))
                 student_ids = sm.values_list('student', flat=True)
 
             elif user.role.name == 'faculty':
-                sm = StudentMetadata.objects.filter(faculties=user)  # Correct field
+                sm = StudentMetadata.objects.filter(faculties=user)
                 student_ids = sm.values_list('student', flat=True)
 
             elif user.role.name == 'mentor':
@@ -4923,32 +4938,95 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
 
             elif user.role.name == 'admin':
                 student_id = request.GET.get('student_id')
-                if student_id:
-                    student_ids = [student_id]
-                else:
-                    student_ids = StudentMetadata.objects.all().values_list('student', flat=True)
+                student_ids = [student_id] if student_id else \
+                    StudentMetadata.objects.values_list('student', flat=True)
 
-            # Fetch practice tests for the resolved student_ids
-            practice_tests = PracticeTest.objects.filter(
-                student__in=student_ids, result__isnull=False
-            ).prefetch_related('result')
+            queryset = PracticeTest.objects.filter(
+                student__in=student_ids,
+                result__isnull=False
+            )
 
         else:
             return get_error_response('Access denied')
 
-        # Apply dynamic filtering using the PracticeTestFilter
-        filterset = PracticeTestFilter(request.GET, queryset=practice_tests)
-        if not filterset.is_valid():
-            return get_error_response('Invalid filter parameters')
+        # ---------------------------------
+        # 2️⃣ ANNOTATE PERFORMANCE
+        # ---------------------------------
 
-        filtered_tests = filterset.qs
+        queryset = queryset.annotate(
+    total_questions=Count(
+        'result__question_answers',
+        distinct=True
+    ),
 
-        # Apply pagination
+    correct_count=Coalesce(
+        F('result__correct_answer_count'),
+        0,
+        output_field=IntegerField()
+    ),
+
+    incorrect_count=Coalesce(
+        F('result__incorrect_answer_count'),
+        0,
+        output_field=IntegerField()
+    ),
+
+    performance=ExpressionWrapper(
+        Coalesce(F('result__correct_answer_count'), 0) * 1.0 /
+        NullIf(
+            Count('result__question_answers', distinct=True),
+            0
+        ),
+        output_field=FloatField()
+    )
+
+
+        ).select_related(
+            'student',
+            'course_subject__course',
+            'course_subject__subject',
+            'result'
+        )
+
+        # ---------------------------------
+        # 3️⃣ APPLY FILTERS (WITHOUT ORDERING)
+        # ---------------------------------
+
+        query_params = request.GET.copy()
+        ordering = query_params.pop('ordering', None)  # ⬅️ IMPORTANT
+        query_params.pop('page', None)
+        query_params.pop('page_size', None)
+
+        filterset = PracticeTestFilter(query_params, queryset=queryset)
+        queryset = filterset.qs   # ❌ DO NOT call is_valid()
+
+        # ---------------------------------
+        # 4️⃣ MANUAL ORDERING (KEY FIX)
+        # ---------------------------------
+
+        if ordering:
+            ordering = ordering[0]
+
+            if ordering == 'performance':
+                queryset = queryset.order_by('performance')
+
+            elif ordering == '-performance':
+                queryset = queryset.order_by('-performance')
+
+            else:
+                queryset = queryset.order_by(ordering)
+
+        # ---------------------------------
+        # 5️⃣ PAGINATION
+        # ---------------------------------
+
         paginator = CustomPageNumberPagination()
-        paginated_practice_tests = paginator.paginate_queryset(filtered_tests, request)
+        page = paginator.paginate_queryset(queryset, request)
 
         serializer = PracticeTestListSerializer(
-            paginated_practice_tests, many=True, context={'request': request}
+            page,
+            many=True,
+            context={'request': request}
         )
 
         return paginator.get_paginated_response(serializer.data)
