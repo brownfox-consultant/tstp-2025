@@ -7,6 +7,7 @@ import TestReportsChart from "@/components/TestReportsChart";
 import TestScoresChart from "@/components/TestScoresChart";
 import FullLengthPracticeTestBar from "@/components/FullLengthPracticeTestBar";
 import DashBoardImprovementStrengthComponent from "@/components/DashBoardImprovementStrengthComponent";
+import { useGlobalContext } from "@/context/store";
 import FreeUserPage from "@/components/FreeUserPage";
 import { RocketIcon, PracticeIcon, ReportIcon } from "@/components/icons/dashboard-icons";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -14,18 +15,18 @@ import "@/app/Dashboard.css";
 
 function DashboardPage() {
   const [name, setName] = useState("");
-  const [isFreeUser, setIsFreeUser] = useState(false);
   const [selectedTab, setSelectedTab] = useState("last_month");
   const [isLoading, setIsLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState("");
   const pathname = usePathname();
   const router = useRouter();
 
+  const { subscriptionType } = useGlobalContext();
+  const isFreeUser = subscriptionType === "FREE";
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setName(window.localStorage.getItem("name") || "Student");
-      const type = window.localStorage.getItem("subscription_type");
-      setIsFreeUser(type === "FREE");
 
       // Format current date
       const today = new Date();

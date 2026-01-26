@@ -16,7 +16,7 @@ import Cookies from 'js-cookie';
 
 function LoginForm({ handleNext }) {
   const [form] = useForm();
-  const { userName, userId, setRole, setUserId, setUserName, setTestRunning } =
+  const { userName, userId, setRole, setUserId, setUserName, setTestRunning, setSubscriptionType } =
     useGlobalContext();
   const router = useRouter();
   const [buttonLoading, setButtonLoading] = useState(false);
@@ -42,6 +42,7 @@ function LoginForm({ handleNext }) {
     window.localStorage.setItem("change_password", change_password);
     window.localStorage.setItem("csrfToken", csrf_token);
     window.localStorage.setItem("subscription_type", subscription_type);
+    setSubscriptionType(subscription_type);
   }
 
   useEffect(() => {
@@ -91,11 +92,11 @@ function LoginForm({ handleNext }) {
       .then((res) => {
         const { role_name, id, subscription_type } = res.data;
 
-        console.log("rn, id", role_name, id);
+        // console.log("rn, id", role_name, id);
         setUserDataToLocalStorage(res.data);
-        console.log("res.data",res.data)
+        // console.log("res.data",res.data)
         const cookies = Cookies.get();
-        console.log("document.cookie",cookies);
+        // console.log("document.cookie",cookies);
         form.resetFields();
         // router.push(
         //   `/${

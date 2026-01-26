@@ -33,14 +33,8 @@ function DashboardLayout({ children }) {
   const pathname = usePathname();
   const pathParts = pathname.split("/").filter(Boolean);
   const tab = pathParts.slice(2).join("/");
-  const [isFreeUser, setIsFreeUser] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const type = window.localStorage.getItem("subscription_type");
-      setIsFreeUser(type === "FREE");
-    }
-  }, []);
+  const { collapsed, setCollapsed, subscriptionType } = useGlobalContext();
+  const isFreeUser = subscriptionType === "FREE";
 
   const StudentMenuItems = [
     {
@@ -108,7 +102,7 @@ function DashboardLayout({ children }) {
     token: { colorBgContainer, borderRadius },
   } = ThemeAntd.useToken();
 
-  const { collapsed, setCollapsed } = useGlobalContext();
+
 
   const handleLogout = useCallback(async () => {
     // Prevent duplicate logout calls
