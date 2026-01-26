@@ -163,7 +163,7 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
       courses: formattedCourses,
     };
 
-    console.log("Submitting", recordData.id, finalPayload);
+    // console.log("Submitting", recordData.id, finalPayload);
 
     editUser(recordData.id, finalPayload)
       .then((res) => {
@@ -171,7 +171,7 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
         setUpdated(!updated);
         handleCancel();
       })
-      .catch((err) => console.log(err))
+      .catch((err) => (err))
       .finally(() => setLoading(false));
   }
 

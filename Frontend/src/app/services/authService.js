@@ -124,7 +124,7 @@ export const getCsrfToken = () => {
 
 export const logoutService = (csrfToken) => {
   // const cookies = Cookies.get();
-   console.log("window.localStorage.getItem",window.localStorage.getItem("csrfToken"));
+  //  console.log("window.localStorage.getItem",window.localStorage.getItem("csrfToken"));
   return axios
     .post(
       LOGOUT,

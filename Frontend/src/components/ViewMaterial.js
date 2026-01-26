@@ -12,7 +12,6 @@ function ViewMaterial() {
   const { id, tutorialId } = params;
   const [materialData, setMaterialData] = useState({});
   const [embedUrl, setEmbedUrl] = useState();
-  // const name = window.sessionStorage.getItem("name");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
@@ -79,7 +78,6 @@ function ViewMaterial() {
   }
 
   useEffect(() => {
-    // Check if we have an ID to fetch details for
     if (id) {
        getUserDetails(id).then(res => {
          if (res?.data) {
