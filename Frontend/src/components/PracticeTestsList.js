@@ -3,13 +3,12 @@
 import { getPracticeTests, getUserDetails } from "@/app/services/authService";
 import { convertSecondsToTime } from "@/utils/utils";
 import { Button, Table, Pagination, Input, Card, Tag, Tooltip, Select } from "antd";
-import { SearchOutlined, PlusOutlined, UnorderedListOutlined, FilterOutlined } from "@ant-design/icons";
+import { SearchOutlined, PlusOutlined, UnorderedListOutlined, FilterOutlined, EyeOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
 import PracticeTestForm from "@/components/PracticeTestForm";
 import PracticeTestReportComponent from "./PracticeTestReportComponent.js";
-import EyeIcon from "../../public/icons/eye.svg";
 import Image from "next/image";
 
 function PracticeTestsList() {
@@ -204,7 +203,7 @@ function PracticeTestsList() {
             <Button
               type="text"
               shape="circle"
-              icon={<Image src={EyeIcon} alt="view" width={18} height={18} />}
+              icon={<EyeOutlined />}
               className="hover:bg-blue-50 flex items-center justify-center mx-auto"
               onClick={() => {
                 if (role == "student") {

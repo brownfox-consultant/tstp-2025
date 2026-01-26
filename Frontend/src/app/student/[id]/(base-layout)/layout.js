@@ -14,7 +14,6 @@ import Image from "next/image";
 import LogoutIcon from "@/components/icons/logout-icon";
 import UserProfileIcon from "@/components/icons/user-profile-icon";
 import FullLengthTestIcon from "@/components/icons/full-length-test-icon";
-import OrangeSideBarIcon from "./../../../../../public/icons/orangesidebar.svg";
 
 import {
   DashboardOutlined,
@@ -93,7 +92,6 @@ function DashboardLayout({ children }) {
   const router = useRouter();
   const [csrfToken, setCsrfToken] = useState(undefined);
   
-  // Ref to track if logout is in progress to prevent duplicate logout calls
   const isLoggingOut = React.useRef(false);
 
   const { id } = useParams();
@@ -102,10 +100,7 @@ function DashboardLayout({ children }) {
     token: { colorBgContainer, borderRadius },
   } = ThemeAntd.useToken();
 
-
-
   const handleLogout = useCallback(async () => {
-    // Prevent duplicate logout calls
     if (isLoggingOut.current) return;
     isLoggingOut.current = true;
     
@@ -143,7 +138,6 @@ function DashboardLayout({ children }) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Skip if already logging out
       if (isLoggingOut.current) return;
       
       const storedName = window.localStorage.getItem("name");
@@ -161,14 +155,11 @@ function DashboardLayout({ children }) {
         return;
       }
 
-      // == IDOR PROTECTION ==
       if (userId && String(userId) !== String(id)) {
-        // console.warn("Security Alert: User attempted to access unauthorized ID.");
         router.replace(`/student/${userId}/dashboard`);
         return;
       }
 
-      // == ROUTE PROTECTION FOR FREE USERS ==
       const isRestrictedRoute = StudentMenuItems.some(item => 
         item.disabled && (tab === item.key || tab.startsWith(`${item.key}/`))
       );
@@ -216,13 +207,7 @@ function DashboardLayout({ children }) {
             }}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <Image
-              src={OrangeSideBarIcon}
-              alt="Toggle Sidebar"
-              width={16}
-              height={16}
-              className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
-            />
+            {collapsed ? <MenuUnfoldOutlined /> : <MenuUnfoldOutlined style={{ transform: 'rotate(180deg)' }} />}
           </button>
         )}
 

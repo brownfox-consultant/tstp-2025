@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
+  Area,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -113,8 +115,8 @@ export default function ScoreAnalysis_FullLengthTest({
         improvement: data.improvement ?? 0,
         percentage: percentage || 0,
         max_score: maxScore,
-        total_full_length_tests: data.total_full_length_tests ?? 0, // ✅ ADD
-        total_practice_tests: data.total_practice_tests ?? 0,       // ✅ ADD (future use)
+        total_full_length_tests: data.total_full_length_tests ?? 0,
+        total_practice_tests: data.total_practice_tests ?? 0,      
       });
 
 
@@ -150,7 +152,7 @@ export default function ScoreAnalysis_FullLengthTest({
       <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
         <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
           <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         </div>
         <h3 className="text-xl font-bold text-gray-700 mb-2">No Full-Length Test Data Available</h3>
@@ -167,15 +169,22 @@ export default function ScoreAnalysis_FullLengthTest({
   return (
     <div className="space-y-4 animate-fadeIn">
 
-      {/* ================= SCORE CHART ================= */}
-      <div className="card-layout">
-        <h3 className="lg:text-xl text-base font-bold text-gray-800 mb-4">
-          Full-Length Test - {courseName} Analysis
-        </h3>
+      {/* ================= MIXED SCORE ANALYSIS CHART ================= */}
+      <div className="card-layout overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <h3 className="lg:text-xl text-base font-bold text-gray-800">
+              Score Analysis & Progression - {courseName}
+            </h3>
+          </div>
+        </div>
 
         {/* Chart with Navigation Arrows */}
         <div className="relative flex items-center">
-          {/* Left Arrow - Only show when pagination is needed AND can go left */}
+          {/* Left Arrow */}
           {!hideButtons && needsPagination && canGoLeft && (
             <button
               onClick={handlePrev}
@@ -188,48 +197,72 @@ export default function ScoreAnalysis_FullLengthTest({
             </button>
           )}
 
-          {/* Chart */}
-          <div className={`h-[350px] w-full flex justify-center ${hideButtons ? 'px-2' : 'px-12'}`}>
+          {/* Combined Chart */}
+          <div className={`h-[400px] w-full flex justify-center ${hideButtons ? 'px-2' : 'px-12'}`}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={displayData} barGap={4} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />
+              <ComposedChart data={displayData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <defs>
+                  <linearGradient id="colorOverallMixed" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.01} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  dy={10}
+                />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
                   domain={[0, 1600]}
-                  fontSize={11}
+                  ticks={[0, 400, 800, 1200, 1600]}
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
                 />
-                <Tooltip cursor={{ fill: 'transparent' }} />
-                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Tooltip 
+                   contentStyle={{ 
+                     borderRadius: '12px', 
+                     border: 'none', 
+                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
+                   }}
+                />
+                <Legend verticalAlign="top" height={36} iconType="circle" />
+                
+                {/* Math and English as Bars */}
+                <Bar 
+                  dataKey="Math" 
+                  barSize={20} 
+                  fill="#818cf8" 
+                  radius={[4, 4, 0, 0]} 
+                  name="Math Score"
+                />
+                <Bar 
+                  dataKey="English" 
+                  barSize={20} 
+                  fill="#fbbf24" 
+                  radius={[4, 4, 0, 0]} 
+                  name="English Score"
+                />
 
-                {/* Full Length Tests - Show Overall, Math, English bars */}
-                <Bar
-                  dataKey="Overall"
-                  fill="#3b82f6"
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                  name="Overall"
+                {/* Overall Score as Area/Line (Combined) */}
+                <Area 
+                  type="monotone" 
+                  dataKey="Overall" 
+                  fill="url(#colorOverallMixed)" 
+                  stroke="#10b981" 
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
+                  activeDot={{ r: 6 }}
+                  name="Overall Score"
                 />
-                <Bar
-                  dataKey="Math"
-                  fill="#818cf8"
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                  name="Math"
-                />
-                <Bar
-                  dataKey="English"
-                  fill="#10b981"
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                  name="English"
-                />
-              </BarChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Right Arrow - Only show when pagination is needed AND can go right */}
+          {/* Right Arrow */}
           {!hideButtons && needsPagination && canGoRight && (
             <button
               onClick={handleNext}
@@ -245,7 +278,7 @@ export default function ScoreAnalysis_FullLengthTest({
 
         {/* Page Indicator */}
         {chartData.length > visibleCount && (
-          <div className="flex justify-center mt-4 gap-2">
+          <div className="flex justify-center mt-4 gap-2 pb-4">
             {Array.from({ length: Math.ceil(chartData.length / visibleCount) }).map((_, idx) => (
               <button
                 key={idx}
