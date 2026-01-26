@@ -151,8 +151,13 @@ function PracticeTestResult() {
     setIsModalOpen(true);
   };
 
+
+  const [filterStatus, setFilterStatus] = useState("ALL"); // ALL, CORRECT, INCORRECT, UNANSWERED
+
   const handleNavigation = (direction) => {
     const newIndex = currentQuestionIndex + direction;
+    // Note: This logic might need adjustment if using filtered list for navigation index
+    // Currently re-using original list for global index safety but filtered list in view
     if (newIndex >= 0 && newIndex < questionsList.length) {
       const nextQ = questionsList[newIndex];
       setSelectedListQuestion(nextQ);
@@ -160,6 +165,19 @@ function PracticeTestResult() {
       setCurrentQuestionIndex(newIndex);
     }
   };
+
+  const filteredQuestions = questionsList.filter(q => {
+    if (filterStatus === "ALL") return true;
+    
+    const isCorrect = q.result === true;
+    const hasSelected = Array.isArray(q.selected_options) && q.selected_options.length > 0;
+    
+    if (filterStatus === "CORRECT") return isCorrect;
+    if (filterStatus === "INCORRECT") return !isCorrect && hasSelected;
+    if (filterStatus === "UNANSWERED") return !hasSelected;
+    
+    return true;
+  });
 
   return (
     <div className="min-h-screen pb-6">
@@ -184,7 +202,11 @@ function PracticeTestResult() {
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 my-3">
             {/* Correct */}
-            <Card className="border-0 shadow-sm rounded-xl overflow-hidden relative" bodyStyle={{ padding: '16px' }}>
+            <Card 
+              className={`border-0 shadow-sm rounded-xl overflow-hidden relative cursor-pointer transition-all ${filterStatus === 'CORRECT' ? 'ring-2 ring-green-500 transform scale-105' : 'hover:scale-105'}`} 
+              bodyStyle={{ padding: '16px' }}
+              onClick={() => setFilterStatus(filterStatus === 'CORRECT' ? 'ALL' : 'CORRECT')}
+            >
               <div className="absolute right-0 top-0 p-3 opacity-20">
                 <CheckCircleFilled className="text-5xl text-gray-300" />
               </div>
@@ -198,7 +220,11 @@ function PracticeTestResult() {
             </Card>
 
             {/* Incorrect */}
-            <Card className="border-0 shadow-sm rounded-xl overflow-hidden relative" bodyStyle={{ padding: '16px' }}>
+            <Card 
+              className={`border-0 shadow-sm rounded-xl overflow-hidden relative cursor-pointer transition-all ${filterStatus === 'INCORRECT' ? 'ring-2 ring-red-500 transform scale-105' : 'hover:scale-105'}`}
+              bodyStyle={{ padding: '16px' }}
+              onClick={() => setFilterStatus(filterStatus === 'INCORRECT' ? 'ALL' : 'INCORRECT')}
+            >
               <div className="absolute right-0 top-0 p-3 opacity-20">
                 <CloseCircleFilled className="text-5xl text-gray-300" />
               </div>
@@ -212,7 +238,11 @@ function PracticeTestResult() {
             </Card>
 
             {/* Unanswered */}
-            <Card className="border-0 shadow-sm rounded-xl overflow-hidden relative" bodyStyle={{ padding: '16px' }}>
+            <Card 
+              className={`border-0 shadow-sm rounded-xl overflow-hidden relative cursor-pointer transition-all ${filterStatus === 'UNANSWERED' ? 'ring-2 ring-blue-500 transform scale-105' : 'hover:scale-105'}`}
+              bodyStyle={{ padding: '16px' }}
+              onClick={() => setFilterStatus(filterStatus === 'UNANSWERED' ? 'ALL' : 'UNANSWERED')}
+            >
               <div className="absolute right-0 top-0 p-3 opacity-20">
                 <QuestionCircleOutlined className="text-5xl text-gray-300" />
               </div>
@@ -226,7 +256,11 @@ function PracticeTestResult() {
             </Card>
 
             {/* Total Questions */}
-            <Card className="border-0 shadow-sm rounded-xl overflow-hidden relative" bodyStyle={{ padding: '16px' }}>
+            <Card 
+              className={`border-0 shadow-sm rounded-xl overflow-hidden relative cursor-pointer transition-all ${filterStatus === 'ALL' ? 'ring-2 ring-purple-500 transform scale-105' : 'hover:scale-105'}`}
+              bodyStyle={{ padding: '16px' }}
+              onClick={() => setFilterStatus('ALL')}
+            >
               <div className="absolute right-0 top-0 p-3 opacity-20">
                 <PieChartOutlined className="text-5xl text-gray-300" />
               </div>
@@ -240,22 +274,69 @@ function PracticeTestResult() {
             </Card>
           </div>
 
-          {/* Detailed Question List */}
-          <Card
-            title={<span className="font-bold text-gray-800 text-base">Question Analysis</span>}
-            className="shadow-sm border-gray-100 rounded-xl"
-            bodyStyle={{ padding: '16px' }}
-          >
-            <div className="space-y-3">
-              {resultDetails?.questions_data?.map((question, index) => (
-                <QuestionItem
-                  key={question.question_id || index}
-                  question={question}
-                  onClick={() => handleQuestionClick(question, index)}
-                />
-              ))}
-            </div>
-          </Card>
+            {/* Detailed Question List */}
+            <Card
+              title={
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-1">
+                   <div className="flex items-center gap-3">
+                      <span className="font-bold text-gray-800 text-base">Question Analysis</span>
+                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
+                        {filteredQuestions.length} Items
+                      </span>
+                   </div>
+                   
+                   {/* Inline Filter Tabs */}
+                   <div className="flex p-1 bg-gray-100 rounded-lg">
+                      {['ALL', 'CORRECT', 'INCORRECT', 'UNANSWERED'].map((status) => {
+                        const isActive = filterStatus === status;
+                        let activeClass = "bg-white text-gray-800 shadow-sm";
+                        let inactiveClass = "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50";
+                        
+                        // Custom active colors
+                        if (isActive) {
+                          if (status === 'CORRECT') activeClass = "bg-green-100 text-green-700 shadow-sm ring-1 ring-green-200";
+                          if (status === 'INCORRECT') activeClass = "bg-red-100 text-red-700 shadow-sm ring-1 ring-red-200";
+                          if (status === 'UNANSWERED') activeClass = "bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200";
+                        }
+
+                        return (
+                          <button
+                            key={status}
+                            onClick={() => setFilterStatus(status)}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize duration-200 ${isActive ? activeClass : inactiveClass}`}
+                          >
+                            {status.toLowerCase()}
+                          </button>
+                        );
+                      })}
+                   </div>
+                </div>
+              }
+              className="shadow-sm border-gray-100 rounded-xl"
+              bodyStyle={{ padding: '16px' }}
+            >
+              <div className="space-y-3">
+                {filteredQuestions.length > 0 ? (
+                  filteredQuestions.map((question, index) => (
+                    <QuestionItem
+                      key={question.question_id || index}
+                      question={question}
+                      onClick={() => handleQuestionClick(question, index)}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                     <p className="text-gray-400 italic text-sm">No questions found for the filter "{filterStatus.toLowerCase()}".</p>
+                     <button 
+                        onClick={() => setFilterStatus('ALL')}
+                        className="mt-2 text-indigo-600 font-semibold text-xs hover:underline"
+                     >
+                        Clear Filter
+                     </button>
+                  </div>
+                )}
+              </div>
+            </Card>
         </Skeleton>
 
         {/* Question Review Modal */}
