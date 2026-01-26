@@ -157,9 +157,20 @@ function DashboardLayout({ children }) {
         setName(window.localStorage.getItem("name"));
       } else {
         router.replace("/login");
+        return;
+      }
+
+      // == Route Protection for Free Users ==
+      // If user is FREE and tries to access a restricted tab (or sub-tab), redirect to dashboard
+      const isRestrictedRoute = StudentMenuItems.some(item => 
+        item.disabled && (tab === item.key || tab.startsWith(`${item.key}/`))
+      );
+
+      if (isFreeUser && isRestrictedRoute) {
+         router.replace(`/student/${id}/dashboard`);
       }
     }
-  }, [handleLogout, router]);
+  }, [handleLogout, router, tab, isFreeUser, id]);
 
   // Sidebar widths
   const sidebarWidth = collapsed ? 67 : 280;
