@@ -668,7 +668,7 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
             <button
               htmlType="submit"
               loading={loading}
-              disabled={isSubmitDisabled}
+              // disabled={isSubmitDisabled}
               className="h-9 px-6 bg-gray-800 hover:bg-gray-900 border-none rounded-md font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Changes
