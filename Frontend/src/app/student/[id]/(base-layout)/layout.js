@@ -33,7 +33,7 @@ function DashboardLayout({ children }) {
   const pathname = usePathname();
   const pathParts = pathname.split("/").filter(Boolean);
   const tab = pathParts.slice(2).join("/");
-  const { collapsed, setCollapsed, subscriptionType } = useGlobalContext();
+  const { collapsed, setCollapsed, subscriptionType, userId } = useGlobalContext();
   const isFreeUser = subscriptionType === "FREE";
 
   const StudentMenuItems = [
@@ -151,6 +151,7 @@ function DashboardLayout({ children }) {
         handleLogout();
         return;
       }
+
       if (window.localStorage.getItem("csrfToken")) {
         setCsrfToken(window.localStorage.getItem("csrfToken"));
         setEmail(window.localStorage.getItem("email"));
@@ -160,8 +161,14 @@ function DashboardLayout({ children }) {
         return;
       }
 
-      // == Route Protection for Free Users ==
-      // If user is FREE and tries to access a restricted tab (or sub-tab), redirect to dashboard
+      // == IDOR PROTECTION ==
+      if (userId && String(userId) !== String(id)) {
+        // console.warn("Security Alert: User attempted to access unauthorized ID.");
+        router.replace(`/student/${userId}/dashboard`);
+        return;
+      }
+
+      // == ROUTE PROTECTION FOR FREE USERS ==
       const isRestrictedRoute = StudentMenuItems.some(item => 
         item.disabled && (tab === item.key || tab.startsWith(`${item.key}/`))
       );
@@ -170,7 +177,7 @@ function DashboardLayout({ children }) {
          router.replace(`/student/${id}/dashboard`);
       }
     }
-  }, [handleLogout, router, tab, isFreeUser, id]);
+  }, [handleLogout, router, tab, isFreeUser, id, userId]);
 
   // Sidebar widths
   const sidebarWidth = collapsed ? 67 : 280;
