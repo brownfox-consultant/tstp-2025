@@ -75,6 +75,8 @@ function AllUsersTable({ tabKey, api }) {
   setUserId,
   setUserName,
 } = useGlobalContext();
+const adminEmail = localStorage.getItem("email");
+
 
 
 
@@ -134,23 +136,43 @@ function AllUsersTable({ tabKey, api }) {
 
 
 const handleLoginAsUser = (record) => {
-  impersonateUser(record.id).then((res) => {
-    const { role, role_name, id, csrf_token, name } = res.data;
+  impersonateUser(record.id)
+    .then((res) => {
+      const {
+        role,
+        role_name,
+        id,
+        csrf_token,
+        name,
+        email,
+        subscription_type,
+      } = res.data;
 
-    localStorage.clear();
+      // Clear previous session data
+      localStorage.clear();
 
-    setRole(role);
-    setUserId(id);
-    setUserName(name);
+      // Store impersonated user
+      localStorage.setItem("name", name);
+      localStorage.setItem("email", email);
+      localStorage.setItem("id", id);
+      localStorage.setItem("role_name", role_name);
+      localStorage.setItem("csrfToken", csrf_token);
+      localStorage.setItem("subscription_type", subscription_type);
+      localStorage.setItem("impersonating", "true");
 
-    localStorage.setItem("id", id);
-    localStorage.setItem("name", name);
-    localStorage.setItem("role_name", role_name);
-    localStorage.setItem("csrfToken", csrf_token);
+      const dashboardUrl = `/${role_name}/${id}/dashboard`;
 
-    router.push(`/${role_name}/${id}/dashboard`);
-  });
+      // ✅ OPEN IN NEW TAB
+      window.open(dashboardUrl, "_blank");
+
+      // ✅ CLOSE CURRENT ADMIN TAB
+      // window.location.href = "/logout"; // OR admin logout route
+    })
+    .catch((err) => {
+      console.error("Impersonation failed", err);
+    });
 };
+
 
 
 
@@ -687,13 +709,15 @@ const handleLoginAsUser = (record) => {
       <div className="flex items-center gap-2">
 
         {/* ✅ LOGIN AS (ADMIN ONLY) */}
-        <Button
-          size="small"
-          type="default"
-          onClick={() => handleLoginAsUser(record)}
-        >
-          Login As
-        </Button>
+        {adminEmail === "admin@thesmarttestprep.com" && (
+  <Button
+    size="small"
+    type="default"
+    onClick={() => handleLoginAsUser(record)}
+  >
+    Login As
+  </Button>
+)}
 
         {/* Existing Edit */}
         {record.role_name == "student" ? (
