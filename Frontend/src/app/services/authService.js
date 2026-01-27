@@ -1122,6 +1122,31 @@ export const softDeactivateQuestion = (id) => {
   ).catch(handleAPIError);
 };
 
+export const impersonateUser = (userId) => {
+  return axios.post(
+    `${BASE_URL}/api/user/impersonate/`,
+    { user_id: userId },
+    {
+      withCredentials: true, // ✅ SEND sessionid cookie
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"), // ✅ CSRF
+      },
+    }
+  );
+};
+
+export const exitImpersonation = () => {
+  return axios.post(
+    `${BASE_URL}/api/user/exit-impersonation/`,
+    {},
+    {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      },
+    }
+  );
+};
 
 
 

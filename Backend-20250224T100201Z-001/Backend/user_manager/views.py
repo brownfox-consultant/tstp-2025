@@ -43,6 +43,7 @@ from test_manager.serializers import TestSerializer, TestListSerializer, Existin
     TestFeedbackSerializer
 from course_manager.models import Question, CourseSubjects, CombinedScore
 from test_manager.utils import calculate_total_questions_required
+IMPERSONATOR_ID = "_impersonator_id"
 
 
 
@@ -56,11 +57,71 @@ from rest_framework.response import Response
 from rest_framework import status
 
 class UserViewSet(viewsets.ModelViewSet):
+    
     queryset = User.get_all()
     serializer_class = UserSerializer
     logger = logging.getLogger('Users')
     filter_backends = [DjangoFilterBackend]
     filterset_class = UserFilter
+
+
+    @action(
+    detail=False,
+    methods=["POST"],
+    permission_classes=[IsAdmin],
+    url_path="impersonate"
+)
+    def impersonate(self, request):
+        target_user_id = request.data.get("user_id")
+
+        if not target_user_id:
+            return Response({"error": "user_id is required"}, status=400)
+
+        try:
+            target_user = User.objects.get(id=target_user_id, is_active=True)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        # Save admin ID
+        request.session[IMPERSONATOR_ID] = request.user.id
+
+        # Login as target user
+        login(request, target_user)
+
+        response = LoginSerializer(target_user).data
+        response["csrf_token"] = _unmask_cipher_token(get_token(request))
+        response["impersonated"] = True
+
+        return Response(response, status=200)
+    
+
+    @action(
+    detail=False,
+    methods=["POST"],
+    permission_classes=[IsAuthenticated],
+    url_path="exit-impersonation"
+)
+    def exit_impersonation(self, request):
+        admin_id = request.session.get(IMPERSONATOR_ID)
+
+        if not admin_id:
+            return Response({"error": "Not impersonating"}, status=400)
+
+        try:
+            admin = User.objects.get(id=admin_id)
+        except User.DoesNotExist:
+            return Response({"error": "Admin not found"}, status=404)
+
+        login(request, admin)
+        del request.session[IMPERSONATOR_ID]
+
+        response = LoginSerializer(admin).data
+        response["csrf_token"] = _unmask_cipher_token(get_token(request))
+        response["impersonated"] = False
+
+        return Response(response, status=200)
+
+
     # ... your existing code ...
 
     @action(detail=True, methods=['patch'], permission_classes=[IsAdmin], url_path='status')
@@ -331,16 +392,26 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    # @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    # def session_validate(self, request):
+    #     """
+    #         Custom action to check if the user's session is still valid.
+    #     """
+    #     # If the request reaches this point, the user is authenticated
+    #     user = request.user
+    #     response = LoginSerializer(user).data
+    #     response['csrf_token'] = _unmask_cipher_token(get_token(request))
+    #     return Response(data=response, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def session_validate(self, request):
-        """
-            Custom action to check if the user's session is still valid.
-        """
-        # If the request reaches this point, the user is authenticated
         user = request.user
         response = LoginSerializer(user).data
         response['csrf_token'] = _unmask_cipher_token(get_token(request))
-        return Response(data=response, status=status.HTTP_200_OK)
+        response['impersonated'] = "_impersonator_id" in request.session
+        return Response(response, status=200)
+
+
 
 
     @action(detail=False, methods=['POST'], permission_classes=[AllowAny])

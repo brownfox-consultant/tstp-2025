@@ -5,6 +5,7 @@ import { ConfigProvider } from "antd";
 import { GlobalContextProvider } from "@/context/store";
 import Script from "next/script";
 import StoreProvider from "@/lib/StoreProvider";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -56,7 +57,11 @@ function RootLayout({ children }) {
                 },
               }}
             >
-              <GlobalContextProvider>{children}</GlobalContextProvider>
+            <GlobalContextProvider>
+  <ImpersonationBanner />
+  {children}
+</GlobalContextProvider>
+
             </ConfigProvider>
           </StyledComponentsRegistry>
         </StoreProvider>

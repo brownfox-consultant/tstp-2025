@@ -33,6 +33,8 @@ import { BASE_URL } from "@/app/constants/apiConstants";
 import TestList from "@/components/TestList";
 import TestList_admin_user from "../TestList_admin_user";
 import PracticeTestsList_admin_uer from "@/components/PracticeTestsList_admin_uer";
+import { impersonateUser } from "@/app/services/authService";
+
 
 const { confirm } = Modal;
 
@@ -120,6 +122,35 @@ function AllUsersTable({ tabKey, api }) {
       document.removeEventListener("keypress", handleKeyPress);
     };
   }, [isDropdownVisible, filterItems]);
+
+
+  const handleLoginAsUser = (record) => {
+  impersonateUser(record.id)
+    .then((res) => {
+      const {
+        role_name,
+        id,
+        csrf_token,
+        name,
+        email,
+      } = res.data;
+
+      // SAME storage logic as login
+      localStorage.setItem("name", name);
+      localStorage.setItem("email", email);
+      localStorage.setItem("id", id);
+      localStorage.setItem("role_name", role_name);
+      localStorage.setItem("csrfToken", csrf_token);
+      
+
+      router.push(`/${role_name}/${id}/dashboard`);
+
+    })
+    .catch((err) => {
+      console.error("Impersonation failed", err);
+    });
+};
+
 
   const fetchUsers = async ({ role, page = 1, search = "", ordering = "", page_size = 10 }) => {
     setLoading(true);
@@ -568,81 +599,166 @@ function AllUsersTable({ tabKey, api }) {
         },
       },
 
+      // {
+      //   title: "Actions",
+      //   key: "val",
+      //   align: "start",
+      //   width: 300,
+      //   render: (_, record) => {
+      //     return (
+      //       <div className="flex items-center gap-2">
+      //         {/* Edit modals */}
+      //         {record.role_name == "student" ? (
+      //           <EditStudentUserModal
+      //             updated={updated}
+      //             setUpdated={setUpdated}
+      //             recordData={record}
+      //           />
+      //         ) : (
+      //           <EditUserModal
+      //             updated={updated}
+      //             setUpdated={setUpdated}
+      //             recordData={record}
+      //           />
+      //         )}
+
+      //         {/* View Results for students */}
+      //         {record.role_name === "student" && (
+      //           <Button
+      //             type="default"
+      //             size="small"
+      //             className="text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500"
+      //             onClick={() => {
+      //               set_student_id(record.id);
+      //               setStudentName(record.name);
+      //               setShowResultModal(true);
+      //             }}
+      //           >
+      //             Results
+      //           </Button>
+      //         )}
+
+      //         {/* Activate / Deactivate Button */}
+      //         {record.is_active ? (
+      //           <Button
+      //             size="small"
+      //             danger
+      //             loading={statusLoadingMap[record.id]}
+      //             onClick={() => handleStatusChange(record.id, false)}
+      //           >
+      //             Deactivate
+      //           </Button>
+      //         ) : (
+      //           <Button
+      //             size="small"
+      //             type="primary"
+      //             className="bg-green-600 hover:bg-green-500"
+      //             loading={statusLoadingMap[record.id]}
+      //             onClick={() => handleStatusChange(record.id, true)}
+      //           >
+      //             Activate
+      //           </Button>
+      //         )}
+
+      //         {/* Delete only if active */}
+      //         {record.is_active && (
+      //           <Button
+      //             size="small"
+      //             type="text"
+      //             danger
+      //             icon={<DeleteTwoTone twoToneColor="#eb2f96" />}
+      //             onClick={() => showDeleteConfirm(record)}
+      //           />
+      //         )}
+      //       </div>
+      //     );
+      //   },
+      // },
       {
-        title: "Actions",
-        key: "val",
-        align: "start",
-        width: 300,
-        render: (_, record) => {
-          return (
-            <div className="flex items-center gap-2">
-              {/* Edit modals */}
-              {record.role_name == "student" ? (
-                <EditStudentUserModal
-                  updated={updated}
-                  setUpdated={setUpdated}
-                  recordData={record}
-                />
-              ) : (
-                <EditUserModal
-                  updated={updated}
-                  setUpdated={setUpdated}
-                  recordData={record}
-                />
-              )}
+  title: "Actions",
+  key: "val",
+  align: "start",
+  width: 300,
+  render: (_, record) => {
+    return (
+      <div className="flex items-center gap-2">
 
-              {/* View Results for students */}
-              {record.role_name === "student" && (
-                <Button
-                  type="default"
-                  size="small"
-                  className="text-blue-600 border-blue-600 hover:text-blue-500 hover:border-blue-500"
-                  onClick={() => {
-                    set_student_id(record.id);
-                    setStudentName(record.name);
-                    setShowResultModal(true);
-                  }}
-                >
-                  Results
-                </Button>
-              )}
+        {/* ✅ LOGIN AS (ADMIN ONLY) */}
+        <Button
+          size="small"
+          type="default"
+          onClick={() => handleLoginAsUser(record)}
+        >
+          Login As
+        </Button>
 
-              {/* Activate / Deactivate Button */}
-              {record.is_active ? (
-                <Button
-                  size="small"
-                  danger
-                  loading={statusLoadingMap[record.id]}
-                  onClick={() => handleStatusChange(record.id, false)}
-                >
-                  Deactivate
-                </Button>
-              ) : (
-                <Button
-                  size="small"
-                  type="primary"
-                  className="bg-green-600 hover:bg-green-500"
-                  loading={statusLoadingMap[record.id]}
-                  onClick={() => handleStatusChange(record.id, true)}
-                >
-                  Activate
-                </Button>
-              )}
+        {/* Existing Edit */}
+        {record.role_name == "student" ? (
+          <EditStudentUserModal
+            updated={updated}
+            setUpdated={setUpdated}
+            recordData={record}
+          />
+        ) : (
+          <EditUserModal
+            updated={updated}
+            setUpdated={setUpdated}
+            recordData={record}
+          />
+        )}
 
-              {/* Delete only if active */}
-              {record.is_active && (
-                <Button
-                  size="small"
-                  type="text"
-                  danger
-                  icon={<DeleteTwoTone twoToneColor="#eb2f96" />}
-                  onClick={() => showDeleteConfirm(record)}
-                />
-              )}
-            </div>
-          );
-        },
-      },
+        {/* Results */}
+        {record.role_name === "student" && (
+          <Button
+            type="default"
+            size="small"
+            onClick={() => {
+              set_student_id(record.id);
+              setStudentName(record.name);
+              setShowResultModal(true);
+            }}
+          >
+            Results
+          </Button>
+        )}
+
+        {/* Activate / Deactivate */}
+        {record.is_active ? (
+          <Button
+            size="small"
+            danger
+            loading={statusLoadingMap[record.id]}
+            onClick={() => handleStatusChange(record.id, false)}
+          >
+            Deactivate
+          </Button>
+        ) : (
+          <Button
+            size="small"
+            type="primary"
+            className="bg-green-600 hover:bg-green-500"
+            loading={statusLoadingMap[record.id]}
+            onClick={() => handleStatusChange(record.id, true)}
+          >
+            Activate
+          </Button>
+        )}
+
+        {/* Delete */}
+        {record.is_active && (
+          <Button
+            size="small"
+            type="text"
+            danger
+            icon={<DeleteTwoTone twoToneColor="#eb2f96" />}
+            onClick={() => showDeleteConfirm(record)}
+          />
+        )}
+      </div>
+    );
+  },
+}
+
 
     ],
     registered: [],
