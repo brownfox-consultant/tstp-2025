@@ -22,24 +22,24 @@ export default function ImpersonationBanner() {
   if (!impersonated) return null;
 
   const handleExit = () => {
-    exitImpersonation()
-      .then((res) => {
-        const { role_name, id, csrf_token, name, email } = res.data;
+  exitImpersonation().then((res) => {
+    const { role, role_name, id, csrf_token, name } = res.data;
 
-        localStorage.setItem("name", name);
-        localStorage.setItem("email", email);
-        localStorage.setItem("id", id);
-        localStorage.setItem("role_name", role_name);
-        localStorage.setItem("csrfToken", csrf_token);
+    localStorage.clear();
 
-        setImpersonated(false);
+    setRole(role);
+    setUserId(id);
+    setUserName(name);
 
-        router.push(`/${role_name}/${id}/dashboard`);
-      })
-      .catch((err) => {
-        console.error("Exit impersonation failed", err);
-      });
-  };
+    localStorage.setItem("id", id);
+    localStorage.setItem("name", name);
+    localStorage.setItem("role_name", role_name);
+    localStorage.setItem("csrfToken", csrf_token);
+
+    router.push(`/${role_name}/${id}/dashboard`);
+  });
+};
+
 
   return (
     <div className="bg-red-600 text-white px-4 py-2 flex justify-between items-center">

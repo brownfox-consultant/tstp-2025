@@ -34,6 +34,7 @@ import TestList from "@/components/TestList";
 import TestList_admin_user from "../TestList_admin_user";
 import PracticeTestsList_admin_uer from "@/components/PracticeTestsList_admin_uer";
 import { impersonateUser } from "@/app/services/authService";
+import { useGlobalContext } from "@/context/store";
 
 
 const { confirm } = Modal;
@@ -69,6 +70,14 @@ function AllUsersTable({ tabKey, api }) {
   const [studentName, setStudentName] = useState("");
   const [ordering, setOrdering] = useState("");
   const [pageSize, setPageSize] = useState(10);
+  const {
+  setRole,
+  setUserId,
+  setUserName,
+} = useGlobalContext();
+
+
+
 
   const searchInput = useRef(null);
   const router = useRouter();
@@ -124,32 +133,26 @@ function AllUsersTable({ tabKey, api }) {
   }, [isDropdownVisible, filterItems]);
 
 
-  const handleLoginAsUser = (record) => {
-  impersonateUser(record.id)
-    .then((res) => {
-      const {
-        role_name,
-        id,
-        csrf_token,
-        name,
-        email,
-      } = res.data;
+const handleLoginAsUser = (record) => {
+  impersonateUser(record.id).then((res) => {
+    const { role, role_name, id, csrf_token, name } = res.data;
 
-      // SAME storage logic as login
-      localStorage.setItem("name", name);
-      localStorage.setItem("email", email);
-      localStorage.setItem("id", id);
-      localStorage.setItem("role_name", role_name);
-      localStorage.setItem("csrfToken", csrf_token);
-      
+    localStorage.clear();
 
-      router.push(`/${role_name}/${id}/dashboard`);
+    setRole(role);
+    setUserId(id);
+    setUserName(name);
 
-    })
-    .catch((err) => {
-      console.error("Impersonation failed", err);
-    });
+    localStorage.setItem("id", id);
+    localStorage.setItem("name", name);
+    localStorage.setItem("role_name", role_name);
+    localStorage.setItem("csrfToken", csrf_token);
+
+    router.push(`/${role_name}/${id}/dashboard`);
+  });
 };
+
+
 
 
   const fetchUsers = async ({ role, page = 1, search = "", ordering = "", page_size = 10 }) => {
