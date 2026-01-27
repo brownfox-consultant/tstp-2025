@@ -1,6 +1,6 @@
 "use client";
 
-import { getMaterialDetails } from "@/app/services/authService";
+import { getMaterialDetails, getUserDetails } from "@/app/services/authService";
 import { WarningOutlined } from "@ant-design/icons";
 import { Modal, Skeleton, Watermark } from "antd";
 import { useParams } from "next/navigation";
@@ -12,7 +12,6 @@ function ViewMaterial() {
   const { id, tutorialId } = params;
   const [materialData, setMaterialData] = useState({});
   const [embedUrl, setEmbedUrl] = useState();
-  // const name = window.sessionStorage.getItem("name");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
@@ -79,8 +78,17 @@ function ViewMaterial() {
   }
 
   useEffect(() => {
-    setName(window.localStorage.getItem("name"));
-    setEmail(window.localStorage.getItem("email"));
+    if (id) {
+       getUserDetails(id).then(res => {
+         if (res?.data) {
+           setName(res.data.name);
+           setEmail(res.data.email);
+         }
+       }).catch(err => {
+         console.error("Failed to fetch user details for watermark", err);
+       });
+    }
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
@@ -88,7 +96,7 @@ function ViewMaterial() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     if (keyState.cmd && keyState.shift && keyState.five) {
@@ -99,7 +107,7 @@ function ViewMaterial() {
   useEffect(() => {
     getMaterialDetails(tutorialId).then((res) => {
       setMaterialData(res.data);
-      console.log("res.data",res.data)
+      // console.log("res.data",res.data)
       if (res.data?.material_url?.includes("youtube.com/watch?v=")) {
         const videoId = res.data.material_url.split("v=")[1];
         const embedUrl = `https://www.youtube.com/embed/${videoId}`;

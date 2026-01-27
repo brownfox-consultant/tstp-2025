@@ -14,7 +14,6 @@ import Image from "next/image";
 import LogoutIcon from "@/components/icons/logout-icon";
 import UserProfileIcon from "@/components/icons/user-profile-icon";
 import FullLengthTestIcon from "@/components/icons/full-length-test-icon";
-import OrangeSideBarIcon from "./../../../../../public/icons/orangesidebar.svg";
 
 import {
   DashboardOutlined,
@@ -33,14 +32,8 @@ function DashboardLayout({ children }) {
   const pathname = usePathname();
   const pathParts = pathname.split("/").filter(Boolean);
   const tab = pathParts.slice(2).join("/");
-  const [isFreeUser, setIsFreeUser] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const type = window.localStorage.getItem("subscription_type");
-      setIsFreeUser(type === "FREE");
-    }
-  }, []);
+  const { collapsed, setCollapsed, subscriptionType, userId } = useGlobalContext();
+  const isFreeUser = subscriptionType === "FREE";
 
   const StudentMenuItems = [
     {
@@ -99,7 +92,6 @@ function DashboardLayout({ children }) {
   const router = useRouter();
   const [csrfToken, setCsrfToken] = useState(undefined);
   
-  // Ref to track if logout is in progress to prevent duplicate logout calls
   const isLoggingOut = React.useRef(false);
 
   const { id } = useParams();
@@ -108,10 +100,7 @@ function DashboardLayout({ children }) {
     token: { colorBgContainer, borderRadius },
   } = ThemeAntd.useToken();
 
-  const { collapsed, setCollapsed } = useGlobalContext();
-
   const handleLogout = useCallback(async () => {
-    // Prevent duplicate logout calls
     if (isLoggingOut.current) return;
     isLoggingOut.current = true;
     
@@ -149,7 +138,6 @@ function DashboardLayout({ children }) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Skip if already logging out
       if (isLoggingOut.current) return;
       
       const storedName = window.localStorage.getItem("name");
@@ -157,15 +145,30 @@ function DashboardLayout({ children }) {
         handleLogout();
         return;
       }
+
       if (window.localStorage.getItem("csrfToken")) {
         setCsrfToken(window.localStorage.getItem("csrfToken"));
         setEmail(window.localStorage.getItem("email"));
         setName(window.localStorage.getItem("name"));
       } else {
         router.replace("/login");
+        return;
+      }
+
+      if (userId && String(userId) !== String(id)) {
+        router.replace(`/student/${userId}/dashboard`);
+        return;
+      }
+
+      const isRestrictedRoute = StudentMenuItems.some(item => 
+        item.disabled && (tab === item.key || tab.startsWith(`${item.key}/`))
+      );
+
+      if (isFreeUser && isRestrictedRoute) {
+         router.replace(`/student/${id}/dashboard`);
       }
     }
-  }, [handleLogout, router]);
+  }, [handleLogout, router, tab, isFreeUser, id, userId]);
 
   // Sidebar widths
   const sidebarWidth = collapsed ? 67 : 280;
@@ -204,13 +207,7 @@ function DashboardLayout({ children }) {
             }}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <Image
-              src={OrangeSideBarIcon}
-              alt="Toggle Sidebar"
-              width={16}
-              height={16}
-              className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
-            />
+            {collapsed ? <MenuUnfoldOutlined /> : <MenuUnfoldOutlined style={{ transform: 'rotate(180deg)' }} />}
           </button>
         )}
 

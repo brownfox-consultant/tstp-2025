@@ -213,18 +213,23 @@ export const questionTypeMap = {
   MCQ: "MCQ",
 };
 
-// export const questionSubTypeMap = {
-//   SINGLE_CHOICE: "Single Choice",
-//   MULTI_CHOICE: "Multi Choice",
-//   READING_COMPREHENSION: "Reading Comprehension",
-//   SINGLE_ANSWER: "Single Value Correct",
-//   MULTI_ANSWER: "Multiple Value Correct",
-//   RANGE_BASED_ANSWER: "Range Correct",
-// };
+export const questionSubTypeMap = {
+  SINGLE_CHOICE: "Single Choice",
+  MULTI_CHOICE: "Multi Choice",
+  READING_COMPREHENSION: "Reading Comprehension",
+  SINGLE_ANSWER: "Single Value Correct",
+  MULTI_ANSWER: "Multiple Value Correct",
+  RANGE_BASED_ANSWER: "Range Correct",
+  MATH: "Math",
+  LINEAR: "Linear",
+  NON_LINEAR: "Non Linear",
+};
 
 export const showCalculatorOptionsMap = {
   true: "Yes",
   false: "No",
+  YES: "Yes",
+  NO: "No",
 };
 
 export const testTypeFilters = [

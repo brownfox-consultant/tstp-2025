@@ -13,7 +13,6 @@ import { useMediaQuery } from "react-responsive";
 import Image from "next/image";
 import LogoutIcon from "@/components/icons/logout-icon";
 import UserProfileIcon from "@/components/icons/user-profile-icon";
-import OrangeSideBarIcon from "../../../../public/icons/orangesidebar.svg";
 
 import {
   DashboardOutlined,
@@ -217,13 +216,7 @@ function DashboardLayout({ children }) {
             }}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <Image
-              src={OrangeSideBarIcon}
-              alt="Toggle Sidebar"
-              width={16}
-              height={16}
-              className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
-            />
+            {collapsed ? <MenuUnfoldOutlined /> : <MenuUnfoldOutlined style={{ transform: 'rotate(180deg)' }} />}
           </button>
         )}
 

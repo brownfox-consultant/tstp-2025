@@ -1,5 +1,5 @@
 "use client";
-import { getRoles, getUserDetails } from "@/app/services/authService";
+import { getRoles, getUserDetails, validateSession } from "@/app/services/authService";
 // import "@/lib/pdfWorkerConfig";
 import {
   createContext,
@@ -15,6 +15,8 @@ const GlobalContext = createContext({
   role: "",
   setUserId: () => "",
   setRole: () => "",
+  subscriptionType: "",
+  setSubscriptionType: () => "",
 });
 
 export const GlobalContextProvider = ({ children }) => {
@@ -26,11 +28,29 @@ export const GlobalContextProvider = ({ children }) => {
   const [testRunning, setTestRunning] = useState(false);
   const [roles, setRoles] = useState([]);
   const [courseDetails, setCourseDetails] = useState({});
+  const [subscriptionType, setSubscriptionType] = useState("");
 
   useEffect(() => {
     getRoles().then((res) => {
       setRoles(res.data);
     });
+  }, []);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const res = await validateSession();
+        if (res?.data) {
+          setSubscriptionType(res.data.subscription_type);
+          setUserId(res.data.id);
+          setRole(res.data.role);
+          setUserName(res.data.name);
+        }
+      } catch (error) {
+        console.error("Session validation failed:", error);
+      }
+    };
+    fetchSession();
   }, []);
 
   return (
@@ -52,6 +72,8 @@ export const GlobalContextProvider = ({ children }) => {
         setTestRunning,
         courseDetails,
         setCourseDetails,
+        subscriptionType,
+        setSubscriptionType,
       }}
     >
       {children}

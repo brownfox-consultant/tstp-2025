@@ -9,7 +9,7 @@ import Loading from "@/app/(auth)/loading";
 function page() {
   const router = useRouter();
   const { id, testId, testType } = useParams();
-  console.log("id, testId", id, testId, testType);
+  // console.log("id, testId", id, testId, testType);
   const questionsStatus = useSelector((state) => state.test.questionsStatus);
   const currentArraySectionIndex = useSelector(
     (state) => state.currentArraySectionIndex

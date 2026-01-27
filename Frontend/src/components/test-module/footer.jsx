@@ -65,7 +65,7 @@ function TestFooter() {
 
   async function handleFinish() {
     if (testType == "practice") {
-      console.log("practice");
+      // console.log("practice");
     } else {
       if (!isTimeUp) {
         Modal.warning({

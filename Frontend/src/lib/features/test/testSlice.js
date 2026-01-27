@@ -365,6 +365,12 @@ const testSlice = createSlice({
       state.isTestCompleted = true;
       state.isSectionCompleted = true;
     },
+    setAnswerMap: (state, action) => {
+      state.answerMap = action.payload;
+    },
+    setCurrentQuestionIndex: (state, action) => {
+      state.currentQuestionIndex = action.payload;
+    },
   },
 
   extraReducers: (builder) => {
@@ -635,6 +641,8 @@ export const {
   setTestAsCompleted,
   setIsReviewPage,
   resetTestSlice,
+  setAnswerMap,
+  setCurrentQuestionIndex,
   setTestRunning,
 } = testSlice.actions;
 export default testSlice.reducer;

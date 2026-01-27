@@ -25,7 +25,7 @@ function TestList() {
   const router = useRouter();
   const pathname = usePathname();
   const role = pathname.split("/")[1];
-  const { setTestRunning, testRunning } = useGlobalContext();
+
   const { isFullScreen, goFullScreen, exitFullScreen } = useFullScreen();
   const [showResult, setShowResult] = useState(false);
   const [submissionId, setSubmissionId] = useState();
@@ -37,10 +37,7 @@ function TestList() {
   const debounceTimeoutRef = useRef(null);
 
 
-  const subscriptionType =
-    typeof window !== "undefined"
-      ? localStorage.getItem("subscription_type")
-      : null;
+  const { setTestRunning, testRunning, subscriptionType } = useGlobalContext();
 
 
   useEffect(() => {
@@ -78,7 +75,6 @@ function TestList() {
 
         setTestsData(sortedResults);
 
-        // ✅ Fix pagination numbers
         if (subscriptionType === "FREE") {
           setCurrent(1);
           setTotal(results.length);
@@ -89,7 +85,6 @@ function TestList() {
           setTotalPages(res.data.total_pages);
         }
 
-        // Cleanup session
         window.sessionStorage.removeItem("course_subject_index");
         window.sessionStorage.removeItem("section_index");
         window.sessionStorage.removeItem("question_index");
