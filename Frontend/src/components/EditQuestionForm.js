@@ -140,7 +140,12 @@ function EditQuestionForm({
   const [selectedCourseSubjectIds, setSelectedCourseSubjectIds] = useState(
   initialValues.available_courses?.map(c => c.course_subject_id) || [courseSubId]
 );
-
+const [courseStatusMap, setCourseStatusMap] = useState(
+  initialValues.available_courses?.reduce((acc, c) => {
+    acc[c.course_subject_id] = c.is_active;
+    return acc;
+  }, {}) || {}
+);
 
   const isMobile = useMediaQuery({
     query: "(max-width: 768px)",
@@ -539,21 +544,23 @@ function EditQuestionForm({
     //   });
     // }
     if (pathname.includes("admin")) {
+  const course_updates = Object.entries(courseStatusMap).map(
+    ([course_subject_id, is_active]) => ({
+      course_subject_id: Number(course_subject_id),
+      is_active,
+    })
+  );
+
   editQuestionService(initialValues.id, {
     ...payload,
-    course_subject_ids: selectedCourseSubjectIds, // 🔥 BULK UPDATE
+    course_updates, // 🔥 FINAL
   }).then(() => {
     Modal.success({
       title: "Question updated successfully",
-      content: `Updated in ${selectedCourseSubjectIds.length} course(s)`,
+      content: `Updated in ${course_updates.length} course(s)`,
       onOk: () => {
-            if (closeModal) {
-              closeModal();
-            } else {
-              router.push(
-                `/admin/questions/questions?course_subject_id=${courseSubjectId}&page=${page}`
-              );
-            }},
+        closeModal?.();
+      },
     });
   });
 }
@@ -878,31 +885,43 @@ function EditQuestionForm({
                 </Col>
               </Row>
 
-              {action === "edit" && pathname.includes("admin") && (
-  <Row gutter={[24, 24]} className="mt-4">
-    <Col md={8} span={24}>
-      <Form.Item
-        label={
-          <span className="text-sm font-semibold text-gray-700">
-            Question Status
-          </span>
-        }
-        name="is_active"
-        required
-        className="!mb-0"
-      >
-        <Radio.Group buttonStyle="solid">
-          <Radio.Button value={true} className="px-6">
-             Active
-          </Radio.Button>
-          <Radio.Button value={false} className="px-6">
-             Inactive
-          </Radio.Button>
-        </Radio.Group>
-      </Form.Item>
-    </Col>
-  </Row>
+             {action === "edit" && initialValues.available_in_other_courses && (
+  <Col span={24}>
+    <div className="mt-4">
+      <h4 className="text-sm font-semibold text-gray-700 mb-2">
+        Course-wise Status
+      </h4>
+
+      <div className="space-y-2">
+        {initialValues.available_courses.map((c) => (
+          <div
+            key={c.course_subject_id}
+            className="flex items-center justify-between bg-white p-3 rounded-lg border"
+          >
+            <div>
+              <div className="font-medium">{c.course}</div>
+              <div className="text-xs text-gray-500">{c.subject}</div>
+            </div>
+
+            <Radio.Group
+              value={courseStatusMap[c.course_subject_id]}
+              onChange={(e) =>
+                setCourseStatusMap((prev) => ({
+                  ...prev,
+                  [c.course_subject_id]: e.target.value,
+                }))
+              }
+            >
+              <Radio.Button value={true}>Active</Radio.Button>
+              <Radio.Button value={false}>Inactive</Radio.Button>
+            </Radio.Group>
+          </div>
+        ))}
+      </div>
+    </div>
+  </Col>
 )}
+
 
             </div>
           </div>

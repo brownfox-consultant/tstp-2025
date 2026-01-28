@@ -1032,35 +1032,45 @@ class QuestionViewSet(viewsets.ModelViewSet):
         except Question.DoesNotExist:
             return get_error_response("Invalid question id")
 
-        # ✅ courses selected from frontend
-        course_subject_ids = request.data.get('course_subject_ids')
+        # ✅ course-wise updates
+        course_updates = request.data.get("course_updates")
 
-        if not course_subject_ids or not isinstance(course_subject_ids, list):
-            return get_error_response("course_subject_ids must be provided as a list")
+        if not course_updates or not isinstance(course_updates, list):
+            return get_error_response(
+                "course_updates must be provided as a list"
+            )
 
-        # 🔑 OLD signature (to find same questions)
-        old_signature = get_question_signature(base_question)
+        # 🔑 SAME QUESTION SIGNATURE
+        base_signature = get_question_signature(base_question)
 
-        # 🔍 Find matching questions across selected courses
-        candidate_questions = Question.objects.select_related(
+        # 🔍 Fetch all candidate questions (same subject only)
+        course_subject_ids = [
+            cu["course_subject_id"] for cu in course_updates
+        ]
+
+        candidates = Question.objects.select_related(
             'topic', 'sub_topic'
-        ).filter(
-            course_subject_id__in=course_subject_ids
-        )
+        ).filter(course_subject_id__in=course_subject_ids)
 
         questions_to_update = []
-        for q in candidate_questions:
-            if get_question_signature(q) == old_signature:
+
+        for q in candidates:
+            if get_question_signature(q) == base_signature:
                 questions_to_update.append(q)
 
         if not questions_to_update:
             return get_error_response("No matching questions found to update")
 
-        context = {'request': request}
+        # 🔁 Map for quick lookup
+        status_map = {
+            cu["course_subject_id"]: cu["is_active"]
+            for cu in course_updates
+        }
 
         updated_questions = []
+        context = {"request": request}
 
-        # 🔒 ATOMIC UPDATE
+        # 🔒 ATOMIC OPERATION
         with transaction.atomic():
             for question in questions_to_update:
                 serializer = self.get_serializer(
@@ -1072,17 +1082,21 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 serializer.is_valid(raise_exception=True)
 
                 updated_question = serializer.save(
+                    is_active=status_map.get(
+                        question.course_subject_id,
+                        question.is_active
+                    ),
                     updated_by=request.user,
                     updated_at=timezone.now()
                 )
 
                 updated_questions.append(updated_question)
 
-                # ✅ Log update
+                # 🧾 LOG
                 QuestionLog.objects.create(
                     question=updated_question,
                     user=request.user,
-                    action='EDIT',
+                    action="EDIT",
                     ip_address=self.get_client_ip(request)
                 )
 
@@ -1091,6 +1105,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
             "updated_count": len(updated_questions),
             "updated_question_ids": [q.id for q in updated_questions]
         })
+
 
 
     def perform_update(self, serializer):

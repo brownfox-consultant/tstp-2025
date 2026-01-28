@@ -14,7 +14,7 @@ def validate_add_question_request(request):
 def build_question_availability_map(questions):
     """
     SAME question = description + options + topic + sub_topic
-    Availability is computed ACROSS ALL COURSES.
+    Availability is computed ACROSS ALL COURSES (same subject)
     """
     signature_map = defaultdict(list)
 
@@ -29,10 +29,12 @@ def build_question_availability_map(questions):
         signature_map[signature].append({
             'course': q.course_subject.course.name,
             'subject': q.course_subject.subject.name,
-            'course_subject_id': q.course_subject.id
+            'course_subject_id': q.course_subject.id,
+            'is_active': q.is_active,   # ✅ KEY ADDITION
         })
 
     return signature_map
+
 
 def get_question_signature(question):
     return (
