@@ -712,7 +712,7 @@ const [courseStatusMap, setCourseStatusMap] = useState(
                 </Col>
               )}
 
-              {action === "edit" && initialValues.available_in_other_courses && (
+              {/* {action === "edit" && initialValues.available_in_other_courses && (
   <Col span={24}>
     <Form.Item
       label={
@@ -743,7 +743,7 @@ const [courseStatusMap, setCourseStatusMap] = useState(
       </p>
     </Form.Item>
   </Col>
-)}
+)} */}
 
 
               <Col md={12} lg={6} span={24}>
