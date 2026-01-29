@@ -403,6 +403,51 @@ class UserViewSet(viewsets.ModelViewSet):
     #     response['csrf_token'] = _unmask_cipher_token(get_token(request))
     #     return Response(data=response, status=status.HTTP_200_OK)
 
+    @action(
+    detail=False,
+    methods=["GET"],
+    url_path="all-users",
+    permission_classes=[IsAdmin],  # 🔐 ONLY ADMIN
+)
+    def all_users(self, request):
+        """
+        Returns ALL users without role-based filtering and WITHOUT pagination
+        """
+
+        users = User.objects.filter(is_staff=False)
+
+        # 🔍 Optional search
+        search = request.query_params.get("search")
+        if search:
+            users = users.filter(
+                Q(name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(phone_number__icontains=search)
+            )
+
+        # 💳 Annotate PAID / FREE
+        paid_enrollment_qs = CourseEnrollment.objects.filter(
+            student=OuterRef("pk"),
+            subscription_type=CourseEnrollment.PAID
+        )
+
+        users = users.annotate(
+            user_type=Case(
+                When(Exists(paid_enrollment_qs), then=Value("PAID")),
+                default=Value("FREE"),
+                output_field=CharField()
+            )
+        ).order_by("-created_at")  # optional ordering
+
+        serializer = UserSerializer(users, many=True)
+
+        return Response({
+            "count": users.count(),
+            "results": serializer.data
+        })
+
+
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def session_validate(self, request):
         user = request.user

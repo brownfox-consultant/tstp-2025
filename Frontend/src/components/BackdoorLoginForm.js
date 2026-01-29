@@ -1,86 +1,181 @@
 "use client";
 
-import { Button, Input, Form, message, Select } from "antd";
+import { Button, Input, Form, message, Select, Spin } from "antd";
 import { useForm } from "antd/es/form/Form";
-import { useState } from "react";
-import { loginService } from "@/app/services/authService";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { BASE_URL } from "@/app/constants/apiConstants";
+import {
+  loginService,
+  validateSession,
+  impersonateUser,
+} from "@/app/services/authService";
 
 function BackdoorLoginForm() {
   const [form] = useForm();
+
   const [buttonLoading, setButtonLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [sessionValid, setSessionValid] = useState(false);
+
   const [allUsers, setAllUsers] = useState([]);
   const [roleNames, setRoleNames] = useState([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  const onSubmit = async (values) => {
-    const { email, password } = values;
-    setButtonLoading(true);
+  /* =========================
+     FETCH ALL USERS
+  ========================= */
+  const fetchAllUsers = async () => {
+    const res = await axios.get(`${BASE_URL}/api/user/all-users/`, {
+      withCredentials: true,
+      headers: {
+        "ngrok-skip-browser-warning": "69420",
+      },
+    });
 
-    // Step 1: Login using loginService
-    loginService({ email, password })
-      .then(async (loginRes) => {
-        
-        // Step 2: After successful login, fetch users list
-        try {
-          const usersResponse = await axios.get(`${BASE_URL}/api/user/`, {
-            withCredentials: true,
-            headers: {
-              "ngrok-skip-browser-warning": "69420",
-            },
-          });
-          
-          
-          // Store all users
-          const users = usersResponse.data.results || [];
-          setAllUsers(users);
-          
-          // Extract unique role names from users
-          const uniqueRoles = [...new Set(users.map(user => user.role_name))].filter(Boolean);
-          setRoleNames(uniqueRoles);
-          
-          
-        } catch (usersErr) {
-        }
-        
-        // Reset form
-        form.resetFields();
-        
-      })
-      .catch((err) => {
-      })
-      .finally(() => {
-        setButtonLoading(false);
-      });
+    const users = res.data.results || [];
+    setAllUsers(users);
+
+    const uniqueRoles = [
+      ...new Set(users.map((u) => u.role_name).filter(Boolean)),
+    ];
+    setRoleNames(uniqueRoles);
   };
+
+  /* =========================
+     CHECK SESSION ON LOAD
+  ========================= */
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        await validateSession(); // 200 = valid
+        setSessionValid(true);
+        await fetchAllUsers();
+      } catch {
+        setSessionValid(false);
+      } finally {
+        setCheckingSession(false);
+      }
+    };
+
+    checkSession();
+  }, []);
+
+  /* =========================
+     LOGIN HANDLER
+  ========================= */
+  const onSubmit = async (values) => {
+  const { email, password } = values;
+  setButtonLoading(true);
+
+  try {
+    const res = await loginService({ email, password });
+
+    // 🔐 LOGIN RESPONSE DATA
+    const {
+      id,
+      name,
+      email: userEmail,
+      role_name,
+      csrf_token,
+      subscription_type,
+      change_password,
+    } = res.data;
+
+    // ✅ STORE LOGIN SESSION IN LOCAL STORAGE
+    localStorage.setItem("id", id);
+    localStorage.setItem("name", name);
+    localStorage.setItem("email", userEmail);
+    localStorage.setItem("role_name", role_name);
+    localStorage.setItem("csrfToken", csrf_token);
+    localStorage.setItem("subscription_type", subscription_type);
+    localStorage.setItem("change_password", change_password);
+
+    // OPTIONAL FLAG
+    localStorage.setItem("impersonating", "false");
+
+    setSessionValid(true);
+    await fetchAllUsers();
+    form.resetFields();
+
+    message.success(`Welcome ${name}`);
+  } catch (err) {
+    message.error("Invalid credentials");
+  } finally {
+    setButtonLoading(false);
+  }
+};
+
+
+  /* =========================
+     IMPERSONATE USER
+  ========================= */
+ const handleGenerate = async () => {
+  try {
+    const user = filteredUsers.find((u) => u.id === selectedUser);
+    if (!user) return;
+
+    const res = await impersonateUser(user.id);
+
+    const {
+      id,
+      name,
+      email,
+      role_name,
+      csrf_token,
+      subscription_type,
+    } = res.data;
+
+    // 🔐 STORE IMPERSONATED USER
+    localStorage.setItem("id", id);
+    localStorage.setItem("name", name);
+    localStorage.setItem("email", email);
+    localStorage.setItem("role_name", role_name);
+    localStorage.setItem("csrfToken", csrf_token);
+    localStorage.setItem("subscription_type", subscription_type);
+    localStorage.setItem("impersonating", "true");
+
+    message.success(`Logged in as ${name}`);
+
+    const dashboardUrl = `/${role_name}/${id}/dashboard`;
+
+    // ✅ SAME TAB REDIRECT
+    window.location.replace(dashboardUrl);
+
+  } catch (err) {
+    console.error(err);
+    message.error("Impersonation failed");
+  }
+};
+
+
+  /* =========================
+     LOADING STATE
+  ========================= */
+  if (checkingSession) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <>
-      <Form
-        className="login-form"
-        form={form}
-        onFinish={onSubmit}
-        layout="vertical"
-      >
-        <div>
+      {/* =========================
+          LOGIN FORM
+      ========================= */}
+      {!sessionValid && (
+        <Form form={form} onFinish={onSubmit} layout="vertical">
           <Form.Item
-            colon={false}
-            label={<div className="p-0">Email</div>}
+            label="Email"
             name="email"
             rules={[
-              {
-                required: true,
-                message: "Please input your email!",
-              },
-              {
-                type: "email",
-                message: "Please enter a valid email address.",
-              },
+              { required: true, message: "Please input your email!" },
+              { type: "email", message: "Enter a valid email!" },
             ]}
-            style={{ padding: "0" }}
           >
             <Input />
           </Form.Item>
@@ -88,115 +183,98 @@ function BackdoorLoginForm() {
           <Form.Item
             label="Password"
             name="password"
-            rules={[
-              {
-                required: true,
-                message: "Please input your password!",
-              },
-            ]}
+            rules={[{ required: true, message: "Please input your password!" }]}
           >
             <Input.Password />
           </Form.Item>
-        </div>
 
-        <Form.Item className="!mt-3 !mb-0">
           <Button
-            className="w-full h-11 text-base font-semibold"
+            className="w-full h-11"
             type="primary"
             htmlType="submit"
             loading={buttonLoading}
           >
             Login
           </Button>
-        </Form.Item>
-      </Form>
+        </Form>
+      )}
 
-      {/* Role Selection Dropdown */}
-      {roleNames.length > 0 && (
+      {/* =========================
+          ROLE DROPDOWN
+      ========================= */}
+      {sessionValid && roleNames.length > 0 && (
         <div className="mt-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label className="block text-sm font-semibold mb-2">
             Select Role
           </label>
+
           <Select
-            placeholder="Choose a role to view users"
+            placeholder="Choose role"
             value={selectedRole || undefined}
+            size="large"
+            className="w-full"
+            allowClear
             onChange={(value) => {
               setSelectedRole(value);
-              // Filter users by selected role
-              const filtered = allUsers.filter(user => user.role_name === value);
-              setFilteredUsers(filtered);
-              console.log(`📋 Filtered ${value} users:`, filtered.length);
+              setFilteredUsers(
+                allUsers.filter((u) => u.role_name === value)
+              );
+              setSelectedUser(null);
             }}
-            className="w-full"
-            size="large"
-            allowClear
             onClear={() => {
               setSelectedRole("");
               setFilteredUsers([]);
             }}
           >
-            {roleNames.map((roleName) => (
-              <Select.Option key={roleName} value={roleName}>
-                <span className="capitalize font-medium">{roleName}</span>
+            {roleNames.map((role) => (
+              <Select.Option key={role} value={role}>
+                <span className="capitalize">{role}</span>
               </Select.Option>
             ))}
           </Select>
         </div>
       )}
 
-      {/* Display Filtered Users in Dropdown */}
+      {/* =========================
+          USER DROPDOWN
+      ========================= */}
       {filteredUsers.length > 0 && (
         <div className="mt-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Select User ({filteredUsers.length} {selectedRole} users)
+          <label className="block text-sm font-semibold mb-2">
+            Select User ({filteredUsers.length})
           </label>
+
           <Select
-            placeholder="Choose a user"
+            placeholder="Choose user"
             value={selectedUser}
-            onChange={(value) => {
-              setSelectedUser(value);
-              const user = filteredUsers.find(u => u.id === value);
-              console.log("✅ Selected User:", user);
-            }}
-            className="w-full"
             size="large"
+            className="w-full"
             showSearch
             allowClear
-            onClear={() => setSelectedUser(null)}
+            onChange={setSelectedUser}
             filterOption={(input, option) =>
-              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              option.label.toLowerCase().includes(input.toLowerCase())
             }
             options={filteredUsers.map((user) => ({
               value: user.id,
               label: `${user.name} - ${user.email}`,
-              user: user,
             }))}
-            optionRender={(option) => (
-              <div className="py-1 flex flex-row justify-between">
-                <div className="font-semibold text-gray-800">{option.data.user.name}</div>
-                <div className="text-sm text-blue-600">{option.data.user.email}</div>
-                {/* <div className="text-xs text-gray-500">ID: {option.data.user.id}</div> */}
-              </div>
-            )}
           />
         </div>
       )}
 
-      {/* Generate Button - Shows after user selection */}
+      {/* =========================
+          GENERATE BUTTON
+      ========================= */}
       {selectedUser && (
         <div className="mt-6">
           <Button
             type="primary"
             size="large"
-            className="w-full h-12 text-base font-semibold"
-            onClick={() => {
-              const user = filteredUsers.find(u => u.id === selectedUser);
-              console.log("🚀 Generate clicked for user:", user);
-              message.success(`Generate action for ${user?.name}`);
-              // Add your generate logic here
-            }}
+            className="w-full h-12"
+            onClick={handleGenerate}
           >
-            Generate
+            Login as User
           </Button>
         </div>
       )}
