@@ -19,7 +19,7 @@ const CustomLegend = ({ payload }) => {
   return (
     <div className="flex justify-between items-center w-full mb-4 flex-wrap">
       <h3 className="text-xl font-semibold ml-4">
-        Full Length vs Practice Tests
+        Full Length vs Practice Tests Count
       </h3>
 
       <div className="flex flex-row">
