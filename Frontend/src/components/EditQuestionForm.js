@@ -375,6 +375,21 @@ const [courseStatusMap, setCourseStatusMap] = useState(
   }, []);
 
   useEffect(() => {
+  if (initialValues?.available_courses?.length) {
+    const latestStatusMap = initialValues.available_courses.reduce(
+      (acc, c) => {
+        acc[c.course_subject_id] = c.is_active;
+        return acc;
+      },
+      {}
+    );
+
+    setCourseStatusMap(latestStatusMap);
+  }
+}, [initialValues?.available_courses]);
+
+
+  useEffect(() => {
     if (courses && courses.length > 0) {
       setSubjectOptions(
         courses
