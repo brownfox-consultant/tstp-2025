@@ -23,9 +23,35 @@ import RaiseDoubtModal from "./RaiseDoubtModal_qutions_review_model";
 
 import { alphatbetArray, timeInMMSS } from "@/utils/utils";
 
+
+
+const renderSelectedOptions = (selectedOptions) => {
+  if (!selectedOptions) {
+    return <span className="text-gray-400 italic">None</span>;
+  }
+
+  // MCQ → array
+  if (Array.isArray(selectedOptions)) {
+    return selectedOptions.length > 0
+      ? selectedOptions.join(", ")
+      : <span className="text-gray-400 italic">None</span>;
+  }
+
+  // GRIDIN → string / number
+  if (typeof selectedOptions === "string" || typeof selectedOptions === "number") {
+    return selectedOptions;
+  }
+
+  return <span className="text-gray-400 italic">None</span>;
+};
+
+
 const QuestionItem = ({ question, onClick }) => {
   const isCorrect = question.result === true;
-  const hasMarked = Array.isArray(question.selected_options) && question.selected_options.length > 0;
+  const hasMarked = Array.isArray(question.selected_options)
+  ? question.selected_options.length > 0
+  : Boolean(question.selected_options);
+
 
   // Determine Status Color and Icon
   let statusIcon = <div className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-[10px] font-semibold uppercase tracking-wide">Skipped</div>;
@@ -62,11 +88,9 @@ const QuestionItem = ({ question, onClick }) => {
             <div className="hidden md:flex items-center gap-2 text-xs">
               <span className="text-gray-400 font-bold uppercase tracking-wider text-[10px]">Selections:</span>
               <span className="font-medium text-gray-700">
-                {question.selected_options.length > 0
-                  ? question.selected_options.join(", ")
-                  : <span className="text-gray-400 italic">None</span>
-                }
-              </span>
+  {renderSelectedOptions(question.selected_options)}
+</span>
+
             </div>
 
             {/* Marked */}
