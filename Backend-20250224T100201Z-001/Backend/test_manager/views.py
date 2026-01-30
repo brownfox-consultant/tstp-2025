@@ -5022,6 +5022,11 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             else:
                 queryset = queryset.order_by(ordering)
 
+        else:
+            # ✅ DEFAULT SORT FOR STUDENT → LATEST PRACTICE TEST FIRST
+            
+            queryset = queryset.order_by('-id')
+
         # ---------------------------------
         # 5️⃣ PAGINATION
         # ---------------------------------
