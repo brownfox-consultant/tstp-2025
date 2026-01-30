@@ -227,7 +227,7 @@ function MaterialsList({ course, subjectsData }) {
           })}
         />
         {["admin", "developer"].includes(role) && (
-          <Button type="primary" onClick={() => handleCreateClick()}>
+          <Button type="primary" size="large" onClick={() => handleCreateClick()} className="action-button">
             Upload Tutorial
           </Button>
         )}

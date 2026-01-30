@@ -55,9 +55,10 @@ function SubjectQuestionnaire2({ course, subjectsData, role }) {
           {["admin", "developer"].includes(role) && (
             <Button
               type="primary"
+              size="medium"
               icon={<PlusOutlined />}
               onClick={() => router.push(`${pathname}/create`)}
-              className="font-medium shadow-sm h-9 px-4 rounded-md flex items-center gap-2"
+              className="action-button"
             >
               Add Question
             </Button>

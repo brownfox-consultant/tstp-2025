@@ -801,12 +801,12 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 bottom-0 bg-white">
-            <Button
+            <button
               onClick={handleCancel}
               className="cancel-button h-9 px-6"
             >
               Cancel
-            </Button>
+            </button>
             <button
               htmlType="submit"
               loading={loading}

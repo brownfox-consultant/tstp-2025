@@ -756,7 +756,7 @@ function QuestionsList({
         </div>
 
         {/* Form Content */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto bg-gray-50">
+        <div className="p-4 max-h-[70vh] overflow-y-auto bg-gray-50">
           {editQuestionData && (
             <EditQuestionForm
               key={editQuestionData.id}

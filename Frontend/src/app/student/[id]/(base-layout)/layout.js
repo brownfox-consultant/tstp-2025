@@ -14,6 +14,7 @@ import Image from "next/image";
 import LogoutIcon from "@/components/icons/logout-icon";
 import UserProfileIcon from "@/components/icons/user-profile-icon";
 import FullLengthTestIcon from "@/components/icons/full-length-test-icon";
+import FileTextOutlined from "@/components/icons/full-length-test-icon";
 
 import {
   DashboardOutlined,
@@ -24,6 +25,7 @@ import {
   CommentOutlined,
   MenuUnfoldOutlined,
   CloseOutlined,
+  CheckSquareOutlined,
 } from "@ant-design/icons";
 
 const { Content } = Layout;
@@ -51,15 +53,27 @@ function DashboardLayout({ children }) {
     {
       key: "test/practice",
       icon: <EditOutlined />,
-      label: "Self-Customised Practice Tests",
+      label: "Self-Customised Practice",
       disabled: isFreeUser,
     },
     {
       key: "test/full",
       icon: <FullLengthTestIcon />,
-      label: "Full-Length Tests",
+      label: "Full-Length Test",
       disabled: false,
     },
+    // {
+    //   key: "attempted-questions",
+    //   icon: <CheckSquareOutlined />,
+    //   label: "Attempted Questions",
+    //   disabled: isFreeUser,
+    // },
+    // {
+    //   key: "trouble-spot",
+    //   icon: <WarningOutlined />,
+    //   label: "Trouble Spot",
+    //   disabled: isFreeUser,
+    // },
     {
       key: "doubts",
       icon: <QuestionCircleOutlined />,

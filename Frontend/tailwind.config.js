@@ -15,6 +15,8 @@ module.exports = {
         "primary-color": "#f59403",
         "primary-light-color": "#FCF2E3",
         "table-header-color": "#667085",
+        "border-color-light": "#f59403",
+        "border-color-dark": "#d1d5db",
       },
       gridTemplateRows: {
         layout: "auto 1fr auto",

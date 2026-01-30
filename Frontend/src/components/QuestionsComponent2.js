@@ -5,7 +5,7 @@ import {
   CopyOutlined,
   HistoryOutlined,
   SearchOutlined,
-  FilterOutlined
+  FilterOutlined,
 } from "@ant-design/icons";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -21,7 +21,9 @@ function QuestionsComponent2({ courses }) {
   let updatedSearchParams = new URLSearchParams(searchParams);
 
   const [tabItems, setTabItems] = useState([]);
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("query") || "",
+  );
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [topics, setTopics] = useState([]);
@@ -34,7 +36,8 @@ function QuestionsComponent2({ courses }) {
 
   // 🔧 Utility: parse and convert query params to arrays
   const getArrayParam = (key) =>
-    searchParams.get(key)
+    searchParams
+      .get(key)
       ?.split(",")
       .map(Number)
       .filter((v) => !isNaN(v) && v !== 0) || [];
@@ -77,7 +80,7 @@ function QuestionsComponent2({ courses }) {
               setTopics={setTopics}
             />
           ),
-        }))
+        })),
       );
     }
   }, [courses, role]);
@@ -90,7 +93,7 @@ function QuestionsComponent2({ courses }) {
 
     for (let course of courses) {
       const subject = course.subjects.find(
-        (sub) => sub.course_subject_id === courseSubjectId
+        (sub) => sub.course_subject_id === courseSubjectId,
       );
       if (subject) {
         selectedCourse = course;
@@ -115,7 +118,7 @@ function QuestionsComponent2({ courses }) {
           },
           responseType: "blob",
           withCredentials: true,
-        }
+        },
       );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -132,21 +135,22 @@ function QuestionsComponent2({ courses }) {
     }
   };
 
-
   const calculateCurrentKey = () => {
     let current_course_subject_id =
       Number(searchParams.get("course_subject_id")) ||
       courses[0]?.subjects[0]?.course_subject_id;
 
     let current_course = courses.find((course) =>
-      course.subjects.some((subject) => subject.course_subject_id === current_course_subject_id)
+      course.subjects.some(
+        (subject) => subject.course_subject_id === current_course_subject_id,
+      ),
     );
 
     return current_course?.name || "";
   };
 
   const handleTabChange = (key) => {
-    console.log("heloooo")
+    console.log("heloooo");
     let currentCourse = courses.find((course) => course.name === key);
     let course_subject_id = currentCourse.subjects[0].course_subject_id;
 
@@ -173,24 +177,46 @@ function QuestionsComponent2({ courses }) {
   const handleApplyAdvanced = (filters) => {
     console.log("Filters from modal:", filters);
     [
-      "difficulty", "question_type", "test_type", "topic",
-      "sub_topic", "option_text", "question_text", "srno", "is_active", "question_subtype"
+      "difficulty",
+      "question_type",
+      "test_type",
+      "topic",
+      "sub_topic",
+      "option_text",
+      "question_text",
+      "srno",
+      "is_active",
+      "question_subtype",
     ].forEach((key) => {
       updatedSearchParams.delete(key);
     });
 
-    if (filters.difficulty?.length) updatedSearchParams.set("difficulty", filters.difficulty.join(","));
-    if (filters.question_type?.length) updatedSearchParams.set("question_type", filters.question_type.join(","));
-    if (filters.test_type?.length) updatedSearchParams.set("test_type", filters.test_type.join(","));
-    if (filters.topic?.length) updatedSearchParams.set("topic", filters.topic.join(","));
-    if (filters.sub_topic?.length) updatedSearchParams.set("sub_topic", filters.sub_topic.join(","));
-    if (filters.question_subtype?.length) updatedSearchParams.set("question_subtype", filters.question_subtype.join(","));
-    if (filters.option_text) updatedSearchParams.set("option_text", filters.option_text);
-    if (filters.question_text) updatedSearchParams.set("question_text", filters.question_text);
+    if (filters.difficulty?.length)
+      updatedSearchParams.set("difficulty", filters.difficulty.join(","));
+    if (filters.question_type?.length)
+      updatedSearchParams.set("question_type", filters.question_type.join(","));
+    if (filters.test_type?.length)
+      updatedSearchParams.set("test_type", filters.test_type.join(","));
+    if (filters.topic?.length)
+      updatedSearchParams.set("topic", filters.topic.join(","));
+    if (filters.sub_topic?.length)
+      updatedSearchParams.set("sub_topic", filters.sub_topic.join(","));
+    if (filters.question_subtype?.length)
+      updatedSearchParams.set(
+        "question_subtype",
+        filters.question_subtype.join(","),
+      );
+    if (filters.option_text)
+      updatedSearchParams.set("option_text", filters.option_text);
+    if (filters.question_text)
+      updatedSearchParams.set("question_text", filters.question_text);
     if (filters.srno) updatedSearchParams.set("srno", filters.srno);
 
     if (filters.is_active?.length) {
-      updatedSearchParams.set("is_active", filters.is_active[0] === true ? "true" : "false");
+      updatedSearchParams.set(
+        "is_active",
+        filters.is_active[0] === true ? "true" : "false",
+      );
     }
 
     updatedSearchParams.set("page", "1");
@@ -203,7 +229,6 @@ function QuestionsComponent2({ courses }) {
       {/* 🔍 Search & Actions Card */}
       <div className="">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-
           {/* Left Side: Search & Filter */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-2xl">
             <Input
@@ -213,13 +238,13 @@ function QuestionsComponent2({ courses }) {
               value={searchQuery}
               onChange={handleSearch}
               className="rounded-lg border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm"
-              style={{ height: '48px', width: '100%' }}
+              style={{ height: "40px", width: "100%" }}
             />
             <Button
               icon={<FilterOutlined />}
               onClick={() => setShowAdvanced(true)}
               className="px-5 rounded-lg border-gray-200 hover:border-blue-400 hover:text-blue-600 font-medium flex items-center justify-center gap-2"
-              style={{ height: '48px' }}
+              style={{ height: "40px" }}
             >
               Advanced Search for {calculateCurrentKey()}
             </Button>
@@ -230,10 +255,11 @@ function QuestionsComponent2({ courses }) {
             <div className="flex flex-wrap items-center gap-3">
               <Button
                 type="primary"
+                size="large"
                 onClick={handleDownload}
                 icon={loading ? <LoadingOutlined /> : <DownloadOutlined />}
                 disabled={loading}
-                className="h-10 px-5 rounded-md font-medium shadow-sm border-0 flex items-center gap-2 bg-[#F59405] hover:bg-[#E08904]"
+                className="action-button"
               >
                 {loading ? "Downloading..." : "Download Report"}
               </Button>
@@ -252,55 +278,63 @@ function QuestionsComponent2({ courses }) {
 
                 <div className="w-px h-5 bg-gray-200 mx-1"></div>
 
-               
                 <Tooltip title="Export a CSV of duplicate questions">
-  <Button
-    type="text"
-    icon={loading ? <LoadingOutlined /> : <CopyOutlined />}
-    disabled={loading}
-    className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
-    title="Export Duplicate Questions"
-    onClick={async () => {
-      try {
-        setLoading(true);
+                  <Button
+                    type="text"
+                    icon={loading ? <LoadingOutlined /> : <CopyOutlined />}
+                    disabled={loading}
+                    className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
+                    title="Export Duplicate Questions"
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
 
-        const courseSubjectId = Number(searchParams.get("course_subject_id"));
+                        const courseSubjectId = Number(
+                          searchParams.get("course_subject_id"),
+                        );
 
-        if (!courseSubjectId) {
-          console.error("course_subject_id not found");
-          return;
-        }
+                        if (!courseSubjectId) {
+                          console.error("course_subject_id not found");
+                          return;
+                        }
 
-        const response = await axios.get(
-          `${BASE_URL}/api/question/duplicates/`,
-          {
-            params: {
-              export: "csv",
-              course_subject_id: courseSubjectId,   // ✅ PASSED
-            },
-            responseType: "blob",
-            withCredentials: true,
-          }
-        );
+                        const response = await axios.get(
+                          `${BASE_URL}/api/question/duplicates/`,
+                          {
+                            params: {
+                              export: "csv",
+                              course_subject_id: courseSubjectId, // ✅ PASSED
+                            },
+                            responseType: "blob",
+                            withCredentials: true,
+                          },
+                        );
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "duplicate_questions.csv");
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } catch (error) {
-        console.error("Error downloading duplicate questions:", error);
-      } finally {
-        setLoading(false);
-      }
-    }}
-  >
-    Duplicates
-  </Button>
-</Tooltip>
-
+                        const url = window.URL.createObjectURL(
+                          new Blob([response.data]),
+                        );
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.setAttribute(
+                          "download",
+                          "duplicate_questions.csv",
+                        );
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                      } catch (error) {
+                        console.error(
+                          "Error downloading duplicate questions:",
+                          error,
+                        );
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                  >
+                    Duplicates
+                  </Button>
+                </Tooltip>
               </div>
             </div>
           )}
@@ -313,14 +347,17 @@ function QuestionsComponent2({ courses }) {
         onClose={() => setShowAdvanced(false)}
         onApply={handleApplyAdvanced}
         selectedCourseName={calculateCurrentKey()}
-        selectedCourseId={courses.find(c => c.name === calculateCurrentKey())?.id}
+        selectedCourseId={
+          courses.find((c) => c.name === calculateCurrentKey())?.id
+        }
         currentFilters={{
           difficulty: searchParams.get("difficulty")?.split(",") || [],
           question_type: searchParams.get("question_type")?.split(",") || [],
           test_type: searchParams.get("test_type")?.split(",") || [],
           topic: getArrayParam("topic"),
           sub_topic: getArrayParam("sub_topic"),
-          question_subtype: searchParams.get("question_subtype")?.split(",") || [],
+          question_subtype:
+            searchParams.get("question_subtype")?.split(",") || [],
           option_text: searchParams.get("option_text") || "",
           question_text: searchParams.get("question_text") || "",
           srno: searchParams.get("srno") || "",
@@ -344,7 +381,7 @@ function QuestionsComponent2({ courses }) {
             onChange={handleTabChange}
             type="card"
             className="custom-tabs"
-            tabBarStyle={{ margin: 0, borderBottom: '1px solid #f0f0f0' }}
+            tabBarStyle={{ margin: 0, borderBottom: "1px solid #f0f0f0" }}
           />
         </div>
       </div>

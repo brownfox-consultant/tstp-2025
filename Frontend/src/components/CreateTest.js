@@ -8,7 +8,7 @@ import {
   ThunderboltOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import { Form, Input, Select, Spin } from "antd";
+import { Form, Input, Select, Spin, Button } from "antd";
 import { useForm } from "antd/es/form/Form";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -284,29 +284,22 @@ function CreateTest({ setTestDetails }) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              className="h-10 px-6 rounded-lg border border-gray-300 text-gray-700 font-medium bg-white hover:bg-gray-50 transition-all text-sm"
+          <div className="flex justify-end gap-3">
+            <Button
+              size="large"
+              className="cancel-button !px-5 !h-11 border-white !rounded-md"
               onClick={() => router.back()}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={isSubmitDisabled || createLoading}
-              className={`
-                h-10 px-8 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-sm
-                ${
-                  isSubmitDisabled || createLoading
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md hover:shadow-lg"
-                }
-              `}
+              size="large"     
+              className="action-button !px-5 !h-11"   
             >
               {createLoading && <Spin size="small" />}
               Create Test
-            </button>
+            </Button>
           </div>
         </Form>
       </div>

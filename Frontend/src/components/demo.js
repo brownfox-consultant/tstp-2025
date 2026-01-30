@@ -2,7 +2,7 @@
 
 import "@/app/Dashboard.css";
 import React, { useState, useEffect, useMemo } from "react";
-import { DatePicker, ConfigProvider, Progress } from "antd";
+import { DatePicker, ConfigProvider, Progress, Table, Tag, Tabs } from "antd";
 import dayjs from "dayjs";
 import {
   BarChart,
@@ -17,7 +17,7 @@ import {
 import axios from "axios";
 import Select from "react-select";
 import { GET_Courses, GET_Students, BASE_URL } from "@/app/constants/apiConstants";
-import { getStudentCountByCourse } from "@/app/services/authService";
+import { getStudentCountByCourse, getTestResult } from "@/app/services/authService";
 import { useParams, useRouter } from "next/navigation";
 import {
   ConcernIcon,
@@ -44,6 +44,92 @@ const DropdownIndicator = (props) => {
     </components.DropdownIndicator>
   );
 };
+
+const DUMMY_FULL_LENGTH = [
+  {
+    id: 1,
+    student_name: "Rahul Sharma",
+    test_name: "Algebra Baseline Test",
+    course_name: "SAT Math",
+    total_score: 85,
+    created_at: "2024-02-20T10:30:00Z"
+  },
+  {
+    id: 2,
+    student_name: "Priya Patel",
+    test_name: "Geometry Mid-Term",
+    course_name: "SAT Math",
+    total_score: 92,
+    created_at: "2024-02-19T14:15:00Z"
+  },
+  {
+    id: 3,
+    student_name: "Amit Singh",
+    test_name: "Reading Comprehension",
+    course_name: "SAT English",
+    total_score: 78,
+    created_at: "2024-02-18T09:45:00Z"
+  },
+  {
+    id: 4,
+    student_name: "Sneha Gupta",
+    test_name: "Grammar & Usage",
+    course_name: "SAT English",
+    total_score: 45,
+    created_at: "2024-02-17T16:20:00Z"
+  },
+  {
+    id: 5,
+    student_name: "Vikram Malhotra",
+    test_name: "Trigonometry Basics",
+    course_name: "ACT Math",
+    total_score: 88,
+    created_at: "2024-02-16T11:00:00Z"
+  }
+];
+
+const DUMMY_PRACTICE = [
+  {
+    id: 101,
+    student_name: "Rohan Das",
+    test_name: "Practice Set 1 - Algebra",
+    course_name: "SAT Math",
+    total_score: 70,
+    created_at: "2024-02-21T09:00:00Z"
+  },
+  {
+    id: 102,
+    student_name: "Kavya Reddy",
+    test_name: "Practice Set 3 - Vocabulary",
+    course_name: "SAT English",
+    total_score: 65,
+    created_at: "2024-02-20T15:30:00Z"
+  },
+  {
+    id: 103,
+    student_name: "Arjun Verma",
+    test_name: "Quick Practice - Geometry",
+    course_name: "SAT Math",
+    total_score: 55,
+    created_at: "2024-02-19T11:20:00Z"
+  },
+  {
+    id: 104,
+    student_name: "Meera Nair",
+    test_name: "Practice Test - Reading 1",
+    course_name: "SAT English",
+    total_score: 80,
+    created_at: "2024-02-18T13:45:00Z"
+  },
+  {
+    id: 105,
+    student_name: "Siddharth Jain",
+    test_name: "Math Drills - Mixed",
+    course_name: "ACT Math",
+    total_score: 95,
+    created_at: "2024-02-17T10:10:00Z"
+  }
+];
 
 function StatCard({ title, value, selectedFilter, customStartDate, customEndDate, apiKey, routeName, gradientClass }) {
   const router = useRouter();
@@ -111,6 +197,11 @@ export default function Dashboard() {
   const [students, setStudents] = useState([]);
   const [barPercentData, setBarPercentData] = useState([]);
   const [timeSpentData, setTimeSpentData] = useState([]);
+  const [recentSubmissions, setRecentSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [activeTab, setActiveTab] = useState("1"); // 1: Full Length, 2: Practice
+
+
   const [englishTopics, setEnglishTopics] = useState([]);
   const [mathTopics, setMathTopics] = useState([]);
   const [loadingKeyStrengths, setLoadingKeyStrengths] = useState(false);
@@ -140,6 +231,14 @@ export default function Dashboard() {
     axios.get(`${BASE_URL}/api/question/question-count/`, { withCredentials: true })
       .then(res => setQuestionCounts(res.data))
       .catch(() => setQuestionCounts([]));
+
+      setLoadingSubmissions(true);
+      
+      // Dummy data logic handled via constants
+      // setRecentSubmissions(DUMMY_FULL_LENGTH);
+      
+      setLoadingSubmissions(false);
+
   }, []);
 
   useEffect(() => {
@@ -493,82 +592,74 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Time Spent Chart */}
-          <div className="bg-white shadow-md rounded-xl p-5 mb-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
-              <div className="flex items-center gap-4 justify-between w-full flex-wrap">
-                <h3 className="text-lg font-bold text-[#2E2725]">Time Spent vs Score</h3>
-                <div className="flex gap-2 flex-wrap">
-                  <Select
-                    className="w-40 text-sm"
-                    value={courses.find((c) => c.id.toString() === selectedCourse)}
-                    onChange={(opt) => setSelectedCourse(opt?.id.toString())}
-                    options={courses}
-                    getOptionLabel={(e) => e.name}
-                    getOptionValue={(e) => e.id.toString()}
-                    placeholder="Select Course"
-                    components={{ DropdownIndicator }}
-                  />
-                  <Select
-                    className="w-40 text-sm"
-                    value={students.find((s) => s.id.toString() === selectedStudent)}
-                    onChange={(opt) => setSelectedStudent(opt?.id.toString())}
-                    options={students}
-                    getOptionLabel={(e) => e.name}
-                    getOptionValue={(e) => e.id.toString()}
-                    placeholder="Select Student"
-                    components={{ DropdownIndicator }}
-                  />
-                  <Select
-                    className="w-40 text-sm"
-                    value={tests.find((t) => t.id.toString() === selectedTest)}
-                    onChange={(opt) => setSelectedTest(opt?.id.toString())}
-                    options={[{ id: "", name: "All Tests" }, ...tests]}
-                    getOptionLabel={(e) => e.name}
-                    getOptionValue={(e) => e.id.toString()}
-                    placeholder="Select Test"
-                    components={{ DropdownIndicator }}
-                  />
-                </div>
-              </div>
-              {timeSpentData.length > 0 && (
-                <div className="flex gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#F59403]"></div>
-                    <span className="text-sm text-[#805830]">Score</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#0071BC]"></div>
-                    <span className="text-sm text-[#805830]">Minutes</span>
-                  </div>
-                </div>
-              )}
+          {/* Recent Test Submissions */}
+          {/* <div className="bg-white shadow-md rounded-xl p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <Tabs 
+                defaultActiveKey="1" 
+                activeKey={activeTab}
+                onChange={(key) => setActiveTab(key)}
+                items={[
+                  {
+                    key: '1',
+                    label: <span className="text-lg font-bold">Recent Full Length Tests</span>,
+                  },
+                  {
+                    key: '2',
+                    label: <span className="text-lg font-bold">Recent Practice Tests</span>,
+                  }
+                ]}
+                className="w-full"
+              />
             </div>
-            {timeSpentData.length > 0 ? (
-              <div className="overflow-x-auto overflow-y-hidden">
-                <div style={{ minWidth: timeSpentData.length > 3 ? `${timeSpentData.length * 120}px` : '100%' }} className="md:min-w-full">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={timeSpentData} barSize={30} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="name" tick={{ fill: '#805830', fontSize: 12 }} />
-                      <YAxis tick={{ fill: '#805830', fontSize: 12 }} />
-                      <Tooltip cursor={{ fill: 'transparent' }} />
-                      <Legend />
-                      <Bar dataKey="score" fill="#F59403" name="Score" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="time_taken_minutes" fill="#0071BC" name="Minutes" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
-                <NoDataClockIcon className="w-12 h-12 mb-3 text-gray-300" />
-                <span className="text-sm font-medium">No data available</span>
-              </div>
-            )}
-          </div>
+            <div className="overflow-x-auto">
+              <Table
+                dataSource={activeTab === '1' ? DUMMY_FULL_LENGTH : DUMMY_PRACTICE}
+                columns={[
+                  {
+                    title: 'Student Name',
+                    dataIndex: 'student_name',
+                    key: 'student_name',
+                    render: (text, record) => <span className="font-medium text-[#2E2725]">{text || record.user_name || "N/A"}</span>
+                  },
+                  {
+                    title: 'Test Name',
+                    dataIndex: 'test_name',
+                    key: 'test_name',
+                    render: (text) => <span className="text-[#805830]">{text || "N/A"}</span>
+                  },
+                  {
+                    title: 'Course Name',
+                    dataIndex: 'course_name',
+                    key: 'course_name',
+                    render: (text) => <span className="text-gray-600 font-medium">{text || "N/A"}</span>
+                  },
+                  {
+                    title: 'Score',
+                    dataIndex: 'total_score',
+                    key: 'total_score',
+                    render: (score) => (
+                      <Tag color={score >= 50 ? "green" : "red"} className="rounded-full px-3">
+                        {score !== undefined && score !== null ? `${score}` : "N/A"}
+                      </Tag>
+                    )
+                  },
+                  {
+                    title: 'Date',
+                    dataIndex: 'created_at',
+                    key: 'created_at',
+                    render: (date) => <span className="text-gray-500">{date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}</span>
+                  }
+                ]}
+                loading={loadingSubmissions}
+                pagination={false}
+                rowKey={(record) => record.id || Math.random()}
+                className="dashboard-table"
+              />
+            </div>
+          </div> */}
 
-          <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 ">
+          {/* <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 ">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-lg font-bold text-[#2E2725]">Topic-wise Performance</h3>
             </div>
@@ -613,7 +704,6 @@ export default function Dashboard() {
                 </div>
               </Col>
 
-              {/* Math Section */}
               <Col xs={24} md={12}>
                 <div className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 border border-orange-100 rounded-md p-3 h-full flex flex-col">
                   <div className="flex items-center gap-3 mb-2">
@@ -653,7 +743,7 @@ export default function Dashboard() {
                 </div>
               </Col>
             </Row>
-          </div>
+          </div> */}
         </>
       )}
     </div>

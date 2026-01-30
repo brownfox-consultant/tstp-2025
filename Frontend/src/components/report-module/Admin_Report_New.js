@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { LeftOutlined } from "@ant-design/icons";
 import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
+import StudentActivityLog from "./StudentActivityLog";
 
 const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   const [activeTab, setActiveTab] = useState("english");

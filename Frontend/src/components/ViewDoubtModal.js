@@ -1,4 +1,5 @@
-import { Button, Col, Modal, Row, Select, Steps, Input } from "antd";
+"use client";
+import { Button, Modal, Select } from "antd";
 import React, { useEffect, useState } from "react";
 import DoubtStatusTag from "./DoubtStatusTag";
 import Options from "./Options";
@@ -11,7 +12,6 @@ import { useGlobalContext } from "@/context/store";
 import { CheckCircleTwoTone } from "@ant-design/icons";
 import dayjs from "dayjs";
 import MathContent from "./MathContent";
-const { TextArea } = Input;
 import EyeIcon from "../../public/icons/eye.svg";
 import Image from "next/image";
 
@@ -26,7 +26,7 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
     faculty_assigned_date,
     resolution,
   } = data;
-  console.log("question",question)
+  
   const [facultyData, setFacultyData] = useState([]);
   const [value, setValue] = useState("");
   const { roles } = useGlobalContext();
@@ -41,20 +41,23 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
   const finalStatus = statusArray[currentIndex];
 
   useEffect(() => {
-  if (open && role === "admin") {
-    const facultyRoleId = roles.find((r) => r.name === "faculty")?.id;
-    if (!facultyRoleId) return; // optional safeguard
+    if (open && role === "admin" && roles?.length > 0) {
+      const facultyRoleId = roles.find((r) => r.name?.toLowerCase() === "faculty")?.id;
+      
+      if (!facultyRoleId) return; 
 
-    getUsersByRole({ role: facultyRoleId }).then((res) => {
-      setFacultyData(
-        res.data.results.map(({ name, id }) => ({
-          label: name,
-          value: id,
-        }))
-      );
-    });
-  }
-}, [open]);
+      getUsersByRole({ role: facultyRoleId }).then((res) => {
+        if(res.data && res.data.results) {
+             setFacultyData(
+                res.data.results.map(({ name, id }) => ({
+                  label: name,
+                  value: id,
+                }))
+             );
+        }
+      }).catch(err => console.error(err));
+    }
+  }, [open, roles]);
 
 
   const handleAssgin = () => {
@@ -90,135 +93,141 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
       <Button
         type="link"
         onClick={() => setOpen(true)}
-        style={{ display: "flex", alignItems: "center" }}
+        className="flex items-center hover:bg-gray-100 rounded-md px-2 border-0 shadow-none text-current"
       >
         <Image
           src={EyeIcon}
           alt="View Details Icon"
-          width={20}
-          height={20}
-          style={{ marginRight: "8px", verticalAlign: "middle" }}
+          width={18}
+          height={18}
+          className="mr-2"
         />
-        <span style={{ verticalAlign: "middle" }}>View Details</span>
+        <span>View Details</span>
       </Button>
       <Modal
-        width={1000}
+        width={750}  // Reduced width
         onCancel={() => setOpen(false)}
         open={open}
         title={
-          <div className="w-4/6">
-            <div className="text-lg text-gray-400">
-              Status <DoubtStatusTag status={finalStatus} />
+          <div className="flex items-center border-b border-gray-100 pb-2 mb-2 gap-5">
+            <h2 className="text-lg font-bold text-gray-800 m-0">Doubt Details</h2>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-gray-500">Status:</span>
+              <DoubtStatusTag status={finalStatus} />
             </div>
-            {/*  <Steps
-              className="mt-5"
-              progressDot
-              current={statusArray.findIndex((value) => value == status)}
-              items={[
-                {
-                  title: <DoubtStatusTag status="RAISED" />,
-                },
-                {
-                  title: <DoubtStatusTag status="ASSIGNED_TO_FACULTY" />,
-                },
-                {
-                  title: <DoubtStatusTag status="RESOLVED" />,
-                },
-              ]}
-            /> */}
           </div>
         }
         footer={null}
+        centered
+        className="rounded-xl overflow-hidden [&_.ant-modal-content]:p-4"
+        styles={{ 
+            mask: { backdropFilter: 'blur(2px)' },
+            body: { padding: 0 } // handled by tailwind classes inside
+        }}
       >
-        <Row className="text-lg font-semibold mt-10">Doubt</Row>
-        <Row className="">{description}</Row>
-
-        <Row className="text-lg font-semibold mt-5">Question:</Row>
-        <Row className="">
-          <Col span={24}>
-            <MathContent content={question?.description} />
-            <div className="mt-4" />
-            <Options options={question?.options} />
-          </Col>
-        </Row>
-
-        {status == "RAISED" && role == "admin" && (
-          <div className="mt-10">
-            <Row className="text-lg font-semibold ">Assign to faculty</Row>
-            <Row className="mt-1">
-              <Select
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-                className=""
-                placeholder="Select Faculty"
-                value={selectedFaculty}
-                onChange={setSelectedFaculty}
-                options={facultyData}
-              />
-              <Button
-                disabled={selectedFaculty == null}
-                onClick={handleAssgin}
-                className="ml-3"
-                type="primary"
-              >
-                Assign
-              </Button>
-            </Row>
+        <div className="flex flex-col gap-3">
+          
+          {/* Section 1: Doubt Info */}
+          <div className="bg-gray-50 p-3 rounded-md border border-gray-100 flex items-baseline gap-2">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase">Doubt Description : </h3>
+            <p className="text-sm text-gray-800 leading-relaxed font-bold">{description}</p>
           </div>
-        )}
-        {status == "ASSIGNED_TO_FACULTY" && role == "admin" && (
-          <Row className="mt-10">
-            <Row className="text-lg font-semibold">Updates</Row>
-            <div className="w-full">
-              Assigned to<span className="font-bold ml-1 mr-1">{faculty}</span>
-              on {facultyAssignedDate}{" "}
-            </div>
-          </Row>
-        )}
 
-        {["ASSIGNED_TO_FACULTY", "RAISED"].includes(status) &&
-          role == "admin" &&
-          role == "admin" && (
-            <Row className="mt-10">
-              <Row className="text-lg font-semibold ">Resolution</Row>
-              <TextArea
-                rows={4}
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder="Explanation"
-              ></TextArea>
-              <div className="w-full flex justify-center">
-                <Button
-                  disabled={value.length == 0}
-                  icon={<CheckCircleTwoTone twoToneColor="#52c41a" />}
-                  onClick={handleResolve}
-                  className="mt-3"
-                >
-                  Mark as resolved
-                </Button>
+          {/* Section 2: Question Context */}
+          <div className="border border-gray-200 rounded-md p-3 shadow-sm bg-white">
+            <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase">Related Question</h3>
+            <div className="text-sm scale-95 origin-top-left w-[105%] -mb-2">
+                <MathContent content={question?.description} />
+                <div className="mt-2">
+                    <Options options={question?.options} />
+                </div>
+            </div>
+          </div>
+
+          {/* Section 3: Admin Actions (Assign / Resolve) */}
+          {status === "RAISED" && role === "admin" && (
+            <div className="bg-blue-50/50 border border-blue-100 rounded-md p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1">
+                   <h3 className="text-xs font-bold text-[#0071BC] mb-1.5 uppercase">Assign to Faculty</h3>
+                   <Select
+                    className="w-full"
+                    value={selectedFaculty}
+                    onChange={(value) => setSelectedFaculty(value)}
+                    options={facultyData}
+                    placeholder="Select Faculty member"
+                    allowClear
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                    }
+                  />
+                </div>
+                <div className="self-end">
+                    <Button
+                        type="primary"
+                        disabled={selectedFaculty == null}
+                        onClick={handleAssgin}
+                        className="action-button"
+                    >
+                        Assign
+                    </Button>
+                </div>
               </div>
-            </Row>
+            </div>
           )}
 
-        {status == "RESOLVED" && (
-          <>
-            <Row className="text-lg font-semibold mt-10">Resolution</Row>
-            <Row className="">{resolution}</Row>
-            <div className="w-full flex justify-center">
-              <Button
-                type="primary"
-                className="mt-3"
-                onClick={() => setOpen(false)}
-              >
-                Ok
-              </Button>
+          {status === "ASSIGNED_TO_FACULTY" && role === "admin" && (
+            <div className="bg-yellow-50 border border-yellow-100 rounded-md p-3 flex items-center justify-between">
+               <div>
+                  <h3 className="text-xs font-bold text-yellow-700 mb-0.5 uppercase">Current Status</h3>
+                  <p className="text-xs text-gray-600 m-0">
+                    Assigned to <span className="font-bold text-gray-900">{faculty}</span> on {facultyAssignedDate}
+                  </p>
+               </div>
             </div>
-          </>
-        )}
+          )}
+
+          {["ASSIGNED_TO_FACULTY", "RAISED"].includes(status) && role === "admin" && (
+             <div className="mt-1">
+                <h3 className="text-xs font-semibold text-gray-500 mb-1.5 uppercase">Resolution</h3>
+                <textarea
+                  rows={3}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  placeholder="Enter detailed explanation or resolution..."
+                  className="w-full text-sm p-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none transition-colors"
+                />
+                <div className="flex justify-end mt-2">
+                  <Button
+                    disabled={value.trim().length === 0}
+                    icon={<CheckCircleTwoTone twoToneColor={value.trim().length > 0 ? "#fff" : "#52c41a"} />}
+                    onClick={handleResolve}
+                    className={`h-8 text-xs flex items-center gap-1 ${
+                        value.trim().length > 0 
+                        ? 'bg-green-600 hover:bg-green-700 text-white border-transparent' 
+                        : ''
+                    }`}
+                  >
+                    Mark as Resolved
+                  </Button>
+                </div>
+             </div>
+          )}
+
+          {status === "RESOLVED" && (
+            <>
+             <div className="bg-green-50/50 border border-green-100 rounded-md p-3">
+                <h3 className="text-xs font-bold text-green-700 mb-1 uppercase">Resolution</h3>
+                <p className="text-sm text-gray-800 m-0 leading-relaxed">{resolution}</p>
+                
+             </div>
+             <div className="flex justify-end mt-2">
+                    <Button type="default" size="medium" className="action-button" onClick={() => setOpen(false)}>Close</Button>
+                </div>
+             </>
+          )}
+        </div>
       </Modal>
     </>
   );
