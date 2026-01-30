@@ -95,6 +95,68 @@ const customSelectStyles = {
   }),
 };
 
+const PhoneInput = ({
+  value,
+  onChange,
+  countryCode,
+  onCountryCodeChange,
+  countryCodes,
+}) => {
+  return (
+    <div className="country-code-integrated">
+      <AntSelect
+        showSearch
+        value={countryCode}
+        onChange={onCountryCodeChange}
+        optionLabelProp="label"
+        dropdownMatchSelectWidth={false}
+        suffixIcon={<span className="text-gray-400 text-xs">▼</span>}
+        filterOption={(input, option) =>
+          (option.countryName || "")
+            .toLowerCase()
+            .includes(input.toLowerCase()) ||
+          String(option.value).includes(input)
+        }
+        dropdownStyle={{
+          zIndex: 10000,
+          width: 315,
+          borderRadius: 6,
+          marginTop: 5,
+        }}
+        bordered={false}
+        className="country-code-integrated-select"
+      >
+        {countryCodes.map((country) => (
+          <AntSelect.Option
+            key={country.cca2}
+            value={country.code}
+            label={country.code}
+            countryName={country.name}
+          >
+            <div className="flex items-center gap-2 text-sm">
+              <span>{country.name}</span>
+              <span className="text-gray-500">({country.code})</span>
+            </div>
+          </AntSelect.Option>
+        ))}
+      </AntSelect>
+      <div className="w-px h-5 bg-gray-300"></div>
+      <div className="relative flex-1">
+        <Input
+          value={value}
+          onChange={onChange}
+          maxLength={10}
+          placeholder="0000011111"
+          bordered={false}
+          className="h-full text-sm px-3"
+          style={{ boxShadow: "none" }}
+        />
+        <PhoneOutlined className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+      </div>
+    </div>
+  );
+};
+
 function EditStudentUserModal({ recordData, updated, setUpdated }) {
   const [form] = useForm();
   const [isModalOpen, setIsModalOpen] = useState();
@@ -202,10 +264,7 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
       .finally(() => setLoading(false));
   }
 
-  const handlePhoneNumberChange = (e) => {
-    const filteredValue = e.target.value.replace(/\D/g, "");
-    form.setFieldsValue({ phone_number: filteredValue });
-  };
+
 
   const onFieldsChange = (_, allFields) => {
     const isFormValid = allFields.every((field) => {
@@ -369,61 +428,13 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
                     { required: true, message: "Please enter contact number" },
                     { pattern: /^\d{10}$/, message: "Must be 10 digits" },
                   ]}
+                  normalize={(value) => value?.replace(/\D/g, "")}
                 >
-                  <div className="country-code-integrated">
-                    <AntSelect
-                      showSearch
-                      value={studentCountryCode}
-                      onChange={(value) => setStudentCountryCode(value)}
-                      optionLabelProp="label"
-                      dropdownMatchSelectWidth={false}
-                      suffixIcon={
-                        <span className="text-gray-400 text-xs">▼</span>
-                      }
-                      filterOption={(input, option) =>
-                        (option.countryName || "")
-                          .toLowerCase()
-                          .includes(input.toLowerCase()) ||
-                        String(option.value).includes(input)
-                      }
-                      dropdownStyle={{
-                        zIndex: 10000,
-                        width: 315,
-                        borderRadius: 6,
-                        marginTop: 5,
-                      }}
-                      bordered={false}
-                      className="country-code-integrated-select"
-                    >
-                      {countryCodes.map((country) => (
-                        <AntSelect.Option
-                          key={country.cca2}
-                          value={country.code}
-                          label={country.code}
-                          countryName={country.name}
-                        >
-                          <div className="flex items-center gap-2 text-sm">
-                            <span>{country.name}</span>
-                            <span className="text-gray-500">
-                              ({country.code})
-                            </span>
-                          </div>
-                        </AntSelect.Option>
-                      ))}
-                    </AntSelect>
-                    <div className="w-px h-5 bg-gray-300"></div>
-                    <div className="relative flex-1">
-                      <Input
-                        maxLength={10}
-                        onChange={handlePhoneNumberChange}
-                        placeholder="0000011111"
-                        bordered={false}
-                        className="h-full text-sm px-3"
-                        style={{ boxShadow: "none" }}
-                      />
-                      <PhoneOutlined className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
-                    </div>
-                  </div>
+                  <PhoneInput
+                    countryCode={studentCountryCode}
+                    onCountryCodeChange={setStudentCountryCode}
+                    countryCodes={countryCodes}
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -567,60 +578,13 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
                     rules={[
                       { pattern: /^\d{10}$/, message: "Must be 10 digits" },
                     ]}
+                    normalize={(value) => value?.replace(/\D/g, "")}
                   >
-                    <div className="country-code-integrated">
-                      <AntSelect
-                        showSearch
-                        value={fatherCountryCode}
-                        onChange={(value) => setFatherCountryCode(value)}
-                        optionLabelProp="label"
-                        dropdownMatchSelectWidth={false}
-                        suffixIcon={
-                          <span className="text-gray-400 text-xs">▼</span>
-                        }
-                        filterOption={(input, option) =>
-                          (option.countryName || "")
-                            .toLowerCase()
-                            .includes(input.toLowerCase()) ||
-                          String(option.value).includes(input)
-                        }
-                        dropdownStyle={{
-                          zIndex: 10000,
-                          width: 315,
-                          borderRadius: 6,
-                          marginTop: 5,
-                        }}
-                        bordered={false}
-                        className="country-code-integrated-select"
-                      >
-                        {countryCodes.map((country) => (
-                          <AntSelect.Option
-                            key={country.cca2}
-                            value={country.code}
-                            label={country.code}
-                            countryName={country.name}
-                          >
-                            <div className="flex items-center gap-2 text-sm">
-                              <span>{country.name}</span>
-                              <span className="text-gray-500">
-                                ({country.code})
-                              </span>
-                            </div>
-                          </AntSelect.Option>
-                        ))}
-                      </AntSelect>
-                      <div className="w-px h-5 bg-gray-300"></div>
-                      <div className="relative flex-1">
-                        <Input
-                          maxLength={10}
-                          placeholder="0000011111"
-                          bordered={false}
-                          className="h-full text-sm px-3"
-                          style={{ boxShadow: "none" }}
-                        />
-                        <PhoneOutlined className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
-                      </div>
-                    </div>
+                    <PhoneInput
+                      countryCode={fatherCountryCode}
+                      onCountryCodeChange={setFatherCountryCode}
+                      countryCodes={countryCodes}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -685,60 +649,13 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
                     rules={[
                       { pattern: /^\d{10}$/, message: "Must be 10 digits" },
                     ]}
+                    normalize={(value) => value?.replace(/\D/g, "")}
                   >
-<div className="country-code-integrated">
-                      <AntSelect
-                        showSearch
-                        value={motherCountryCode}
-                        onChange={(value) => setMotherCountryCode(value)}
-                        optionLabelProp="label"
-                        dropdownMatchSelectWidth={false}
-                        suffixIcon={
-                          <span className="text-gray-400 text-xs">▼</span>
-                        }
-                        filterOption={(input, option) =>
-                          (option.countryName || "")
-                            .toLowerCase()
-                            .includes(input.toLowerCase()) ||
-                          String(option.value).includes(input)
-                        }
-                        dropdownStyle={{
-                          zIndex: 10000,
-                          width: 315,
-                          borderRadius: 6,
-                          marginTop: 5,
-                        }}
-                        bordered={false}
-                        className="country-code-integrated-select"
-                      >
-                        {countryCodes.map((country) => (
-                          <AntSelect.Option
-                            key={country.cca2}
-                            value={country.code}
-                            label={country.code}
-                            countryName={country.name}
-                          >
-                            <div className="flex items-center gap-2 text-sm">
-                              <span>{country.name}</span>
-                              <span className="text-gray-500">
-                                ({country.code})
-                              </span>
-                            </div>
-                          </AntSelect.Option>
-                        ))}
-                      </AntSelect>
-                      <div className="w-px h-5 bg-gray-300"></div>
-                      <div className="relative flex-1">
-                        <Input
-                          maxLength={10}
-                          placeholder="0000011111"
-                          bordered={false}
-                          className="h-full text-sm px-3"
-                          style={{ boxShadow: "none" }}
-                        />
-                        <PhoneOutlined className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
-                      </div>
-                    </div>
+                    <PhoneInput
+                      countryCode={motherCountryCode}
+                      onCountryCodeChange={setMotherCountryCode}
+                      countryCodes={countryCodes}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -801,10 +718,7 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 bottom-0 bg-white">
-            <button
-              onClick={handleCancel}
-              className="cancel-button h-9 px-6"
-            >
+            <button onClick={handleCancel} className="cancel-button h-9 px-6">
               Cancel
             </button>
             <button
