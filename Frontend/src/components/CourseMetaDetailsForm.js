@@ -51,6 +51,10 @@ const customSelectStyles = {
     ...base,
     zIndex: 9999,
   }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
 };
 
 function CourseMetaDetailsForm({

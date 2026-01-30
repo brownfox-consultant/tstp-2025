@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import QuestionsList from "./QuestionsList";
 import { usePathname, useRouter } from "next/navigation";
 
-function SubjectQuestionnaire({ course, subjectsData, role, searchQuery, filters }) {
+function SubjectQuestionnaire({
+  course,
+  subjectsData,
+  role,
+  searchQuery,
+  filters,
+}) {
   const [courseSubId, setCourseSubId] = useState();
   const [searchText, setSearchText] = useState();
   const [current, setCurrent] = useState(1);
@@ -16,7 +22,7 @@ function SubjectQuestionnaire({ course, subjectsData, role, searchQuery, filters
     setSearchText();
     setCurrent(1);
     setParams({});
-  
+
     // 🔥 FIX: Update the URL with course_subject_id
     const updatedSearchParams = new URLSearchParams(window.location.search);
     updatedSearchParams.set("course_subject_id", val);
@@ -28,7 +34,7 @@ function SubjectQuestionnaire({ course, subjectsData, role, searchQuery, filters
     if (subjectsData[0]) {
       const defaultId = subjectsData[0].course_subject_id;
       setCourseSubId(defaultId);
-  
+
       const updatedSearchParams = new URLSearchParams(window.location.search);
       updatedSearchParams.set("course_subject_id", defaultId);
       updatedSearchParams.set("page", 1);
@@ -51,6 +57,7 @@ function SubjectQuestionnaire({ course, subjectsData, role, searchQuery, filters
         {["admin", "developer"].includes(role) && (
           <Button
             type="primary"
+            
             onClick={() => router.push(`${pathname}/create`)}
           >
             Add Question
@@ -59,17 +66,16 @@ function SubjectQuestionnaire({ course, subjectsData, role, searchQuery, filters
       </div>
 
       <QuestionsList
-  searchText={searchQuery}
-  filters={filters}
-  setSearchText={setSearchText}
-  current={current}
-  setCurrent={setCurrent}
-  params={params}
-  setParams={setParams}
-  courseSubId={courseSubId}
-  role={role}
-/>
-
+        searchText={searchQuery}
+        filters={filters}
+        setSearchText={setSearchText}
+        current={current}
+        setCurrent={setCurrent}
+        params={params}
+        setParams={setParams}
+        courseSubId={courseSubId}
+        role={role}
+      />
     </>
   );
 }

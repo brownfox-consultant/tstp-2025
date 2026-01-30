@@ -24,8 +24,6 @@ function Page() {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-
-
   const showDeleteModal = (course) => {
     Modal.confirm({
       title: "Delete Course",
@@ -168,22 +166,22 @@ function Page() {
   return (
     <div className="w-full">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/30 rounded-t-xl">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
           <div className="text-xl font-bold text-gray-800">Courses List</div>
-          <div className="flex gap-4">
+          <div className="flex gap-2 items-center">
             <Input
               prefix={<SearchOutlined className="text-gray-400" />}
               placeholder="Search courses..."
-              className="w-[280px] rounded-lg border-gray-300"
+              className="input-field"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               allowClear
             />
             <Button
+              size="large"
               type="primary"
               onClick={() => router.push(`${pathname}/create`)}
-              className="h-11 px-6 bg-[#F28C28] hover:bg-[#d4761f] border-none rounded-lg font-semibold shadow-sm"
-              icon={<Image src={edit} alt="create" width={18} height={18} className="brightness-0 invert" />}
+              className="action-button h-11"
             >
               Create Course
             </Button>
@@ -203,7 +201,7 @@ function Page() {
               pageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ["10", "20", "50"],
-              className: "p-4",
+              className: "p-2",
             }}
           />
         </div>

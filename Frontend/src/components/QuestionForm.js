@@ -470,7 +470,7 @@ function QuestionForm({
         className="space-y-6"
       >
         {/* Question Type Configuration Card */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden p-6">
+        <div className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden p-6">
           <div className="mb-4">
             <h3 className="text-xl font-bold text-[#F59405]">Question Type Configuration</h3>
             <p className="text-sm text-gray-500 mt-1">Select the type and subtype for your question</p></div>
@@ -545,7 +545,7 @@ function QuestionForm({
           )}
 
         {/* Question Content Card */}
-        <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 transition-all duration-300 hover:shadow-lg">
           <div className="mb-4">
             <h3 className="text-xl font-bold text-[#F59405]">Question Details</h3>
             <p className="text-sm text-gray-500 mt-1">Provide the question description and explanation</p>
@@ -872,7 +872,7 @@ function QuestionForm({
         )}
 
         {/* Course Details Card */}
-        <div className="bg-white rounded-2xl shadow-md p-4 border border-gray-200 transition-all duration-300 hover:shadow-lg">
+        <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 transition-all duration-300 hover:shadow-lg">
           <div className="mb-2">
             <h3 className="text-xl font-bold text-[#F59405]">Course Details</h3>
             <p className="text-sm text-gray-500 mt-1">Add course information and metadata for this question</p>
@@ -913,18 +913,18 @@ function QuestionForm({
         </div>
 
         {/* Action Buttons */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+        <div className="bg-white rounded-lg shadow-md border border-gray-100 px-6 py-4">
           <div className="flex flex-wrap justify-center gap-4">
             <Button
               size="large"
-              className="min-w-[120px] h-12 rounded-xl font-semibold border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-700"
+              className="cancel-button !rounded-md px-6 py-4"
               onClick={() => router.back()}
             >
               Cancel
             </Button>
             <Button
               size="large"
-              className="min-w-[120px] h-12 rounded-xl font-semibold border-[#007FBC] text-[#007FBC] hover:bg-[#007FBC] hover:text-white"
+              className="action-button px-6 py-4"
               onClick={openPreview}
             >
               Preview
@@ -934,7 +934,7 @@ function QuestionForm({
               htmlType="submit"
               loading={submitLoader}
               size="large"
-              className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200 hover:shadow-orange-300 hover:opacity-90"
+              className="action-button px-6 py-4"
             >
               Submit Question
             </Button>

@@ -33,6 +33,7 @@ import PatternOfUsage from "@/components/student_report/PatternOfUsage";
 import TopicWiseProgress from "@/components/student_report/TopicWiseProgress";
 import ScoreAnalysis_FullLengthTest from "@/components/student_report/ScoreAnalysis_FullLengthTest";
 import ScoreAnalysis_PracticeTest from "@/components/student_report/ScoreAnalysis_PracticeTest";
+import StudentActivityLog from "@/components/report-module/StudentActivityLog";
 
 
 function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) {
@@ -297,6 +298,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
           tabs={[
             { value: 'score-analysis', label: `${selectedCourseName} Score Analysis` },
             { value: 'subject', label: 'Subject Wise Report' },
+            // { value: 'activity', label: 'Activity Log' },
             { value: 'english', label: 'English Topic Wise Report' },
             { value: 'math', label: 'Math Topic Wise Report' },
             // { value: 'scoreboard', label: 'SCOREBOARD' },
@@ -468,6 +470,10 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
           course_id={selectedCourse}
           test_type={testType}
         />
+      )}
+
+      {activeReportTab === "activity" && (
+        <StudentActivityLog studentId={studentId} />
       )}
 
       {/* {activeReportTab === "datewise" && (

@@ -177,25 +177,26 @@ function CourseForm({ courseData = {}, isEdit = false }) {
         className="h-full flex flex-col gap-4"
       >
         {/* --- HEADER SECTION --- */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="w-full lg:w-1/2">
             <Form.Item
               name="name"
               label={
-                <span className="font-bold text-gray-700">Course Name</span>
+                <span className="font-bold text-gray-700 text-md ">Course Name</span>
               }
               rules={[{ required: true, message: "Course Name is required" }]}
-              className="mb-0"
+              className="!mb-0"
             >
               <Input
-                placeholder="e.g. Mathematics Class 10"
+                placeholder="Enter Course Name"
                 size="large"
                 prefix={<BookOutlined className="text-gray-400" />}
+                className="input-filed !rounded "
               />
             </Form.Item>
           </div>
           <div className="flex gap-3">
-            <Button size="large" onClick={() => router.back()}>
+            <Button size="large" onClick={() => router.back()} className="cancel-button !rounded">
               Cancel
             </Button>
             <Button
@@ -204,7 +205,7 @@ function CourseForm({ courseData = {}, isEdit = false }) {
               icon={<SaveOutlined />}
               loading={loading}
               onClick={() => form.submit()}
-              className="bg-[#F59405] hover:bg-[#e08604] border-none"
+              className="action-button"
             >
               {isEdit ? "Update Course" : "Save Course"}
             </Button>
@@ -217,7 +218,7 @@ function CourseForm({ courseData = {}, isEdit = false }) {
             {(fields, { add, remove }) => (
               <>
                 {/* --- LEFT SIDE --- */}
-                <div className="w-full lg:w-1/4 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+                <div className="w-full lg:w-1/4 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden">
                   <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                     <Text strong className="text-gray-600">
                       Subjects ({fields.length})
@@ -288,7 +289,7 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                 </div>
 
                 {/* --- RIGHT SIDE --- */}
-                <div className="w-full :w-3/4 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+                <div className="w-full :w-3/4 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden">
                   <div className="px-4 py-2 border-b border-gray-100 bg-gray-50">
                     <Title level={5} className="m-0 text-gray-700">
                       Subject Details
@@ -451,7 +452,7 @@ function CourseForm({ courseData = {}, isEdit = false }) {
                             </Col>
                           </Row>
 
-                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mt-2">
+                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                             <Form.List name={[field.name, "sections"]}>
                               {(subFields, subOpt) => (
                                 <>

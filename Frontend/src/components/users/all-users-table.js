@@ -33,8 +33,8 @@ import { BASE_URL } from "@/app/constants/apiConstants";
 import TestList from "@/components/TestList";
 import TestList_admin_user from "../TestList_admin_user";
 import PracticeTestsList_admin_uer from "@/components/PracticeTestsList_admin_uer";
-// import { impersonateUser } from "@/app/services/authService";
-// import { useGlobalContext } from "@/context/store";
+import { impersonateUser } from "@/app/services/authService";
+import { useGlobalContext } from "@/context/store";
 
 
 const { confirm } = Modal;
@@ -70,12 +70,12 @@ function AllUsersTable({ tabKey, api }) {
   const [studentName, setStudentName] = useState("");
   const [ordering, setOrdering] = useState("");
   const [pageSize, setPageSize] = useState(10);
-//   const {
-//   setRole,
-//   setUserId,
-//   setUserName,
-// } = useGlobalContext();
-// const adminEmail = localStorage.getItem("email");
+  const {
+  setRole,
+  setUserId,
+  setUserName,
+} = useGlobalContext();
+const adminEmail = localStorage.getItem("email");
 
 
 
@@ -135,43 +135,43 @@ function AllUsersTable({ tabKey, api }) {
   }, [isDropdownVisible, filterItems]);
 
 
-// const handleLoginAsUser = (record) => {
-//   impersonateUser(record.id)
-//     .then((res) => {
-//       const {
-//         role,
-//         role_name,
-//         id,
-//         csrf_token,
-//         name,
-//         email,
-//         subscription_type,
-//       } = res.data;
+const handleLoginAsUser = (record) => {
+  impersonateUser(record.id)
+    .then((res) => {
+      const {
+        role,
+        role_name,
+        id,
+        csrf_token,
+        name,
+        email,
+        subscription_type,
+      } = res.data;
 
-//       // Clear previous session data
-//       localStorage.clear();
+      // Clear previous session data
+      localStorage.clear();
 
-//       // Store impersonated user
-//       localStorage.setItem("name", name);
-//       localStorage.setItem("email", email);
-//       localStorage.setItem("id", id);
-//       localStorage.setItem("role_name", role_name);
-//       localStorage.setItem("csrfToken", csrf_token);
-//       localStorage.setItem("subscription_type", subscription_type);
-//       localStorage.setItem("impersonating", "true");
+      // Store impersonated user
+      localStorage.setItem("name", name);
+      localStorage.setItem("email", email);
+      localStorage.setItem("id", id);
+      localStorage.setItem("role_name", role_name);
+      localStorage.setItem("csrfToken", csrf_token);
+      localStorage.setItem("subscription_type", subscription_type);
+      localStorage.setItem("impersonating", "true");
 
-//       const dashboardUrl = `/${role_name}/${id}/dashboard`;
+      const dashboardUrl = `/${role_name}/${id}/dashboard`;
 
-//       // ✅ OPEN IN NEW TAB
-//       window.open(dashboardUrl, "_blank");
+      // ✅ OPEN IN NEW TAB
+      window.open(dashboardUrl, "_blank");
 
-//       // ✅ CLOSE CURRENT ADMIN TAB
-//       // window.location.href = "/logout"; // OR admin logout route
-//     })
-//     .catch((err) => {
-//       console.error("Impersonation failed", err);
-//     });
-// };
+      // ✅ CLOSE CURRENT ADMIN TAB
+      // window.location.href = "/logout"; // OR admin logout route
+    })
+    .catch((err) => {
+      console.error("Impersonation failed", err);
+    });
+};
 
 
 
@@ -709,7 +709,7 @@ function AllUsersTable({ tabKey, api }) {
       <div className="flex items-center gap-2">
 
         {/* ✅ LOGIN AS (ADMIN ONLY) */}
-        {/* {adminEmail === "admin@thesmarttestprep.com" && (
+        {adminEmail === "admin@thesmarttestprep.com" && (
   <Button
     size="small"
     type="default"
@@ -717,7 +717,7 @@ function AllUsersTable({ tabKey, api }) {
   >
     Login As
   </Button>
-)} */}
+)}
 
         {/* Existing Edit */}
         {record.role_name == "student" ? (

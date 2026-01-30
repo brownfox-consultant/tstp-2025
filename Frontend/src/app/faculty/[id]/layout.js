@@ -65,7 +65,7 @@ const FacultyMenuItems = [
   {
     key: "practice",
     icon: <FilePptOutlined />,
-    label: "Self-Customised Practice Test",
+    label: "Self-Customised Practice",
   },
   {
     key: "doubts",

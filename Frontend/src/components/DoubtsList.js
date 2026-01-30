@@ -80,6 +80,7 @@ function DoubtsList() {
       key: "student",
       dataIndex: "student",
       title: "Student",
+      width: 170,
       sorter: true,
       sortDirections: ['ascend', 'descend'],
       render: (text) => <>{text}</>,
@@ -88,6 +89,7 @@ function DoubtsList() {
       key: "description",
       dataIndex: "description",
       title: "Doubt",
+      width: 260,
       sorter: true,
       sortDirections: ['ascend', 'descend'],
       render: (text) => <>{text}</>,
@@ -96,6 +98,7 @@ function DoubtsList() {
       key: "status",
       dataIndex: "status",
       title: "Status",
+      width: 100,
       sorter: true,
       sortDirections: ['ascend', 'descend'],
       render: (text) => <DoubtStatusTag status={text} />,
@@ -104,6 +107,7 @@ function DoubtsList() {
       key: "test_type",
       dataIndex: "test_type",
       title: "Test Type",
+      width: 170,
       sorter: true,
       render: (text) => <>{formatTestType(text)}</>,
     },
@@ -112,6 +116,7 @@ function DoubtsList() {
       key: "created_at",
       dataIndex: "created_at",
       title: "Created on",
+      width: 180,
       sorter: true,
       sortDirections: ['ascend', 'descend'],
       render: (text) => formatDateTime(text),
@@ -120,6 +125,7 @@ function DoubtsList() {
     {
       key: "faculty_assigned_date",
       dataIndex: "faculty_assigned_date",
+      width: 180,
       title: (
         <div className="flex items-center whitespace-nowrap">
           Faculty Assigned Date
@@ -134,7 +140,7 @@ function DoubtsList() {
       key: "resolution_date",
       dataIndex: "resolution_date",
       title: "Resolved on",
-      width: 150,
+      width: 180,
       sorter: true,
       sortDirections: ['ascend', 'descend'],
       render: (text) => formatDateTime(text),
@@ -143,13 +149,14 @@ function DoubtsList() {
       key: "resolved_by",
       dataIndex: "resolved_by",
       title: "Resolved By",
-      width: 150,
+      width: 130,
       sorter: true,
       render: (text) => <>{text || "-"}</>,
     },
     {
       key: "action",
       title: "Action",
+      width: 100,
       align: "center",
       render: (id, record) => (
         <ViewDoubtModal
@@ -181,6 +188,7 @@ function DoubtsList() {
     {
       key: "status",
       dataIndex: "status",
+      width: 100,
       title: (
         <div className="flex items-center">
           <span>Status</span>
@@ -198,6 +206,7 @@ function DoubtsList() {
       key: "test_type",
       dataIndex: "test_type",
       title: "Test Type",
+      width: 180,
       sorter: true,
       render: (text) => <>{formatTestType(text)}</>,
     },
@@ -212,7 +221,7 @@ function DoubtsList() {
       ),
       render: (text) => formatDateTime(text),
       align: "left",
-      width: 200,
+      width: 180,
       sorter: true,
       sorter: { multiple: 3 },
     },
@@ -225,7 +234,7 @@ function DoubtsList() {
         </div>
       ),
       align: "left",
-      width: 150,
+       width: 180,
       render: (text) => formatDateTime(text),
       sorter: true,
       sorter: { multiple: 4 },
@@ -234,7 +243,7 @@ function DoubtsList() {
       key: "resolved_by",
       dataIndex: "resolved_by",
       title: "Resolved By",
-      width: 150,
+      width: 180,
       sorter: true,
       render: (text) => <>{text || "-"}</>,
     },
