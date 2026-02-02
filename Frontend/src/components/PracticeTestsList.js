@@ -130,8 +130,7 @@ function PracticeTestsList() {
       align: "center",
       render: (text) => <Tag color="blue">{text}</Tag>,
       width: 110,
-      sorter: true,
-      sorter: { multiple: 1 },
+      sorter: false,
     },
     {
       key: "subject",
@@ -140,8 +139,7 @@ function PracticeTestsList() {
       align: "center",
       render: (text) => <Tag color="cyan">{text}</Tag>,
       width: 110,
-      sorter: true,
-      sorter: { multiple: 2 },
+      sorter: false,
     },
     {
       key: "created_at",
@@ -150,15 +148,14 @@ function PracticeTestsList() {
       align: "center",
       render: (text) => <span className="text-gray-600">{dayjs(text).format("MMM D, YYYY h:mm A")}</span>,
       width: 170,
-      sorter: true,
-      sorter: { multiple: 3 },
+      sorter: false,
     },
     {
       key: "score_summary",
       dataIndex: "performance",
       title: "Performance",
       align: "center",
-      sorter: true,
+      sorter: false,
       width: 140,
       render: (_, record) => (
         <div className="flex justify-center gap-4 text-xs font-medium">
@@ -184,8 +181,7 @@ function PracticeTestsList() {
       align: "center",
       render: (_, record) => <span className="text-gray-600 font-mono">{convertSecondsToTime(record.time_taken)}</span>,
       width: 80,
-      sorter: true,
-      sorter: { multiple: 6 },
+      sorter: false,
     },
     {
       key: "action",
