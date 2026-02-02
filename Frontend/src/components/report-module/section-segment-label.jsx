@@ -80,7 +80,7 @@ const SectionSegmentLabel = ({ data }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow-md">
+    <div className="bg-white rounded-xl p-5 shadow-md border">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <div className="w-6 h-6 rounded-lg bg-orange-100 flex items-center justify-center">

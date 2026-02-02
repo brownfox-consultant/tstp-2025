@@ -16,6 +16,7 @@ import { BackIcon, ReportCalendarIcon as CalendarIcon, UserIcon, ClockIcon, Flag
 
 function PracticeTestReport({ practiceTestId, onClose }) {
   const [resultData, setResultData] = useState({});
+  const [filterStatus, setFilterStatus] = useState("all");
   const router = useRouter();
 
   useEffect(() => {
@@ -73,38 +74,84 @@ function PracticeTestReport({ practiceTestId, onClose }) {
         {/* Stats Row */}
         <div className="flex flex-wrap">
           {/* Left - Score Stats */}
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Correct */}
-            <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2.5 rounded-xl">
-              <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                <CorrectIcon />
+          <div className="flex flex-wrap items-center gap-2">
+            {/* All */}
+            <button 
+              onClick={() => setFilterStatus('all')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border ${
+                filterStatus === 'all' 
+                  ? 'bg-slate-100 border-slate-500 shadow-sm' 
+                  : 'bg-white border-transparent hover:bg-gray-50'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${filterStatus === 'all' ? 'bg-slate-200' : 'bg-slate-100'}`}>
+                <span className="text-[10px] font-bold text-slate-700">All</span>
               </div>
-              <span className="font-bold text-emerald-700 text-lg">{resultData.section_correct_count}</span>
-              <span className="text-emerald-600 font-medium">Correct</span>
-            </div>
+              <span className="font-bold text-slate-800">{resultData.questions_data?.length || 0}</span>
+              <span className="text-xs font-medium text-slate-600">Total</span>
+            </button>
+
+            {/* Correct */}
+            <button 
+              onClick={() => setFilterStatus(filterStatus === 'correct' ? 'all' : 'correct')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border ${
+                filterStatus === 'correct' 
+                  ? 'bg-emerald-50 border-emerald-500 shadow-sm' 
+                  : 'bg-white border-transparent hover:bg-gray-50'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${filterStatus === 'correct' ? 'bg-emerald-500' : 'bg-emerald-100'}`}>
+                <CorrectIcon className={filterStatus === 'correct' ? "text-white w-3 h-3" : "text-emerald-500 w-3 h-3"} />
+              </div>
+              <span className="font-bold text-emerald-700">{resultData.section_correct_count}</span>
+              <span className="text-xs font-medium text-emerald-600">Correct</span>
+            </button>
 
             {/* Incorrect */}
-            <div className="flex items-center gap-2 bg-red-50 px-4 py-2.5 rounded-xl">
-              <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                <IncorrectIcon />
+            <button 
+              onClick={() => setFilterStatus(filterStatus === 'incorrect' ? 'all' : 'incorrect')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border ${
+                filterStatus === 'incorrect' 
+                  ? 'bg-red-50 border-red-500 shadow-sm' 
+                  : 'bg-white border-transparent hover:bg-gray-50'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${filterStatus === 'incorrect' ? 'bg-red-500' : 'bg-red-100'}`}>
+                <IncorrectIcon className={filterStatus === 'incorrect' ? "text-white w-3 h-3" : "text-red-500 w-3 h-3"} />
               </div>
-              <span className="font-bold text-red-700 text-lg">{resultData.section_incorrect_count}</span>
-              <span className="text-red-600 font-medium">Incorrect</span>
-            </div>
+              <span className="font-bold text-red-700">{resultData.section_incorrect_count}</span>
+              <span className="text-xs font-medium text-red-600">Incorrect</span>
+            </button>
 
-            <div className="flex items-center gap-2 bg-red-50 px-4 py-2.5 rounded-xl">
-              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                <EmptyCircleIcon />
+            {/* Blank */}
+            <button 
+              onClick={() => setFilterStatus(filterStatus === 'blank' ? 'all' : 'blank')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border ${
+                filterStatus === 'blank'
+                  ? 'bg-gray-100 border-gray-500 shadow-sm'
+                  : 'bg-white border-transparent hover:bg-gray-50'
+              }`}
+            >
+               <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${filterStatus === 'blank' ? 'bg-white border-gray-400' : 'bg-white border-gray-200'}`}>
+                <EmptyCircleIcon className="w-3 h-3 text-gray-600" />
               </div>
-              <span className="font-bold text-red-700 text-lg">{resultData.section_blank_count}</span>
-              <span className="text-red-600 font-medium">Blank</span>
-            </div>
+              <span className="font-bold text-gray-800">{resultData.section_blank_count}</span>
+              <span className="text-xs font-medium text-gray-600">Blank</span>
+            </button>
 
-            <div className="flex items-center gap-2 bg-orange-50 px-4 py-2.5 rounded-xl">
-              <FlagIcon />
+            {/* Marked */}
+            <button 
+              onClick={() => setFilterStatus(filterStatus === 'marked' ? 'all' : 'marked')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border ${
+                filterStatus === 'marked' 
+                  ? 'bg-orange-50 border-orange-500 shadow-sm' 
+                  : 'bg-white border-transparent hover:bg-gray-50'
+              }`}
+            >
+              <FlagIcon className="text-orange-500 w-3 h-3" />
               <span className="font-bold text-orange-700">{resultData.marked}</span>
-              <span className="text-orange-600 font-medium">Marked</span>
-            </div>
+              <span className="text-xs font-medium text-orange-600">Marked</span>
+            </button>
           </div>
         </div>
 
@@ -131,7 +178,24 @@ function PracticeTestReport({ practiceTestId, onClose }) {
       </div>
 
       {/* Report Table */}
-      <ReportTable sectionData={resultData} testSubmissionId={practiceTestId} />
+      <ReportTable 
+        sectionData={(() => {
+          let questions = resultData.questions_data || [];
+          
+          if (filterStatus === 'correct') {
+            questions = questions.filter(q => q.result && !q.is_skipped);
+          } else if (filterStatus === 'incorrect') {
+            questions = questions.filter(q => !q.result && !q.is_skipped);
+          } else if (filterStatus === 'blank') {
+            questions = questions.filter(q => q.is_skipped);
+          } else if (filterStatus === 'marked') {
+            questions = questions.filter(q => q.marked);
+          }
+
+          return { ...resultData, questions_data: questions };
+        })()} 
+        testSubmissionId={practiceTestId} 
+      />
       {/* <ReportStats sectionData={resultData} testSubmissionId={practiceTestId} /> */}
     </div>
   );

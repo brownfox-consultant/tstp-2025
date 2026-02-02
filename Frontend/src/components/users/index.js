@@ -24,8 +24,8 @@ function AdminUsersComponent() {
 
   ];
   return (
-    <div className="flex flex-col gap-4 mb-3">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col">
+      <div className="flex items-center">
         <h1 className="text-2xl font-bold text-gray-800 m-0">Users</h1>
       </div>
       <div className="w-full">

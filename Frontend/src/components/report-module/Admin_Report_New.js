@@ -6,6 +6,7 @@ import { LeftOutlined } from "@ant-design/icons";
 import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
 import StudentActivityLog from "./StudentActivityLog";
+import { Spin } from "antd";
 
 const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   const [activeTab, setActiveTab] = useState("english");
@@ -13,6 +14,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   const [englishSubTab, setEnglishSubTab] = useState("sectionA");
   const [resultData, setResultData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState("all");
   const searchParams = useSearchParams();
   const test_submission_id = searchParams.get("test_submission_id");
   const router = useRouter();
@@ -58,8 +60,8 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
     });
   };
 
-  const renderTopicWisePerformance = (subject) => {
-    const topics = mergeAreasOfFocus(subject);
+  // const renderTopicWisePerformance = (subject) => {
+  //   const topics = mergeAreasOfFocus(subject);
     // return (
     //   <div className="card-section">
     //     <h3>Topic-wise Performance</h3>
@@ -80,7 +82,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
     //     )}
     //   </div>
     // );
-  };
+  // };
 
   const renderFocusAreas = (subject) => {
     const topics = mergeAreasOfFocus(subject);
@@ -376,71 +378,192 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
 
       {/* Question Breakdown */}
       {activeTab === "questions" && (
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6  mx-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mx-auto border">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F59403] to-orange-500 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-800">Question-by-Question Analysis</h3>
-          </div>
-
-          {/* Subject Tabs */}
-          <div className="3
-          ">
-            {(resultData?.subjects || []).map((subject) => (
-              <button
-                key={subject.name}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${questionMainTab === subject.name
-                    ? "bg-gradient-to-r from-[#F59403] to-orange-500 text-white shadow-lg shadow-orange-200"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          <div className="flex flex-col gap-2 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-y-4">
+              <h3 className="text-lg font-bold text-gray-800">Question-by-Question Analysis</h3>
+              
+              {/* Filter Buttons - Compact */}
+              <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 overflow-x-auto max-w-full">
+                {/* All */}
+                <button 
+                  onClick={() => setFilterStatus('all')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === 'all' 
+                      ? 'bg-white text-gray-900 shadow-sm border border-gray-100' 
+                      : 'text-gray-500 hover:text-gray-900 border border-transparent'
                   }`}
-                onClick={() => {
-                  setQuestionMainTab(subject.name);
-                  const firstSection = subject.sections?.[0]?.name;
-                  if (firstSection) setEnglishSubTab(firstSection);
-                }}
-              >
-                {subject.name === "English" ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                )}
-                {subject.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Section Sub-tabs */}
-          <div className="flex flex-wrap gap-2 mb-6 p-3 bg-gray-50 rounded-xl">
-            {resultData?.subjects
-              ?.find((s) => s.name === questionMainTab)
-              ?.sections?.map((section) => (
-                <button
-                  key={section.name}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${englishSubTab === section.name
-                      ? "bg-white text-gray-800 shadow-md border border-gray-200"
-                      : "bg-transparent text-gray-500 hover:bg-white/50"
-                    }`}
-                  onClick={() => setEnglishSubTab(section.name)}
                 >
-                  {section.name}
+                  <span className={`${filterStatus === 'all' ? 'text-gray-900' : 'text-gray-500'}`}>All</span>
+                  <span className={`px-1.5 rounded-md text-[10px] py-0.5 ${filterStatus === 'all' ? 'bg-gray-100 text-gray-900' : 'bg-gray-200 text-gray-500'}`}>
+                    {(() => {
+                        const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                        return questions.length;
+                    })()}
+                  </span>
+                </button>
+
+                {/* Correct */}
+                <button 
+                  onClick={() => setFilterStatus(filterStatus === 'correct' ? 'all' : 'correct')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === 'correct' 
+                      ? 'bg-white text-green-700 shadow-sm border border-green-100' 
+                      : 'text-gray-500 hover:text-green-600 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'correct' ? 'bg-green-500' : 'bg-green-400'}`}></div>
+                  <span>Correct</span>
+                  <span className={`opacity-70 ${filterStatus === 'correct' ? 'opacity-100 font-bold' : ''}`}>
+                    {(() => {
+                       const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                       return questions.filter(q => q.result && !q.is_skipped).length;
+                    })()}
+                  </span>
+                </button>
+
+                 {/* Incorrect */}
+                 <button 
+                  onClick={() => setFilterStatus(filterStatus === 'incorrect' ? 'all' : 'incorrect')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === 'incorrect' 
+                      ? 'bg-white text-red-700 shadow-sm border border-red-100' 
+                      : 'text-gray-500 hover:text-red-600 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'incorrect' ? 'bg-red-500' : 'bg-red-400'}`}></div>
+                  <span>Incorrect</span>
+                  <span className={`opacity-70 ${filterStatus === 'incorrect' ? 'opacity-100 font-bold' : ''}`}>
+                     {(() => {
+                       const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                       return questions.filter(q => !q.result && !q.is_skipped).length;
+                     })()}
+                  </span>
+                </button>
+                
+                {/* Marked */}
+                <button 
+                  onClick={() => setFilterStatus(filterStatus === 'marked' ? 'all' : 'marked')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === 'marked' 
+                      ? 'bg-white text-blue-700 shadow-sm border border-blue-100' 
+                      : 'text-gray-500 hover:text-blue-600 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'marked' ? 'bg-blue-500' : 'bg-blue-400'}`}></div>
+                  <span>Marked</span>
+                  <span className={`opacity-70 ${filterStatus === 'marked' ? 'opacity-100 font-bold' : ''}`}>
+                     {(() => {
+                       const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                       return questions.filter(q => q.marked).length;
+                     })()}
+                  </span>
+                </button>
+
+                 {/* Skipped */}
+                <button 
+                  onClick={() => setFilterStatus(filterStatus === 'skipped' ? 'all' : 'skipped')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === 'skipped' 
+                      ? 'bg-white text-gray-800 shadow-sm border border-gray-200' 
+                      : 'text-gray-500 hover:text-gray-800 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'skipped' ? 'bg-gray-500' : 'bg-gray-400'}`}></div>
+                  <span>Skipped</span>
+                   <span className={`opacity-70 ${filterStatus === 'skipped' ? 'opacity-100 font-bold' : ''}`}>
+                     {(() => {
+                       const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                       return questions.filter(q => q.is_skipped).length;
+                     })()}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Subject Tabs */}
+            <div className="flex flex-wrap gap-2">
+              {(resultData?.subjects || []).map((subject) => (
+                <button
+                  key={subject.name}
+                  className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${questionMainTab === subject.name
+                      ? "bg-[#F59403] text-white shadow-md shadow-orange-100"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    }`}
+                  onClick={() => {
+                    setQuestionMainTab(subject.name);
+                    const firstSection = subject.sections?.[0]?.name;
+                    if (firstSection) setEnglishSubTab(firstSection);
+                  }}
+                >
+                  {subject.name === "English" ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  {subject.name}
                 </button>
               ))}
+            </div>
+
+            {/* Section Sub-tabs */}
+             <div className="flex flex-wrap gap-2 mt-2">
+              {resultData?.subjects
+                ?.find((s) => s.name === questionMainTab)
+                ?.sections?.map((section) => (
+                  <button
+                    key={section.name}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 border ${englishSubTab === section.name
+                        ? "bg-white text-gray-800 border-gray-300 shadow-sm"
+                        : "bg-transparent text-gray-500 border-transparent hover:bg-gray-50"
+                      }`}
+                    onClick={() => setEnglishSubTab(section.name)}
+                  >
+                    {section.name}
+                  </button>
+                ))}
+            </div>
           </div>
 
           {/* Table Section */}
-          <div className="bg-gray-50 rounded-xl p-4">
+          <div className="bg-white rounded-xl">
             <ReportTable
-              sectionData={resultData?.subjects
-                ?.find((s) => s.name === questionMainTab)
-                ?.sections?.find((sec) => sec.name === englishSubTab)}
+              sectionData={(() => {
+                  const section = resultData?.subjects
+                    ?.find((s) => s.name === questionMainTab)
+                    ?.sections?.find((sec) => sec.name === englishSubTab);
+                  
+                  if (!section) return null;
+
+                  let filteredQuestions = section.questions_data || [];
+                  
+                  if (filterStatus === 'correct') {
+                    filteredQuestions = filteredQuestions.filter(q => q.result && !q.is_skipped);
+                  } else if (filterStatus === 'incorrect') {
+                    filteredQuestions = filteredQuestions.filter(q => !q.result && !q.is_skipped);
+                  } else if (filterStatus === 'marked') {
+                    filteredQuestions = filteredQuestions.filter(q => q.marked);
+                  } else if (filterStatus === 'skipped') {
+                    filteredQuestions = filteredQuestions.filter(q => q.is_skipped);
+                  }
+
+                  return { ...section, questions_data: filteredQuestions };
+                })()}
               testSubmissionId={testSubmissionId}
             />
           </div>
