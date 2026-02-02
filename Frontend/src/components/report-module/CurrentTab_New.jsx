@@ -113,54 +113,69 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
           <div className="flex  justify-between flex-wrap">
             <div className="text-lg font-bold mb-3 text-gray-800">Analysis Overview</div>
 
-            {/* Stats Row */}
-            <div className="flex flex-wrap gap-4 mb-4 text-sm">
+            {/* Stats Row - Compact */}
+            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 mb-4">
+              {/* All */}
               <button 
                 onClick={() => setFilterStatus('all')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all border ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   filterStatus === 'all' 
-                    ? 'bg-gray-800 text-white border-gray-600 ring-2 ring-gray-600 ring-offset-1' 
-                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                    ? 'bg-white text-gray-900 shadow-sm border border-gray-100' 
+                    : 'text-gray-500 hover:text-gray-900 border border-transparent'
                 }`}
               >
-                <div className={`w-2.5 h-2.5 rounded-full ${filterStatus === 'all' ? 'bg-white' : 'bg-gray-400'}`}></div>
-                {currentSubject.subject_correct_count + currentSubject.subject_incorrect_count + currentSubject.subject_blank_count} All
-              </button>
-              
-              <button 
-                onClick={() => setFilterStatus(filterStatus === 'correct' ? 'all' : 'correct')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all border ${
-                  filterStatus === 'correct' 
-                    ? 'bg-green-100 text-green-700 border-green-200 ring-2 ring-green-500 ring-offset-1' 
-                    : 'bg-green-50 text-green-700 border-transparent hover:bg-green-100'
-                }`}
-              >
-                <div className={`w-2.5 h-2.5 rounded-full ${filterStatus === 'correct' ? 'bg-green-500' : 'bg-green-400'}`}></div>
-                {currentSubject.subject_correct_count} Correct
-              </button>
-              
-              <button 
-                onClick={() => setFilterStatus(filterStatus === 'incorrect' ? 'all' : 'incorrect')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all border ${
-                  filterStatus === 'incorrect' 
-                    ? 'bg-red-100 text-red-700 border-red-200 ring-2 ring-red-500 ring-offset-1' 
-                    : 'bg-red-50 text-red-700 border-transparent hover:bg-red-100'
-                }`}
-              >
-                <div className={`w-2.5 h-2.5 rounded-full ${filterStatus === 'incorrect' ? 'bg-red-500' : 'bg-red-400'}`}></div>
-                {currentSubject.subject_incorrect_count} Incorrect
+                <span className={`${filterStatus === 'all' ? 'text-gray-900' : 'text-gray-500'}`}>All</span>
+                <span className={`px-1.5 rounded-md text-[10px] py-0.5 ${filterStatus === 'all' ? 'bg-gray-100 text-gray-900' : 'bg-gray-200 text-gray-500'}`}>
+                  {currentSubject.subject_correct_count + currentSubject.subject_incorrect_count + currentSubject.subject_blank_count}
+                </span>
               </button>
 
+              {/* Correct */}
               <button 
-                onClick={() => setFilterStatus(filterStatus === 'blank' ? 'all' : 'blank')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all border ${
-                  filterStatus === 'blank' 
-                    ? 'bg-gray-200 text-gray-700 border-gray-300 ring-2 ring-gray-400 ring-offset-1' 
-                    : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200'
+                onClick={() => setFilterStatus(filterStatus === 'correct' ? 'all' : 'correct')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  filterStatus === 'correct' 
+                    ? 'bg-white text-green-700 shadow-sm border border-green-100' 
+                    : 'text-gray-500 hover:text-green-600 border border-transparent'
                 }`}
               >
-                 <div className={`w-2.5 h-2.5 rounded-full ${filterStatus === 'blank' ? 'bg-gray-500' : 'bg-gray-400'}`}></div>
-                {currentSubject.subject_blank_count} Blank
+                <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'correct' ? 'bg-green-500' : 'bg-green-400'}`}></div>
+                <span>Correct</span>
+                <span className={`opacity-70 ${filterStatus === 'correct' ? 'opacity-100 font-bold' : ''}`}>
+                  {currentSubject.subject_correct_count}
+                </span>
+              </button>
+              
+              {/* Incorrect */}
+              <button 
+                onClick={() => setFilterStatus(filterStatus === 'incorrect' ? 'all' : 'incorrect')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  filterStatus === 'incorrect' 
+                    ? 'bg-white text-red-700 shadow-sm border border-red-100' 
+                    : 'text-gray-500 hover:text-red-600 border border-transparent'
+                }`}
+              >
+                <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'incorrect' ? 'bg-red-500' : 'bg-red-400'}`}></div>
+                <span>Incorrect</span>
+                <span className={`opacity-70 ${filterStatus === 'incorrect' ? 'opacity-100 font-bold' : ''}`}>
+                  {currentSubject.subject_incorrect_count}
+                </span>
+              </button>
+
+              {/* Blank */}
+              <button 
+                onClick={() => setFilterStatus(filterStatus === 'blank' ? 'all' : 'blank')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  filterStatus === 'blank' 
+                    ? 'bg-white text-gray-700 shadow-sm border border-gray-300' 
+                    : 'text-gray-500 hover:text-gray-600 border border-transparent'
+                }`}
+              >
+                <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'blank' ? 'bg-gray-500' : 'bg-gray-400'}`}></div>
+                <span>Blank</span>
+                <span className={`opacity-70 ${filterStatus === 'blank' ? 'opacity-100 font-bold' : ''}`}>
+                  {currentSubject.subject_blank_count}
+                </span>
               </button>
             </div>
           </div>

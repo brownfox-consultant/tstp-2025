@@ -293,8 +293,10 @@ function CreateTest({ setTestDetails }) {
               Cancel
             </Button>
             <Button
-              type="submit"
+              type="primary"
+              htmlType="submit"
               size="large"     
+              disabled={createLoading}
               className="action-button !px-5 !h-11"   
             >
               {createLoading && <Spin size="small" />}

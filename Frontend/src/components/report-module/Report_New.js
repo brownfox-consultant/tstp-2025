@@ -2,7 +2,7 @@
 import './ReportNew.css';
 import { getTestResult } from "@/app/services/authService";
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useRouter, useParams } from "next/navigation";
+import { useSearchParams, useRouter, useParams, usePathname } from "next/navigation";
 import { Spin, Progress } from "antd";
 import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
@@ -29,6 +29,8 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
   const searchParams = useSearchParams();
   const test_submission_id = searchParams.get("test_submission_id");
   const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams();
   const availableSubjects = resultData?.subjects?.map(s => s.name.toLowerCase()) || [];
   const tabs = [...availableSubjects, "questions"];
 
@@ -101,12 +103,9 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-orange-50">
-        <div className="text-center p-12 bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl">
+      <div className="flex justify-center items-center min-h-screen">
+        <div>
           <Spin size="large" />
-          <p className="mt-5 text-lg font-semibold text-gray-800 animate-pulse">
-            Loading test results...
-          </p>
         </div>
       </div>
     );
@@ -117,11 +116,22 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
   const totalPercent = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
 
   return (
-    <div className="min-h-screen">
+    <div>
       {/* Back Button */}
       <button
         className="absolute top-2 right-6 inline-flex items-center gap-2 px-5 py-3 bg-white/90 backdrop-blur-lg border border-gray-100 rounded-full text-sm font-semibold text-gray-800 cursor-pointer transition-all duration-300 shadow-sm hover:bg-primary-color hover:text-white hover:-translate-x-1 hover:shadow-lg hover:shadow-orange-200"
-        onClick={() => window.location.reload()}
+        onClick={() => {
+          if (onClose) {
+            onClose();
+          } else {
+            const role = pathname?.split('/')[1];
+            if (role === 'student') {
+              router.push(`/student/${params.id}/test/full`);
+            } else {
+              router.back();
+            }
+          }
+        }}
       >
         <ArrowLeftIcon size={18} />
         <span className="hidden sm:inline">Back</span>
@@ -274,11 +284,11 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
 
         {/* Question Breakdown */}
         {activeTab === "questions" && (
-          <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100 w-full">
-            <div className="flex flex-wrap items-center justify-between mb-7 gap-4">
+          <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 w-full">
+            <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
               <div className="flex items-center gap-3">
                 <ChartBarIcon size={24} className="text-primary-color" />
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 m-0">
+                <h2 className="text-lg md:text-xl font-bold text-gray-800 m-0">
                   Question By Question Analysis
                 </h2>
               </div>
@@ -392,13 +402,13 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3 mb-5">
+            <div className="flex flex-wrap gap-3 mb-3">
               {(resultData?.subjects || []).map((subject) => (
                 <button
                   key={subject.name}
-                  className={`inline-flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-300 ${questionMainTab === subject.name
-                    ? 'bg-gradient-to-r from-primary-color to-orange-500 text-white shadow-lg shadow-orange-200 border-transparent'
-                    : 'bg-gray-50 border-2 border-gray-200 text-gray-800 hover:bg-orange-50 hover:border-orange-200'
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 ${questionMainTab === subject.name
+                    ? 'bg-gradient-to-r from-primary-color to-orange-500 text-white shadow-md shadow-orange-200 border-transparent'
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-orange-200 hover:text-orange-600'
                     }`}
                   onClick={() => {
                     setQuestionMainTab(subject.name);
@@ -412,15 +422,15 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-2.5 mb-6 p-4 bg-gray-50 rounded-xl">
+            <div className="flex flex-wrap gap-2 mb-4">
               {resultData?.subjects
                 ?.find((s) => s.name === questionMainTab)
                 ?.sections?.map((section) => (
                   <button
                     key={section.name}
-                    className={`px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 ${englishSubTab === section.name
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600'
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 ${englishSubTab === section.name
+                      ? 'bg-gray-800 text-white shadow-md'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     onClick={() => setEnglishSubTab(section.name)}
                   >

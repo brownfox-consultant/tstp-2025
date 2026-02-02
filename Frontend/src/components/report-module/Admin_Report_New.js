@@ -119,7 +119,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="text-lg font-bold blink">Loading test results...</div>
+      <Spin size="large" />
       </div>
     );
   }
@@ -388,7 +388,8 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
           </div>
 
           {/* Subject Tabs */}
-          <div className="flex flex-wrap gap-3 mb-5">
+          <div className="3
+          ">
             {(resultData?.subjects || []).map((subject) => (
               <button
                 key={subject.name}

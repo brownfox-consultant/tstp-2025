@@ -4,7 +4,7 @@ import { getTestsList } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
 import { resetTestSlice } from "@/lib/features/test/testSlice";
 import useFullScreen from "@/utils/useFullScreen";
-import { WarningOutlined } from "@ant-design/icons";
+import { WarningOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Popover, Table, Pagination, Input } from "antd";
 import dayjs from "dayjs";
 import { usePathname, useRouter } from "next/navigation";
@@ -35,10 +35,7 @@ function TestList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const debounceTimeoutRef = useRef(null);
-
-
   const { setTestRunning, testRunning, subscriptionType } = useGlobalContext();
-
 
   useEffect(() => {
     setTestRunning(false);
@@ -63,7 +60,6 @@ function TestList() {
       .then((res) => {
         let results = res.data.results;
 
-        // ✅ FREE subscription → show only 2 tests total
         if (subscriptionType === "FREE") {
           results = results.slice(0, 2);
         }
@@ -119,8 +115,8 @@ function TestList() {
       dataIndex: "name",
       render: (text) => <>{text}</>,
       sorter: true,
-      width: 100,
-      align: "center",
+      width: 160,
+      align: "start",
       sorter: { multiple: 1 },
     },
     {
@@ -133,7 +129,7 @@ function TestList() {
       dataIndex: "course_name",
       align: "center",
       sorter: true,
-      width: 100,
+      width: 130,
       sorter: { multiple: 2 },
     },
     {
@@ -220,7 +216,7 @@ function TestList() {
             onClick={() => handleTestClick(record, record.status)}
             disabled={
               subscriptionType === "FREE" &&
-              record.status !== "YET_TO_START"   // FREE user can only start new test
+              record.status !== "YET_TO_START"  
             }
           >
             {record.status === "YET_TO_START" ? "Start Test" : "Continue Test"}
@@ -241,7 +237,7 @@ function TestList() {
     );
     dispatch(resetTestSlice());
 
-    const studentId = pathname.split("/")[2]; // Get student id from URL
+    const studentId = pathname.split("/")[2]; 
     const basePath = `/${role}/${studentId}/test`;
 
     if (status === "IN_PROGRESS") {
@@ -267,7 +263,6 @@ function TestList() {
   const handleTableChange = (pagination, filters, sorter) => {
     let sortObj = {};
 
-    // Check if sorting is done on multiple columns
     if (Array.isArray(sorter)) {
       sorter.forEach((s) => {
         if (s.order === "ascend") {
@@ -277,39 +272,27 @@ function TestList() {
         }
       });
     } else {
-      // Single column sort fallback
       if (sorter.order === "ascend") {
         sortObj[sorter.field] = "asc";
       } else if (sorter.order === "descend") {
         sortObj[sorter.field] = "desc";
       }
     }
-
-    console.log("Sort Object", sortObj); // Debugging the sort object
-    setSortParams(sortObj); // Update the state with the accumulated sort object
+    setSortParams(sortObj); 
   };
 
   return (
     <div className="mt-3">
       {showResult ? (
         // <Report testSubmissionId={submissionId} />
-        <ReportNew testSubmissionId={submissionId} />
+        <ReportNew testSubmissionId={submissionId} onClose={() => setShowResult(false)} />
       ) : (
         <>
           <Input
-            placeholder={`Search`}
+            placeholder="Search test..."
+            prefix={<SearchOutlined className="text-gray-400 text-lg mr-2" />}
             onChange={handleSearchChange}
-            style={{
-              marginBottom: 8,
-              height: "40px",
-              fontSize: "18px",
-              backgroundImage: `url('/icons/search.svg')`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "10px center",
-              paddingLeft: "40px",
-              backgroundSize: "20px",
-              width: "25%",
-            }}
+            className="h-12 max-w-[450px] text-base rounded-xl border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm transition-all duration-300"
           />
           <Table
             footer={() => (
