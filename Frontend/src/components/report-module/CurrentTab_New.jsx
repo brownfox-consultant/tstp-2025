@@ -15,6 +15,8 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
   const { sections } = currentSubject;
   const pathname = usePathname();
   const role = pathname.split("/")[1];
+  const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'correct', 'incorrect', 'blank'
+
   const [selectedSection, setSelectedSection] = useState(0);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -106,7 +108,6 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
             />
           </div>
         </div>
-
         {/* Analysis Overview - Right Side */}
         <div className="flex-1 bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <div className="flex  justify-between flex-wrap">
@@ -114,22 +115,53 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
 
             {/* Stats Row */}
             <div className="flex flex-wrap gap-4 mb-4 text-sm">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full font-medium">
-                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
+              <button 
+                onClick={() => setFilterStatus('all')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all border ${
+                  filterStatus === 'all' 
+                    ? 'bg-gray-800 text-white border-gray-600 ring-2 ring-gray-600 ring-offset-1' 
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <div className={`w-2.5 h-2.5 rounded-full ${filterStatus === 'all' ? 'bg-white' : 'bg-gray-400'}`}></div>
+                {currentSubject.subject_correct_count + currentSubject.subject_incorrect_count + currentSubject.subject_blank_count} All
+              </button>
+              
+              <button 
+                onClick={() => setFilterStatus(filterStatus === 'correct' ? 'all' : 'correct')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all border ${
+                  filterStatus === 'correct' 
+                    ? 'bg-green-100 text-green-700 border-green-200 ring-2 ring-green-500 ring-offset-1' 
+                    : 'bg-green-50 text-green-700 border-transparent hover:bg-green-100'
+                }`}
+              >
+                <div className={`w-2.5 h-2.5 rounded-full ${filterStatus === 'correct' ? 'bg-green-500' : 'bg-green-400'}`}></div>
                 {currentSubject.subject_correct_count} Correct
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 rounded-full font-medium">
-                <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
+              </button>
+              
+              <button 
+                onClick={() => setFilterStatus(filterStatus === 'incorrect' ? 'all' : 'incorrect')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all border ${
+                  filterStatus === 'incorrect' 
+                    ? 'bg-red-100 text-red-700 border-red-200 ring-2 ring-red-500 ring-offset-1' 
+                    : 'bg-red-50 text-red-700 border-transparent hover:bg-red-100'
+                }`}
+              >
+                <div className={`w-2.5 h-2.5 rounded-full ${filterStatus === 'incorrect' ? 'bg-red-500' : 'bg-red-400'}`}></div>
                 {currentSubject.subject_incorrect_count} Incorrect
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 rounded-full font-medium">
-                <span className="w-3 h-3 border-2 border-gray-400 rounded-full" />
+              </button>
+
+              <button 
+                onClick={() => setFilterStatus(filterStatus === 'blank' ? 'all' : 'blank')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all border ${
+                  filterStatus === 'blank' 
+                    ? 'bg-gray-200 text-gray-700 border-gray-300 ring-2 ring-gray-400 ring-offset-1' 
+                    : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200'
+                }`}
+              >
+                 <div className={`w-2.5 h-2.5 rounded-full ${filterStatus === 'blank' ? 'bg-gray-500' : 'bg-gray-400'}`}></div>
                 {currentSubject.subject_blank_count} Blank
-              </span>
+              </button>
             </div>
           </div>
           {/* Section Bubbles */}
@@ -140,11 +172,19 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
 
               const bubbles = generateBubbleData(section);
 
+              // Filter bubbles based on filterStatus
+              const filteredBubbles = bubbles.filter(bubble => {
+                if (filterStatus === 'all') return true;
+                return bubble.type === filterStatus;
+              });
+
+              if (filteredBubbles.length === 0 && filterStatus !== 'all') return null;
+
               return (
                 <div key={index} className="flex items-center gap-3 flex-wrap">
                   <div className="w-20 md:w-24 text-xs font-semibold text-gray-500 shrink-0">{section.name}</div>
                   <div className="flex gap-1.5 flex-wrap">
-                    {bubbles.map((bubble) => {
+                    {filteredBubbles.map((bubble) => {
                       const { type, index, question_id } = bubble;
 
                       let bgColor = "";

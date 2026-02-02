@@ -25,6 +25,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
   const [englishSubTab, setEnglishSubTab] = useState("sectionA");
   const [resultData, setResultData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'correct', 'incorrect', 'marked'
   const searchParams = useSearchParams();
   const test_submission_id = searchParams.get("test_submission_id");
   const router = useRouter();
@@ -274,11 +275,121 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
         {/* Question Breakdown */}
         {activeTab === "questions" && (
           <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg border border-gray-100 w-full">
-            <div className="flex items-center gap-3 mb-7">
-              <ChartBarIcon size={24} className="text-primary-color" />
-              <h2 className="text-xl md:text-2xl font-bold text-gray-800 m-0">
-                Question By Question Analysis
-              </h2>
+            <div className="flex flex-wrap items-center justify-between mb-7 gap-4">
+              <div className="flex items-center gap-3">
+                <ChartBarIcon size={24} className="text-primary-color" />
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800 m-0">
+                  Question By Question Analysis
+                </h2>
+              </div>
+              
+              {/* Filter Buttons */}
+              {/* Filter Buttons - Compact */}
+              <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200">
+                {/* All */}
+                <button 
+                  onClick={() => setFilterStatus('all')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    filterStatus === 'all' 
+                      ? 'bg-white text-gray-900 shadow-sm border border-gray-100' 
+                      : 'text-gray-500 hover:text-gray-900 border border-transparent'
+                  }`}
+                >
+                  <span className={`${filterStatus === 'all' ? 'text-gray-900' : 'text-gray-500'}`}>All</span>
+                  <span className={`px-1.5 rounded-md text-[10px] py-0.5 ${filterStatus === 'all' ? 'bg-gray-100 text-gray-900' : 'bg-gray-200 text-gray-500'}`}>
+                    {(() => {
+                        const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                        return questions.length;
+                    })()}
+                  </span>
+                </button>
+
+                {/* Correct */}
+                <button 
+                  onClick={() => setFilterStatus(filterStatus === 'correct' ? 'all' : 'correct')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    filterStatus === 'correct' 
+                      ? 'bg-white text-green-700 shadow-sm border border-green-100' 
+                      : 'text-gray-500 hover:text-green-600 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'correct' ? 'bg-green-500' : 'bg-green-400'}`}></div>
+                  <span>Correct</span>
+                  <span className={`opacity-70 ${filterStatus === 'correct' ? 'opacity-100 font-bold' : ''}`}>
+                    {(() => {
+                       const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                       return questions.filter(q => q.result && !q.is_skipped).length;
+                    })()}
+                  </span>
+                </button>
+
+                 {/* Incorrect */}
+                 <button 
+                  onClick={() => setFilterStatus(filterStatus === 'incorrect' ? 'all' : 'incorrect')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    filterStatus === 'incorrect' 
+                      ? 'bg-white text-red-700 shadow-sm border border-red-100' 
+                      : 'text-gray-500 hover:text-red-600 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'incorrect' ? 'bg-red-500' : 'bg-red-400'}`}></div>
+                  <span>Incorrect</span>
+                  <span className={`opacity-70 ${filterStatus === 'incorrect' ? 'opacity-100 font-bold' : ''}`}>
+                     {(() => {
+                       const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                       return questions.filter(q => !q.result && !q.is_skipped).length;
+                     })()}
+                  </span>
+                </button>
+                
+                {/* Marked */}
+                <button 
+                  onClick={() => setFilterStatus(filterStatus === 'marked' ? 'all' : 'marked')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    filterStatus === 'marked' 
+                      ? 'bg-white text-blue-700 shadow-sm border border-blue-100' 
+                      : 'text-gray-500 hover:text-blue-600 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'marked' ? 'bg-blue-500' : 'bg-blue-400'}`}></div>
+                  <span>Marked</span>
+                  <span className={`opacity-70 ${filterStatus === 'marked' ? 'opacity-100 font-bold' : ''}`}>
+                     {(() => {
+                       const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                       return questions.filter(q => q.marked).length;
+                     })()}
+                  </span>
+                </button>
+
+                 {/* Skipped */}
+                <button 
+                  onClick={() => setFilterStatus(filterStatus === 'skipped' ? 'all' : 'skipped')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    filterStatus === 'skipped' 
+                      ? 'bg-white text-gray-800 shadow-sm border border-gray-200' 
+                      : 'text-gray-500 hover:text-gray-800 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'skipped' ? 'bg-gray-500' : 'bg-gray-400'}`}></div>
+                  <span>Skipped</span>
+                   <span className={`opacity-70 ${filterStatus === 'skipped' ? 'opacity-100 font-bold' : ''}`}>
+                     {(() => {
+                       const questions = resultData?.subjects
+                        ?.find((s) => s.name === questionMainTab)
+                        ?.sections?.find((sec) => sec.name === englishSubTab)?.questions_data || [];
+                       return questions.filter(q => q.is_skipped).length;
+                     })()}
+                  </span>
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-3 mb-5">
@@ -320,9 +431,27 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
 
             <div className="mt-6">
               <ReportTable
-                sectionData={resultData?.subjects
-                  ?.find((s) => s.name === questionMainTab)
-                  ?.sections?.find((sec) => sec.name === englishSubTab)}
+                sectionData={(() => {
+                  const section = resultData?.subjects
+                    ?.find((s) => s.name === questionMainTab)
+                    ?.sections?.find((sec) => sec.name === englishSubTab);
+                  
+                  if (!section) return null;
+
+                  let filteredQuestions = section.questions_data || [];
+                  
+                  if (filterStatus === 'correct') {
+                    filteredQuestions = filteredQuestions.filter(q => q.result && !q.is_skipped);
+                  } else if (filterStatus === 'incorrect') {
+                    filteredQuestions = filteredQuestions.filter(q => !q.result && !q.is_skipped);
+                  } else if (filterStatus === 'marked') {
+                    filteredQuestions = filteredQuestions.filter(q => q.marked);
+                  } else if (filterStatus === 'skipped') {
+                    filteredQuestions = filteredQuestions.filter(q => q.is_skipped);
+                  }
+
+                  return { ...section, questions_data: filteredQuestions };
+                })()}
                 testSubmissionId={testSubmissionId}
               />
             </div>
