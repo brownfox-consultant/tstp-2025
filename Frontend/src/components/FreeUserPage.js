@@ -68,7 +68,7 @@ export default function FreeUserPage() {
   };
 
   function handleClick(course) {
-    if (course.freeAccess) {
+    if (isCourseAssigned(course.id)) {
       router.push(`/student/${id}/test/full`);
       return;
     }
@@ -79,9 +79,9 @@ export default function FreeUserPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       {/* Header Section */}
-      <div className="mb-8">
+      <div className="mb-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
@@ -95,7 +95,7 @@ export default function FreeUserPage() {
       </div>
 
       {/* User Info Banner */}
-      <div className="mb-8 bg-gradient-to-r from-orange-500 to-amber-400 rounded-2xl p-6 shadow-lg">
+      <div className="mb-4 bg-gradient-to-r from-orange-500 to-amber-400 rounded-lg p-6 shadow-lg">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -112,12 +112,11 @@ export default function FreeUserPage() {
       </div>
 
       {/* Section Title */}
-      <div className="mb-6">
+      <div className="mb-4">
         <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
-          <span className="w-1 h-6 bg-gradient-to-b from-orange-500 to-amber-400 rounded-full"></span>
           Our Courses
         </h2>
-        <p className="text-gray-500 text-sm mt-1 ml-4">Select a course to begin your preparation journey</p>
+        <p className="text-gray-500 text-sm mt-1">Select a course to begin your preparation journey</p>
       </div>
 
       {/* Loading State */}
