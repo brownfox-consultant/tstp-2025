@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import { getDashboardStats } from "@/app/services/authService";
 import { usePathname, useRouter } from "next/navigation";
