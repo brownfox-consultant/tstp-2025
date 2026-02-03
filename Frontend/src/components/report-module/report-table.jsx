@@ -16,7 +16,6 @@ import RaiseDoubtModal from "../RaiseDoubtModal";
 import { usePathname } from "next/navigation";
 import GridInOptions from "../question-list/gridin-options";
 
-
 const buildOptions = (data, field) =>
   [...new Set(data.map((q) => q[field]).filter(Boolean))].map((t) => ({
     label: t,
@@ -26,9 +25,8 @@ const buildOptions = (data, field) =>
 function ReportTable({ sectionData, testSubmissionId }) {
   if (!sectionData) {
     console.warn("ReportTable: sectionData is undefined");
-    return null; // or return <Loading />
+    return null;
   }
-  console.log("sectionData", sectionData.test_type)
 
   const pathname = usePathname();
   const role = pathname.split("/")[1];

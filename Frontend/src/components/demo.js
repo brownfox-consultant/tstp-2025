@@ -16,8 +16,15 @@ import {
 } from "recharts";
 import axios from "axios";
 import Select from "react-select";
-import { GET_Courses, GET_Students, BASE_URL } from "@/app/constants/apiConstants";
-import { getStudentCountByCourse, getTestResult } from "@/app/services/authService";
+import {
+  GET_Courses,
+  GET_Students,
+  BASE_URL,
+} from "@/app/constants/apiConstants";
+import {
+  getStudentCountByCourse,
+  getTestResult,
+} from "@/app/services/authService";
 import { useParams, useRouter } from "next/navigation";
 import {
   ConcernIcon,
@@ -31,7 +38,7 @@ import {
   NoDataChartIcon,
   NoDataClockIcon,
   BadgeCheckIcon,
-  ChevronIcon
+  ChevronIcon,
 } from "./icons/dashboard-icons";
 import { NoDataIcon } from "@/components/icons/improvement-strength-icons";
 import { components } from "react-select";
@@ -40,7 +47,11 @@ import { Row, Col } from "antd";
 const DropdownIndicator = (props) => {
   return (
     <components.DropdownIndicator {...props}>
-      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+      <ChevronIcon
+        className="w-4 h-4"
+        isOpen={props.selectProps.menuIsOpen}
+        color="#805830"
+      />
     </components.DropdownIndicator>
   );
 };
@@ -52,7 +63,7 @@ const DUMMY_FULL_LENGTH = [
     test_name: "Algebra Baseline Test",
     course_name: "SAT Math",
     total_score: 85,
-    created_at: "2024-02-20T10:30:00Z"
+    created_at: "2024-02-20T10:30:00Z",
   },
   {
     id: 2,
@@ -60,7 +71,7 @@ const DUMMY_FULL_LENGTH = [
     test_name: "Geometry Mid-Term",
     course_name: "SAT Math",
     total_score: 92,
-    created_at: "2024-02-19T14:15:00Z"
+    created_at: "2024-02-19T14:15:00Z",
   },
   {
     id: 3,
@@ -68,7 +79,7 @@ const DUMMY_FULL_LENGTH = [
     test_name: "Reading Comprehension",
     course_name: "SAT English",
     total_score: 78,
-    created_at: "2024-02-18T09:45:00Z"
+    created_at: "2024-02-18T09:45:00Z",
   },
   {
     id: 4,
@@ -76,7 +87,7 @@ const DUMMY_FULL_LENGTH = [
     test_name: "Grammar & Usage",
     course_name: "SAT English",
     total_score: 45,
-    created_at: "2024-02-17T16:20:00Z"
+    created_at: "2024-02-17T16:20:00Z",
   },
   {
     id: 5,
@@ -84,8 +95,8 @@ const DUMMY_FULL_LENGTH = [
     test_name: "Trigonometry Basics",
     course_name: "ACT Math",
     total_score: 88,
-    created_at: "2024-02-16T11:00:00Z"
-  }
+    created_at: "2024-02-16T11:00:00Z",
+  },
 ];
 
 const DUMMY_PRACTICE = [
@@ -95,7 +106,7 @@ const DUMMY_PRACTICE = [
     test_name: "Practice Set 1 - Algebra",
     course_name: "SAT Math",
     total_score: 70,
-    created_at: "2024-02-21T09:00:00Z"
+    created_at: "2024-02-21T09:00:00Z",
   },
   {
     id: 102,
@@ -103,7 +114,7 @@ const DUMMY_PRACTICE = [
     test_name: "Practice Set 3 - Vocabulary",
     course_name: "SAT English",
     total_score: 65,
-    created_at: "2024-02-20T15:30:00Z"
+    created_at: "2024-02-20T15:30:00Z",
   },
   {
     id: 103,
@@ -111,7 +122,7 @@ const DUMMY_PRACTICE = [
     test_name: "Quick Practice - Geometry",
     course_name: "SAT Math",
     total_score: 55,
-    created_at: "2024-02-19T11:20:00Z"
+    created_at: "2024-02-19T11:20:00Z",
   },
   {
     id: 104,
@@ -119,7 +130,7 @@ const DUMMY_PRACTICE = [
     test_name: "Practice Test - Reading 1",
     course_name: "SAT English",
     total_score: 80,
-    created_at: "2024-02-18T13:45:00Z"
+    created_at: "2024-02-18T13:45:00Z",
   },
   {
     id: 105,
@@ -127,11 +138,20 @@ const DUMMY_PRACTICE = [
     test_name: "Math Drills - Mixed",
     course_name: "ACT Math",
     total_score: 95,
-    created_at: "2024-02-17T10:10:00Z"
-  }
+    created_at: "2024-02-17T10:10:00Z",
+  },
 ];
 
-function StatCard({ title, value, selectedFilter, customStartDate, customEndDate, apiKey, routeName, gradientClass }) {
+function StatCard({
+  title,
+  value,
+  selectedFilter,
+  customStartDate,
+  customEndDate,
+  apiKey,
+  routeName,
+  gradientClass,
+}) {
   const router = useRouter();
   const { id } = useParams();
 
@@ -152,20 +172,23 @@ function StatCard({ title, value, selectedFilter, customStartDate, customEndDate
       onClick={handleViewAll}
       className="relative bg-white rounded-lg p-3 sm:p-4 md:p-5 lg:p-6 border-2 border-gray-50 shadow-md hover:shadow-lg overflow-hidden group cursor-pointer transition-all"
     >
-      <div className={`absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r ${gradientClass}`} />
+      <div
+        className={`absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r ${gradientClass}`}
+      />
       <div className="flex justify-between items-start mb-2 sm:mb-3 md:mb-4 gap-2">
-        <p className="text-xs sm:text-sm font-medium text-gray-500 leading-tight">{title}</p>
-        <button
-          className="text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent whitespace-nowrap flex-shrink-0"
-        >
+        <p className="text-xs sm:text-sm font-medium text-gray-500 leading-tight">
+          {title}
+        </p>
+        <button className="text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent whitespace-nowrap flex-shrink-0">
           View all →
         </button>
       </div>
-      <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">{value}</div>
+      <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
+        {value}
+      </div>
     </div>
   );
 }
-
 
 export default function Dashboard() {
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -176,15 +199,17 @@ export default function Dashboard() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fullLengthTests, setFullLengthTests] = useState([]);
-const [practiceTests, setPracticeTests] = useState([]);
-
+  const [practiceTests, setPracticeTests] = useState([]);
 
   const datePickerRef = React.useRef(null);
 
   // Click outside handler
   useEffect(() => {
     function handleClickOutside(event) {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+      if (
+        datePickerRef.current &&
+        !datePickerRef.current.contains(event.target)
+      ) {
         setShowDatePicker(false);
       }
     }
@@ -204,17 +229,41 @@ const [practiceTests, setPracticeTests] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [activeTab, setActiveTab] = useState("1"); // 1: Full Length, 2: Practice
 
-
   const [englishTopics, setEnglishTopics] = useState([]);
   const [mathTopics, setMathTopics] = useState([]);
   const [loadingKeyStrengths, setLoadingKeyStrengths] = useState(false);
   const [questionCounts, setQuestionCounts] = useState([]);
   const SECTIONS = [
-    { display: "Concerns", key: "CONCERN", route: "concerns", gradient: "from-orange-500 to-amber-400" },
-    { display: "Doubts", key: "DOUBT", route: "doubts", gradient: "from-blue-500 to-cyan-400" },
-    { display: "Meetings", key: "MEETING", route: "meetings", gradient: "from-emerald-500 to-teal-400" },
-    { display: "Issues", key: "ISSUE", route: "issues", gradient: "from-rose-500 to-pink-400" },
-    { display: "Suggestions", key: "SUGGESTION", route: "suggestions", gradient: "from-indigo-500 to-purple-400" },
+    {
+      display: "Concerns",
+      key: "CONCERN",
+      route: "concerns",
+      gradient: "from-orange-500 to-amber-400",
+    },
+    {
+      display: "Doubts",
+      key: "DOUBT",
+      route: "doubts",
+      gradient: "from-blue-500 to-cyan-400",
+    },
+    {
+      display: "Meetings",
+      key: "MEETING",
+      route: "meetings",
+      gradient: "from-emerald-500 to-teal-400",
+    },
+    {
+      display: "Issues",
+      key: "ISSUE",
+      route: "issues",
+      gradient: "from-rose-500 to-pink-400",
+    },
+    {
+      display: "Suggestions",
+      key: "SUGGESTION",
+      route: "suggestions",
+      gradient: "from-indigo-500 to-purple-400",
+    },
   ];
   const [tests, setTests] = useState([]);
   const [selectedTest, setSelectedTest] = useState(null);
@@ -231,47 +280,48 @@ const [practiceTests, setPracticeTests] = useState([]);
   }, [selectedFilter, customStartDate, customEndDate]);
 
   useEffect(() => {
-    axios.get(`${BASE_URL}/api/question/question-count/`, { withCredentials: true })
-      .then(res => setQuestionCounts(res.data))
+    axios
+      .get(`${BASE_URL}/api/question/question-count/`, {
+        withCredentials: true,
+      })
+      .then((res) => setQuestionCounts(res.data))
       .catch(() => setQuestionCounts([]));
 
-      setLoadingSubmissions(true);
-      
-      // Dummy data logic handled via constants
-      // setRecentSubmissions(DUMMY_FULL_LENGTH);
-      
-      setLoadingSubmissions(false);
+    setLoadingSubmissions(true);
 
+    // Dummy data logic handled via constants
+    // setRecentSubmissions(DUMMY_FULL_LENGTH);
+
+    setLoadingSubmissions(false);
   }, []);
 
   useEffect(() => {
-  setLoadingSubmissions(true);
+    setLoadingSubmissions(true);
 
-  const endpoint =
-    activeTab === "1"
-      ? `${BASE_URL}/api/result/recent/full-length/`
-      : `${BASE_URL}/api/result/recent/practice/`;
+    const endpoint =
+      activeTab === "1"
+        ? `${BASE_URL}/api/result/recent/full-length/`
+        : `${BASE_URL}/api/result/recent/practice/`;
 
-  axios
-    .get(endpoint, {
-      params: {
-        course_id: selectedCourse,
-       
-        limit: 10,
-        ...finalDateParams
-      },
-      withCredentials: true
-    })
-    .then(res => {
-      if (activeTab === "1") {
-        setFullLengthTests(res.data);
-      } else {
-        setPracticeTests(res.data);
-      }
-    })
-    .finally(() => setLoadingSubmissions(false));
-}, [activeTab, selectedCourse, selectedStudent, finalDateParams]);
+    axios
+      .get(endpoint, {
+        params: {
+          course_id: selectedCourse,
 
+          limit: 10,
+          ...finalDateParams,
+        },
+        withCredentials: true,
+      })
+      .then((res) => {
+        if (activeTab === "1") {
+          setFullLengthTests(res.data);
+        } else {
+          setPracticeTests(res.data);
+        }
+      })
+      .finally(() => setLoadingSubmissions(false));
+  }, [activeTab, selectedCourse, selectedStudent, finalDateParams]);
 
   useEffect(() => {
     if (selectedCourse === null || selectedStudent === null) return;
@@ -293,7 +343,6 @@ const [practiceTests, setPracticeTests] = useState([]);
         setSelectedTest("");
       });
   }, [selectedCourse, selectedStudent]);
-
 
   useEffect(() => {
     axios.get(GET_Courses).then((res) => {
@@ -361,8 +410,13 @@ const [practiceTests, setPracticeTests] = useState([]);
   }, [selectedFilter, customStartDate, customEndDate]);
 
   useEffect(() => {
-    if (selectedCourse === null || selectedStudent === null || selectedCourse === undefined || selectedStudent === undefined) return;
-
+    if (
+      selectedCourse === null ||
+      selectedStudent === null ||
+      selectedCourse === undefined ||
+      selectedStudent === undefined
+    )
+      return;
 
     setLoadingKeyStrengths(true);
     axios
@@ -387,7 +441,13 @@ const [practiceTests, setPracticeTests] = useState([]);
   }, [selectedCourse, selectedStudent, selectedTest, finalDateParams]);
 
   useEffect(() => {
-    if (selectedCourse === null || selectedStudent === null || selectedCourse === undefined || selectedStudent === undefined) return;
+    if (
+      selectedCourse === null ||
+      selectedStudent === null ||
+      selectedCourse === undefined ||
+      selectedStudent === undefined
+    )
+      return;
 
     axios
       .get(`${BASE_URL}/api/test/course-wise-time/`, {
@@ -406,7 +466,9 @@ const [practiceTests, setPracticeTests] = useState([]);
           score: item.score || 0,
         }));
         setTimeSpentData(formatted);
-        setBarPercentData(formatted.map(item => ({ name: item.name, value: item.score })));
+        setBarPercentData(
+          formatted.map((item) => ({ name: item.name, value: item.score })),
+        );
       });
   }, [selectedCourse, selectedStudent, finalDateParams, selectedTest]);
 
@@ -432,12 +494,17 @@ const [practiceTests, setPracticeTests] = useState([]);
             <button
               key={val}
               onClick={() => handleFilterChange(val)}
-              className={`dashboard-tab-button ${selectedFilter === val
-                ? "dashboard-tab-active"
-                : "dashboard-tab-inactive"
-                }`}
+              className={`dashboard-tab-button ${
+                selectedFilter === val
+                  ? "dashboard-tab-active"
+                  : "dashboard-tab-inactive"
+              }`}
             >
-              {val === "last_month" ? "This Month" : val === "last_week" ? "This Week" : "Today"}
+              {val === "last_month"
+                ? "This Month"
+                : val === "last_week"
+                  ? "This Week"
+                  : "Today"}
             </button>
           ))}
 
@@ -448,10 +515,11 @@ const [practiceTests, setPracticeTests] = useState([]);
                 setShowDatePicker(!showDatePicker);
                 setSelectedFilter("custom");
               }}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${selectedFilter === "custom"
-                ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
-                : "text-[#805830] hover:bg-gray-100"
-                }`}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${
+                selectedFilter === "custom"
+                  ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
+                  : "text-[#805830] hover:bg-gray-100"
+              }`}
             >
               <CalendarIcon className="w-4 h-4" />
               Custom
@@ -459,36 +527,46 @@ const [practiceTests, setPracticeTests] = useState([]);
 
             {showDatePicker && (
               <div className="absolute z-50 mt-2 w-80 bg-gradient-to-br from-white to-[#FFF8F0] border border-gray-200 shadow-md rounded-md p-5 space-y-4 right-0 md:left-0">
-                <h4 className="font-semibold text-[#2E2725]">Select Date Range</h4>
+                <h4 className="font-semibold text-[#2E2725]">
+                  Select Date Range
+                </h4>
                 <ConfigProvider
                   theme={{
                     token: {
-                      colorPrimary: '#F59403',
+                      colorPrimary: "#F59403",
                       borderRadius: 8,
                     },
                   }}
                 >
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm text-[#805830] font-medium block mb-1">Start Date</label>
+                      <label className="text-sm text-[#805830] font-medium block mb-1">
+                        Start Date
+                      </label>
                       <DatePicker
                         value={customStartDate ? dayjs(customStartDate) : null}
-                        onChange={(date, dateString) => setCustomStartDate(dateString)}
+                        onChange={(date, dateString) =>
+                          setCustomStartDate(dateString)
+                        }
                         className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
                         format="YYYY-MM-DD"
                         placeholder="Select start date"
-                        getPopupContainer={trigger => trigger.parentNode}
+                        getPopupContainer={(trigger) => trigger.parentNode}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-[#805830] font-medium block mb-1">End Date</label>
+                      <label className="text-sm text-[#805830] font-medium block mb-1">
+                        End Date
+                      </label>
                       <DatePicker
                         value={customEndDate ? dayjs(customEndDate) : null}
-                        onChange={(date, dateString) => setCustomEndDate(dateString)}
+                        onChange={(date, dateString) =>
+                          setCustomEndDate(dateString)
+                        }
                         className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
                         format="YYYY-MM-DD"
                         placeholder="Select end date"
-                        getPopupContainer={trigger => trigger.parentNode}
+                        getPopupContainer={(trigger) => trigger.parentNode}
                       />
                     </div>
                   </div>
@@ -552,21 +630,42 @@ const [practiceTests, setPracticeTests] = useState([]);
               <table className="min-w-full text-sm border-collapse">
                 <thead className="bg-gray-50 border-b-2 border-gray-400">
                   <tr>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Course</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Subject</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Total</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Active</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Inactive</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">Practice</th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">Full Length</th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                      Course
+                    </th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                      Subject
+                    </th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                      Total
+                    </th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                      Active
+                    </th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                      Inactive
+                    </th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                      Practice
+                    </th>
+                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">
+                      Full Length
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {questionCounts.length > 0 ? (
                     questionCounts.map((item, i) => (
-                      <tr key={i} className="border-b border-gray-400 hover:bg-[#FFD36A]/10 transition-colors">
-                        <td className="px-5 py-4 font-medium text-[#2E2725] border-r border-gray-300">{item.course}</td>
-                        <td className="px-5 py-4 text-[#805830] border-r border-gray-300">{item.subject}</td>
+                      <tr
+                        key={i}
+                        className="border-b border-gray-400 hover:bg-[#FFD36A]/10 transition-colors"
+                      >
+                        <td className="px-5 py-4 font-medium text-[#2E2725] border-r border-gray-300">
+                          {item.course}
+                        </td>
+                        <td className="px-5 py-4 text-[#805830] border-r border-gray-300">
+                          {item.subject}
+                        </td>
                         <td className="px-5 py-4 border-r border-gray-300">
                           <span className="px-2.5 py-1 bg-[#0071BC]/10 text-[#0071BC] rounded-full font-semibold text-xs">
                             {item.total_questions}
@@ -582,13 +681,20 @@ const [practiceTests, setPracticeTests] = useState([]);
                             {item.inactive_questions}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-[#805830] border-r border-gray-300">{item.total_self_practice_questions}</td>
-                        <td className="px-5 py-4 text-[#805830]">{item.total_full_length_questions}</td>
+                        <td className="px-5 py-4 text-[#805830] border-r border-gray-300">
+                          {item.total_self_practice_questions}
+                        </td>
+                        <td className="px-5 py-4 text-[#805830]">
+                          {item.total_full_length_questions}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="text-center py-8 text-gray-400">
+                      <td
+                        colSpan="7"
+                        className="text-center py-8 text-gray-400"
+                      >
                         <div className="flex flex-col items-center gap-2">
                           <ClipboardIcon className="w-10 h-10 text-gray-300" />
                           No question data available
@@ -607,16 +713,42 @@ const [practiceTests, setPracticeTests] = useState([]);
           {/* Student Count Chart */}
           <div className="bg-white shadow-md rounded-xl p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#2E2725]">Student Count by Course</h3>
+              <h3 className="text-lg font-bold text-[#2E2725]">
+                Student Count by Course
+              </h3>
             </div>
             <div className="overflow-x-auto overflow-y-hidden">
-              <div style={{ minWidth: courseChartData.length > 3 ? `${courseChartData.length * 100}px` : '100%' }} className="md:min-w-full">
+              <div
+                style={{
+                  minWidth:
+                    courseChartData.length > 3
+                      ? `${courseChartData.length * 100}px`
+                      : "100%",
+                }}
+                className="md:min-w-full"
+              >
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={courseChartData} barSize={40} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                  <BarChart
+                    data={courseChartData}
+                    barSize={40}
+                    margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" interval={0} angle={-15} textAnchor="end" tick={{ fill: '#000000', fontSize: 13, dy: 2, fontWeight: 'bold' }} height={60} />
-                    <YAxis tick={{ fill: '#000000', fontSize: 12 }} />
-                    <Tooltip cursor={{ fill: 'transparent' }} />
+                    <XAxis
+                      dataKey="name"
+                      interval={0}
+                      angle={-15}
+                      textAnchor="end"
+                      tick={{
+                        fill: "#000000",
+                        fontSize: 13,
+                        dy: 2,
+                        fontWeight: "bold",
+                      }}
+                      height={60}
+                    />
+                    <YAxis tick={{ fill: "#000000", fontSize: 12 }} />
+                    <Tooltip cursor={{ fill: "transparent" }} />
                     <Bar dataKey="value" fill="#F59403" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -625,93 +757,98 @@ const [practiceTests, setPracticeTests] = useState([]);
           </div>
 
           {/* Recent Test Submissions */}
-           <div className="bg-white shadow-md rounded-xl p-5 mb-6">
+          {/* <div className="bg-white shadow-md rounded-xl p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <Tabs 
-                defaultActiveKey="1" 
+              <Tabs
+                defaultActiveKey="1"
                 activeKey={activeTab}
                 onChange={(key) => setActiveTab(key)}
                 items={[
                   {
-                    key: '1',
-                    label: <span className="text-lg font-bold">Recent Full Length Tests</span>,
+                    key: "1",
+                    label: (
+                      <span className="text-lg font-bold">
+                        Recent Full Length Tests
+                      </span>
+                    ),
                   },
                   {
-                    key: '2',
-                    label: <span className="text-lg font-bold">Recent Practice Tests</span>,
-                  }
+                    key: "2",
+                    label: (
+                      <span className="text-lg font-bold">
+                        Recent Practice Tests
+                      </span>
+                    ),
+                  },
                 ]}
                 className="w-full"
               />
             </div>
             <div className="overflow-x-auto">
-             <Table
-  dataSource={activeTab === '1' ? fullLengthTests : practiceTests}
-  columns={[
-    {
-      title: 'Student Name',
-      dataIndex: 'student_name',
-      key: 'student_name',
-      render: (text) => (
-        <span className="font-medium text-[#2E2725]">
-          {text || "N/A"}
-        </span>
-      )
-    },
-    {
-      title: 'Test Name',
-      dataIndex: 'test_name',
-      key: 'test_name',
-      render: (text) => (
-        <span className="text-[#805830]">
-          {text || "N/A"}
-        </span>
-      )
-    },
-    {
-      title: 'Course Name',
-      dataIndex: 'course_name',
-      key: 'course_name',
-      render: (text) => (
-        <span className="text-gray-600 font-medium">
-          {text || "N/A"}
-        </span>
-      )
-    },
-    {
-      title: 'Score',
-      dataIndex: 'total_score',
-      key: 'total_score',
-      render: (score) => (
-        <Tag
-          color={score >= 500 ? "green" : "red"}   // SAT-friendly threshold
-          className="rounded-full px-3"
-        >
-          {score ?? "N/A"}
-        </Tag>
-      )
-    },
-    {
-      title: 'Date',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      render: (date) => (
-        <span className="text-gray-500">
-          {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
-        </span>
-      )
-    }
-  ]}
-  loading={loadingSubmissions}
-  pagination={false}
-  rowKey={(record) => record.id}
-  className="dashboard-table"
-/>
-
+              <Table
+                dataSource={activeTab === "1" ? fullLengthTests : practiceTests}
+                columns={[
+                  {
+                    title: "Student Name",
+                    dataIndex: "student_name",
+                    key: "student_name",
+                    render: (text) => (
+                      <span className="font-medium text-[#2E2725]">
+                        {text || "N/A"}
+                      </span>
+                    ),
+                  },
+                  {
+                    title: "Test Name",
+                    dataIndex: "test_name",
+                    key: "test_name",
+                    render: (text) => (
+                      <span className="text-[#805830]">{text || "N/A"}</span>
+                    ),
+                  },
+                  {
+                    title: "Course Name",
+                    dataIndex: "course_name",
+                    key: "course_name",
+                    render: (text) => (
+                      <span className="text-gray-600 font-medium">
+                        {text || "N/A"}
+                      </span>
+                    ),
+                  },
+                  {
+                    title: "Score",
+                    dataIndex: "total_score",
+                    key: "total_score",
+                    render: (score) => (
+                      <Tag
+                        color={score >= 500 ? "green" : "red"} // SAT-friendly threshold
+                        className="rounded-full px-3"
+                      >
+                        {score ?? "N/A"}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    title: "Date",
+                    dataIndex: "created_at",
+                    key: "created_at",
+                    render: (date) => (
+                      <span className="text-gray-500">
+                        {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
+                      </span>
+                    ),
+                  },
+                ]}
+                loading={loadingSubmissions}
+                pagination={false}
+                rowKey={(record) => record.id}
+                className="dashboard-table"
+              /> 
             </div>
-          </div> 
+          </div>*/}
 
-           {/* <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 ">
+          {/* <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 ">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-lg font-bold text-[#2E2725]">Topic-wise Performance</h3>
             </div>

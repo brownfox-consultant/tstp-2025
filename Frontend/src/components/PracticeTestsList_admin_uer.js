@@ -5,7 +5,7 @@ import { convertSecondsToTime } from "@/utils/utils";
 import { Button, Table, Pagination, Input, Modal } from "antd";
 import dayjs from "dayjs";
 import React, { useEffect, useState, useRef } from "react";
-import PracticeTestForm from "@/components/PracticeTestForm"; 
+import PracticeTestForm from "@/components/PracticeTestForm";
 import PracticeTestReportComponent from "./PracticeTestReportComponent.js";
 import PracticeTestReport from "./report-module/PracticeTestReport_admin_user.js";
 import EyeIcon from "../../public/icons/eye.svg";
@@ -21,7 +21,7 @@ function PracticeTestsList({ studentId }) {
   const [totalPages, setTotalPages] = useState(0);
   const [practiceTestReport, setPracticeTestReport] = useState(false);
   const [practiceTestId, setPracticeTestId] = useState();
-  const [createTest, setCreateTest] = useState(false); // ✅ NEW STATE FOR CREATE TEST
+  const [createTest, setCreateTest] = useState(false);
   const pathname = usePathname();
   const [sortParams, setSortParams] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,7 +33,7 @@ function PracticeTestsList({ studentId }) {
   const studentIdFromParam = searchParams.get("student_id");
 
   const role = pathname.split("/")[1];
-  console.log("role", role)
+  console.log("role", role);
   useEffect(() => {
     const params = {
       page: current,
@@ -96,7 +96,7 @@ function PracticeTestsList({ studentId }) {
       dataIndex: "subject",
       align: "center",
       render: (text) => <>{text}</>,
-      width: 150,
+      width: 250,
       sorter: true,
       sorter: { multiple: 2 },
     },
@@ -106,7 +106,7 @@ function PracticeTestsList({ studentId }) {
       dataIndex: "created_at",
       align: "center",
       render: (text) => <>{dayjs(text).format("MMM D, YYYY h:mm A")}</>,
-      width: 250,
+      width: 180,
       sorter: true,
       sorter: { multiple: 3 },
     },
@@ -116,7 +116,7 @@ function PracticeTestsList({ studentId }) {
       dataIndex: "correct_count",
       align: "center",
       render: (_, record) => <>{record.correct_count ?? "-"}</>,
-      width: 150,
+      width: 140,
       sorter: true,
       sorter: { multiple: 4 },
     },
@@ -126,7 +126,7 @@ function PracticeTestsList({ studentId }) {
       dataIndex: "incorrect_count",
       align: "center",
       render: (_, record) => <>{record.incorrect_count ?? "-"}</>,
-      width: 180,
+      width: 150,
       sorter: true,
       sorter: { multiple: 5 },
     },
@@ -147,10 +147,9 @@ function PracticeTestsList({ studentId }) {
       align: "center",
       render: (_, record) => {
         const { id } = record;
-        const userId = pathname.split("/")[2]; 
+        const userId = pathname.split("/")[2];
 
         return (
-
           <Button
             type="link"
             onClick={() => {
@@ -168,9 +167,8 @@ function PracticeTestsList({ studentId }) {
             />
             <span style={{ verticalAlign: "middle" }}>View Result</span>
           </Button>
-
         );
-      }
+      },
     },
   ];
 
@@ -223,7 +221,7 @@ function PracticeTestsList({ studentId }) {
     <>
       {practiceTestReport ? (
         <PracticeTestReportComponent practice_test_id={practiceTestId} />
-      ) : createTest ? ( 
+      ) : createTest ? (
         <PracticeTestForm />
       ) : (
         <>
@@ -289,7 +287,6 @@ function PracticeTestsList({ studentId }) {
         />
       </Modal>
     </>
-
   );
 }
 

@@ -101,12 +101,12 @@ function TestList_admin_user({ studentId }) {
 
   const columns = [
     {
-      title: <div className="flex items-center">Test name</div>,
+      title: <div className="flex items-center justify-center">Test name</div>,
       key: "name",
       dataIndex: "name",
       render: (text) => <>{text}</>,
       sorter: true,
-      width: 100,
+      width: 140,
       align: "center",
       sorter: { multiple: 1 },
     },
@@ -131,7 +131,7 @@ function TestList_admin_user({ studentId }) {
             ? dayjs(record.created_at).format("MMM D, YYYY h:mm A")
             : "-",
       sorter: true,
-      width: 200,
+      width: 180,
       sorter: { multiple: 3 },
     },
     {
@@ -141,7 +141,7 @@ function TestList_admin_user({ studentId }) {
       align: "center",
       render: (text) =>
         text ? dayjs(new Date(text)).format("MMM D, YYYY h:mm A") : "-",
-      width: 200,
+      width: 180,
     },
     {
       title: <div className="flex items-center justify-center">Score</div>,
@@ -165,7 +165,7 @@ function TestList_admin_user({ studentId }) {
 
         return <>{score}</>;
       },
-      width: 100,
+      width: 80,
     },
     {
       title: " ",
@@ -212,7 +212,7 @@ function TestList_admin_user({ studentId }) {
           );
         }
 
-        // ✅ Disable Start/Continue for admin viewing another student
+        // Disable Start/Continue for admin viewing another student
         if (role === "student" && !studentIdFromParam) {
           return (
             <Button
@@ -304,7 +304,7 @@ function TestList_admin_user({ studentId }) {
         onChange={handleTableChange}
       />
 
-      {/* ✅ Modal for Result */}
+      {/* Modal for Result */}
       {showResultModal && (
         <Modal
           open={showResultModal}

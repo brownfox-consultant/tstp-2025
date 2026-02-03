@@ -36,15 +36,17 @@ import PracticeTestsList_admin_uer from "@/components/PracticeTestsList_admin_ue
 import { impersonateUser } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
 
-
 const { confirm } = Modal;
 
-// Helper to format phone number with space
 const formatPhoneNumberDisplay = (text) => {
   if (!text) return <span className="text-gray-400">N/A</span>;
   const match = String(text).match(/^(\+\d+)(\d{10})$/);
   if (match) {
-    return <>{match[1]} {match[2]}</>;
+    return (
+      <>
+        {match[1]} {match[2]}
+      </>
+    );
   }
   return <>{text}</>;
 };
@@ -70,23 +72,14 @@ function AllUsersTable({ tabKey, api }) {
   const [studentName, setStudentName] = useState("");
   const [ordering, setOrdering] = useState("");
   const [pageSize, setPageSize] = useState(10);
-  const {
-  setRole,
-  setUserId,
-  setUserName,
-} = useGlobalContext();
-const adminEmail = localStorage.getItem("email");
-
-
-
-
+  const { setRole, setUserId, setUserName } = useGlobalContext();
+  const adminEmail = localStorage.getItem("email");
 
   const searchInput = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
-  console.log(pathname)
+  console.log(pathname);
   useEffect(() => {
-
     getRoles().then((res) => {
       //   setOptions(res.data);
       setFilterItems([
@@ -106,14 +99,12 @@ const adminEmail = localStorage.getItem("email");
       .catch((err) => console.log(err));
   }, []);
 
-
-
   useEffect(() => {
     const handleKeyPress = (event) => {
       if (isDropdownVisible) {
         const char = String.fromCharCode(event.which).toLowerCase();
         const matchedItem = filterItems.find((item) =>
-          item.label.toLowerCase().startsWith(char)
+          item.label.toLowerCase().startsWith(char),
         );
         if (matchedItem) {
           setFilterKey(matchedItem.key);
@@ -134,50 +125,49 @@ const adminEmail = localStorage.getItem("email");
     };
   }, [isDropdownVisible, filterItems]);
 
+  const handleLoginAsUser = (record) => {
+    impersonateUser(record.id)
+      .then((res) => {
+        const {
+          role,
+          role_name,
+          id,
+          csrf_token,
+          name,
+          email,
+          subscription_type,
+        } = res.data;
 
-const handleLoginAsUser = (record) => {
-  impersonateUser(record.id)
-    .then((res) => {
-      const {
-        role,
-        role_name,
-        id,
-        csrf_token,
-        name,
-        email,
-        subscription_type,
-      } = res.data;
+        // Clear previous session data
+        localStorage.clear();
 
-      // Clear previous session data
-      localStorage.clear();
+        // Store impersonated user
+        localStorage.setItem("name", name);
+        localStorage.setItem("email", email);
+        localStorage.setItem("id", id);
+        localStorage.setItem("role_name", role_name);
+        localStorage.setItem("csrfToken", csrf_token);
+        localStorage.setItem("subscription_type", subscription_type);
+        localStorage.setItem("impersonating", "true");
 
-      // Store impersonated user
-      localStorage.setItem("name", name);
-      localStorage.setItem("email", email);
-      localStorage.setItem("id", id);
-      localStorage.setItem("role_name", role_name);
-      localStorage.setItem("csrfToken", csrf_token);
-      localStorage.setItem("subscription_type", subscription_type);
-      localStorage.setItem("impersonating", "true");
+        const dashboardUrl = `/${role_name}/${id}/dashboard`;
 
-      const dashboardUrl = `/${role_name}/${id}/dashboard`;
+        window.open(dashboardUrl, "_blank");
 
-      // ✅ OPEN IN NEW TAB
-      window.open(dashboardUrl, "_blank");
+        // window.location.href = "/logout"; // OR admin logout route
+      })
+      .catch((err) => {
+        console.error("Impersonation failed", err);
+      });
+  };
 
-      // ✅ CLOSE CURRENT ADMIN TAB
-      // window.location.href = "/logout"; // OR admin logout route
-    })
-    .catch((err) => {
-      console.error("Impersonation failed", err);
-    });
-};
-
-
-
-
-
-  const fetchUsers = async ({ role, page = 1, search = "", ordering = "", page_size = 10 }) => {
+  const fetchUsers = async ({
+    role,
+    page = 1,
+    search = "",
+    ordering = "",
+    page_size = 10,
+  }) => {
     setLoading(true);
     try {
       const params = {};
@@ -186,8 +176,6 @@ const handleLoginAsUser = (record) => {
       if (page) params.page = page;
       if (ordering) params.ordering = ordering;
       if (page_size) params.size = page_size;
-
-
 
       const response = await axios.get(`${BASE_URL}/api/user/`, {
         params,
@@ -211,7 +199,7 @@ const handleLoginAsUser = (record) => {
     email: "email",
     phone_number: "phone_number",
     is_active: "is_active",
-    user_type: "user_type", 
+    user_type: "user_type",
   };
 
   const handleTableChange = (pagination, filters, sorter) => {
@@ -253,7 +241,9 @@ const handleLoginAsUser = (record) => {
         withCredentials: true,
       });
 
-      const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([response.data], {
+        type: "text/csv;charset=utf-8;",
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -276,11 +266,11 @@ const handleLoginAsUser = (record) => {
     setMenuKey([key.toString()]);
   };
 
-  const handleSearch = (selectedKeys, confirm, dataIndex) => {
-    confirm();
-    setSearchText(selectedKeys[0]);
-    setSearchedColumn(dataIndex);
-  };
+  // const handleSearch = (selectedKeys, confirm, dataIndex) => {
+  //   confirm();
+  //   setSearchText(selectedKeys[0]);
+  //   setSearchedColumn(dataIndex);
+  // };
 
   const handleStatusChange = async (id, newStatus) => {
     setStatusLoadingMap((prev) => ({ ...prev, [id]: true }));
@@ -295,7 +285,7 @@ const handleLoginAsUser = (record) => {
           headers: {
             "X-CSRFToken": window.localStorage.getItem("csrfToken"),
           },
-        }
+        },
       );
       setUpdated((prev) => !prev);
     } catch (err) {
@@ -555,12 +545,16 @@ const handleLoginAsUser = (record) => {
         ),
         key: "course",
         sorter: (a, b) => {
-          const aCourses = a.course_details?.map((c) => c.course.name).join(", ") || "";
-          const bCourses = b.course_details?.map((c) => c.course.name).join(", ") || "";
+          const aCourses =
+            a.course_details?.map((c) => c.course.name).join(", ") || "";
+          const bCourses =
+            b.course_details?.map((c) => c.course.name).join(", ") || "";
           return aCourses.localeCompare(bCourses);
         },
         render: (_, record) => {
-          const courses = record.course_details?.map((c) => c.course.name).join(", ");
+          const courses = record.course_details
+            ?.map((c) => c.course.name)
+            .join(", ");
           return <>{courses || <span className="text-gray-400">N/A</span>}</>;
         },
         width: 150,
@@ -577,7 +571,6 @@ const handleLoginAsUser = (record) => {
         width: 120,
         sorter: true,
         render: (userType, record) => {
-          // ✅ Only students have user_type
           if (record.role_name !== "student") {
             return <Tag color="default">N/A</Tag>;
           }
@@ -593,8 +586,6 @@ const handleLoginAsUser = (record) => {
           );
         },
       },
-
-
 
       {
         title: (
@@ -700,93 +691,90 @@ const handleLoginAsUser = (record) => {
       //   },
       // },
       {
-  title: "Actions",
-  key: "val",
-  align: "start",
-  width: 300,
-  render: (_, record) => {
-    return (
-      <div className="flex items-center gap-2">
+        title: "Actions",
+        key: "val",
+        align: "start",
+        width: 300,
+        render: (_, record) => {
+          return (
+            <div className="flex items-center gap-2">
+              {/* ✅ LOGIN AS (ADMIN ONLY) */}
+              {adminEmail === "admin@thesmarttestprep.com" && (
+                <Button
+                  size="small"
+                  type="default"
+                  onClick={() => handleLoginAsUser(record)}
+                >
+                  Login As
+                </Button>
+              )}
 
-        {/* ✅ LOGIN AS (ADMIN ONLY) */}
-        {adminEmail === "admin@thesmarttestprep.com" && (
-  <Button
-    size="small"
-    type="default"
-    onClick={() => handleLoginAsUser(record)}
-  >
-    Login As
-  </Button>
-)}
+              {/* Existing Edit */}
+              {record.role_name == "student" ? (
+                <EditStudentUserModal
+                  updated={updated}
+                  setUpdated={setUpdated}
+                  recordData={record}
+                />
+              ) : (
+                <EditUserModal
+                  updated={updated}
+                  setUpdated={setUpdated}
+                  recordData={record}
+                />
+              )}
 
-        {/* Existing Edit */}
-        {record.role_name == "student" ? (
-          <EditStudentUserModal
-            updated={updated}
-            setUpdated={setUpdated}
-            recordData={record}
-          />
-        ) : (
-          <EditUserModal
-            updated={updated}
-            setUpdated={setUpdated}
-            recordData={record}
-          />
-        )}
+              {/* Results */}
+              {record.role_name === "student" && (
+                <Button
+                  type="default"
+                  size="small"
+                  onClick={() => {
+                    set_student_id(record.id);
+                    setStudentName(record.name);
+                    setShowResultModal(true);
+                  }}
+                >
+                  Results
+                </Button>
+              )}
 
-        {/* Results */}
-        {record.role_name === "student" && (
-          <Button
-            type="default"
-            size="small"
-            onClick={() => {
-              set_student_id(record.id);
-              setStudentName(record.name);
-              setShowResultModal(true);
-            }}
-          >
-            Results
-          </Button>
-        )}
+              {/* Activate / Deactivate */}
+              {record.is_active ? (
+                <Button
+                  size="small"
+                  danger
+                  loading={statusLoadingMap[record.id]}
+                  onClick={() => handleStatusChange(record.id, false)}
+                >
+                  Deactivate
+                </Button>
+              ) : (
+                <Button
+                  size="small"
+                  type="primary"
+                  className="bg-green-600 hover:bg-green-500"
+                  loading={statusLoadingMap[record.id]}
+                  onClick={() => handleStatusChange(record.id, true)}
+                >
+                  Activate
+                </Button>
+              )}
 
-        {/* Activate / Deactivate */}
-        {record.is_active ? (
-          <Button
-            size="small"
-            danger
-            loading={statusLoadingMap[record.id]}
-            onClick={() => handleStatusChange(record.id, false)}
-          >
-            Deactivate
-          </Button>
-        ) : (
-          <Button
-            size="small"
-            type="primary"
-            className="bg-green-600 hover:bg-green-500"
-            loading={statusLoadingMap[record.id]}
-            onClick={() => handleStatusChange(record.id, true)}
-          >
-            Activate
-          </Button>
-        )}
-
-        {/* Delete */}
-        {record.is_active && (
-          <Button
-            size="small"
-            type="text"
-            danger
-            icon={<DeleteTwoTone twoToneColor="#eb2f96" />}
-            onClick={() => showDeleteConfirm(record)}
-          />
-        )}
-      </div>
-    );
-  },
-}
-
-
+              {/* Delete */}
+              {record.is_active && (
+                <Button
+                  size="small"
+                  type="text"
+                  danger
+                  icon={<DeleteTwoTone twoToneColor="#eb2f96" />}
+                  onClick={() => showDeleteConfirm(record)}
+                />
+              )}
+            </div>
+          );
+        },
+      },
     ],
     registered: [],
     upcoming: [],
@@ -879,7 +867,6 @@ const handleLoginAsUser = (record) => {
               itemRender={itemRender}
               showSizeChanger
               pageSizeOptions={["10", "20", "50", "100"]}
-
               onChange={(page, size) => {
                 setCurrent(page);
                 setPageSize(size);
@@ -892,7 +879,6 @@ const handleLoginAsUser = (record) => {
                   page_size: size,
                 });
               }}
-
               onShowSizeChange={(page, size) => {
                 setCurrent(1);
                 setPageSize(size);
@@ -906,8 +892,6 @@ const handleLoginAsUser = (record) => {
                 });
               }}
             />
-
-
           </div>
         )}
         dataSource={dataList}
@@ -964,20 +948,21 @@ const handleLoginAsUser = (record) => {
             defaultActiveKey="1"
             items={[
               {
-                key: "1",
-                label: "Practice Questions",
-                children: <PracticeTestsList_admin_uer studentId={student_id} />,
-              },
-              {
                 key: "2",
                 label: "Full Length Tests",
                 children: <TestList_admin_user studentId={student_id} />,
+              },
+              {
+                key: "1",
+                label: "Practice Questions",
+                children: (
+                  <PracticeTestsList_admin_uer studentId={student_id} />
+                ),
               },
             ]}
           />
         </Modal>
       )}
-
     </div>
   );
 }

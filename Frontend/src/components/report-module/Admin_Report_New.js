@@ -1,12 +1,20 @@
+"use client";
 import './ReportNew.css';
 import { getTestResult } from "@/app/services/authService";
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useRouter, useParams } from "next/navigation";
-import { LeftOutlined } from "@ant-design/icons";
+import { useSearchParams, useRouter } from "next/navigation";
 import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
 import StudentActivityLog from "./StudentActivityLog";
 import { Spin } from "antd";
+import { 
+  CalendarIcon, 
+  UserProfileIcon, 
+  DocumentIcon, 
+  BookIcon, 
+  CalculatorIcon, 
+  ChartBarIcon 
+} from "@/components/icons/report-icons";
 
 const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   const [activeTab, setActiveTab] = useState("english");
@@ -38,85 +46,85 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
     }
   }, [activeTab, resultData]);
 
-  const mergeAreasOfFocus = (subjectName) => {
-    const subject = resultData?.subjects?.find((s) => s.name === subjectName);
-    const combined = {};
-    subject?.sections?.forEach((section) => {
-      const focus = section.areas_of_focus || {};
-      Object.entries(focus).forEach(([topic, data]) => {
-        if (!combined[topic]) {
-          combined[topic] = { correct: 0, incorrect: 0 };
-        }
-        combined[topic].correct += data.correct_count || 0;
-        combined[topic].incorrect += data.incorrect_count || 0;
-      });
-    });
-    return Object.entries(combined).map(([topic, { correct, incorrect }]) => {
-      const total = correct + incorrect;
-      const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
-      const badge = percentage >= 60 ? "green" : "red";
-      const label = percentage >= 60 ? "Strong" : "Needs Improvement";
-      return { topic, score: `${correct}/${total}`, percentage, badge, label };
-    });
-  };
+  // const mergeAreasOfFocus = (subjectName) => {
+  //   const subject = resultData?.subjects?.find((s) => s.name === subjectName);
+  //   const combined = {};
+  //   subject?.sections?.forEach((section) => {
+  //     const focus = section.areas_of_focus || {};
+  //     Object.entries(focus).forEach(([topic, data]) => {
+  //       if (!combined[topic]) {
+  //         combined[topic] = { correct: 0, incorrect: 0 };
+  //       }
+  //       combined[topic].correct += data.correct_count || 0;
+  //       combined[topic].incorrect += data.incorrect_count || 0;
+  //     });
+  //   });
+  //   return Object.entries(combined).map(([topic, { correct, incorrect }]) => {
+  //     const total = correct + incorrect;
+  //     const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+  //     const badge = percentage >= 60 ? "green" : "red";
+  //     const label = percentage >= 60 ? "Strong" : "Needs Improvement";
+  //     return { topic, score: `${correct}/${total}`, percentage, badge, label };
+  //   });
+  // };
 
   // const renderTopicWisePerformance = (subject) => {
   //   const topics = mergeAreasOfFocus(subject);
-    // return (
-    //   <div className="card-section">
-    //     <h3>Topic-wise Performance</h3>
-    //     {topics.length > 0 ? (
-    //       topics.map((topic, idx) => (
-    //         <div className="bar-item" key={idx}>
-    //           <div className="label">
-    //             <span>{topic.topic}</span>
-    //             <span className={`badge ${topic.badge}`}>{topic.score}</span>
-    //           </div>
-    //           <div className="bar-bg">
-    //             <div className="bar-fill" style={{ width: `${topic.percentage}%` }} />
-    //           </div>
-    //         </div>
-    //       ))
-    //     ) : (
-    //       <p style={{ padding: "10px" }}>No topic data available.</p>
-    //     )}
-    //   </div>
-    // );
+  //   return (
+  //     <div className="card-section">
+  //       <h3>Topic-wise Performance</h3>
+  //       {topics.length > 0 ? (
+  //         topics.map((topic, idx) => (
+  //           <div className="bar-item" key={idx}>
+  //             <div className="label">
+  //               <span>{topic.topic}</span>
+  //               <span className={`badge ${topic.badge}`}>{topic.score}</span>
+  //             </div>
+  //             <div className="bar-bg">
+  //               <div className="bar-fill" style={{ width: `${topic.percentage}%` }} />
+  //             </div>
+  //           </div>
+  //         ))
+  //       ) : (
+  //         <p style={{ padding: "10px" }}>No topic data available.</p>
+  //       )}
+  //     </div>
+  //   );
   // };
 
-  const renderFocusAreas = (subject) => {
-    const topics = mergeAreasOfFocus(subject);
-    const strong = topics.filter((t) => t.badge === "green");
-    const weak = topics.filter((t) => t.badge === "red");
+  // const renderFocusAreas = (subject) => {
+  //   const topics = mergeAreasOfFocus(subject);
+  //   const strong = topics.filter((t) => t.badge === "green");
+  //   const weak = topics.filter((t) => t.badge === "red");
 
-    return (
-      <div className="focus-card">
-        {/* <h3>{subject} Focus Areas</h3> */}
-        {/* <div className="focus-areas">
-          <div className="left">
-            <h4 className="red">Needs Improvement</h4>
-            <div className="tag-group">
-              {weak.map((t, idx) => (
-                <span key={idx} className="tag red-tag">
-                  {t.topic} ({t.percentage}%)
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="right">
-            <h4 className="green">Strong Areas</h4>
-            <div className="tag-group">
-              {strong.map((t, idx) => (
-                <span key={idx} className="tag green-tag">
-                  {t.topic} ({t.percentage}%)
-                </span>
-              ))}
-            </div>
-          </div>
-        </div> */}
-      </div>
-    );
-  };
+  //   return (
+  //     <div className="focus-card">
+  //       <h3>{subject} Focus Areas</h3>
+  //       <div className="focus-areas">
+  //         <div className="left">
+  //           <h4 className="red">Needs Improvement</h4>
+  //           <div className="tag-group">
+  //             {weak.map((t, idx) => (
+  //               <span key={idx} className="tag red-tag">
+  //                 {t.topic} ({t.percentage}%)
+  //               </span>
+  //             ))}
+  //           </div>
+  //         </div>
+  //         <div className="right">
+  //           <h4 className="green">Strong Areas</h4>
+  //           <div className="tag-group">
+  //             {strong.map((t, idx) => (
+  //               <span key={idx} className="tag green-tag">
+  //                 {t.topic} ({t.percentage}%)
+  //               </span>
+  //             ))}
+  //           </div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // };
 
   if (loading) {
     return (
@@ -148,12 +156,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
               {/* Date Badge */}
               {resultData?.testDate && (
                 <div className="inline-flex items-center gap-1.5 text-sm text-black mb-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
+                  <CalendarIcon />
                   <span className="font-medium">{new Date(resultData.testDate).toDateString()}</span>
                 </div>
               )}
@@ -166,15 +169,11 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
               {/* Badges - Stacked */}
               <div className="flex flex-wrap gap-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-900 text-white w-fit">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+                  <UserProfileIcon />
                   <span>{resultData?.studentName}</span>
                 </div>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 w-fit">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <DocumentIcon />
                   <span>{resultData?.testName}</span>
                 </div>
               </div>
@@ -229,13 +228,9 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                     {subject.name === "English" ? (
-                      <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
+                      <BookIcon className="text-gray-700" />
                     ) : (
-                      <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
+                      <CalculatorIcon className="text-gray-700" />
                     )}
                   </div>
                   <span className="flex-1 text-sm font-bold text-gray-700 uppercase tracking-wide">
@@ -283,23 +278,17 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
             >
               {tab === "english" ? (
                 <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
+                  <BookIcon className="w-4 h-4" />
                   <span className="hidden sm:inline">English Analysis</span>
                 </>
               ) : tab === "math" ? (
                 <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
+                  <CalculatorIcon className="w-4 h-4" />
                   <span className="hidden sm:inline">Math Analysis</span>
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
+                  <ChartBarIcon />
                   <span className="hidden sm:inline">Question Breakdown</span>
                 </>
               )}
@@ -312,33 +301,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       {activeTab === "english" && (
         <>
           <CurrentTab_New selectedSubject={0} data={resultData} testSubmissionId={testSubmissionId} />
-          {/* <div className="performance-sections">
-            <div className="card-section">
-              <h3>📘 Reading & Writing Sections</h3>
-              <div className="bar-item">
-                <div className="label">
-                  <span>Reading</span>
-                  <span className="badge gold">60%</span>
-                </div>
-                <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: "60%" }} />
-                </div>
-                <p className="score-info">120 out of 200</p>
-              </div>
-              <div className="bar-item">
-                <div className="label">
-                  <span>Writing & Language</span>
-                  <span className="badge red">40%</span>
-                </div>
-                <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: "40%" }} />
-                </div>
-                <p className="score-info">80 out of 200</p>
-              </div>
-            </div>
-            {renderTopicWisePerformance("English")}
-          </div> */}
-          {renderFocusAreas("English")}
+          {/* {renderFocusAreas("English")} */}
         </>
       )}
 
@@ -346,33 +309,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       {activeTab === "math" && (
         <>
           <CurrentTab_New selectedSubject={1} data={resultData} testSubmissionId={testSubmissionId} />
-          {/* <div className="performance-sections">
-            <div className="card-section">
-              <h3>🧮 Calculator vs No Calculator</h3>
-              <div className="bar-item">
-                <div className="label">
-                  <span>Calculator Section</span>
-                  <span className="badge gold">55%</span>
-                </div>
-                <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: "55%" }} />
-                </div>
-                <p className="score-info">110 out of 200</p>
-              </div>
-              <div className="bar-item">
-                <div className="label">
-                  <span>No Calculator Section</span>
-                  <span className="badge red">45%</span>
-                </div>
-                <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: "45%" }} />
-                </div>
-                <p className="score-info">90 out of 200</p>
-              </div>
-            </div>
-            {renderTopicWisePerformance("Math")}
-          </div> */}
-          {renderFocusAreas("Math")}
+          {/* {renderFocusAreas("Math")} */}
         </>
       )}
 
@@ -508,13 +445,9 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
                   }}
                 >
                   {subject.name === "English" ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
+                    <BookIcon className="w-4 h-4" />
                   ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                    <CalculatorIcon className="w-4 h-4" />
                   )}
                   {subject.name}
                 </button>
