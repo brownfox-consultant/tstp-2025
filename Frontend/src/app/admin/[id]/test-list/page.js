@@ -27,10 +27,8 @@ const TestListPage = () => {
   const [loading, setLoading] = useState(false);
 
   // ==================== FILTER STATE ====================
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState(null);
-  const [testNameSearch, setTestNameSearch] = useState("");
-  const [studentEmailSearch, setStudentEmailSearch] = useState("");
 
   // ==================== MODAL STATE ====================
   const [showResultModal, setShowResultModal] = useState(false);
@@ -67,30 +65,18 @@ const TestListPage = () => {
     }
   };
 
-  // ==================== DERIVE UNIQUE USERS ====================
-  const uniqueUsers = useMemo(() => {
-    const allUsers = [...initialFullLengthData, ...initialPracticeData].map(
-      (item) => ({
-        label: item.student_name || "Unknown",
-        value: item.student_name || "Unknown",
-      })
-    );
-
-    // Remove duplicates
-    return Array.from(new Set(allUsers.map((a) => a.value))).map((value) => {
-      return allUsers.find((a) => a.value === value);
-    });
-  }, [initialFullLengthData, initialPracticeData]);
-
   // ==================== FILTER LOGIC ====================
   const filterData = (data) => {
     return data.filter((item) => {
-      let matchesUser = true;
+      let matchesSearch = true;
       let matchesDate = true;
-      let matchesTestName = true;
 
-      if (selectedUser) {
-        matchesUser = item.student_name === selectedUser;
+      // Search by Test Name or Student Name
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        matchesSearch =
+          (item.test_name || "").toLowerCase().includes(query) ||
+          (item.student_name || "").toLowerCase().includes(query);
       }
 
       if (dateRange && dateRange[0] && dateRange[1]) {
@@ -100,25 +86,19 @@ const TestListPage = () => {
         matchesDate = itemDate >= startDate && itemDate <= endDate;
       }
 
-      if (testNameSearch) {
-        matchesTestName = (item.test_name || "")
-          .toLowerCase()
-          .includes(testNameSearch.toLowerCase());
-      }
-
-      return matchesUser && matchesDate && matchesTestName;
+      return matchesSearch && matchesDate;
     });
   };
 
   // Apply filters with memoization
   const filteredFullLengthData = useMemo(
     () => filterData(initialFullLengthData),
-    [initialFullLengthData, selectedUser, dateRange, testNameSearch]
+    [initialFullLengthData, searchQuery, dateRange]
   );
 
   const filteredPracticeData = useMemo(
     () => filterData(initialPracticeData),
-    [initialPracticeData, selectedUser, dateRange, testNameSearch]
+    [initialPracticeData, searchQuery, dateRange]
   );
 
   // ==================== HANDLERS ====================
@@ -139,10 +119,8 @@ const TestListPage = () => {
   };
 
   const handleReset = () => {
-    setSelectedUser(null);
+    setSearchQuery("");
     setDateRange(null);
-    setTestNameSearch("");
-    setStudentEmailSearch("");
   };
 
   // ==================== TABLE COLUMNS ====================
@@ -225,29 +203,10 @@ const TestListPage = () => {
       <div className="bg-white p-4 mb-4 rounded-xl shadow-sm border border-gray-100">
         <div className="flex flex-wrap items-center gap-4">
           <Input
-            placeholder="Search Test Name"
-            style={{ width: 200 }}
-            value={testNameSearch}
-            onChange={(e) => setTestNameSearch(e.target.value)}
-          />
-          <Select
-            placeholder="Select User"
-            style={{ width: 200 }}
-            allowClear
-            showSearch
-            className="custom-select"
-            options={uniqueUsers}
-            value={selectedUser}
-            onChange={setSelectedUser}
-            filterOption={(input, option) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
-          />
-          <Input
-            placeholder="Search Email ID"
-            style={{ width: 200 }}
-            value={studentEmailSearch}
-            onChange={(e) => setStudentEmailSearch(e.target.value)}
+            placeholder="Search by Test or Student Name"
+            style={{ width: 300 }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
           <RangePicker
             className="w-64"
