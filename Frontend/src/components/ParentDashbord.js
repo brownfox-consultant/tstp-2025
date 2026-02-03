@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   BarChart,
   Bar,
@@ -13,36 +13,46 @@ import {
   AreaChart,
   Area,
   Legend,
-} from 'recharts';
-import { usePathname, useRouter } from 'next/navigation';
-import Select, { components } from 'react-select';
-import { ChevronIcon } from '@/components/icons/dashboard-icons';
+} from "recharts";
+import { usePathname, useRouter } from "next/navigation";
+import Select, { components } from "react-select";
+import { ChevronIcon } from "@/components/icons/dashboard-icons";
 
 const DropdownIndicator = (props) => {
   return (
     <components.DropdownIndicator {...props}>
-      <ChevronIcon className="w-4 h-4" isOpen={props.selectProps.menuIsOpen} color="#805830" />
+      <ChevronIcon
+        className="w-4 h-4"
+        isOpen={props.selectProps.menuIsOpen}
+        color="#805830"
+      />
     </components.DropdownIndicator>
   );
 };
-import { Col, Row } from 'antd';
-import { BASE_URL } from '@/app/constants/apiConstants';
-import { getDashboardStats } from '@/app/services/authService';
+import { Col, Row } from "antd";
+import Heatmap from "@/components/student_report/Heatmap";
+import { BASE_URL } from "@/app/constants/apiConstants";
+import { getDashboardStats } from "@/app/services/authService";
+import { getTestsList, getPracticeTests } from "@/app/services/authService";
 import { getTestsPerDay } from "@/app/services/authService";
 import DashboardHeader from "@/components/DashboardHeader";
+import LastTestActivity from "@/components/student_report/LastTestActivity";
 
-
-
-
-const GET_Subjects = (courseId) => `${BASE_URL}/api/course/${courseId}/subjects/`;
+const GET_Subjects = (courseId) =>
+  `${BASE_URL}/api/course/${courseId}/subjects/`;
 const CustomLegend = ({ payload }) => (
   <div className="flex justify-between items-center w-full mb-4">
     <div className="flex flex-row">
       {payload.map((entry) => (
         <div key={entry.value} className="flex items-center ml-4">
-          <div className="w-4 h-4 rounded-md" style={{ backgroundColor: entry.color }}></div>
+          <div
+            className="w-4 h-4 rounded-md"
+            style={{ backgroundColor: entry.color }}
+          ></div>
           <span className="ml-2">
-            {entry.value === 'fullLengthTest' ? 'Full Length Test' : 'Practice Test'}
+            {entry.value === "fullLengthTest"
+              ? "Full Length Test"
+              : "Practice Test"}
           </span>
         </div>
       ))}
@@ -53,12 +63,12 @@ const CustomLegend = ({ payload }) => (
 export default function Dashbord() {
   const pathname = usePathname();
   const router = useRouter();
-  const parentId = pathname.split('/')[2];
+  const parentId = pathname.split("/")[2];
   const [name, setName] = useState("");
 
   // === Student & Stats ===
   const [studentId, setStudentId] = useState();
-  const [selectedRange, setSelectedRange] = useState('last_month');
+  const [selectedRange, setSelectedRange] = useState("last_month");
   const [stats, setStats] = useState([]);
 
   // === Time Spent ===
@@ -68,7 +78,8 @@ export default function Dashbord() {
   const [courses, setCourses] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [selectedCourseForScores, setSelectedCourseForScores] = useState(null);
-  const [selectedSubjectForScores, setSelectedSubjectForScores] = useState(null);
+  const [selectedSubjectForScores, setSelectedSubjectForScores] =
+    useState(null);
   const [testScoresData, setTestScoresData] = useState([]);
 
   const [selectedCourseForTime, setSelectedCourseForTime] = useState(null);
@@ -80,8 +91,8 @@ export default function Dashbord() {
   const [subjectsForLine, setSubjectsForLine] = useState([]);
   const [lineChartData, setLineChartData] = useState([]);
   const [fullVsPracticeData, setFullVsPracticeData] = useState([]);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [areasOfFocus, setAreasOfFocus] = useState([]);
   const [keyStrengths, setKeyStrengths] = useState([]);
 
@@ -90,64 +101,57 @@ export default function Dashbord() {
   const [subtopics, setSubtopics] = useState([]);
   const [selectedSubtopic, setSelectedSubtopic] = useState(null);
 
+  const [activeType, setActiveType] = useState("fullLengthTest");
 
+  const [latestFullLengthTests, setLatestFullLengthTests] = useState([]);
+  const [latestPracticeTests, setLatestPracticeTests] = useState([]);
+  const [activityTab, setActivityTab] = useState("fullLength");
 
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [heatmapRawData, setHeatmapRawData] = useState({ fullLength: [], practice: [] });
+  const [selectedCourseForHeatmap, setSelectedCourseForHeatmap] = useState(null);
 
-
-  // === Line + Area Chart (static for now) ===
-  const [activeType, setActiveType] = useState('fullLengthTest');
-
-
-  // === Full vs Practice Stacked Bar (static) ===
-
-
-  // === Strengths & Weaknesses (static) ===
-  const dummyKeyStrengths = [
-    { name: 'Algebra', percent: 70 },
-    { name: 'Problem Solving', percent: 85 },
-    { name: 'Strategies', percent: 90 },
-  ];
-  const dummyWeaknesses = [
-    { name: 'Reading', percent: 34 },
-    { name: 'Writing', percent: 32 },
-    { name: 'Objective', percent: 30 },
-  ];
-
+  // const dummyKeyStrengths = [
+  //   { name: 'Algebra', percent: 70 },
+  //   { name: 'Problem Solving', percent: 85 },
+  //   { name: 'Strategies', percent: 90 },
+  // ];
+  // const dummyWeaknesses = [
+  //   { name: 'Reading', percent: 34 },
+  //   { name: 'Writing', percent: 32 },
+  //   { name: 'Objective', percent: 30 },
+  // ];
 
   useEffect(() => {
-  if (!studentId) {
-    setCourses([]);
-    return;
-  }
-
-  const fetchStudentCourses = async () => {
-    try {
-      const res = await axios.get(
-        `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
-        { withCredentials: true }
-      );
-
-      const data = res.data || [];
-      setCourses(data);
-
-      // Auto-select defaults if not selected
-      if (data.length > 0) {
-        if (!selectedCourseForScores) setSelectedCourseForScores(data[0].id);
-        if (!selectedCourseForTime) setSelectedCourseForTime(data[0].id);
-        if (!selectedCourseForLine) setSelectedCourseForLine(data[0].id);
-      }
-    } catch (err) {
-      console.error('Student courses fetch error:', err);
+    if (!studentId) {
       setCourses([]);
+      return;
     }
-  };
 
-  fetchStudentCourses();
-}, [studentId]);
+    const fetchStudentCourses = async () => {
+      try {
+        const res = await axios.get(
+          `${BASE_URL}/api/course/student-courses/?user_id=${studentId}`,
+          { withCredentials: true },
+        );
 
+        const data = res.data || [];
+        setCourses(data);
 
+        // Auto-select defaults if not selected
+        if (data.length > 0) {
+          if (!selectedCourseForScores) setSelectedCourseForScores(data[0].id);
+          if (!selectedCourseForTime) setSelectedCourseForTime(data[0].id);
+          if (!selectedCourseForLine) setSelectedCourseForLine(data[0].id);
+        }
+      } catch (err) {
+        console.error("Student courses fetch error:", err);
+        setCourses([]);
+      }
+    };
 
-  
+    fetchStudentCourses();
+  }, [studentId]);
 
   useEffect(() => {
     if (!selectedCourseForScores || !selectedSubjectForScores) {
@@ -157,14 +161,16 @@ export default function Dashbord() {
     }
 
     axios
-      .get(`${BASE_URL}/api/test/course/${selectedCourseForScores}/subjects/${selectedSubjectForScores}/topics/`, { withCredentials: true })
+      .get(
+        `${BASE_URL}/api/test/course/${selectedCourseForScores}/subjects/${selectedSubjectForScores}/topics/`,
+        { withCredentials: true },
+      )
       .then((res) => setTopics(res.data))
       .catch((err) => {
-        console.error('Topics fetch error:', err);
+        console.error("Topics fetch error:", err);
         setTopics([]);
       });
   }, [selectedCourseForScores, selectedSubjectForScores]);
-
 
   useEffect(() => {
     if (!selectedTopic) {
@@ -174,14 +180,15 @@ export default function Dashbord() {
     }
 
     axios
-      .get(`${BASE_URL}/api/test/topics/${selectedTopic}/subtopics/`, { withCredentials: true })
+      .get(`${BASE_URL}/api/test/topics/${selectedTopic}/subtopics/`, {
+        withCredentials: true,
+      })
       .then((res) => setSubtopics(res.data))
       .catch((err) => {
-        console.error('Subtopics fetch error:', err);
+        console.error("Subtopics fetch error:", err);
         setSubtopics([]);
       });
   }, [selectedTopic]);
-
 
   useEffect(() => {
     if (!selectedCourseForScores) {
@@ -199,12 +206,10 @@ export default function Dashbord() {
         }
       })
       .catch((err) => {
-        console.error('Subjects fetch error:', err);
+        console.error("Subjects fetch error:", err);
         setSubjects([]);
       });
   }, [selectedCourseForScores]);
-
-
 
   useEffect(() => {
     if (!studentId) return;
@@ -221,9 +226,9 @@ export default function Dashbord() {
       })
       .then((res) => {
         const allowedTopics = [
-          'Problem Solving and Data Analysis',
-          'Expression of Ideas',
-          'Advance Algebra'
+          "Problem Solving and Data Analysis",
+          "Expression of Ideas",
+          "Advance Algebra",
         ];
 
         const filteredStrengths = res.data
@@ -236,12 +241,10 @@ export default function Dashbord() {
         setKeyStrengths(filteredStrengths);
       })
       .catch((err) => {
-        console.error('Failed to fetch topic scores:', err);
+        console.error("Failed to fetch topic scores:", err);
         setKeyStrengths([]);
       });
   }, [studentId, selectedRange]);
-
-
 
   useEffect(() => {
     if (!studentId) return;
@@ -265,27 +268,28 @@ export default function Dashbord() {
         setAreasOfFocus(formattedFocus);
       })
       .catch((err) => {
-        console.error('Failed to fetch user areas:', err);
+        console.error("Failed to fetch user areas:", err);
         setAreasOfFocus([]);
       });
   }, [studentId, selectedRange]);
 
-
   useEffect(() => {
     if (!studentId) return;
 
-    const params = selectedRange === 'custom' && startDate && endDate
-      ? { date_range: 'custom', start_date: startDate, end_date: endDate, student_id: studentId }
-      : { date_range: selectedRange, student_id: studentId };
+    const params =
+      selectedRange === "custom" && startDate && endDate
+        ? {
+            date_range: "custom",
+            start_date: startDate,
+            end_date: endDate,
+            student_id: studentId,
+          }
+        : { date_range: selectedRange, student_id: studentId };
 
     getTestsPerDay(params).then((res) => {
       setFullVsPracticeData(res.data);
     });
   }, [selectedRange, startDate, endDate, studentId]);
-
-
-
-
 
   useEffect(() => {
     if (
@@ -307,22 +311,23 @@ export default function Dashbord() {
 
         if (data.length === 1) {
           const single = data[0];
-          data = [
-            { date: '', minutes: 0 },
-            single,
-            { date: '', minutes: 0 },
-          ];
+          data = [{ date: "", minutes: 0 }, single, { date: "", minutes: 0 }];
         }
 
-        setLineChartData(data); // ✅ Use modified `data`
+        setLineChartData(data); 
       })
 
       .catch((err) => {
         console.error("Line chart data fetch error:", err);
         setLineChartData([]);
       });
-  }, [studentId, selectedCourseForLine, selectedSubjectForLine, activeType, selectedRange]);
-
+  }, [
+    studentId,
+    selectedCourseForLine,
+    selectedSubjectForLine,
+    activeType,
+    selectedRange,
+  ]);
 
   useEffect(() => {
     if (!selectedCourseForLine) {
@@ -340,12 +345,10 @@ export default function Dashbord() {
         }
       })
       .catch((err) => {
-        console.error('Subjects fetch error (Line Chart):', err);
+        console.error("Subjects fetch error (Line Chart):", err);
         setSubjectsForLine([]);
       });
   }, [selectedCourseForLine]);
-
-
 
   useEffect(() => {
     if (!selectedCourseForTime) {
@@ -363,11 +366,10 @@ export default function Dashbord() {
         }
       })
       .catch((err) => {
-        console.error('Subjects fetch error:', err);
+        console.error("Subjects fetch error:", err);
         setSubjectsForTime([]);
       });
   }, [selectedCourseForTime]);
-
 
   // ─── Fetch Student ID ──────────────────────────────────────────
   useEffect(() => {
@@ -376,11 +378,11 @@ export default function Dashbord() {
       try {
         const { data } = await axios.get(
           `${BASE_URL}/api/test/parentid_to_studentid/?parent_id=${parentId}`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
         setStudentId(data.studentid?.[0] ?? null);
       } catch (err) {
-        console.error('Failed to fetch student ID:', err);
+        console.error("Failed to fetch student ID:", err);
       }
     };
     fetchStudent();
@@ -395,26 +397,26 @@ export default function Dashbord() {
       .then((res) => {
         setStats([
           {
-            title: 'Full length tests',
+            title: "Full length tests",
             count: res.data.full_length_tests.count,
             result: res.data.full_length_tests.change_percentage,
-            gradient: "from-orange-500 to-amber-400"
+            gradient: "from-orange-500 to-amber-400",
           },
           {
-            title: 'Practice Questions',
+            title: "Practice Questions",
             count: res.data.practice_tests.count,
             result: res.data.practice_tests.change_percentage,
-            gradient: "from-blue-500 to-cyan-400"
+            gradient: "from-blue-500 to-cyan-400",
           },
           {
-            title: 'Avg score of all the tests',
+            title: "Avg score of all the tests",
             count: res.data.overall_average_percentage.average_percentage,
             result: res.data.overall_average_percentage.change_percentage,
-            gradient: "from-emerald-500 to-teal-400"
+            gradient: "from-emerald-500 to-teal-400",
           },
         ]);
       })
-      .catch((err) => console.error('Stats error:', err));
+      .catch((err) => console.error("Stats error:", err));
   }, [studentId, selectedRange]);
 
   // ─── Fetch Time Spent ─────────────────────────────────────────
@@ -434,12 +436,9 @@ export default function Dashbord() {
           score: item.score || 0,
         }));
         setTimeSpentData(formatted);
-
       })
-      .catch((err) => console.error('Time Spent fetch error:', err));
+      .catch((err) => console.error("Time Spent fetch error:", err));
   }, [parentId, selectedCourseForTime, selectedSubjectForTime, selectedRange]);
-
-
 
   useEffect(() => {
     if (!selectedCourseForScores) {
@@ -452,7 +451,7 @@ export default function Dashbord() {
       .get(GET_Subjects(selectedCourseForScores), { withCredentials: true })
       .then((res) => setSubjects(res.data))
       .catch((err) => {
-        console.error('Subjects fetch error:', err);
+        console.error("Subjects fetch error:", err);
         setSubjects([]);
       });
   }, [selectedCourseForScores]);
@@ -481,43 +480,158 @@ export default function Dashbord() {
           res.data.map((item) => ({
             test: item.test_name,
             score: item.score,
-          }))
+          })),
         );
       })
-      .catch((err) => console.error('Test Scores fetch error:', err));
-  }, [studentId, selectedCourseForScores, selectedSubjectForScores, selectedRange, selectedTopic, selectedSubtopic]);
+      .catch((err) => console.error("Test Scores fetch error:", err));
+  }, [
+    studentId,
+    selectedCourseForScores,
+    selectedSubjectForScores,
+    selectedRange,
+    selectedTopic,
+    selectedSubtopic,
 
+  ]);
 
+  // ─── Fetch Recent Activity ────────────────────────────────────
+  useEffect(() => {
+    if (!studentId) return;
+    const fetchRecentActivity = async () => {
+      try {
+        const pParams = { page: 1, page_size: 5, student_id: studentId };
+        const fullRes = await getTestsList(pParams);
+        if (fullRes.data?.results)
+          setLatestFullLengthTests(fullRes.data.results.slice(0, 5));
 
+        const pracRes = await getPracticeTests(pParams);
+        if (pracRes.data?.results)
+          setLatestPracticeTests(pracRes.data.results.slice(0, 5));
+      } catch (e) {
+        console.error("Activity fetch error:", e);
+      }
+    };
+    fetchRecentActivity();
+  }, [studentId]);
+
+  // ─── Fetch Heatmap Data ───────────────────────────────────────
+  useEffect(() => {
+    if (!studentId || courses.length === 0) return;
+
+    const fetchHeatmapData = async () => {
+      try {
+        const promises = [];
+        courses.forEach((course) => {
+          promises.push(
+            axios
+              .get(
+                `${BASE_URL}/api/result/Date_Wise_Time/?student_id=${studentId}&course_id=${course.id}&test_type=fullLength`,
+                { withCredentials: true }
+              )
+              .then((r) => ({ type: "fullLength", courseId: course.id, data: r.data }))
+              .catch(() => ({ type: "fullLength", courseId: course.id, data: [] }))
+          );
+          promises.push(
+            axios
+              .get(
+                `${BASE_URL}/api/result/Date_Wise_Time/?student_id=${studentId}&course_id=${course.id}&test_type=practiceTest`,
+                { withCredentials: true }
+              )
+              .then((r) => ({ type: "practiceTest", courseId: course.id, data: r.data }))
+              .catch(() => ({ type: "practiceTest", courseId: course.id, data: [] }))
+          );
+        });
+
+        const results = await Promise.all(promises);
+
+        let full = [];
+        let prac = [];
+
+        results.forEach((res) => {
+          const dataWithCourse = Array.isArray(res.data)
+            ? res.data.map((item) => ({ ...item, courseId: res.courseId }))
+            : [];
+          if (res.type === "fullLength") full = [...full, ...dataWithCourse];
+          else prac = [...prac, ...dataWithCourse];
+        });
+
+        setHeatmapRawData({ fullLength: full, practice: prac });
+      } catch (err) {
+        console.error("Heatmap fetch error:", err);
+      }
+    };
+    fetchHeatmapData();
+  }, [studentId, courses]);
+
+  // ─── Process Heatmap Data ─────────────────────────────────────
+  useEffect(() => {
+    let data =
+      activityTab === "fullLength"
+        ? heatmapRawData.fullLength
+        : heatmapRawData.practice;
+
+    if (selectedCourseForHeatmap) {
+      data = data.filter((d) => d.courseId === selectedCourseForHeatmap);
+    }
+
+    const dateMap = {};
+    if (data) {
+      data.forEach((item) => {
+        const dateKey = new Date(item.date).toDateString();
+        if (!dateMap[dateKey]) {
+          dateMap[dateKey] = { date: item.date, seconds: 0 };
+        }
+        dateMap[dateKey].seconds += item.seconds;
+      });
+    }
+
+    const transformed = Object.values(dateMap).map((item) => {
+      const d = new Date(item.date);
+      return {
+        dayLabel: d.getDate().toString(),
+        monthIndex: d.getMonth(),
+        seconds: item.seconds,
+      };
+    });
+
+    setHeatmapData(transformed);
+  }, [heatmapRawData, activityTab, selectedCourseForHeatmap]);
 
   return (
     <div className="space-y-6">
-      <DashboardHeader name={name}/>
+      <DashboardHeader name={name} />
       {/* ─── Date Range Buttons ───────────────────────────────────── */}
       <div className="flex space-x-2 mb-4">
-        {['last_six_month', 'last_month', 'last_week', 'today'].map((range) => (
+        {["last_six_month", "last_month", "last_week", "today"].map((range) => (
           <button
             key={range}
             onClick={() => setSelectedRange(range)}
-            className={`px-4 py-1 rounded-md text-sm font-medium ${selectedRange === range ? 'bg-black text-white' : 'bg-gray-100 text-black'
-              }`}
+            className={`px-4 py-1 rounded-md text-sm font-medium ${
+              selectedRange === range
+                ? "bg-black text-white"
+                : "bg-gray-100 text-black"
+            }`}
           >
-            {range.replace('_', ' ').replace(/^\w/, (c) => c.toUpperCase())}
+            {range.replace("_", " ").replace(/^\w/, (c) => c.toUpperCase())}
           </button>
         ))}
       </div>
 
       {/* ─── Dashboard Stats ──────────────────────────────────────── */}
-      <div  >
+      <div>
         <Row gutter={[16, 16]}>
           {stats.map((stat, i) => (
             <Col xs={24} sm={12} md={8} key={i}>
               <div className="relative group overflow-hidden rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer bg-white shadow-lg m-0 border border-gray-100">
                 {/* Gradient accent bar */}
-                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.gradient}`} />
-                
+                <div
+                  className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.gradient}`}
+                />
+
                 <div className="flex justify-between items-center mb-8">
-                  <span className="text-base font-semibold text-gray-700">{stat.title}</span>
+                  <span className="text-base font-semibold text-gray-700">
+                    {stat.title}
+                  </span>
                   {stat.title === "Full length tests" && (
                     <button
                       onClick={() => router.push(`/parent/${parentId}/test`)}
@@ -528,14 +642,19 @@ export default function Dashbord() {
                   )}
                 </div>
                 <div className="flex justify-between items-center text-2xl mb-2">
-                  <div className="text-left font-bold text-gray-900">{stat.count}</div>
+                  <div className="text-left font-bold text-gray-900">
+                    {stat.count}
+                  </div>
                   <div className="text-gray-500 text-sm ml-auto font-semibold">
-                    Result{' '}
+                    Result{" "}
                     <span
-                      className={`px-2 py-1 rounded-full font-bold ${stat.result > 0 ? 'text-green-500 bg-green-50' : 'text-red-400 bg-red-50'
-                        }`}
+                      className={`px-2 py-1 rounded-full font-bold ${
+                        stat.result > 0
+                          ? "text-green-500 bg-green-50"
+                          : "text-red-400 bg-red-50"
+                      }`}
                     >
-                      {stat.result > 0 ? '↑' : '↓'} {Math.abs(stat.result)}%
+                      {stat.result > 0 ? "↑" : "↓"} {Math.abs(stat.result)}%
                     </span>
                   </div>
                 </div>
@@ -544,6 +663,76 @@ export default function Dashbord() {
           ))}
         </Row>
       </div>
+
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 px-1">
+        <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg self-start">
+          <button
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              activityTab === "fullLength"
+                ? "bg-white text-orange-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+            onClick={() => setActivityTab("fullLength")}
+          >
+            Full Length Test
+          </button>
+          <button
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              activityTab === "practiceTest"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+            onClick={() => setActivityTab("practiceTest")}
+          >
+            Practice Test
+          </button>
+        </div>
+
+        <div className="w-full md:w-64">
+           <Select
+              placeholder="Filter by Course"
+              options={[
+                { label: "All Courses", value: null },
+                ...courses.map((c) => ({ label: c.name, value: c.id }))
+              ]}
+              value={
+                 selectedCourseForHeatmap
+                    ? { label: courses.find(c => c.id === selectedCourseForHeatmap)?.name, value: selectedCourseForHeatmap }
+                    : { label: "All Courses", value: null }
+              }
+              onChange={(opt) => setSelectedCourseForHeatmap(opt?.value || null)}
+              components={{ DropdownIndicator }}
+              isClearable={false}
+           />
+        </div>
+      </div>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+            <Heatmap dateWise={heatmapData} />
+        </Col>
+        <Col xs={24} lg={12}>
+          <div>
+             {/* Removed internal tabs, padding handled in component or wrapper */}
+             <div className="p-1 h-full">
+                <LastTestActivity
+                  activeTab={activityTab}
+                  fullLengthData={latestFullLengthTests}
+                  practiceData={latestPracticeTests}
+                  onViewAll={() => router.push(`/parent/${parentId}/test`)}
+                  onTestClick={(test, type) => {
+                    if (type === "fullLength") {
+                      const targetId = test.test_submission_id || test.id;
+                      if(targetId) router.push(`/parent/${parentId}/test/${targetId}/result`);
+                    } else {
+                      if(test.id) router.push(`/parent/${parentId}/test/practice/${test.id}/result`);
+                    }
+                  }}
+                />
+             </div>
+          </div>
+        </Col>
+      </Row>
 
       {/* ─── Time Spent on Course ──────────────────────────────────── */}
       <div className="bg-white rounded-xl shadow-md border border-gray-200 p-5  ">
@@ -558,7 +747,12 @@ export default function Dashbord() {
                 options={courses.map((c) => ({ label: c.name, value: c.id }))}
                 value={
                   selectedCourseForTime
-                    ? { label: courses.find((c) => c.id === selectedCourseForTime)?.name, value: selectedCourseForTime }
+                    ? {
+                        label: courses.find(
+                          (c) => c.id === selectedCourseForTime,
+                        )?.name,
+                        value: selectedCourseForTime,
+                      }
                     : null
                 }
                 onChange={(opt) => setSelectedCourseForTime(opt?.value || null)}
@@ -580,7 +774,6 @@ export default function Dashbord() {
           isDisabled={!selectedCourseForTime}
         />
             </div> */}
-
           </div>
         </div>
         <ResponsiveContainer width="100%" height={300}>
@@ -589,7 +782,7 @@ export default function Dashbord() {
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip
-              cursor={{ fill: 'transparent' }}
+              cursor={{ fill: "transparent" }}
               formatter={(value, name) =>
                 name === "Minutes" ? `${value} min` : `${value} score`
               }
@@ -612,10 +805,17 @@ export default function Dashbord() {
                 options={courses.map((c) => ({ label: c.name, value: c.id }))}
                 value={
                   selectedCourseForScores
-                    ? { label: courses.find((c) => c.id === selectedCourseForScores).name, value: selectedCourseForScores }
+                    ? {
+                        label: courses.find(
+                          (c) => c.id === selectedCourseForScores,
+                        ).name,
+                        value: selectedCourseForScores,
+                      }
                     : null
                 }
-                onChange={(opt) => setSelectedCourseForScores(opt?.value || null)}
+                onChange={(opt) =>
+                  setSelectedCourseForScores(opt?.value || null)
+                }
                 isClearable
                 components={{ DropdownIndicator }}
               />
@@ -626,10 +826,17 @@ export default function Dashbord() {
                 options={subjects.map((s) => ({ label: s.name, value: s.id }))}
                 value={
                   selectedSubjectForScores
-                    ? { label: subjects.find((s) => s.id === selectedSubjectForScores).name, value: selectedSubjectForScores }
+                    ? {
+                        label: subjects.find(
+                          (s) => s.id === selectedSubjectForScores,
+                        ).name,
+                        value: selectedSubjectForScores,
+                      }
                     : null
                 }
-                onChange={(opt) => setSelectedSubjectForScores(opt?.value || null)}
+                onChange={(opt) =>
+                  setSelectedSubjectForScores(opt?.value || null)
+                }
                 isClearable
                 isDisabled={!selectedCourseForScores}
                 components={{ DropdownIndicator }}
@@ -640,7 +847,14 @@ export default function Dashbord() {
               <Select
                 placeholder="Select Topic"
                 options={topics.map((t) => ({ label: t.name, value: t.id }))}
-                value={selectedTopic ? { label: topics.find((t) => t.id === selectedTopic)?.name, value: selectedTopic } : null}
+                value={
+                  selectedTopic
+                    ? {
+                        label: topics.find((t) => t.id === selectedTopic)?.name,
+                        value: selectedTopic,
+                      }
+                    : null
+                }
                 onChange={(opt) => setSelectedTopic(opt?.value || null)}
                 isClearable
                 components={{ DropdownIndicator }}
@@ -651,7 +865,15 @@ export default function Dashbord() {
               <Select
                 placeholder="Select Subtopic"
                 options={subtopics.map((s) => ({ label: s.name, value: s.id }))}
-                value={selectedSubtopic ? { label: subtopics.find((s) => s.id === selectedSubtopic)?.name, value: selectedSubtopic } : null}
+                value={
+                  selectedSubtopic
+                    ? {
+                        label: subtopics.find((s) => s.id === selectedSubtopic)
+                          ?.name,
+                        value: selectedSubtopic,
+                      }
+                    : null
+                }
                 onChange={(opt) => setSelectedSubtopic(opt?.value || null)}
                 isClearable
                 isDisabled={!selectedTopic}
@@ -668,7 +890,7 @@ export default function Dashbord() {
             <Tooltip
               trigger="hover"
               shared={false}
-              cursor={{ fill: 'transparent' }}
+              cursor={{ fill: "transparent" }}
               formatter={(value) => `${value}`}
             />
             <Legend />
@@ -682,14 +904,14 @@ export default function Dashbord() {
         <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
           <div className="flex gap-2">
             <button
-              className={`px-4 py-1 rounded-md text-sm font-medium ${activeType === 'fullLengthTest' ? 'bg-black text-white' : 'bg-gray-100 text-black'}`}
-              onClick={() => setActiveType('fullLengthTest')}
+              className={`px-4 py-1 rounded-md text-sm font-medium ${activeType === "fullLengthTest" ? "bg-black text-white" : "bg-gray-100 text-black"}`}
+              onClick={() => setActiveType("fullLengthTest")}
             >
               Full length test
             </button>
             <button
-              className={`px-4 py-1 rounded-md text-sm font-medium ${activeType === 'practiceTest' ? 'bg-black text-white' : 'bg-gray-100 text-black'}`}
-              onClick={() => setActiveType('practiceTest')}
+              className={`px-4 py-1 rounded-md text-sm font-medium ${activeType === "practiceTest" ? "bg-black text-white" : "bg-gray-100 text-black"}`}
+              onClick={() => setActiveType("practiceTest")}
             >
               Practice Questions
             </button>
@@ -701,7 +923,12 @@ export default function Dashbord() {
                 options={courses.map((c) => ({ label: c.name, value: c.id }))}
                 value={
                   selectedCourseForLine
-                    ? { label: courses.find((c) => c.id === selectedCourseForLine)?.name, value: selectedCourseForLine }
+                    ? {
+                        label: courses.find(
+                          (c) => c.id === selectedCourseForLine,
+                        )?.name,
+                        value: selectedCourseForLine,
+                      }
                     : null
                 }
                 onChange={(opt) => setSelectedCourseForLine(opt?.value || null)}
@@ -713,34 +940,46 @@ export default function Dashbord() {
             <div className="w-64 text-sm">
               <Select
                 placeholder="Select Subject"
-                options={subjectsForLine.map((s) => ({ label: s.name, value: s.id }))}
+                options={subjectsForLine.map((s) => ({
+                  label: s.name,
+                  value: s.id,
+                }))}
                 value={
                   selectedSubjectForLine
-                    ? { label: subjectsForLine.find((s) => s.id === selectedSubjectForLine)?.name, value: selectedSubjectForLine }
+                    ? {
+                        label: subjectsForLine.find(
+                          (s) => s.id === selectedSubjectForLine,
+                        )?.name,
+                        value: selectedSubjectForLine,
+                      }
                     : null
                 }
-                onChange={(opt) => setSelectedSubjectForLine(opt?.value || null)}
+                onChange={(opt) =>
+                  setSelectedSubjectForLine(opt?.value || null)
+                }
                 isClearable
                 isDisabled={!selectedCourseForLine}
                 components={{ DropdownIndicator }}
               />
             </div>
-
-
-
           </div>
         </div>
 
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={lineChartData}>
-
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
-            <YAxis label={{ value: 'In minutes', angle: -90, position: 'insideLeft' }} />
+            <YAxis
+              label={{
+                value: "In minutes",
+                angle: -90,
+                position: "insideLeft",
+              }}
+            />
             <Tooltip
               trigger="hover"
               shared={false}
-              cursor={{ fill: 'transparent' }}
+              cursor={{ fill: "transparent" }}
               formatter={(value) => `${value}`}
             />
             <Area
@@ -750,32 +989,44 @@ export default function Dashbord() {
               fill="#FFF3E0"
               strokeWidth={2}
             />
-
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
       {/* ─── Full Length vs Practice Test ────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 p-5">
-        <h3 className="text-xl font-semibold mb-4">Full Length vs Practice Questions</h3>
+      {/* <div className="bg-white rounded-xl shadow-md border border-gray-200 p-5">
+        <h3 className="text-xl font-semibold mb-4">
+          Full Length vs Practice Questions
+        </h3>
         <ResponsiveContainer width="100%" height={320}>
           <BarChart data={fullVsPracticeData} barCategoryGap="20%" barSize={50}>
-            <CartesianGrid vertical={false} horizontal={true} stroke="#E0E0E0" />
+            <CartesianGrid
+              vertical={false}
+              horizontal={true}
+              stroke="#E0E0E0"
+            />
             <XAxis dataKey="date" axisLine={false} />
-            <YAxis domain={[0, 100]} axisLine={false} tickFormatter={(t) => `${t}`} />
+            <YAxis
+              domain={[0, 100]}
+              axisLine={false}
+              tickFormatter={(t) => `${t}`}
+            />
             <Tooltip
               trigger="hover"
               shared={false}
-              cursor={{ fill: 'transparent' }}
+              cursor={{ fill: "transparent" }}
               formatter={(value) => `${value}`}
             />
-            <Legend content={<CustomLegend />} verticalAlign="top" align="right" />
+            <Legend
+              content={<CustomLegend />}
+              verticalAlign="top"
+              align="right"
+            />
             <Bar dataKey="fullLengthTest" stackId="a" fill="#FFB74D" />
             <Bar dataKey="practiceTest" stackId="a" fill="#FFE0B2" />
           </BarChart>
         </ResponsiveContainer>
-
-      </div>
+      </div> */}
 
       {/* ─── Strengths & Weaknesses ───────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -819,10 +1070,11 @@ export default function Dashbord() {
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-500">No areas of improvement found.</p>
+            <p className="text-sm text-gray-500">
+              No areas of improvement found.
+            </p>
           )}
         </div>
-
       </div>
     </div>
   );
