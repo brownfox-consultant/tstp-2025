@@ -62,18 +62,18 @@ function DashboardLayout({ children }) {
       label: "Full-Length Test",
       disabled: false,
     },
-    // {
-    //   key: "attempted-questions",
-    //   icon: <CheckSquareOutlined />,
-    //   label: "Attempted Questions",
-    //   disabled: isFreeUser,
-    // },
-    // {
-    //   key: "trouble-spot",
-    //   icon: <WarningOutlined />,
-    //   label: "Trouble Spot",
-    //   disabled: isFreeUser,
-    // },
+    {
+      key: "attempted-questions",
+      icon: <CheckSquareOutlined />,
+      label: "Attempted Questions",
+      disabled: isFreeUser,
+    },
+    {
+      key: "trouble-spot",
+      icon: <WarningOutlined />,
+      label: "Trouble Spot",
+      disabled: isFreeUser,
+    },
     {
       key: "doubts",
       icon: <QuestionCircleOutlined />,

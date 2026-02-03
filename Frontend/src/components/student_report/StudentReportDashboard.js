@@ -298,7 +298,7 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
           tabs={[
             { value: 'score-analysis', label: `${selectedCourseName} Score Analysis` },
             { value: 'subject', label: 'Subject Wise Report' },
-            // { value: 'activity', label: 'Activity Log' },
+            { value: 'activity', label: 'Activity Log' },
             { value: 'english', label: 'English Topic Wise Report' },
             { value: 'math', label: 'Math Topic Wise Report' },
             // { value: 'scoreboard', label: 'SCOREBOARD' },

@@ -51,7 +51,7 @@ const levelClasses = {
 
 const legendClasses = ["bg-gray-200", "bg-orange-100", "bg-orange-300", "bg-orange-400", "bg-orange-500"];
 
-export default function Heatmap({ dateWise = [] }) {
+export default function Heatmap({ dateWise = [], activeTab, onTabChange }) {
   const [monthOffset, setMonthOffset] = useState(0);
 
   const current = new Date();
@@ -88,6 +88,40 @@ export default function Heatmap({ dateWise = [] }) {
 
   return (
     <div className="card-layout">
+      {/* Optional Tabs */}
+      {onTabChange && (
+        <div className="flex space-x-6 border-b border-gray-100 mb-6 w-full">
+          <button
+            className={`pb-3 text-sm font-semibold transition-all relative ${
+              activeTab === "fullLength"
+                ? "text-orange-500" // Active text color
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+            onClick={() => onTabChange("fullLength")}
+          >
+            Full Length Test
+            {/* Active underline indicator */}
+            {activeTab === "fullLength" && (
+              <span className="absolute bottom-0 left-0 w-full h-[2px] bg-orange-500 rounded-t-md" />
+            )}
+          </button>
+          
+          <button
+            className={`pb-3 text-sm font-semibold transition-all relative ${
+              activeTab === "practiceTest"
+                ? "text-orange-500"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+            onClick={() => onTabChange("practiceTest")}
+          >
+            Practice Test
+            {activeTab === "practiceTest" && (
+              <span className="absolute bottom-0 left-0 w-full h-[2px] bg-orange-500 rounded-t-md" />
+            )}
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <button 
