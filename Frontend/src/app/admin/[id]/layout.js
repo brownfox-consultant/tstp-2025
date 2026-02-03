@@ -30,6 +30,7 @@ import {
   MenuUnfoldOutlined,
   CloseOutlined,
   BarChartOutlined,
+  UnorderedListOutlined,
 } from "@ant-design/icons";
 
 const { Content } = Layout;
@@ -70,6 +71,11 @@ const AdminMenuItems = [
     key: "tests",
     icon: <FontSizeOutlined />,
     label: "Full Length Tests",
+  },
+  {
+    key: "test-list",
+    icon: <UnorderedListOutlined />,
+    label: "Test List",
   },
   {
     key: "doubts",
