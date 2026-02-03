@@ -107,6 +107,8 @@ from test_manager.models import (
 # Test Manager Serializers
 # ==========================
 from test_manager.serializers import (
+    RecentFullLengthResultSerializer,
+    RecentPracticeTestSerializer,
     TestSerializer,
     TestListSerializer,
     TestSubmissionSerializer,
@@ -3073,6 +3075,65 @@ class ResultViewSet(viewsets.ModelViewSet):
         # response_data['total_score'] = total_score
         # self.logger.info(f"✅ Final Total Score: {total_score}")
         # return JsonResponse(response_data)
+
+    
+    @action(
+        detail=False,
+        methods=["GET"],
+        permission_classes=[IsAuthenticated],
+        url_path="recent/full-length"
+    )
+    def recent_full_length(self, request):
+        """
+        Latest 10 FULL LENGTH tests of ALL students (date-wise)
+        """
+
+        submissions = (
+            TestSubmission.objects
+            .filter(
+                test__test_type=Test.EXAM,
+                status=TestSubmission.COMPLETED
+            )
+            .select_related(
+                "student",
+                "test",
+                "test__course",
+                "result"
+            )
+            .order_by("-assigned_date")[:10]
+        )
+
+        serializer = RecentFullLengthResultSerializer(submissions, many=True)
+        return Response(serializer.data)
+
+
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAuthenticated],
+    url_path='recent/practice'
+)
+    def recent_practice(self, request):
+        qs = PracticeTest.objects.select_related(
+            'student',
+            'course_subject__course',
+            'result'
+        )
+
+        course_id = request.GET.get('course_id')
+        student_id = request.GET.get('student_id')
+        limit = int(request.GET.get('limit', 10))
+
+        if course_id:
+            qs = qs.filter(course_subject__course_id=course_id)
+        if student_id:
+            qs = qs.filter(student_id=student_id)
+
+        qs = qs.order_by('-created_at')[:limit]
+
+        return Response(RecentPracticeTestSerializer(qs, many=True).data)
+
+
 
     @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated], url_path='Subject_Wise_Practice')
     def Subject_Wise_Practice(self, request, *args, **kwargs):

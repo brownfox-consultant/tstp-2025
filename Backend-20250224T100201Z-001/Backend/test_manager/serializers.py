@@ -3,6 +3,23 @@ from rest_framework import serializers
 from course_manager.models import CourseEnrollment
 from user_manager.models import User
 from .models import Test, Section, TestSubmission, PracticeTestResult, PracticeTest, TestFeedback
+from course_manager.models import (
+    Course,
+    CourseSubjects,
+    CombinedScore
+)
+from test_manager.models import (
+    TestSubmission,
+    Result,
+    Section,
+    SectionStats,
+    QuestionAnswer,
+    PracticeTestResult
+)
+from django.db.models import Count
+
+from rest_framework import serializers
+from test_manager.models import QuestionAnswer
 
 
 class SectionSerializer(serializers.ModelSerializer):
@@ -186,3 +203,107 @@ class TestFeedbackSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Description is required")
         return value
+
+
+class RecentFullLengthResultSerializer(serializers.ModelSerializer):
+    student_id = serializers.IntegerField(source="student.id")
+    student_name = serializers.CharField(source="student.name")
+    student_email = serializers.CharField(source="student.email")
+
+    test_name = serializers.CharField(source="test.name")
+    course_id = serializers.IntegerField(source="test.course.id")
+    course_name = serializers.CharField(source="test.course.name")
+
+    total_score = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(source="assigned_date")
+
+    class Meta:
+        model = TestSubmission
+        fields = [
+            "id",
+            "student_id",
+            "student_name",
+            "student_email",
+            "test_name",
+            "course_id",
+            "course_name",
+            "total_score",
+            "created_at",
+        ]
+
+    def get_total_score(self, obj):
+        """
+        EXACT SAME LOGIC as /api/result/details/
+        """
+        if not hasattr(obj, "result") or not obj.result:
+            return 0
+
+        result = obj.result
+        test = obj.test
+
+        total_score = 0
+
+        # Sections grouped by subject
+        sections = Section.objects.filter(test=test)
+
+        subject_map = {}
+        for section in sections:
+            subject_name = section.course_subject.subject.name
+            subject_map.setdefault(subject_name, []).append(section)
+
+        # SUBJECT LOOP (Math + English)
+        for subject_name, subject_sections in subject_map.items():
+
+            section_1_correct = 0
+            section_2_correct = 0
+
+            for section in subject_sections:
+                for sub_section in section.sub_sections:
+
+                    correct_count = QuestionAnswer.objects.filter(
+                        result=result,
+                        course_subject=section.course_subject,
+                        section_id=sub_section["id"],
+                        is_correct=True
+                    ).count()
+
+                    # SAME SPLIT AS result/details
+                    if sub_section["id"] == 1:
+                        section_1_correct += correct_count
+                    else:
+                        section_2_correct += correct_count
+
+            score_record = CombinedScore.objects.filter(
+                subject_name__iexact=subject_name,
+                section1_correct=section_1_correct,
+                section2_correct=section_2_correct
+            ).first()
+
+            if score_record:
+                total_score += score_record.total_score
+
+        return total_score
+
+
+
+class RecentPracticeTestSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.name')
+    test_name = serializers.SerializerMethodField()
+    course_name = serializers.CharField(source='course_subject.course.name')
+    total_score = serializers.IntegerField(source='result.correct_answer_count')
+    created_at = serializers.DateTimeField()
+
+    class Meta:
+        model = PracticeTest
+        fields = [
+            'id',
+            'student_name',
+            'test_name',
+            'course_name',
+            'total_score',
+            'created_at'
+        ]
+
+    def get_test_name(self, obj):
+        return f"Practice Test - {obj.id}"
+

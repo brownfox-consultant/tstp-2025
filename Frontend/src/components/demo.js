@@ -175,6 +175,9 @@ export default function Dashboard() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [fullLengthTests, setFullLengthTests] = useState([]);
+const [practiceTests, setPracticeTests] = useState([]);
+
 
   const datePickerRef = React.useRef(null);
 
@@ -240,6 +243,35 @@ export default function Dashboard() {
       setLoadingSubmissions(false);
 
   }, []);
+
+  useEffect(() => {
+  setLoadingSubmissions(true);
+
+  const endpoint =
+    activeTab === "1"
+      ? `${BASE_URL}/api/result/recent/full-length/`
+      : `${BASE_URL}/api/result/recent/practice/`;
+
+  axios
+    .get(endpoint, {
+      params: {
+        course_id: selectedCourse,
+       
+        limit: 10,
+        ...finalDateParams
+      },
+      withCredentials: true
+    })
+    .then(res => {
+      if (activeTab === "1") {
+        setFullLengthTests(res.data);
+      } else {
+        setPracticeTests(res.data);
+      }
+    })
+    .finally(() => setLoadingSubmissions(false));
+}, [activeTab, selectedCourse, selectedStudent, finalDateParams]);
+
 
   useEffect(() => {
     if (selectedCourse === null || selectedStudent === null) return;
@@ -593,7 +625,7 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Test Submissions */}
-          {/* <div className="bg-white shadow-md rounded-xl p-5 mb-6">
+           <div className="bg-white shadow-md rounded-xl p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
               <Tabs 
                 defaultActiveKey="1" 
@@ -613,53 +645,73 @@ export default function Dashboard() {
               />
             </div>
             <div className="overflow-x-auto">
-              <Table
-                dataSource={activeTab === '1' ? DUMMY_FULL_LENGTH : DUMMY_PRACTICE}
-                columns={[
-                  {
-                    title: 'Student Name',
-                    dataIndex: 'student_name',
-                    key: 'student_name',
-                    render: (text, record) => <span className="font-medium text-[#2E2725]">{text || record.user_name || "N/A"}</span>
-                  },
-                  {
-                    title: 'Test Name',
-                    dataIndex: 'test_name',
-                    key: 'test_name',
-                    render: (text) => <span className="text-[#805830]">{text || "N/A"}</span>
-                  },
-                  {
-                    title: 'Course Name',
-                    dataIndex: 'course_name',
-                    key: 'course_name',
-                    render: (text) => <span className="text-gray-600 font-medium">{text || "N/A"}</span>
-                  },
-                  {
-                    title: 'Score',
-                    dataIndex: 'total_score',
-                    key: 'total_score',
-                    render: (score) => (
-                      <Tag color={score >= 50 ? "green" : "red"} className="rounded-full px-3">
-                        {score !== undefined && score !== null ? `${score}` : "N/A"}
-                      </Tag>
-                    )
-                  },
-                  {
-                    title: 'Date',
-                    dataIndex: 'created_at',
-                    key: 'created_at',
-                    render: (date) => <span className="text-gray-500">{date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}</span>
-                  }
-                ]}
-                loading={loadingSubmissions}
-                pagination={false}
-                rowKey={(record) => record.id || Math.random()}
-                className="dashboard-table"
-              />
-            </div>
-          </div> */}
+             <Table
+  dataSource={activeTab === '1' ? fullLengthTests : practiceTests}
+  columns={[
+    {
+      title: 'Student Name',
+      dataIndex: 'student_name',
+      key: 'student_name',
+      render: (text) => (
+        <span className="font-medium text-[#2E2725]">
+          {text || "N/A"}
+        </span>
+      )
+    },
+    {
+      title: 'Test Name',
+      dataIndex: 'test_name',
+      key: 'test_name',
+      render: (text) => (
+        <span className="text-[#805830]">
+          {text || "N/A"}
+        </span>
+      )
+    },
+    {
+      title: 'Course Name',
+      dataIndex: 'course_name',
+      key: 'course_name',
+      render: (text) => (
+        <span className="text-gray-600 font-medium">
+          {text || "N/A"}
+        </span>
+      )
+    },
+    {
+      title: 'Score',
+      dataIndex: 'total_score',
+      key: 'total_score',
+      render: (score) => (
+        <Tag
+          color={score >= 500 ? "green" : "red"}   // SAT-friendly threshold
+          className="rounded-full px-3"
+        >
+          {score ?? "N/A"}
+        </Tag>
+      )
+    },
+    {
+      title: 'Date',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date) => (
+        <span className="text-gray-500">
+          {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
+        </span>
+      )
+    }
+  ]}
+  loading={loadingSubmissions}
+  pagination={false}
+  rowKey={(record) => record.id}
+  className="dashboard-table"
+/>
 
-          {/* <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 ">
+            </div>
+          </div> 
+
+           {/* <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 ">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-lg font-bold text-[#2E2725]">Topic-wise Performance</h3>
             </div>
@@ -743,7 +795,7 @@ export default function Dashboard() {
                 </div>
               </Col>
             </Row>
-          </div> */}
+          </div>  */}
         </>
       )}
     </div>
