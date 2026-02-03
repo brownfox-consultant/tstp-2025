@@ -1,69 +1,212 @@
 "use client";
-import React, { useState } from "react";
-import { Tabs, Table, Button, Space, Select, DatePicker, Input } from "antd";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Tabs,
+  Table,
+  Button,
+  Space,
+  Select,
+  DatePicker,
+  Input,
+  Tag,
+  Modal,
+} from "antd";
 import { EyeOutlined } from "@ant-design/icons";
+import axios from "axios";
+import { BASE_URL } from "@/app/constants/apiConstants";
+import dayjs from "dayjs";
+import Admin_Report_New from "@/components/report-module/Admin_Report_New";
+import PracticeTestReport from "@/components/report-module/PracticeTestReport_admin_user";
 
 const { RangePicker } = DatePicker;
 
-// Dummy data generator
-const generateDummyData = (type) => {
-  const data = [];
-  for (let i = 1; i <= 100; i++) {
-    data.push({
-      key: i,
-      date: new Date(2025, 1, i % 28).toLocaleDateString(),
-      testName: `${type} Test - Set ${Math.ceil(i / 5)}`,
-      studentName: `Student ${i}`,
-      studentEmail: `student${i}@example.com`,
-      totalScore: Math.floor(Math.random() * (1600 - 800 + 1)) + 800,
-      status: i % 3 === 0 ? "Completed" : "Pending",
-    });
-  }
-  return data;
-};
+const TestListPage = () => {
+  // ==================== DATA FETCHING STATE ====================
+  const [initialFullLengthData, setInitialFullLengthData] = useState([]);
+  const [initialPracticeData, setInitialPracticeData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-const TestListTable = ({ data }) => {
-  const columns = [
+  // ==================== FILTER STATE ====================
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [dateRange, setDateRange] = useState(null);
+  const [testNameSearch, setTestNameSearch] = useState("");
+  const [studentEmailSearch, setStudentEmailSearch] = useState("");
+
+  // ==================== MODAL STATE ====================
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [submissionId, setSubmissionId] = useState(null);
+  const [testType, setTestType] = useState(null);
+
+  // ==================== FETCH DATA ====================
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch Full Length Tests
+      const fullRes = await axios.get(
+        `${BASE_URL}/api/result/recent/full-length/?limit=100`,
+        { withCredentials: true }
+      );
+      const fullData = fullRes.data || [];
+      setInitialFullLengthData(fullData);
+
+      // Fetch Practice Tests
+      const pracRes = await axios.get(
+        `${BASE_URL}/api/result/recent/practice/?limit=100`,
+        { withCredentials: true }
+      );
+      const pracData = pracRes.data || [];
+      setInitialPracticeData(pracData);
+    } catch (error) {
+      console.error("Failed to fetch test list:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== DERIVE UNIQUE USERS ====================
+  const uniqueUsers = useMemo(() => {
+    const allUsers = [...initialFullLengthData, ...initialPracticeData].map(
+      (item) => ({
+        label: item.student_name || "Unknown",
+        value: item.student_name || "Unknown",
+      })
+    );
+
+    // Remove duplicates
+    return Array.from(new Set(allUsers.map((a) => a.value))).map((value) => {
+      return allUsers.find((a) => a.value === value);
+    });
+  }, [initialFullLengthData, initialPracticeData]);
+
+  // ==================== FILTER LOGIC ====================
+  const filterData = (data) => {
+    return data.filter((item) => {
+      let matchesUser = true;
+      let matchesDate = true;
+      let matchesTestName = true;
+
+      if (selectedUser) {
+        matchesUser = item.student_name === selectedUser;
+      }
+
+      if (dateRange && dateRange[0] && dateRange[1]) {
+        const itemDate = new Date(item.created_at);
+        const startDate = dateRange[0].startOf("day").toDate();
+        const endDate = dateRange[1].endOf("day").toDate();
+        matchesDate = itemDate >= startDate && itemDate <= endDate;
+      }
+
+      if (testNameSearch) {
+        matchesTestName = (item.test_name || "")
+          .toLowerCase()
+          .includes(testNameSearch.toLowerCase());
+      }
+
+      return matchesUser && matchesDate && matchesTestName;
+    });
+  };
+
+  // Apply filters with memoization
+  const filteredFullLengthData = useMemo(
+    () => filterData(initialFullLengthData),
+    [initialFullLengthData, selectedUser, dateRange, testNameSearch]
+  );
+
+  const filteredPracticeData = useMemo(
+    () => filterData(initialPracticeData),
+    [initialPracticeData, selectedUser, dateRange, testNameSearch]
+  );
+
+  // ==================== HANDLERS ====================
+  const handleViewResult = (record, type) => {
+    if (type === "practice") {
+      setSubmissionId(record.test_submission_id || record.id);
+    } else {
+      setSubmissionId(record.id);
+    }
+    setTestType(type);
+    setShowResultModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowResultModal(false);
+    setSubmissionId(null);
+    setTestType(null);
+  };
+
+  const handleReset = () => {
+    setSelectedUser(null);
+    setDateRange(null);
+    setTestNameSearch("");
+    setStudentEmailSearch("");
+  };
+
+  // ==================== TABLE COLUMNS ====================
+  const getTableColumns = (type) => [
     {
       title: "Date",
-      dataIndex: "date",
-      key: "date",
-      sorter: (a, b) => new Date(a.date) - new Date(b.date),
+      dataIndex: "created_at",
+      key: "created_at",
+      sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
+      render: (date) => (
+        <span className="text-gray-500">
+          {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
+        </span>
+      ),
     },
     {
       title: "Test Name",
-      dataIndex: "testName",
-      key: "testName",
-      sorter: (a, b) => a.testName.localeCompare(b.testName),
+      dataIndex: "test_name",
+      key: "test_name",
+      sorter: (a, b) => (a.test_name || "").localeCompare(b.test_name || ""),
+      render: (text) => <span className="text-[#805830]">{text || "N/A"}</span>,
     },
     {
       title: "Student Name",
-      dataIndex: "studentName",
-      key: "studentName",
-      sorter: (a, b) => a.studentName.localeCompare(b.studentName),
+      dataIndex: "student_name",
+      key: "student_name",
+      sorter: (a, b) =>
+        (a.student_name || "").localeCompare(b.student_name || ""),
+      render: (text) => (
+        <span className="font-medium text-[#2E2725]">{text || "N/A"}</span>
+      ),
     },
     {
-      title: "Student Email ID",
-      dataIndex: "studentEmail",
-      key: "studentEmail",
-      sorter: (a, b) => a.studentEmail.localeCompare(b.studentEmail),
+      title: "Course Name",
+      dataIndex: "course_name",
+      key: "course_name",
+      render: (text) => (
+        <span className="text-gray-600 font-medium">{text || "N/A"}</span>
+      ),
     },
     {
       title: "Total Score",
-      dataIndex: "totalScore",
-      key: "totalScore",
-      sorter: (a, b) => a.totalScore - b.totalScore,
+      dataIndex: "total_score",
+      key: "total_score",
+      sorter: (a, b) => (a.total_score || 0) - (b.total_score || 0),
+      render: (score) => (
+        <Tag
+          color={score >= 500 ? "green" : "red"}
+          className="rounded-full px-3"
+        >
+          {score ?? "N/A"}
+        </Tag>
+      ),
     },
     {
       title: "View Result",
       key: "action",
       render: (_, record) => (
         <Space size="middle">
-          <Button 
-            type="primary" 
-            icon={<EyeOutlined />} 
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
             size="small"
-            onClick={() => console.log("View result for", record.key)}
+            onClick={() => handleViewResult(record, type)}
           >
             View Result
           </Button>
@@ -72,109 +215,12 @@ const TestListTable = ({ data }) => {
     },
   ];
 
-  return (
-    <Table
-      columns={columns}
-      dataSource={data}
-      pagination={{
-        position: ["topRight", "bottomRight"],
-        defaultPageSize: 10,
-        showSizeChanger: true,
-        pageSizeOptions: ["10", "25", "50", "100"],
-        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-      }}
-      bordered
-      className="shadow-sm rounded-lg overflow-hidden"
-    />
-  );
-};
-
-const TestListPage = () => {
-  // Use state to hold the initial data so it persists
-  const [initialFullLengthData] = useState(() => generateDummyData("Full Length"));
-  const [initialPracticeData] = useState(() => generateDummyData("Practice"));
-
-  const [filteredFullLengthData, setFilteredFullLengthData] = useState(initialFullLengthData);
-  const [filteredPracticeData, setFilteredPracticeData] = useState(initialPracticeData);
-
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [dateRange, setDateRange] = useState(null);
-  const [testNameSearch, setTestNameSearch] = useState("");
-  const [studentEmailSearch, setStudentEmailSearch] = useState("");
-
-  // Derive unique users for the dropdown
-  const allUsers = [...initialFullLengthData, ...initialPracticeData].map(item => ({
-    label: item.studentName,
-    value: item.studentName,
-  }));
-  // Remove duplicates
-  const uniqueUsers = Array.from(new Set(allUsers.map(a => a.value)))
-    .map(value => {
-      return allUsers.find(a => a.value === value);
-    });
-
-
-  const handleApply = () => {
-    const filterData = (data) => {
-      return data.filter(item => {
-        let matchesUser = true;
-        let matchesDate = true;
-        let matchesTestName = true;
-        let matchesEmail = true;
-
-        if (selectedUser) {
-          matchesUser = item.studentName === selectedUser;
-        }
-
-        if (dateRange && dateRange[0] && dateRange[1]) {
-          const itemDate = new Date(item.date);
-          const startDate = dateRange[0].startOf('day').toDate();
-          const endDate = dateRange[1].endOf('day').toDate();
-          matchesDate = itemDate >= startDate && itemDate <= endDate;
-        }
-
-        if (testNameSearch) {
-          matchesTestName = item.testName.toLowerCase().includes(testNameSearch.toLowerCase());
-        }
-
-        if (studentEmailSearch) {
-          matchesEmail = item.studentEmail.toLowerCase().includes(studentEmailSearch.toLowerCase());
-        }
-
-        return matchesUser && matchesDate && matchesTestName && matchesEmail;
-      });
-    };
-
-    setFilteredFullLengthData(filterData(initialFullLengthData));
-    setFilteredPracticeData(filterData(initialPracticeData));
-  };
-
-  const handleReset = () => {
-    setSelectedUser(null);
-    setDateRange(null);
-    setTestNameSearch("");
-    setStudentEmailSearch("");
-    setFilteredFullLengthData(initialFullLengthData);
-    setFilteredPracticeData(initialPracticeData);
-  };
-
-  const items = [
-    {
-      key: "1",
-      label: "Full Length Test",
-      children: <TestListTable data={filteredFullLengthData} />,
-    },
-    {
-      key: "2",
-      label: "Practice Test",
-      children: <TestListTable data={filteredPracticeData} />,
-    },
-  ];
-
+  // ==================== RENDER ====================
   return (
     <div>
+      {/* Page Title */}
       <h1 className="text-2xl font-bold mb-6">Test List</h1>
-      
+
       {/* Filter Section */}
       <div className="bg-white p-4 mb-4 rounded-xl shadow-sm border border-gray-100">
         <div className="flex flex-wrap items-center gap-4">
@@ -194,7 +240,7 @@ const TestListPage = () => {
             value={selectedUser}
             onChange={setSelectedUser}
             filterOption={(input, option) =>
-              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
             }
           />
           <Input
@@ -203,34 +249,100 @@ const TestListPage = () => {
             value={studentEmailSearch}
             onChange={(e) => setStudentEmailSearch(e.target.value)}
           />
-          <RangePicker 
+          <RangePicker
             className="w-64"
             value={dateRange}
             onChange={setDateRange}
           />
-          <Button 
-            onClick={handleApply}
-            style={{ 
-              backgroundColor: '#f59e0b', // Amber-500 equivalent
-              borderColor: '#f59e0b', 
-              color: 'white' 
+          <Button
+            style={{
+              backgroundColor: "#f59e0b",
+              borderColor: "#f59e0b",
+              color: "white",
             }}
             className="hover:!bg-amber-600 hover:!border-amber-600"
           >
             Apply
           </Button>
-          <Button onClick={handleReset}>
-            Reset
-          </Button>
+          <Button onClick={handleReset}>Reset</Button>
         </div>
       </div>
 
-      <Tabs 
-        defaultActiveKey="1" 
-        items={items} 
+      {/* Tabs for Full Length and Practice Tests */}
+      <Tabs
+        defaultActiveKey="1"
+        items={[
+          {
+            key: "1",
+            label: "Full Length Test",
+            children: (
+              <Table
+                columns={getTableColumns("fullLength")}
+                dataSource={filteredFullLengthData}
+                loading={loading}
+                pagination={{
+                  position: ["topRight", "bottomRight"],
+                  defaultPageSize: 10,
+                  showSizeChanger: true,
+                  pageSizeOptions: ["10", "25", "50", "100"],
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} of ${total} items`,
+                }}
+                bordered
+                className="shadow-sm rounded-lg overflow-hidden"
+                rowKey={(record) => record.id || record.test_submission_id}
+              />
+            ),
+          },
+          {
+            key: "2",
+            label: "Practice Test",
+            children: (
+              <Table
+                columns={getTableColumns("practice")}
+                dataSource={filteredPracticeData}
+                loading={loading}
+                pagination={{
+                  position: ["topRight", "bottomRight"],
+                  defaultPageSize: 10,
+                  showSizeChanger: true,
+                  pageSizeOptions: ["10", "25", "50", "100"],
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} of ${total} items`,
+                }}
+                bordered
+                className="shadow-sm rounded-lg overflow-hidden"
+                rowKey={(record) => record.id || record.test_submission_id}
+              />
+            ),
+          },
+        ]}
         size="large"
         className="bg-white !px-4 !mb-0 !rounded-xl shadow-sm border border-gray-100"
       />
+
+      {/* Test Result Modal */}
+      <Modal
+        open={showResultModal}
+        onCancel={handleCloseModal}
+        footer={null}
+        width="100%"
+        style={{ top: 30 }}
+        destroyOnClose
+        title="Test Report"
+      >
+        {testType === "practice" ? (
+          <PracticeTestReport
+            practiceTestId={submissionId}
+            onClose={handleCloseModal}
+          />
+        ) : (
+          <Admin_Report_New
+            testSubmissionId={submissionId}
+            onClose={handleCloseModal}
+          />
+        )}
+      </Modal>
     </div>
   );
 };
