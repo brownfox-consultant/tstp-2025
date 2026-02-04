@@ -22,6 +22,7 @@ from rest_framework import serializers
 from test_manager.models import QuestionAnswer
 
 
+
 class SectionSerializer(serializers.ModelSerializer):
     sections = serializers.JSONField(source='sub_sections')
 
@@ -306,4 +307,32 @@ class RecentPracticeTestSerializer(serializers.ModelSerializer):
 
     def get_test_name(self, obj):
         return f"Practice Test - {obj.id}"
+
+class AttemptedQuestionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    test_type = serializers.CharField()
+    test_name = serializers.CharField()
+
+    course = serializers.DictField()
+    subject = serializers.DictField()
+
+    description = serializers.CharField()
+    question_type = serializers.CharField()
+
+    status = serializers.CharField()
+    is_marked = serializers.BooleanField()
+
+    difficulty = serializers.CharField()
+    topic = serializers.CharField()
+    sub_topic = serializers.CharField()
+
+    options = serializers.ListField()
+    user_selected_option = serializers.CharField(allow_null=True)
+
+    is_correct = serializers.BooleanField()
+    is_skipped = serializers.BooleanField()
+
+    show_calculator = serializers.BooleanField()
+    attempted_date = serializers.DateTimeField()
+    time_spent = serializers.IntegerField()
 

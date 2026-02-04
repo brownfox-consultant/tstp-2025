@@ -171,6 +171,24 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce, NullIf
 
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+
+from test_manager.models import (
+    QuestionAnswer,
+    PracticeQuestionAnswer,
+    TestSubmission,
+    PracticeTestResult
+)
+
+from .serializers import AttemptedQuestionSerializer
+
+
+class AttemptedQuestionsPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
 
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.get_all()
@@ -4534,6 +4552,218 @@ class ResultViewSet(viewsets.ModelViewSet):
 
         return Response(response)
 
+    @action(
+    detail=False,
+    methods=["GET"],
+    url_path="attempted-questions",
+    permission_classes=[IsAuthenticated],
+    pagination_class=AttemptedQuestionsPagination,
+)
+    def attempted_questions(self, request):
+        user = request.user
+
+        # =========================
+        # QUERY PARAMS
+        # =========================
+        test_type = request.query_params.get("test_type")
+        course_id = request.query_params.get("course_id")
+        subject_id = request.query_params.get("subject_id")
+        difficulty = request.query_params.get("difficulty")
+        status = request.query_params.get("status")
+        search = request.query_params.get("search")
+        topic_id = request.query_params.get("topic")  # 🔥 FIXED
+
+        rows = []
+
+        # =====================================================
+        # FULL LENGTH TEST
+        # =====================================================
+        if test_type in [None, "FULL_LENGTH_TEST"]:
+            answers = QuestionAnswer.objects.filter(
+                result__test_submission__student=user
+            ).select_related(
+                "question",
+                "question__topic",
+                "question__sub_topic",
+                "course_subject__course",
+                "course_subject__subject",
+                "result__test_submission__test",
+            )
+
+            # ---- course / subject
+            if course_id:
+                answers = answers.filter(course_subject__course_id=course_id)
+
+            if subject_id:
+                answers = answers.filter(course_subject__subject_id=subject_id)
+
+            # ---- difficulty
+            if difficulty:
+                answers = answers.filter(question__difficulty=difficulty)
+
+            # ---- topic 🔥
+            if topic_id:
+                answers = answers.filter(question__topic_id=topic_id)
+
+            # ---- search
+            if search:
+                answers = answers.filter(
+                    Q(result__test_submission__test__name__icontains=search) |
+                    Q(question__description__icontains=search)
+                )
+
+            # ---- status
+            if status == "MARKED":
+                answers = answers.filter(is_marked_for_review=True)
+            elif status == "CORRECT":
+                answers = answers.filter(is_correct=True)
+            elif status == "INCORRECT":
+                answers = answers.filter(is_correct=False, is_skipped=False)
+            elif status == "SKIPPED":
+                answers = answers.filter(is_skipped=True)
+
+            # ---- build rows
+            for qa in answers:
+                q = qa.question
+                test = qa.result.test_submission.test
+
+                rows.append({
+                    "id": qa.id,
+                    "test_type": "FULL_LENGTH_TEST",
+                    "test_name": test.name,
+
+                    "course": {
+                        "id": qa.course_subject.course.id,
+                        "name": qa.course_subject.course.name,
+                    },
+                    "subject": {
+                        "id": qa.course_subject.subject.id,
+                        "name": qa.course_subject.subject.name,
+                    },
+
+                    "description": q.description,
+                    "question_type": q.question_type,
+
+                    "status": (
+                        "SKIPPED" if qa.is_skipped else
+                        "CORRECT" if qa.is_correct else
+                        "INCORRECT"
+                    ),
+                    "is_marked": qa.is_marked_for_review,
+
+                    "difficulty": q.difficulty,
+                    "topic": q.topic.name if q.topic else "",
+                    "sub_topic": q.sub_topic.name if q.sub_topic else "",
+
+                    "options": q.options,
+                    "user_selected_option": qa.selected_options[0] if qa.selected_options else None,
+
+                    "is_correct": qa.is_correct,
+                    "is_skipped": qa.is_skipped,
+
+                    "show_calculator": q.show_calculator,
+                    "attempted_date": qa.result.test_submission.completion_date,
+                    "time_spent": qa.time_taken,
+                })
+
+        # =====================================================
+        # PRACTICE TEST
+        # =====================================================
+        if test_type in [None, "SELF_PRACTICE_TEST"]:
+            answers = PracticeQuestionAnswer.objects.filter(
+                practice_test_result__practice_test__student=user
+            ).select_related(
+                "question",
+                "question__topic",
+                "question__sub_topic",
+                "practice_test_result__practice_test__course_subject__course",
+                "practice_test_result__practice_test__course_subject__subject",
+            )
+
+            if course_id:
+                answers = answers.filter(
+                    practice_test_result__practice_test__course_subject__course_id=course_id
+                )
+
+            if subject_id:
+                answers = answers.filter(
+                    practice_test_result__practice_test__course_subject__subject_id=subject_id
+                )
+
+            if difficulty:
+                answers = answers.filter(question__difficulty=difficulty)
+
+            # ---- topic 🔥
+            if topic_id:
+                answers = answers.filter(question__topic_id=topic_id)
+
+            if search:
+                answers = answers.filter(
+                    Q(practice_test_result__practice_test__id__icontains=search) |
+                    Q(question__description__icontains=search)
+                )
+
+            if status == "MARKED":
+                answers = answers.filter(is_marked_for_review=True)
+            elif status == "CORRECT":
+                answers = answers.filter(is_correct=True)
+            elif status == "INCORRECT":
+                answers = answers.filter(is_correct=False, is_skipped=False)
+            elif status == "SKIPPED":
+                answers = answers.filter(is_skipped=True)
+
+            for qa in answers:
+                q = qa.question
+                pt = qa.practice_test_result.practice_test
+
+                rows.append({
+                    "id": qa.id,
+                    "test_type": "SELF_PRACTICE_TEST",
+                    "test_name": f"Practice Test {pt.id}",
+
+                    "course": {
+                        "id": pt.course_subject.course.id,
+                        "name": pt.course_subject.course.name,
+                    },
+                    "subject": {
+                        "id": pt.course_subject.subject.id,
+                        "name": pt.course_subject.subject.name,
+                    },
+
+                    "description": q.description,
+                    "question_type": q.question_type,
+
+                    "status": (
+                        "SKIPPED" if qa.is_skipped else
+                        "CORRECT" if qa.is_correct else
+                        "INCORRECT"
+                    ),
+                    "is_marked": qa.is_marked_for_review,
+
+                    "difficulty": q.difficulty,
+                    "topic": q.topic.name if q.topic else "",
+                    "sub_topic": q.sub_topic.name if q.sub_topic else "",
+
+                    "options": q.options,
+                    "user_selected_option": qa.selected_options[0] if qa.selected_options else None,
+
+                    "is_correct": qa.is_correct,
+                    "is_skipped": qa.is_skipped,
+
+                    "show_calculator": q.show_calculator,
+                    "attempted_date": qa.practice_test_result.created_at,
+                    "time_spent": qa.time_taken,
+                })
+
+        # =====================================================
+        # PAGINATION + RESPONSE
+        # =====================================================
+        page = self.paginate_queryset(rows)
+        serializer = AttemptedQuestionSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+
+
+
 
 
 class PracticeTestViewSet(viewsets.ModelViewSet):
@@ -5324,6 +5554,8 @@ def evaluate_expression(answer_option, answer):
             return value
     else:
         return False
+
+
 
 
 

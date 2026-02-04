@@ -2,13 +2,14 @@ import { Tabs, Table, Tag, Space, Input, Button, Modal, Segmented, Select, Row, 
 import React, { useState, useMemo, useEffect } from "react";
 import { CheckCircleFilled, CloseCircleFilled, CalculatorOutlined, CalendarOutlined, ClockCircleOutlined, ThunderboltOutlined, SearchOutlined, FilterOutlined } from "@ant-design/icons";
 import MathContent from "./MathContent"; 
+import { BASE_URL } from "@/app/constants/apiConstants";
+import axios from "axios";
 
 const { Option } = Select;
 
-function StudentQuestionsComponent() {
+function StudentQuestionsComponent({ studentId }) {
   // Hierarchy Filters
-  const [selectedCourse, setSelectedCourse] = useState("SAT");
-  const [selectedSubject, setSelectedSubject] = useState("Math");
+
   
   const [activeTestType, setActiveTestType] = useState("FULL_LENGTH_TEST");
   
@@ -33,157 +34,283 @@ function StudentQuestionsComponent() {
   const [questionNotes, setQuestionNotes] = useState({});
   const [currentNote, setCurrentNote] = useState("");
 
-  // Constants for Data Generation
-  const coursesList = ["SAT", "ACT"];
-  // Map Course -> Subjects
-  const subjectsMap = {
-      "SAT": ["Math", "English"],
-      "ACT": ["Math", "English"]
-  };
+  const [courses, setCourses] = useState([]);
+const [subjects, setSubjects] = useState([]);
+
+const [selectedCourse, setSelectedCourse] = useState(null); // object
+const [selectedSubject, setSelectedSubject] = useState(null); // object
+
+const [questions, setQuestions] = useState([]);
+const [total, setTotal] = useState(0);
+
+
   
   // Topics Map (Subject -> Topics)
-  const topicsMap = {
-      "Math": ["Algebra", "Geometry", "Arithmetic", "Trigonometry"],
-      "English": ["Reading Component", "Grammar", "Vocabulary"],
-      "Science": ["Data Representation", "Research Summaries", "Conflicting Viewpoints"]
-  };
+  const [topics, setTopics] = useState([]);
+
 
   const difficultiesList = ["EASY", "MEDIUM", "HARD"];
 
-  // Update selected subject when course changes if current subject invalid
+
   useEffect(() => {
-      const validSubjects = subjectsMap[selectedCourse];
-      if (!validSubjects.includes(selectedSubject)) {
-          setSelectedSubject(validSubjects[0]);
+    console.log("Fetching courses for studentId:", studentId);
+  if (studentId) {
+    fetchStudentCourses();
+  }
+}, [studentId]);
+
+useEffect(() => {
+  setFullLengthPage(1);
+  setPracticePage(1);
+}, [
+  selectedSubject,
+  statusFilter,
+  searchText,
+  difficultyFilter,
+  topicFilter,
+]);
+
+
+const fetchStudentCourses = async () => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/api/course/student-courses/`,
+      { params: { user_id: studentId } }
+    );
+
+    setCourses(res.data);
+
+    if (res.data.length > 0) {
+      setSelectedCourse(res.data[0]); // auto-select
+    }
+  } catch {
+    message.error("Failed to load courses");
+  }
+};
+
+const fetchTopics = async (courseSubjectId) => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/api/course/${courseSubjectId}/topics/`,{
+        withCredentials: true,
       }
-  }, [selectedCourse]);
+    );
+    setTopics(res.data);
+  } catch (err) {
+    console.error(err);
+    message.error("Failed to load topics");
+  }
+};
+
+useEffect(() => {
+  console.log("selectedSubject",selectedSubject)
+  if (selectedSubject?.course_subject_id) {
+    fetchTopics(selectedSubject.course_subject_id);
+    setTopicFilter("ALL"); // reset when subject changes
+  }
+}, [selectedSubject]);
+
+
+useEffect(() => {
+  if (selectedCourse?.id) {
+    fetchSubjects(selectedCourse.id);
+  }
+}, [selectedCourse]);
+
+const fetchSubjects = async (courseId) => {
+  try {
+    const res = await axios.get(`${BASE_URL}/api/course/${courseId}/subjects/`);
+    setSubjects(res.data);
+
+    if (res.data.length > 0) {
+      setSelectedSubject(res.data[0]);
+    }
+  } catch {
+    message.error("Failed to load subjects");
+  }
+};
+
+
+const fetchAttemptedQuestions = async (
+  testType,
+  page,
+  pageSize
+) => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/api/result/attempted-questions/`,
+      {
+        params: {
+          course_id: selectedCourse?.id,
+          subject_id: selectedSubject?.id,
+          test_type: testType,
+          status: statusFilter !== "ALL" ? statusFilter : undefined,
+          search: searchText || undefined,
+          difficulty: difficultyFilter !== "ALL" ? difficultyFilter : undefined,
+          topic: topicFilter !== "ALL" ? topicFilter : undefined,
+          page,
+          page_size: pageSize,
+        },
+        withCredentials: true,
+      }
+    );
+
+    setQuestions(res.data.results);
+    setTotal(res.data.count);
+  } catch (err) {
+    console.error(err);
+    message.error("Failed to load attempted questions");
+  }
+};
+
+useEffect(() => {
+  if (!selectedCourse || !selectedSubject) return;
+
+  fetchAttemptedQuestions(
+    activeTestType,
+    activeTestType === "FULL_LENGTH_TEST" ? fullLengthPage : practicePage,
+    activeTestType === "FULL_LENGTH_TEST" ? fullLengthPageSize : practicePageSize
+  );
+}, [
+  selectedCourse,
+  selectedSubject,
+  activeTestType,
+  fullLengthPage,
+  practicePage,
+  statusFilter,
+  searchText,
+  difficultyFilter,
+  topicFilter,
+]);
+
+
 
 
   // Generate dummy data
-  const dummyQuestions = useMemo(() => {
-    const questions = [];
-    const types = ["MCQ", "GRIDIN"];
-    const statuses = ["CORRECT", "INCORRECT", "SKIPPED"];
+  // const dummyQuestions = useMemo(() => {
+  //   const questions = [];
+  //   const types = ["MCQ", "GRIDIN"];
+  //   const statuses = ["CORRECT", "INCORRECT", "SKIPPED"];
 
-    const generateOptions = (questionId) => [
-       { label: "A", text: `Option A for Q${questionId}` },
-       { label: "B", text: `Option B for Q${questionId}` },
-       { label: "C", text: `Option C for Q${questionId}` },
-       { label: "D", text: `Option D for Q${questionId}` },
-    ];
+  //   const generateOptions = (questionId) => [
+  //      { label: "A", text: `Option A for Q${questionId}` },
+  //      { label: "B", text: `Option B for Q${questionId}` },
+  //      { label: "C", text: `Option C for Q${questionId}` },
+  //      { label: "D", text: `Option D for Q${questionId}` },
+  //   ];
 
-    const assignAnswers = (status, options) => {
-        const correctIndex = Math.floor(Math.random() * 4);
-        const correctOpt = options[correctIndex].label;
-        let userOpt = null;
-        if (status === "CORRECT") userOpt = correctOpt;
-        else if (status === "INCORRECT") userOpt = options[(correctIndex + 1) % 4].label;
-        return { correctOpt, userOpt };
-    };
+  //   const assignAnswers = (status, options) => {
+  //       const correctIndex = Math.floor(Math.random() * 4);
+  //       const correctOpt = options[correctIndex].label;
+  //       let userOpt = null;
+  //       if (status === "CORRECT") userOpt = correctOpt;
+  //       else if (status === "INCORRECT") userOpt = options[(correctIndex + 1) % 4].label;
+  //       return { correctOpt, userOpt };
+  //   };
 
-    const getRandomDate = () => {
-        const start = new Date(2024, 0, 1);
-        const end = new Date();
-        return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-    };
+  //   const getRandomDate = () => {
+  //       const start = new Date(2024, 0, 1);
+  //       const end = new Date();
+  //       return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+  //   };
 
-    // Helper to generate a batch of questions
-    const generateBatch = (startId, count, course, subject, testTypeBase) => {
-        for (let i = 0; i < count; i++) {
-            const id = startId + i;
-            const difficulty = difficultiesList[id % 3];
+  //   // Helper to generate a batch of questions
+  //   const generateBatch = (startId, count, course, subject, testTypeBase) => {
+  //       for (let i = 0; i < count; i++) {
+  //           const id = startId + i;
+  //           const difficulty = difficultiesList[id % 3];
             
-            // Pick Topic based on Subject
-            const validTopics = topicsMap[subject] || ["General"];
-            const topic = validTopics[id % validTopics.length];
-            const subTopic = "General Subtopic"; // Simplified for this batch
+  //           // Pick Topic based on Subject
+  //           const validTopics = topicsMap[subject] || ["General"];
+  //           const topic = validTopics[id % validTopics.length];
+  //           const subTopic = "General Subtopic"; // Simplified for this batch
 
-            const currentStatus = statuses[id % 3];
-            const currentOptions = generateOptions(id);
-            const { correctOpt, userOpt } = assignAnswers(currentStatus, currentOptions);
-            const timeSpent = Math.floor(Math.random() * 100) + 20;
+  //           const currentStatus = statuses[id % 3];
+  //           const currentOptions = generateOptions(id);
+  //           const { correctOpt, userOpt } = assignAnswers(currentStatus, currentOptions);
+  //           const timeSpent = Math.floor(Math.random() * 100) + 20;
 
-            const testName = testTypeBase === "FULL_LENGTH_TEST" 
-                ? `${course} Full Test #${(id % 5) + 1}`
-                : `${course} Practice Set #${(id % 10) + 1}`;
+  //           const testName = testTypeBase === "FULL_LENGTH_TEST" 
+  //               ? `${course} Full Test #${(id % 5) + 1}`
+  //               : `${course} Practice Set #${(id % 10) + 1}`;
 
-            questions.push({
-                id: id,
-                course: course,
-                subject: subject,
-                test_name: testName,
-                description: `${course} ${subject} Q${id}: Solve this problem...`,
-                difficulty: difficulty,
-                topic: topic,
-                sub_topic: subTopic,
-                question_type: types[id % 2],
-                status: currentStatus,
-                is_marked: id % 10 === 0,
-                test_type: testTypeBase,
-                options: currentOptions,
-                correct_option: correctOpt,
-                user_selected_option: userOpt,
-                attempted_date: getRandomDate(),
-                time_spent: timeSpent,
-                ideal_time: 60,
-                calculator_allowed: id % 3 !== 0,
-            });
-        }
-    };
+  //           questions.push({
+  //               id: id,
+  //               course: course,
+  //               subject: subject,
+  //               test_name: testName,
+  //               description: `${course} ${subject} Q${id}: Solve this problem...`,
+  //               difficulty: difficulty,
+  //               topic: topic,
+  //               sub_topic: subTopic,
+  //               question_type: types[id % 2],
+  //               status: currentStatus,
+  //               is_marked: id % 10 === 0,
+  //               test_type: testTypeBase,
+  //               options: currentOptions,
+  //               correct_option: correctOpt,
+  //               user_selected_option: userOpt,
+  //               attempted_date: getRandomDate(),
+  //               time_spent: timeSpent,
+  //               ideal_time: 60,
+  //               calculator_allowed: id % 3 !== 0,
+  //           });
+  //       }
+  //   };
 
-    // Generate Data Distribution
-    // Full Length
-    generateBatch(1, 50, "SAT", "Math", "FULL_LENGTH_TEST");
-    generateBatch(51, 50, "SAT", "English", "FULL_LENGTH_TEST");
-    generateBatch(101, 50, "ACT", "Math", "FULL_LENGTH_TEST");
-    generateBatch(151, 50, "ACT", "English", "FULL_LENGTH_TEST");
+  //   // Generate Data Distribution
+  //   // Full Length
+  //   generateBatch(1, 50, "SAT", "Math", "FULL_LENGTH_TEST");
+  //   generateBatch(51, 50, "SAT", "English", "FULL_LENGTH_TEST");
+  //   generateBatch(101, 50, "ACT", "Math", "FULL_LENGTH_TEST");
+  //   generateBatch(151, 50, "ACT", "English", "FULL_LENGTH_TEST");
 
-    // Practice
-    generateBatch(201, 50, "SAT", "Math", "SELF_PRACTICE_TEST");
-    generateBatch(251, 50, "SAT", "English", "SELF_PRACTICE_TEST");
-    generateBatch(301, 50, "ACT", "Math", "SELF_PRACTICE_TEST");
-    generateBatch(351, 50, "ACT", "English", "SELF_PRACTICE_TEST");
+  //   // Practice
+  //   generateBatch(201, 50, "SAT", "Math", "SELF_PRACTICE_TEST");
+  //   generateBatch(251, 50, "SAT", "English", "SELF_PRACTICE_TEST");
+  //   generateBatch(301, 50, "ACT", "Math", "SELF_PRACTICE_TEST");
+  //   generateBatch(351, 50, "ACT", "English", "SELF_PRACTICE_TEST");
 
-    return questions;
-  }, []);
+  //   return questions;
+  // }, []);
 
-  const getFilteredData = (testType) => {
-    return dummyQuestions.filter(q => {
-        // 0. Hierarchy Filters (Course & Subject)
-        if (q.course !== selectedCourse) return false;
-        if (q.subject !== selectedSubject) return false;
+  // const getFilteredData = (testType) => {
+  //   return dummyQuestions.filter(q => {
+  //       // 0. Hierarchy Filters (Course & Subject)
+  //       if (q.course !== selectedCourse) return false;
+  //       if (q.subject !== selectedSubject) return false;
 
-        // 1. Test Type (Tab)
-        if (q.test_type !== testType) return false;
+  //       // 1. Test Type (Tab)
+  //       if (q.test_type !== testType) return false;
         
-        // 2. Status Filter
-        if (statusFilter !== "ALL") {
-             if (statusFilter === "MARKED") {
-                if (!q.is_marked) return false;
-            } else {
-                if (q.status !== statusFilter) return false;
-            }
-        }
+  //       // 2. Status Filter
+  //       if (statusFilter !== "ALL") {
+  //            if (statusFilter === "MARKED") {
+  //               if (!q.is_marked) return false;
+  //           } else {
+  //               if (q.status !== statusFilter) return false;
+  //           }
+  //       }
 
-        // 3. Search
-        if (searchText) {
-            const lowerSearch = searchText.toLowerCase();
-            if (!q.description.toLowerCase().includes(lowerSearch) && 
-                !q.test_name.toLowerCase().includes(lowerSearch) &&
-                !q.id.toString().includes(lowerSearch)) {
-                return false;
-            }
-        }
+  //       // 3. Search
+  //       if (searchText) {
+  //           const lowerSearch = searchText.toLowerCase();
+  //           if (!q.description.toLowerCase().includes(lowerSearch) && 
+  //               !q.test_name.toLowerCase().includes(lowerSearch) &&
+  //               !q.id.toString().includes(lowerSearch)) {
+  //               return false;
+  //           }
+  //       }
 
-        // 4. Difficulty
-        if (difficultyFilter !== "ALL" && q.difficulty !== difficultyFilter) return false;
+  //       // 4. Difficulty
+  //       if (difficultyFilter !== "ALL" && q.difficulty !== difficultyFilter) return false;
 
-        // 5. Topic
-        if (topicFilter !== "ALL" && q.topic !== topicFilter) return false;
+  //       // 5. Topic
+  //       if (topicFilter !== "ALL" && q.topic !== topicFilter) return false;
         
-        return true;
-    });
-  };
+  //       return true;
+  //   });
+  // };
 
   const difficultyWeight = { "EASY": 1, "MEDIUM": 2, "HARD": 3 };
 
@@ -201,7 +328,7 @@ function StudentQuestionsComponent() {
       dataIndex: "attempted_date",
       key: "attempted_date",
       width: 110,
-      render: (date) => <span className="text-gray-500 text-sm whitespace-nowrap">{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>,
+      render: (date) => <span className="text-gray-500 text-sm whitespace-nowrap">{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>,
       sorter: (a, b) => a.attempted_date - b.attempted_date,
       responsive: ['lg'],
     },
@@ -301,6 +428,20 @@ function StudentQuestionsComponent() {
       render: (text) => <Tag>{text}</Tag>,
       responsive: ['lg'],
     },
+
+   {
+  title: "Calculator",
+  dataIndex: "show_calculator",
+  key: "show_calculator",
+  width: 120,
+  render: (val) => (
+    <Tag color={val ? "green" : "red"}>
+      {val ? "Allowed" : "Not Allowed"}
+    </Tag>
+  ),
+},
+
+
   ];
 
   const RenderShowTotal = ({ total, range, setPage }) => {
@@ -364,7 +505,7 @@ function StudentQuestionsComponent() {
       { label: <span className="text-blue-500">Marked</span>, value: 'MARKED' },
   ];
 
-  const currentTopics = topicsMap[selectedSubject] || [];
+  
 
   return (
     <>
@@ -374,23 +515,35 @@ function StudentQuestionsComponent() {
               <Col xs={24} md={12}>
                   <div className="text-xs text-gray-500 uppercase font-bold mb-2">Select Course</div>
                   <Segmented
-                    options={coursesList}
-                    value={selectedCourse}
-                    onChange={setSelectedCourse}
-                    size="large"
-                    block
-                  />
+  options={courses.map(c => ({
+    label: c.name,
+    value: c.id,
+  }))}
+  value={selectedCourse?.id}
+  onChange={(id) =>
+    setSelectedCourse(courses.find(c => c.id === id))
+  }
+  size="large"
+  block
+/>
+
               </Col>
               
               <Col xs={24} md={12}>
                    <div className="text-xs text-gray-500 uppercase font-bold mb-2">Select Subject</div>
-                   <Segmented
-                      options={subjectsMap[selectedCourse]}
-                      value={selectedSubject}
-                      onChange={setSelectedSubject}
-                      size="large"
-                      block 
-                   />
+                  <Segmented
+  options={subjects.map(s => ({
+    label: s.name,
+    value: s.id,
+  }))}
+  value={selectedSubject?.id}
+  onChange={(id) =>
+    setSelectedSubject(subjects.find(s => s.id === id))
+  }
+  size="large"
+  block
+/>
+
               </Col>
           </Row>
       </div>
@@ -437,21 +590,27 @@ function StudentQuestionsComponent() {
                   </Select>
               </Col>
               <Col xs={12} sm={6} lg={4}>
-                  <Select 
-                    placeholder="Topic" 
-                    style={{ width: '100%' }}
-                    value={topicFilter}
-                    onChange={setTopicFilter}
-                  >
-                      <Option value="ALL">All Topics</Option>
-                      {currentTopics.map(t => <Option key={t} value={t}>{t}</Option>)}
-                  </Select>
+                  <Select
+  placeholder="Topic"
+  style={{ width: "100%" }}
+  value={topicFilter}
+  onChange={setTopicFilter}
+>
+  <Option value="ALL">All Topics</Option>
+
+  {topics.map((topic) => (
+    <Option key={topic.id} value={topic.id}>
+      {topic.name}
+    </Option>
+  ))}
+</Select>
+
               </Col>
           </Row>
       </div>
 
       {/* Performance Summary Card */}
-      <div className="mb-4 bg-indigo-50 border border-indigo-100 p-4 rounded-lg shadow-sm">
+      {/* <div className="mb-4 bg-indigo-50 border border-indigo-100 p-4 rounded-lg shadow-sm">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex items-center gap-3">
                  <div className="p-2 bg-white rounded-full text-indigo-600 shadow-sm"><FilterOutlined className="text-lg" /></div>
@@ -481,7 +640,7 @@ function StudentQuestionsComponent() {
                  </div>
               </div>
           </div>
-      </div>
+      </div> */}
 
       {/* Questions Table */}
       <Tabs
@@ -498,7 +657,7 @@ function StudentQuestionsComponent() {
             label: "Full Length Test",
             children: (
               <Table 
-                  dataSource={getFilteredData("FULL_LENGTH_TEST")} 
+                  dataSource={questions}
                   columns={columns} 
                   rowKey="id" 
                   onRow={(record) => ({
@@ -508,6 +667,7 @@ function StudentQuestionsComponent() {
                   pagination={{
                       current: fullLengthPage,
                       pageSize: fullLengthPageSize,
+                      total: total, 
                       onChange: (page, pageSize) => {
                           setFullLengthPage(page);
                           setFullLengthPageSize(pageSize);
@@ -526,7 +686,8 @@ function StudentQuestionsComponent() {
             label: "Practice Test",
             children: (
                <Table 
-                  dataSource={getFilteredData("SELF_PRACTICE_TEST")} 
+                 dataSource={questions}
+
                   columns={columns} 
                   rowKey="id" 
                   onRow={(record) => ({
@@ -536,6 +697,7 @@ function StudentQuestionsComponent() {
                   pagination={{
                       current: practicePage,
                       pageSize: practicePageSize,
+                      total: total,
                       onChange: (page, pageSize) => {
                           setPracticePage(page);
                           setPracticePageSize(pageSize);
@@ -554,134 +716,172 @@ function StudentQuestionsComponent() {
 
       {/* Modal */}
       <Modal
-        title={`Question Details (ID: ${selectedQuestion?.id})`}
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        footer={[
-          <Button key="close" onClick={() => setIsModalOpen(false)}>
-            Close
-          </Button>
-        ]}
-        width={800}
-      >
-        {selectedQuestion && (
-          <div className="space-y-6">
-             {/* 1. Header Metadata (Test Name, Date) */}
-             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-gray-100 p-3 rounded-md">
-                <span className="font-semibold text-lg">{selectedQuestion.test_name}</span>
-                <div className="flex items-center gap-2 text-gray-500">
-                    <CalendarOutlined />
-                    <span>Attempted on: {selectedQuestion.attempted_date.toLocaleDateString()}</span>
-                </div>
-             </div>
+  title={`Question Details (ID: ${selectedQuestion?.id})`}
+  open={isModalOpen}
+  onCancel={() => setIsModalOpen(false)}
+  footer={[
+    <Button key="close" onClick={() => setIsModalOpen(false)}>
+      Close
+    </Button>,
+  ]}
+  width={900}
+>
+  {selectedQuestion && (
+    <div className="space-y-6">
 
-             {/* 2. Analytical Data (Time, Calc, Status) */}
-             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex flex-col items-center justify-center text-center">
-                     <ClockCircleOutlined className="text-xl text-blue-500 mb-1" />
-                     <span className="text-xs text-gray-500 uppercase">Time Spent</span>
-                     <span className={`font-bold ${selectedQuestion.time_spent > selectedQuestion.ideal_time ? 'text-red-500' : 'text-green-600'}`}>
-                         {selectedQuestion.time_spent}s <span className="text-xs font-normal text-gray-400">/ {selectedQuestion.ideal_time}s</span>
-                     </span>
-                 </div>
+      {/* 1️⃣ Header */}
+      <div className="flex justify-between items-center bg-gray-100 p-3 rounded">
+        <span className="font-semibold text-lg">
+          {selectedQuestion.test_name}
+        </span>
+        <span className="text-gray-500 flex items-center gap-1">
+          <CalendarOutlined />
+          Attempted on:{" "}
+          {new Date(selectedQuestion.attempted_date).toLocaleDateString()}
+        </span>
+      </div>
 
-                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-100 flex flex-col items-center justify-center text-center">
-                     <ThunderboltOutlined className="text-xl text-purple-500 mb-1" />
-                     <span className="text-xs text-gray-500 uppercase">Difficulty</span>
-                     <Tag color={selectedQuestion.difficulty === "HARD" ? "red" : selectedQuestion.difficulty === "MEDIUM" ? "orange" : "green"}>{selectedQuestion.difficulty}</Tag>
-                 </div>
-
-                 <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 flex flex-col items-center justify-center text-center">
-                     <CalculatorOutlined className="text-xl text-gray-600 mb-1" />
-                     <span className="text-xs text-gray-500 uppercase">Calculator</span>
-                     <span className="font-semibold text-sm">{selectedQuestion.calculator_allowed ? "Allowed" : "Not Allowed"}</span>
-                 </div>
-
-                 <div className="bg-green-50 p-3 rounded-lg border border-green-100 flex flex-col items-center justify-center text-center">
-                     <span className="text-xs text-gray-500 uppercase mb-1">Status</span>
-                     <Space direction="vertical" size={0}>
-                        <Tag color={selectedQuestion.status === "CORRECT" ? "success" : selectedQuestion.status === "INCORRECT" ? "error" : "warning"}>{selectedQuestion.status}</Tag>
-                     </Space>
-                 </div>
-             </div>
-
-             {/* 3. Concept Info */}
-             <div className="flex flex-wrap items-center gap-2 text-sm">
-                 <span className="font-bold text-gray-700">Course:</span>
-                 <Tag>{selectedQuestion.course}</Tag>
-                 <span className="font-bold text-gray-700">Subject:</span>
-                 <Tag>{selectedQuestion.subject}</Tag>
-                 <span className="font-bold text-gray-700">Concept:</span>
-                 <Tag>{selectedQuestion.topic}</Tag> 
-             </div>
-
-             <hr />
-
-             {/* 4. Question Content */}
-             <div>
-                <h3 className="font-semibold mb-2 text-gray-800">Question:</h3>
-                <div className="p-4 bg-white border border-gray-300 rounded shadow-sm text-lg" dangerouslySetInnerHTML={{ __html: selectedQuestion.description }} />
-             </div>
-
-             {/* 5. Options & Answers */}
-             {selectedQuestion.question_type === "MCQ" && (
-                 <div>
-                    <h3 className="font-semibold mb-2 text-gray-800">Options:</h3>
-                    <div className="space-y-3">
-                        {selectedQuestion.options?.map((opt) => {
-                            const isSelected = selectedQuestion.user_selected_option === opt.label;
-                            const isCorrect = selectedQuestion.correct_option === opt.label;
-
-                            let containerStyle = "border p-3 rounded-lg flex items-center gap-3 transition-all ";
-                            let icon = null;
-
-                            if (isCorrect) {
-                                containerStyle += "bg-green-50 border-green-500 text-green-800 shadow-sm";
-                                icon = <CheckCircleFilled className="text-green-600 text-xl" />;
-                            } else if (isSelected && !isCorrect) {
-                                containerStyle += "bg-red-50 border-red-500 text-red-800 shadow-sm";
-                                icon = <CloseCircleFilled className="text-red-500 text-xl" />;
-                            } else {
-                                containerStyle += "bg-white border-gray-200 hover:bg-gray-50";
-                            }
-
-                            return (
-                                <div key={opt.label} className={containerStyle}>
-                                    <div className="bg-white border border-gray-300 w-8 h-8 rounded-full flex items-center justify-center font-bold text-gray-600 shadow-sm">{opt.label}</div>
-                                    <div className="flex-1 font-medium">{opt.text}</div>
-                                    <div className="flex items-center gap-2">
-                                        {isSelected && <Tag color={isCorrect ? "success" : "error"}>YOU</Tag>}
-                                        {isCorrect && <Tag color="success">ANSWER</Tag>}
-                                        {icon}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                 </div>
-             )}
-
-             {selectedQuestion.question_type !== "MCQ" && (
-                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
-                    Detailed solution view for Non-MCQ questions is not fully implemented in this demo.
-                 </div>
-             )}
-
-             {/* Personal Notes Section */}
-             <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mt-4">
-                 <h3 className="font-semibold mb-2 text-yellow-800">My Personal Notes (Study Aid):</h3>
-                 <Input.TextArea 
-                     rows={3} 
-                     placeholder="Write down why you made a mistake or key concepts to remember..." 
-                     value={currentNote}
-                     onChange={(e) => setCurrentNote(e.target.value)}
-                     className="mb-2"
-                 />
-                 <Button type="primary" onClick={handleSaveNote} size="small" className="bg-yellow-600 border-yellow-600">Save Note</Button>
-             </div>
+      {/* 2️⃣ Stats cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-blue-50 p-3 rounded text-center">
+          <ClockCircleOutlined className="text-blue-500 text-lg" />
+          <div className="text-xs uppercase text-gray-500">Time Spent</div>
+          <div className="font-bold">
+            {selectedQuestion.time_spent}s
           </div>
-        )}
-      </Modal>
+        </div>
+
+        <div className="bg-purple-50 p-3 rounded text-center">
+          <ThunderboltOutlined className="text-purple-500 text-lg" />
+          <div className="text-xs uppercase text-gray-500">Difficulty</div>
+          <Tag
+            color={
+              selectedQuestion.difficulty === "HARD"
+                ? "red"
+                : selectedQuestion.difficulty === "MEDIUM"
+                ? "orange"
+                : "green"
+            }
+          >
+            {selectedQuestion.difficulty}
+          </Tag>
+        </div>
+
+        <div className="bg-gray-50 p-3 rounded text-center">
+          <CalculatorOutlined className="text-gray-600 text-lg" />
+          <div className="text-xs uppercase text-gray-500">Calculator</div>
+          <div className="font-semibold">
+            {selectedQuestion.show_calculator ? "Allowed" : "Not Allowed"}
+          </div>
+        </div>
+
+        <div className="bg-green-50 p-3 rounded text-center">
+          <div className="text-xs uppercase text-gray-500">Status</div>
+          <Tag
+            color={
+              selectedQuestion.status === "CORRECT"
+                ? "success"
+                : selectedQuestion.status === "INCORRECT"
+                ? "error"
+                : "warning"
+            }
+          >
+            {selectedQuestion.status}
+          </Tag>
+        </div>
+      </div>
+
+      {/* 3️⃣ Meta info */}
+      <div className="flex flex-wrap gap-2 text-sm">
+        <b>Course:</b> <Tag>{selectedQuestion.course?.name}</Tag>
+        <b>Subject:</b> <Tag>{selectedQuestion.subject?.name}</Tag>
+        <b>Topic:</b> <Tag>{selectedQuestion.topic}</Tag>
+        <b>Sub-topic:</b> <Tag>{selectedQuestion.sub_topic}</Tag>
+      </div>
+
+      <hr />
+
+      {/* 4️⃣ Question */}
+      <div>
+        <h3 className="font-semibold mb-2">Question</h3>
+        <div
+          className="border p-4 rounded bg-white"
+          dangerouslySetInnerHTML={{
+            __html: selectedQuestion.description,
+          }}
+        />
+      </div>
+
+      {/* 5️⃣ Options (MCQ) */}
+      {selectedQuestion.question_type === "MCQ" && (
+        <div>
+          <h3 className="font-semibold mb-2">Options</h3>
+          <div className="space-y-3">
+            {selectedQuestion.options.map((opt, idx) => {
+              const isCorrect = opt.is_correct;
+              const isUser =
+                selectedQuestion.user_selected_option === idx;
+
+              return (
+                <div
+                  key={idx}
+                  className={`p-3 rounded border flex gap-3 items-start
+                    ${
+                      isCorrect
+                        ? "bg-green-50 border-green-400"
+                        : isUser
+                        ? "bg-red-50 border-red-400"
+                        : "bg-white"
+                    }`}
+                >
+                  <div className="font-bold">
+                    {String.fromCharCode(65 + idx)}
+                  </div>
+
+                  <div
+                    className="flex-1"
+                    dangerouslySetInnerHTML={{
+                      __html: opt.description,
+                    }}
+                  />
+
+                  {isCorrect && (
+                    <CheckCircleFilled className="text-green-600 text-lg" />
+                  )}
+                  {isUser && !isCorrect && (
+                    <CloseCircleFilled className="text-red-500 text-lg" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 6️⃣ Notes */}
+      {/* <div className="bg-yellow-50 p-4 rounded border">
+        <h3 className="font-semibold mb-2">
+          My Personal Notes (Study Aid)
+        </h3>
+        <Input.TextArea
+          rows={3}
+          value={currentNote}
+          onChange={(e) => setCurrentNote(e.target.value)}
+          placeholder="Write why you made a mistake or key concept…"
+        />
+        <Button
+          type="primary"
+          size="small"
+          onClick={handleSaveNote}
+          className="mt-2"
+        >
+          Save Note
+        </Button>
+      </div> */}
+    </div>
+  )}
+</Modal>
+
     </>
   );
 }

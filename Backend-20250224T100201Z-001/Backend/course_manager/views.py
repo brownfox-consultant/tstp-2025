@@ -54,19 +54,36 @@ class CourseViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = CourseFilter
 
-    @action(detail=True, methods=['get'], permission_classes=[AllowAny], url_path='subjects')
+    @action(
+    detail=True,
+    methods=['get'],
+    permission_classes=[AllowAny],
+    url_path='subjects'
+)
     def get_subjects_by_course(self, request, pk=None):
         """
-        Get all subjects for a given course ID
         GET /api/course/{course_id}/subjects/
         """
         try:
             course = Course.get_course_by_id(course_id=pk)
+
             course_subjects = CourseSubjects.objects.filter(course=course)
-            serializer = SubjectSerializer([cs.subject for cs in course_subjects], many=True)
+
+            subjects = [cs.subject for cs in course_subjects]
+
+            serializer = SubjectSerializer(
+                subjects,
+                many=True,
+                context={"course_id": course.id}  # 🔑 IMPORTANT
+            )
+
             return Response(serializer.data, status=status.HTTP_200_OK)
+
         except Course.DoesNotExist:
-            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'error': 'Course not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
     @action(

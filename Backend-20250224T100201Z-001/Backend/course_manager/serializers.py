@@ -54,9 +54,25 @@ class CourseSerializer(serializers.ModelSerializer):
 
 
 class SubjectSerializer(serializers.ModelSerializer):
+    course_subject_id = serializers.SerializerMethodField()
+
     class Meta:
         model = Subject
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'course_subject_id']
+
+    def get_course_subject_id(self, obj):
+        course_id = self.context.get("course_id")
+        if not course_id:
+            return None
+
+        cs = CourseSubjects.objects.filter(
+            course_id=course_id,
+            subject=obj
+        ).first()
+
+        return cs.id if cs else None
+
+
 
 class SubjectMiniSerializer(serializers.ModelSerializer):
     class Meta:
