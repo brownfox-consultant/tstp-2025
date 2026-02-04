@@ -29,8 +29,12 @@ function ExitExamModal({ openModal, setOpenModal }) {
     if (hasRedirected) return;
     setHasRedirected(true);
     setShowFeedback(false);
+    
+   
+    const test_submission_id = window?.sessionStorage.getItem("test_submission_id") || testSubmissionId;
+    
     router.replace(
-      `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
+      `/student/${id}/test/full/${testId}/result?test_submission_id=${test_submission_id}`
     );
   };
 
