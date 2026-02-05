@@ -35,6 +35,7 @@ import TestList_admin_user from "../TestList_admin_user";
 import PracticeTestsList_admin_uer from "@/components/PracticeTestsList_admin_uer";
 import { impersonateUser } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
+import AssignTestModal from "../AssignTestModal";
 
 const { confirm } = Modal;
 
@@ -74,6 +75,8 @@ function AllUsersTable({ tabKey, api }) {
   const [pageSize, setPageSize] = useState(10);
   const { setRole, setUserId, setUserName } = useGlobalContext();
   const adminEmail = localStorage.getItem("email");
+  const [showAssignTestModal, setShowAssignTestModal] = useState(false);
+
 
   const searchInput = useRef(null);
   const router = useRouter();
@@ -738,6 +741,20 @@ function AllUsersTable({ tabKey, api }) {
                   Results
                 </Button>
               )}
+              {record.role_name === "student" && (
+  <Button
+    size="small"
+    type="default"
+    onClick={() => {
+      set_student_id(record.id);
+      setStudentName(record.name);
+      setShowAssignTestModal(true);
+    }}
+  >
+    Assign Test
+  </Button>
+)}
+
 
               {/* Activate / Deactivate */}
               {record.is_active ? (
@@ -963,6 +980,15 @@ function AllUsersTable({ tabKey, api }) {
           />
         </Modal>
       )}
+
+      {showAssignTestModal && (
+  <AssignTestModal
+    open={showAssignTestModal}
+    onClose={() => setShowAssignTestModal(false)}
+    studentId={student_id}
+  />
+)}
+
     </div>
   );
 }

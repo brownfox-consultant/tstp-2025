@@ -158,21 +158,37 @@ function PracticeTestsList() {
       sorter: false,
       width: 140,
       render: (_, record) => (
-        <div className="flex justify-center gap-4 text-xs font-medium">
-          <div className="flex flex-col items-center">
-            <span className="text-gray-400 mb-1">Total</span>
-            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded w-10 text-center">{record.total_questions ?? "-"}</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-green-500 mb-1">Correct</span>
-            <span className="bg-green-50 text-green-700 px-2 py-1 rounded w-10 text-center">{record.correct_count ?? "-"}</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-red-500 mb-1">Incorrect</span>
-            <span className="bg-red-50 text-red-700 px-2 py-1 rounded w-10 text-center">{record.incorrect_count ?? "-"}</span>
-          </div>
-        </div>
-      )
+  <div className="flex justify-center gap-3 text-xs font-medium">
+    <div className="flex flex-col items-center">
+      <span className="text-gray-400 mb-1">Total</span>
+      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded w-10 text-center">
+        {record.total_questions ?? "-"}
+      </span>
+    </div>
+
+    <div className="flex flex-col items-center">
+      <span className="text-green-500 mb-1">Correct</span>
+      <span className="bg-green-50 text-green-700 px-2 py-1 rounded w-10 text-center">
+        {record.correct_count ?? "-"}
+      </span>
+    </div>
+
+    <div className="flex flex-col items-center">
+      <span className="text-red-500 mb-1">Incorrect</span>
+      <span className="bg-red-50 text-red-700 px-2 py-1 rounded w-10 text-center">
+        {record.incorrect_count ?? "-"}
+      </span>
+    </div>
+
+    <div className="flex flex-col items-center">
+      <span className="text-yellow-500 mb-1">Skipped</span>
+      <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded w-10 text-center">
+        {record.skipped_count ?? "-"}
+      </span>
+    </div>
+  </div>
+)
+
     },
     {
       key: "time_taken",

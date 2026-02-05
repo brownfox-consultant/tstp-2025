@@ -2800,6 +2800,97 @@ class TestViewSet(viewsets.ModelViewSet):
 
         return Response(response_list, status=status.HTTP_200_OK)
 
+    @action(
+        detail=False,
+        methods=["GET"],
+        permission_classes=[IsAdmin],
+        url_path="assignable"
+    )
+    def assignable(self, request):
+        course_id = request.query_params.get("course_id")
+
+        qs = Test.objects.filter(is_active=True)
+        if course_id:
+            qs = qs.filter(course_id=course_id)
+
+        serializer = TestListSerializer(qs, many=True)
+        return Response(serializer.data)
+
+    @action(
+    detail=False,
+    methods=["POST"],
+    permission_classes=[IsAdmin],
+    url_path="assign"
+)
+    def assign(self, request):
+        student_id = request.data.get("student_id")
+        test_ids = request.data.get("test_ids", [])
+        expiration_days = int(request.data.get("expiration_days", 7))
+
+        if not student_id or not test_ids:
+            return Response(
+                {"detail": "student_id and test_ids are required"},
+                status=400
+            )
+
+        student = User.objects.get(id=student_id)
+
+        assigned_date = timezone.now()
+        expiration_date = assigned_date + timedelta(days=expiration_days)
+
+        assigned = []
+        skipped = []
+
+        for test_id in test_ids:
+            try:
+                test = Test.objects.get(id=test_id)
+            except Test.DoesNotExist:
+                skipped.append({
+                    "test_id": test_id,
+                    "reason": "Test not found"
+                })
+                continue
+
+            # 🚫 Block if already assigned OR completed
+            if TestSubmission.objects.filter(
+                student=student,
+                test=test,
+                status__in=[
+                    TestSubmission.YET_TO_START,
+                    TestSubmission.IN_PROGRESS,
+                    TestSubmission.COMPLETED,
+                ]
+            ).exists():
+                skipped.append({
+                    "test_id": test_id,
+                    "test_name": test.name,
+                    "reason": "Already assigned or completed"
+                })
+                continue
+
+            TestSubmission.objects.create(
+                student=student,
+                test=test,
+                assigned_date=assigned_date,
+                expiration_date=expiration_date,
+                status=TestSubmission.YET_TO_START
+            )
+
+            assigned.append({
+                "test_id": test.id,
+                "test_name": test.name
+            })
+
+        return Response(
+            {
+                "assigned": assigned,
+                "skipped": skipped,
+                "assigned_count": len(assigned),
+                "skipped_count": len(skipped),
+            },
+            status=201 if assigned else 400
+        )
+
 
 class ResultViewSet(viewsets.ModelViewSet):
     queryset = Result.objects.all()
@@ -5202,6 +5293,92 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
+    @action(
+    detail=False,
+    methods=['POST'],
+    permission_classes=[IsStudent],
+    url_path='practice-question-count'
+)
+    def practice_question_count(self, request):
+        from test_manager.models import (
+            PracticeQuestionAnswer,
+            Question
+        )
+
+        student = request.user
+        course_subject_id = request.data.get('course_subject_id')
+
+        if not course_subject_id:
+            return Response(
+                {"detail": "course_subject_id is required"},
+                status=400
+            )
+
+        # =====================================================
+        # BASE FILTERS (SAME AS start_practice)
+        # =====================================================
+        query_filters = Q(
+            course_subject_id=course_subject_id,
+            test_type=Question.SELF_PRACTICE_TEST_TYPE,
+            is_active=True
+        )
+
+        topic = request.data.get('topic', '')
+        if topic:
+            query_filters &= Q(topic_id__in=topic.split(','))
+
+        sub_topic = request.data.get('sub_topic', '')
+        if sub_topic:
+            query_filters &= Q(sub_topic_id__in=sub_topic.split(','))
+
+        difficulty = request.data.get('difficulty', '')
+        if difficulty:
+            query_filters &= Q(difficulty__in=difficulty.split(','))
+
+        questions = Question.objects.filter(query_filters)
+
+        # =====================================================
+        # QUESTION MODE LOGIC
+        # =====================================================
+        question_mode = request.data.get('question_mode', 'BOTH')
+
+        previously_answered_ids = PracticeQuestionAnswer.objects.filter(
+            practice_test_result__practice_test__student=student
+        ).values_list('question_id', flat=True)
+
+        if question_mode == 'UNANSWERED':
+            questions = questions.exclude(id__in=previously_answered_ids)
+
+        elif question_mode == 'INCORRECT':
+            incorrect_ids = PracticeQuestionAnswer.objects.filter(
+                practice_test_result__practice_test__student=student,
+                is_correct=False,
+                is_skipped=False
+            ).values_list('question_id', flat=True)
+
+            questions = questions.filter(id__in=incorrect_ids)
+
+        elif question_mode == 'BOTH':
+            incorrect_ids = PracticeQuestionAnswer.objects.filter(
+                practice_test_result__practice_test__student=student,
+                is_correct=False,
+                is_skipped=False
+            ).values_list('question_id', flat=True)
+
+            unanswered_ids = questions.exclude(
+                id__in=previously_answered_ids
+            ).values_list('id', flat=True)
+
+            questions = questions.filter(
+                Q(id__in=incorrect_ids) | Q(id__in=unanswered_ids)
+            )
+
+        return Response(
+            {
+                "total_available": questions.count()
+            },
+            status=200
+        )
 
 
     @permission_classes([IsAdminOrMentorOrFacultyOrStudentOrParent])
@@ -5222,7 +5399,9 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         elif user.role.name in ['parent', 'faculty', 'mentor', 'admin']:
 
             if user.role.name == 'parent':
-                sm = StudentMetadata.objects.filter(Q(father=user) | Q(mother=user))
+                sm = StudentMetadata.objects.filter(
+                    Q(father=user) | Q(mother=user)
+                )
                 student_ids = sm.values_list('student', flat=True)
 
             elif user.role.name == 'faculty':
@@ -5235,8 +5414,11 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
 
             elif user.role.name == 'admin':
                 student_id = request.GET.get('student_id')
-                student_ids = [student_id] if student_id else \
-                    StudentMetadata.objects.values_list('student', flat=True)
+                student_ids = (
+                    [student_id]
+                    if student_id
+                    else StudentMetadata.objects.values_list('student', flat=True)
+                )
 
             queryset = PracticeTest.objects.filter(
                 student__in=student_ids,
@@ -5247,35 +5429,61 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             return get_error_response('Access denied')
 
         # ---------------------------------
-        # 2️⃣ ANNOTATE PERFORMANCE
+        # 2️⃣ CORRECT ANNOTATIONS (NO NEGATIVES)
         # ---------------------------------
 
         queryset = queryset.annotate(
-    total_questions=Count(
-        'result__question_answers',
-        distinct=True
-    ),
 
-    correct_count=Coalesce(
-        F('result__correct_answer_count'),
-        0,
-        output_field=IntegerField()
-    ),
-
-    incorrect_count=Coalesce(
-        F('result__incorrect_answer_count'),
-        0,
-        output_field=IntegerField()
-    ),
-
-    performance=ExpressionWrapper(
-        Coalesce(F('result__correct_answer_count'), 0) * 1.0 /
-        NullIf(
-            Count('result__question_answers', distinct=True),
-            0
+        # TOTAL QUESTIONS
+        total_questions=Count(
+            'result__question_answers',
+            distinct=True
         ),
-        output_field=FloatField()
-    )
+
+        # CORRECT
+        correct_count=Count(
+            'result__question_answers',
+            filter=Q(
+                result__question_answers__is_correct=True
+            ),
+            distinct=True
+        ),
+
+        # SKIPPED
+        skipped_count=Count(
+            'result__question_answers',
+            filter=Q(
+                result__question_answers__is_skipped=True
+            ),
+            distinct=True
+        ),
+
+        # INCORRECT = answered + wrong + not skipped
+        incorrect_count=Count(
+            'result__question_answers',
+            filter=Q(
+                result__question_answers__is_correct=False,
+                result__question_answers__is_skipped=False,
+                result__question_answers__is_correct__isnull=False,  # 🔥 KEY FIX
+            ),
+            distinct=True
+        ),
+
+        # PERFORMANCE
+        performance=ExpressionWrapper(
+            Count(
+                'result__question_answers',
+                filter=Q(result__question_answers__is_correct=True),
+                distinct=True
+            ) * 1.0 /
+            NullIf(
+                Count('result__question_answers', distinct=True),
+                0
+            ),
+            output_field=FloatField()
+        )
+    
+    
 
 
         ).select_related(
@@ -5290,15 +5498,15 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         # ---------------------------------
 
         query_params = request.GET.copy()
-        ordering = query_params.pop('ordering', None)  # ⬅️ IMPORTANT
+        ordering = query_params.pop('ordering', None)
         query_params.pop('page', None)
         query_params.pop('page_size', None)
 
         filterset = PracticeTestFilter(query_params, queryset=queryset)
-        queryset = filterset.qs   # ❌ DO NOT call is_valid()
+        queryset = filterset.qs
 
         # ---------------------------------
-        # 4️⃣ MANUAL ORDERING (KEY FIX)
+        # 4️⃣ MANUAL ORDERING
         # ---------------------------------
 
         if ordering:
@@ -5314,8 +5522,7 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
                 queryset = queryset.order_by(ordering)
 
         else:
-            # ✅ DEFAULT SORT FOR STUDENT → LATEST PRACTICE TEST FIRST
-            
+            # Latest practice test first
             queryset = queryset.order_by('-id')
 
         # ---------------------------------

@@ -123,38 +123,48 @@ class PracticeTestResultSerializer(serializers.ModelSerializer):
 
 class PracticeTestListSerializer(serializers.ModelSerializer):
     test_name = serializers.SerializerMethodField()
-    total_questions = serializers.SerializerMethodField()
-    correct_count = serializers.IntegerField(source='result.correct_answer_count', read_only=True)
-    incorrect_count = serializers.IntegerField(source='result.incorrect_answer_count', read_only=True)
-    time_taken = serializers.IntegerField(source='result.time_taken', read_only=True)
+
+    # ✅ USE ANNOTATED VALUES (NO source=)
+    total_questions = serializers.IntegerField(read_only=True)
+    correct_count = serializers.IntegerField(read_only=True)
+    incorrect_count = serializers.IntegerField(read_only=True)
+    skipped_count = serializers.IntegerField(read_only=True)
+    performance = serializers.FloatField(read_only=True)
+
+    time_taken = serializers.IntegerField(
+        source='result.time_taken',
+        read_only=True
+    )
+
     student = serializers.CharField(source='student.name', read_only=True)
     course = serializers.CharField(source='course_subject.course.name', read_only=True)
     subject = serializers.CharField(source='course_subject.subject.name', read_only=True)
-    created_at = serializers.DateTimeField(format="%b %d, %Y %I:%M %p", read_only=True)
 
+    created_at = serializers.DateTimeField(
+        format="%b %d, %Y %I:%M %p",
+        read_only=True
+    )
 
     class Meta:
         model = PracticeTest
-        fields = ['id','test_name', 'student', 'course', 'subject', 'created_at','total_questions', 'result', 'correct_count', 'incorrect_count', 'time_taken']
+        fields = [
+            'id',
+            'test_name',
+            'student',
+            'course',
+            'subject',
+            'created_at',
+            'total_questions',
+            'correct_count',
+            'incorrect_count',
+            'skipped_count',
+            'performance',
+            'time_taken',
+        ]
 
-    def get_created_at(self, obj):
-        return obj.created_at.strftime('%b %d, %Y') if obj.created_at else None
-    
     def get_test_name(self, obj):
-        """
-        Display Test Name as PT-1, PT-2, ...
-        """
         return f"PT-{obj.id}"
 
-    def get_total_questions(self, obj):
-        """
-        Total questions = correct + incorrect + skipped
-        """
-        if not hasattr(obj, 'result') or not obj.result:
-            return 0
-
-        # QuestionAnswer table gives exact count
-        return obj.result.question_answers.count()
 
 class EligibleStudentSerializer(serializers.ModelSerializer):
     subscription_type = serializers.SerializerMethodField()

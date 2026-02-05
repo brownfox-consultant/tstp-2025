@@ -1052,6 +1052,18 @@ export const startPractice = (payload) => {
     .catch(handleAPIError);
 };
 
+export const getPracticeQuestionCount = (payload) => {
+  return axios.post(
+    `${BASE_URL}/api/practice/practice-question-count/`,
+    payload,
+    { withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      },
+     }
+  );
+};
+
 export const takePracticeTest = (practice_test_id, payload) => {
   return axios
     .post(`${PRACTICE_BASE_URL}${practice_test_id}/take-test/`, payload, {

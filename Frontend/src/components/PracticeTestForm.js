@@ -15,6 +15,7 @@ import {
   getSubjectTopics,
   getUserDetails,
   startPractice,
+  getPracticeQuestionCount
 } from "@/app/services/authService";
 
 import { useGlobalContext } from "@/context/store";
@@ -108,6 +109,11 @@ function PracticeTestForm() {
   const [timer, setTimer] = useState(undefined);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
   const [practiceLoading, setPracticeLoading] = useState(false);
+  const [availableCount, setAvailableCount] = useState(null);
+  const [countLoading, setCountLoading] = useState(false);
+  const [questionMode, setQuestionMode] = useState("BOTH");
+
+
 
   const { goFullScreen } = useFullScreen();
   const dispatch = useDispatch();
@@ -273,6 +279,53 @@ function PracticeTestForm() {
 
     setIsSubmitDisabled(!isFormValid || !isCriteriaValid);
   };
+
+  useEffect(() => {
+  const values = form.getFieldsValue([
+    "course_subject",
+    "topic",
+    "sub_topic",
+    "difficulty",
+    "question_mode",
+  ]);
+
+  if (!values.course_subject) return;
+
+  const payload = {
+    course_subject_id: values.course_subject,
+    topic: values.topic?.join(","),
+    sub_topic: values.sub_topic?.join(","),
+    difficulty: values.difficulty?.join(","),
+    question_mode: values.question_mode || "BOTH",
+  };
+
+  setCountLoading(true);
+
+  getPracticeQuestionCount(payload)
+    .then(({ data }) => {
+      setAvailableCount(data.total_available);
+    })
+    .catch(() => setAvailableCount(null))
+    .finally(() => setCountLoading(false));
+}, [
+  selectedCourseSubject,
+  selectedTopic,
+  selectedSubTopic,
+  selectedDifficulty,
+  questionMode,
+]);
+
+useEffect(() => {
+  form.setFieldValue("question_mode", "BOTH");
+}, []);
+
+useEffect(() => {
+  if (availableCount === 0) {
+    setIsSubmitDisabled(true);
+  }
+}, [availableCount]);
+
+
 
   return (
     <div>
@@ -519,11 +572,14 @@ function PracticeTestForm() {
                     <span className="text-red-500">*</span> Question Mode
                   </label>
                   <Form.Item
-                    name="question_mode"
-                    rules={[{ required: true, message: "Please select a question mode" }]}
-                    className="!mb-0"
-                  >
-                    <Radio.Group className="w-full space-y-3">
+  name="question_mode"
+  rules={[{ required: true, message: "Please select a question mode" }]}
+  className="!mb-0"
+>
+                    <Radio.Group className="w-full space-y-3"
+                    onChange={(e) => setQuestionMode(e.target.value)}
+                    >
+                      
                       <div className="border border-gray-200 rounded-lg p-4 transition-all cursor-pointer" style={{ '--hover-border': '#F59405', '--hover-bg': '#FFF5E6' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F59405'; e.currentTarget.style.backgroundColor = '#FFF5E6'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
                         <Radio value="INCORRECT" className="w-full">
                           <div>
@@ -551,6 +607,13 @@ function PracticeTestForm() {
                     </Radio.Group>
                   </Form.Item>
                 </div>
+
+                {availableCount !== null && (
+  <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3">
+    📊 <strong>{availableCount}</strong> questions available for selected criteria
+  </div>
+)}
+
 
                 {/* Number of Questions */}
                 <div>
