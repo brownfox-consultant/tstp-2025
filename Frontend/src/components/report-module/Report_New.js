@@ -45,6 +45,12 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
   }, []);
 
   useEffect(() => {
+    if (resultData?.subjects?.length > 0) {
+      const subjectNames = resultData.subjects.map(s => s.name.toLowerCase());
+      if (activeTab === "english" && !subjectNames.some(n => n.includes("english"))) {
+         setActiveTab(subjectNames[0]);
+      }
+    }
     if (activeTab === "questions" && resultData?.subjects?.length > 0) {
       const defaultSubject = resultData.subjects[0];
       setQuestionMainTab(defaultSubject.name);
@@ -52,6 +58,10 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
       setEnglishSubTab(defaultSection);
     }
   }, [activeTab, resultData]);
+
+  const getSubjectIndex = (subjectName) => {
+    return resultData?.subjects?.findIndex(s => s.name.toLowerCase().includes(subjectName));
+  };
 
   const mergeAreasOfFocus = (subjectName) => {
     const subject = resultData?.subjects?.find((s) => s.name === subjectName);
@@ -269,7 +279,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
         {/* English Analysis */}
         {activeTab === "english" && (
           <>
-            <CurrentTab_New selectedSubject={0} data={resultData} testSubmissionId={testSubmissionId} />
+            <CurrentTab_New selectedSubject={getSubjectIndex("english")} data={resultData} testSubmissionId={testSubmissionId} />
             {renderFocusAreas("English")}
           </>
         )}
@@ -277,7 +287,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
         {/* Math Analysis */}
         {activeTab === "math" && (
           <>
-            <CurrentTab_New selectedSubject={1} data={resultData} testSubmissionId={testSubmissionId} />
+            <CurrentTab_New selectedSubject={getSubjectIndex("math")} data={resultData} testSubmissionId={testSubmissionId} />
             {renderFocusAreas("Math")}
           </>
         )}

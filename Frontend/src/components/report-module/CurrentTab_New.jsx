@@ -12,6 +12,9 @@ import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Area, AreaChart, To
 
 function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
   const currentSubject = data.subjects[selectedSubject];
+  
+  if (!currentSubject) return <div className="p-4 text-center text-gray-500">No data available for this subject.</div>;
+
   const { sections } = currentSubject;
   const pathname = usePathname();
   const role = pathname.split("/")[1];

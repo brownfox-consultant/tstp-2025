@@ -26,6 +26,8 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   const searchParams = useSearchParams();
   const test_submission_id = searchParams.get("test_submission_id");
   const router = useRouter();
+  const availableSubjects = resultData?.subjects?.map(s => s.name.toLowerCase()) || [];
+  const tabs = [...availableSubjects, "questions"];
 
   useEffect(() => {
     setLoading(true);
@@ -38,6 +40,12 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   }, []);
 
   useEffect(() => {
+    if (resultData?.subjects?.length > 0) {
+      const subjectNames = resultData.subjects.map(s => s.name.toLowerCase());
+      if (activeTab !== "questions" && !subjectNames.includes(activeTab)) {
+         setActiveTab(subjectNames[0]);
+      }
+    }
     if (activeTab === "questions" && resultData?.subjects?.length > 0) {
       const defaultSubject = resultData.subjects[0];
       setQuestionMainTab(defaultSubject.name);
@@ -45,6 +53,16 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       setEnglishSubTab(defaultSection);
     }
   }, [activeTab, resultData]);
+  
+  const getSubjectIcon = (subjectName) => {
+    const name = subjectName?.toLowerCase();
+    if (name?.includes("english") || name?.includes("reading") || name?.includes("writing")) {
+      return <BookIcon className="w-4 h-4" />;
+    } else if (name?.includes("math") || name?.includes("calculator")) {
+      return <CalculatorIcon className="w-4 h-4" />;
+    }
+    return <ChartBarIcon size={20} className="w-4 h-4" />;
+  };
 
   // const mergeAreasOfFocus = (subjectName) => {
   //   const subject = resultData?.subjects?.find((s) => s.name === subjectName);
@@ -133,6 +151,10 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       </div>
     );
   }
+
+  const getSubjectIndex = (subjectName) => {
+    return resultData?.subjects?.findIndex(s => s.name.toLowerCase().includes(subjectName));
+  };
 
   return (
     <div className="report-container">
@@ -267,7 +289,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       {/* Custom Tabs Section */}
       <div className="my-5 bg-white/90 backdrop-blur-lg p-2 rounded-xl border border-gray-100 shadow-sm">
         <div className="flex flex-wrap gap-2">
-          {["english", "math", "questions"].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -276,20 +298,15 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
                   : 'bg-transparent text-gray-600 hover:bg-gray-100'
                 }`}
             >
-              {tab === "english" ? (
-                <>
-                  <BookIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">English Analysis</span>
-                </>
-              ) : tab === "math" ? (
-                <>
-                  <CalculatorIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Math Analysis</span>
-                </>
-              ) : (
+              {tab === "questions" ? (
                 <>
                   <ChartBarIcon />
                   <span className="hidden sm:inline">Question Breakdown</span>
+                </>
+              ) : (
+                <>
+                  {getSubjectIcon(tab)}
+                  <span className="hidden sm:inline">{tab.charAt(0).toUpperCase() + tab.slice(1)} Analysis</span>
                 </>
               )}
             </button>
@@ -300,7 +317,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       {/* English Analysis */}
       {activeTab === "english" && (
         <>
-          <CurrentTab_New selectedSubject={0} data={resultData} testSubmissionId={testSubmissionId} />
+          <CurrentTab_New selectedSubject={getSubjectIndex("english")} data={resultData} testSubmissionId={testSubmissionId} />
           {/* {renderFocusAreas("English")} */}
         </>
       )}
@@ -308,14 +325,14 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       {/* Math Analysis */}
       {activeTab === "math" && (
         <>
-          <CurrentTab_New selectedSubject={1} data={resultData} testSubmissionId={testSubmissionId} />
+          <CurrentTab_New selectedSubject={getSubjectIndex("math")} data={resultData} testSubmissionId={testSubmissionId} />
           {/* {renderFocusAreas("Math")} */}
         </>
       )}
 
       {/* Question Breakdown */}
       {activeTab === "questions" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mx-auto border">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mx-auto">
           {/* Header */}
           <div className="flex flex-col gap-2 mb-4">
             <div className="flex flex-wrap items-center justify-between gap-y-4">
