@@ -98,7 +98,7 @@ function QuestionsList({
     });
   };
 
-  const getColumnSearchProps = (dataIndex) => ({
+  const getColumnSearchProps = (dataIndex, paramName) => ({
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -124,11 +124,11 @@ function QuestionsList({
             confirm({ closeDropdown: true });
 
             if (selectedKeys[0]) {
-              updatedSearchParams.set(dataIndex, selectedKeys[0]); // ✅ dynamic key
+              updatedSearchParams.set(paramName || dataIndex, selectedKeys[0]); // ✅ dynamic key
               updatedSearchParams.set("page", "1");
               router.replace(`${pathname}?${updatedSearchParams.toString()}`);
             } else {
-              updatedSearchParams.delete(dataIndex);
+              updatedSearchParams.delete(paramName || dataIndex);
               router.replace(`${pathname}?${updatedSearchParams.toString()}`);
             }
 
@@ -151,11 +151,11 @@ function QuestionsList({
               });
               // setSearchText(selectedKeys[0]);
               if (selectedKeys[0]) {
-                updatedSearchParams.set("srno", selectedKeys[0]);
+                updatedSearchParams.set(paramName || dataIndex, selectedKeys[0]);
                 updatedSearchParams.set("page", "1");
                 router.replace(`${pathname}?${updatedSearchParams.toString()}`);
               } else {
-                updatedSearchParams.delete("srno");
+                updatedSearchParams.delete(paramName || dataIndex);
                 router.replace(`${pathname}?${updatedSearchParams.toString()}`);
               }
               setSearchedColumn(dataIndex);
@@ -236,7 +236,7 @@ function QuestionsList({
       dataIndex: "description",
       key: "description",
       width: 700,
-      ...getColumnSearchProps("description"),
+      ...getColumnSearchProps("description", "question_text"),
       render: (text) => {
         return <MathContent content={text} />;
       },
