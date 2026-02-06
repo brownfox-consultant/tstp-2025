@@ -45,6 +45,12 @@ import datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import CourseFilter
 from .utils import build_question_availability_map, get_question_signature
+from .utils import has_answer_changed, filter_questions_by_signature
+from test_manager.re_evaluate import re_evaluate_question_answers_sync
+
+
+
+
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -1049,45 +1055,43 @@ class QuestionViewSet(viewsets.ModelViewSet):
         except Question.DoesNotExist:
             return get_error_response("Invalid question id")
 
-        # ✅ course-wise updates
         course_updates = request.data.get("course_updates")
 
         if not course_updates or not isinstance(course_updates, list):
-            return get_error_response(
-                "course_updates must be provided as a list"
-            )
+            return get_error_response("course_updates must be provided as a list")
 
-        # 🔑 SAME QUESTION SIGNATURE
-        base_signature = get_question_signature(base_question)
-
-        # 🔍 Fetch all candidate questions (same subject only)
-        course_subject_ids = [
-            cu["course_subject_id"] for cu in course_updates
-        ]
+        # --------------------------------------------------
+        # 1️⃣ Find matching cloned questions (SIGNATURE)
+        # --------------------------------------------------
+        course_subject_ids = [cu["course_subject_id"] for cu in course_updates]
 
         candidates = Question.objects.select_related(
             'topic', 'sub_topic'
         ).filter(course_subject_id__in=course_subject_ids)
 
-        questions_to_update = []
-
-        for q in candidates:
-            if get_question_signature(q) == base_signature:
-                questions_to_update.append(q)
+        questions_to_update = filter_questions_by_signature(
+            base_question=base_question,
+            candidates=candidates
+        )
 
         if not questions_to_update:
             return get_error_response("No matching questions found to update")
 
-        # 🔁 Map for quick lookup
+        # --------------------------------------------------
+        # 2️⃣ Status map (course-wise active/inactive)
+        # --------------------------------------------------
         status_map = {
-            cu["course_subject_id"]: cu["is_active"]
+            cu["course_subject_id"]: cu.get("is_active", True)
             for cu in course_updates
         }
 
         updated_questions = []
+        answer_changed_question_ids = []
         context = {"request": request}
 
-        # 🔒 ATOMIC OPERATION
+        # --------------------------------------------------
+        # 3️⃣ ATOMIC UPDATE
+        # --------------------------------------------------
         with transaction.atomic():
             for question in questions_to_update:
                 serializer = self.get_serializer(
@@ -1097,6 +1101,12 @@ class QuestionViewSet(viewsets.ModelViewSet):
                     context=context
                 )
                 serializer.is_valid(raise_exception=True)
+
+                # 🔑 Detect answer change BEFORE save
+                answer_changed = has_answer_changed(
+                    question,
+                    serializer.validated_data
+                )
 
                 updated_question = serializer.save(
                     is_active=status_map.get(
@@ -1109,6 +1119,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
                 updated_questions.append(updated_question)
 
+                if answer_changed:
+                    answer_changed_question_ids.append(updated_question.id)
+
                 # 🧾 LOG
                 QuestionLog.objects.create(
                     question=updated_question,
@@ -1117,11 +1130,20 @@ class QuestionViewSet(viewsets.ModelViewSet):
                     ip_address=self.get_client_ip(request)
                 )
 
+        # --------------------------------------------------
+        # 4️⃣ SYNC: Re-evaluate answers + scores (NO CELERY)
+        # --------------------------------------------------
+        if answer_changed_question_ids:
+            re_evaluate_question_answers_sync(answer_changed_question_ids)
+
         return Response({
             "message": "Questions updated successfully",
             "updated_count": len(updated_questions),
-            "updated_question_ids": [q.id for q in updated_questions]
+            "answer_changed": bool(answer_changed_question_ids),
+            "answer_changed_question_ids": answer_changed_question_ids,
+            "updated_question_ids": [q.id for q in updated_questions],
         })
+
 
 
 
