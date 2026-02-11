@@ -23,6 +23,19 @@ const useFullScreen = () => {
   };
 
   const exitFullScreen = () => {
+    // Check if document is actually in fullscreen before trying to exit
+    const isCurrentlyFullscreen = !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement
+    );
+
+    if (!isCurrentlyFullscreen) {
+      setIsFullScreen(false);
+      return; // Already not in fullscreen, no need to exit
+    }
+
     if (document.exitFullscreen) {
       document.exitFullscreen();
     } else if (document.mozCancelFullScreen) {
