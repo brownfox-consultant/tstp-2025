@@ -59,14 +59,13 @@ export default function LastTestActivity({ activeTab = "fullLength", fullLengthD
               {lastFullLengthTest ? (
                 <div 
                   className="cursor-pointer hover:bg-orange-50/30 transition-colors rounded-lg p-3 -m-3"
-                  onClick={() => onTestClick && onTestClick(lastFullLengthTest, 'fullLength')}
                 >
                   {/* Test Name and Score */}
                   <div className="flex justify-between items-start mb-3">
                     <h4 className="font-bold text-gray-800 text-base flex-1 pr-3" title={lastFullLengthTest.name}>
                       {lastFullLengthTest.name}
                     </h4>
-                    <div className="text-right">
+                    {/* <div className="text-right">
                       {lastFullLengthTest.score !== undefined ? (
                         <>
                           <div className="text-2xl font-bold text-gray-800">
@@ -78,7 +77,7 @@ export default function LastTestActivity({ activeTab = "fullLength", fullLengthD
                       ) : (
                         <div className="text-2xl font-bold text-gray-300">--</div>
                       )}
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Details */}
