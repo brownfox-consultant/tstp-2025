@@ -68,12 +68,12 @@ function DashboardLayout({ children }) {
       label: "Attempted Questions",
       disabled: isFreeUser,
     },
-    {
-      key: "trouble-spot",
-      icon: <WarningOutlined />,
-      label: "Trouble Spot",
-      disabled: isFreeUser,
-    },
+    // {
+    //   key: "trouble-spot",
+    //   icon: <WarningOutlined />,
+    //   label: "Trouble Spot",
+    //   disabled: isFreeUser,
+    // },
     {
       key: "doubts",
       icon: <QuestionCircleOutlined />,
