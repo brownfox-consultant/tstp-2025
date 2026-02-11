@@ -225,7 +225,7 @@ function QuestionsList({
   const columns = [
 
     {
-      title: "Que. Id",
+      title: "Sr. No",
       dataIndex: "srno",
       key: "srno",
       width: 90,

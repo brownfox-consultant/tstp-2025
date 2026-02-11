@@ -30,7 +30,7 @@ function TestOptions({
     (state) => state.test.answerMap[questionId].striked_options
   );
 
-  const isFullLengthTest = testState.testType === "test"; // ✅ only record for full-length
+  const isFullLengthTest = testState.testType === "test"; 
   
   
   return (
@@ -43,6 +43,37 @@ function TestOptions({
             {/* Option Box */}
             <div
               onClick={() => {
+                // ✅ Calculate the NEW state after the action
+                let newSelectedOptions;
+                const currentSelectedOptions = testState.answerMap[questionId]?.selected_options || {};
+                
+                if (isSelected) {
+                  // Unselecting
+                  if (questionType === "MULTI_CHOICE") {
+                    newSelectedOptions = { ...currentSelectedOptions, [index]: 0 };
+                  } else {
+                    newSelectedOptions = {};
+                  }
+                } else {
+                  // Selecting
+                  if (questionType === "MULTI_CHOICE") {
+                    newSelectedOptions = { ...currentSelectedOptions, [index]: 1 };
+                  } else {
+                    newSelectedOptions = { [index]: 1 };
+                  }
+                }
+
+                // Convert to array format for API
+                const selectedOptionsArray = Object.keys(newSelectedOptions)
+                  .filter((k) => newSelectedOptions[k] === 1)
+                  .map((k) => parseInt(k));
+
+                const strikedOptionsArray = Object.keys(
+                  testState.answerMap[questionId]?.striked_options || {}
+                )
+                  .filter((k) => testState.answerMap[questionId].striked_options[k] === 1)
+                  .map((k) => parseInt(k));
+
                 // toggle selection
                 dispatch(
                   isSelected
@@ -57,22 +88,8 @@ function TestOptions({
                       testId: testState.testId,
                       testSubmissionId: testState.testSubmissionId,
                       questionId,
-                      selectedOptions: Object.keys(
-                        testState.answerMap[questionId]?.selected_options || {}
-                      )
-                        .filter(
-                          (k) =>
-                            testState.answerMap[questionId].selected_options[k] === 1
-                        )
-                        .map((k) => parseInt(k)),
-                      strikedOptions: Object.keys(
-                        testState.answerMap[questionId]?.striked_options || {}
-                      )
-                        .filter(
-                          (k) =>
-                            testState.answerMap[questionId].striked_options[k] === 1
-                        )
-                        .map((k) => parseInt(k)),
+                      selectedOptions: selectedOptionsArray,
+                      strikedOptions: strikedOptionsArray,
                       actionType: isSelected ? "DESELECT" : "SELECT",
                     })
                   );
@@ -101,6 +118,20 @@ function TestOptions({
               (striked_options[index] ? (
                 <Button
                   onClick={() => {
+                    // Calculate new striked state after unstrike
+                    const currentStrikedOptions = testState.answerMap[questionId]?.striked_options || {};
+                    const newStrikedOptions = { ...currentStrikedOptions, [index]: 0 };
+                    
+                    const strikedOptionsArray = Object.keys(newStrikedOptions)
+                      .filter((k) => newStrikedOptions[k] === 1)
+                      .map((k) => parseInt(k));
+                    
+                    const selectedOptionsArray = Object.keys(
+                      testState.answerMap[questionId]?.selected_options || {}
+                    )
+                      .filter((k) => testState.answerMap[questionId].selected_options[k] === 1)
+                      .map((k) => parseInt(k));
+
                     dispatch(unstrikeOption({ optionIndex: index, questionId }));
 
                     if (isFullLengthTest) {
@@ -109,22 +140,8 @@ function TestOptions({
                           testId: testState.testId,
                           testSubmissionId: testState.testSubmissionId,
                           questionId,
-                          selectedOptions: Object.keys(
-                            testState.answerMap[questionId]?.selected_options || {}
-                          )
-                            .filter(
-                              (k) =>
-                                testState.answerMap[questionId].selected_options[k] === 1
-                            )
-                            .map((k) => parseInt(k)),
-                          strikedOptions: Object.keys(
-                            testState.answerMap[questionId]?.striked_options || {}
-                          )
-                            .filter(
-                              (k) =>
-                                testState.answerMap[questionId].striked_options[k] === 1
-                            )
-                            .map((k) => parseInt(k)),
+                          selectedOptions: selectedOptionsArray,
+                          strikedOptions: strikedOptionsArray,
                           actionType: "UNSTRIKE",
                         })
                       );
@@ -137,6 +154,21 @@ function TestOptions({
               ) : (
                 <Button
                   onClick={() => {
+                    // Calculate new striked and selected state after strike
+                    const currentStrikedOptions = testState.answerMap[questionId]?.striked_options || {};
+                    const currentSelectedOptions = testState.answerMap[questionId]?.selected_options || {};
+                    
+                    const newStrikedOptions = { ...currentStrikedOptions, [index]: 1 };
+                    const newSelectedOptions = { ...currentSelectedOptions, [index]: 0 };
+                    
+                    const strikedOptionsArray = Object.keys(newStrikedOptions)
+                      .filter((k) => newStrikedOptions[k] === 1)
+                      .map((k) => parseInt(k));
+                    
+                    const selectedOptionsArray = Object.keys(newSelectedOptions)
+                      .filter((k) => newSelectedOptions[k] === 1)
+                      .map((k) => parseInt(k));
+
                     dispatch(strikeOption({ optionIndex: index, questionId }));
 
                     if (isFullLengthTest) {
@@ -145,22 +177,8 @@ function TestOptions({
                           testId: testState.testId,
                           testSubmissionId: testState.testSubmissionId,
                           questionId,
-                          selectedOptions: Object.keys(
-                            testState.answerMap[questionId]?.selected_options || {}
-                          )
-                            .filter(
-                              (k) =>
-                                testState.answerMap[questionId].selected_options[k] === 1
-                            )
-                            .map((k) => parseInt(k)),
-                          strikedOptions: Object.keys(
-                            testState.answerMap[questionId]?.striked_options || {}
-                          )
-                            .filter(
-                              (k) =>
-                                testState.answerMap[questionId].striked_options[k] === 1
-                            )
-                            .map((k) => parseInt(k)),
+                          selectedOptions: selectedOptionsArray,
+                          strikedOptions: strikedOptionsArray,
                           actionType: "STRIKE",
                         })
                       );
