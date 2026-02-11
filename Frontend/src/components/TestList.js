@@ -113,7 +113,23 @@ function TestList() {
       ),
       key: "name",
       dataIndex: "name",
-      render: (text) => <>{text}</>,
+      render: (text, record) => {
+        // Make test name clickable only for completed tests
+        if (record.status === "COMPLETED" && record.test_submission_id) {
+          return (
+            <button
+              onClick={() => {
+                setSubmissionId(record.test_submission_id);
+                setShowResult(true);
+              }}
+              className="font-medium text-blue-600 hover:text-blue-600 hover:underline cursor-pointer text-left transition-colors duration-200 bg-transparent"
+            >
+              {text}
+            </button>
+          );
+        }
+        return <span>{text}</span>;
+      },
       sorter: true,
       width: 160,
       align: "start",
