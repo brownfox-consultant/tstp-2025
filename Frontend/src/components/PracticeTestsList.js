@@ -121,7 +121,25 @@ function PracticeTestsList() {
       align: "left",
       width: 80,
       sorter: false,
-      render: (text) => <span className="font-semibold text-gray-800">{highlightText(text || "-", debouncedSearchTerm)}</span>,
+      render: (text, record) => {
+        const { id } = record;
+        const userId = pathname.split("/")[2];
+        
+        return (
+          <button
+            onClick={() => {
+              if (role === "student") {
+                router.push(`/${role}/${userId}/test/practice/${id}/result`);
+              } else {
+                router.push(`/${role}/${userId}/practice/${id}/result`);
+              }
+            }}
+            className="font-semibold  hover:text-blue-600 hover:underline cursor-pointer text-left transition-colors duration-200 bg-transparent text-blue-600"
+          >
+            {highlightText(text || "-", debouncedSearchTerm)}
+          </button>
+        );
+      },
     },
     {
       key: "course",
