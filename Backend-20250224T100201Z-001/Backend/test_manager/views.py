@@ -2891,6 +2891,178 @@ class TestViewSet(viewsets.ModelViewSet):
             status=201 if assigned else 400
         )
 
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAdminOrMentorOrFacultyOrStudentOrParent],
+    url_path='trouble-spots'
+)
+    def trouble_spot_analysis(self, request):
+        student_id = request.query_params.get("student_id")
+        course_id = request.query_params.get("course_id")
+        subject_id = request.query_params.get("subject_id")
+        date_range = request.query_params.get("date_range", "last_six_month")
+
+        if not student_id or not course_id:
+            return Response(
+                {"error": "student_id and course_id are required"},
+                status=400
+            )
+
+        # ---------------------------
+        # Date range
+        # ---------------------------
+        end_date = timezone.now()
+        if date_range == "last_week":
+            start_date = end_date - timedelta(days=7)
+        elif date_range == "last_month":
+            start_date = end_date - timedelta(days=30)
+        else:
+            start_date = end_date - timedelta(days=180)
+
+        # ---------------------------
+        # Fetch answers (FULL + PRACTICE)
+        # ---------------------------
+        full_answers = QuestionAnswer.objects.filter(
+            result__test_submission__student_id=student_id,
+            result__test_submission__test__course_id=course_id,
+            result__created_at__range=(start_date, end_date)
+        ).select_related(
+            "question",
+            "question__topic",
+            "question__sub_topic",
+            "course_subject__subject"
+        )
+
+        practice_answers = PracticeQuestionAnswer.objects.filter(
+            practice_test_result__practice_test__student_id=student_id,
+            practice_test_result__practice_test__course_subject__course_id=course_id,
+            practice_test_result__created_at__range=(start_date, end_date)
+        ).select_related(
+            "question",
+            "question__topic",
+            "question__sub_topic",
+            "question__course_subject__subject"
+        )
+
+        all_answers = list(full_answers) + list(practice_answers)
+
+        # ---------------------------
+        # Aggregate by Topic + SubTopic
+        # ---------------------------
+        topic_map = defaultdict(lambda: {
+            "attempted": 0,
+            "correct": 0,
+            "time": 0,
+            "mistakes": 0,
+            "last_attempted": None,
+            "difficulty": defaultdict(int),
+            "subject": ""
+        })
+
+        for ans in all_answers:
+            topic = ans.question.topic
+            sub_topic = ans.question.sub_topic
+            if not topic:
+                continue
+
+            key = f"{topic.id}-{sub_topic.id if sub_topic else 0}"
+
+            topic_map[key]["attempted"] += 1
+            topic_map[key]["time"] += ans.time_taken
+            topic_map[key]["subject"] = (
+                ans.course_subject.subject.name
+                if hasattr(ans, "course_subject")
+                else ans.question.course_subject.subject.name
+            )
+
+            if ans.is_correct:
+                topic_map[key]["correct"] += 1
+            elif not ans.is_skipped:
+                topic_map[key]["mistakes"] += 1
+
+            topic_map[key]["difficulty"][ans.question.difficulty] += 1
+
+            topic_map[key]["last_attempted"] = max(
+                topic_map[key]["last_attempted"] or ans.created_at,
+                ans.created_at
+            )
+
+        # ---------------------------
+        # Build topic list
+        # ---------------------------
+        topics = []
+        for key, data in topic_map.items():
+            accuracy = round((data["correct"] / data["attempted"]) * 100, 2)
+            avg_time = round(data["time"] / data["attempted"], 2)
+
+            topics.append({
+                "topic": topic.name,
+                "sub_topic": sub_topic.name if sub_topic else None,
+                "subject": data["subject"],
+                "attempted": data["attempted"],
+                "correct": data["correct"],
+                "accuracy": accuracy,
+                "avg_time": avg_time,
+                "ideal_time": 60,
+                "repeated_mistakes": data["mistakes"],
+                "difficulty_distribution": data["difficulty"],
+                "last_attempted": data["last_attempted"].date()
+            })
+
+        # ---------------------------
+        # Summary
+        # ---------------------------
+        weak_topics = [t for t in topics if t["accuracy"] < 60]
+        critical_topics = [t for t in topics if t["accuracy"] < 40]
+
+        summary = {
+            "total_topics_attempted": len(topics),
+            "weak_topics": len(weak_topics),
+            "critical_topics": len(critical_topics),
+            "overall_accuracy": round(
+                sum(t["accuracy"] for t in topics) / max(len(topics), 1), 2
+            )
+        }
+
+        return Response({
+            "summary": summary,
+            "topics": topics
+        })
+    
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsStudent],
+    url_path='trouble-spot-questions'
+)
+    def trouble_spot_questions(self, request):
+        topic_id = request.query_params.get("topic_id")
+        sub_topic_id = request.query_params.get("sub_topic_id")
+        student_id = request.query_params.get("student_id")
+
+        answers = QuestionAnswer.objects.filter(
+            result__test_submission__student_id=student_id,
+            question__topic_id=topic_id,
+            question__sub_topic_id=sub_topic_id
+        ).select_related("question", "result__test_submission__test")
+
+        data = []
+        for ans in answers:
+            data.append({
+                "question_id": ans.question.id,
+                "description": ans.question.description,
+                "status": "CORRECT" if ans.is_correct else "SKIPPED" if ans.is_skipped else "INCORRECT",
+                "time_spent": ans.time_taken,
+                "ideal_time": 60,
+                "difficulty": ans.question.difficulty,
+                "test_name": ans.result.test_submission.test.name,
+                "attempted_date": ans.result.created_at
+            })
+
+        return Response(data)
+
+
 
 class ResultViewSet(viewsets.ModelViewSet):
     queryset = Result.objects.all()

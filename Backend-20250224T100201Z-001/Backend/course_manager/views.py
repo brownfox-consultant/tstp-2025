@@ -47,6 +47,9 @@ from .filters import CourseFilter
 from .utils import build_question_availability_map, get_question_signature
 from .utils import has_answer_changed, filter_questions_by_signature
 from test_manager.re_evaluate import re_evaluate_question_answers_sync
+from test_manager.re_evaluate import re_evaluate_question_answers_sync
+from test_manager.models import QuestionAnswer, PracticeQuestionAnswer
+from notification_manager.tasks import send_question_update_email
 
 
 
@@ -1061,7 +1064,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return get_error_response("course_updates must be provided as a list")
 
         # --------------------------------------------------
-        # 1️⃣ Find matching cloned questions (SIGNATURE)
+        # 1️⃣ Find matching cloned questions
         # --------------------------------------------------
         course_subject_ids = [cu["course_subject_id"] for cu in course_updates]
 
@@ -1078,7 +1081,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return get_error_response("No matching questions found to update")
 
         # --------------------------------------------------
-        # 2️⃣ Status map (course-wise active/inactive)
+        # 2️⃣ Status map
         # --------------------------------------------------
         status_map = {
             cu["course_subject_id"]: cu.get("is_active", True)
@@ -1094,6 +1097,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         # --------------------------------------------------
         with transaction.atomic():
             for question in questions_to_update:
+
                 serializer = self.get_serializer(
                     question,
                     data=request.data,
@@ -1102,7 +1106,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 )
                 serializer.is_valid(raise_exception=True)
 
-                # 🔑 Detect answer change BEFORE save
                 answer_changed = has_answer_changed(
                     question,
                     serializer.validated_data
@@ -1122,7 +1125,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 if answer_changed:
                     answer_changed_question_ids.append(updated_question.id)
 
-                # 🧾 LOG
                 QuestionLog.objects.create(
                     question=updated_question,
                     user=request.user,
@@ -1131,18 +1133,46 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 )
 
         # --------------------------------------------------
-        # 4️⃣ SYNC: Re-evaluate answers + scores (NO CELERY)
+        # 4️⃣ RE-EVALUATE PAST TESTS (SYNC)
         # --------------------------------------------------
         if answer_changed_question_ids:
+
             re_evaluate_question_answers_sync(answer_changed_question_ids)
+
+            # --------------------------------------------------
+            # 5️⃣ FIND AFFECTED STUDENTS
+            # --------------------------------------------------
+            fl_students = QuestionAnswer.objects.filter(
+                question_id__in=answer_changed_question_ids
+            ).values_list(
+                "result__test_submission__student_id", flat=True
+            )
+
+            pt_students = PracticeQuestionAnswer.objects.filter(
+                question_id__in=answer_changed_question_ids
+            ).values_list(
+                "practice_test_result__practice_test__student_id", flat=True
+            )
+
+            affected_student_ids = list(set(fl_students) | set(pt_students))
+
+            # --------------------------------------------------
+            # 6️⃣ SEND EMAIL (CELERY ASYNC)
+            # --------------------------------------------------
+            if affected_student_ids:
+                send_question_update_email.delay(
+                    student_ids=affected_student_ids,
+                    question_ids=answer_changed_question_ids
+                )
 
         return Response({
             "message": "Questions updated successfully",
             "updated_count": len(updated_questions),
             "answer_changed": bool(answer_changed_question_ids),
-            "answer_changed_question_ids": answer_changed_question_ids,
+            "affected_students": len(affected_student_ids) if answer_changed_question_ids else 0,
             "updated_question_ids": [q.id for q in updated_questions],
         })
+
 
 
 

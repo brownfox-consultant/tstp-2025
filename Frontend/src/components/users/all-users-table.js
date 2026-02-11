@@ -702,7 +702,7 @@ function AllUsersTable({ tabKey, api }) {
           return (
             <div className="flex items-center gap-2">
               {/* ✅ LOGIN AS (ADMIN ONLY) */}
-              {adminEmail === "admin@thesmarttestprep.com" && (
+              {/* {adminEmail === "admin@thesmarttestprep.com" && (
                 <Button
                   size="small"
                   type="default"
@@ -710,7 +710,7 @@ function AllUsersTable({ tabKey, api }) {
                 >
                   Login As
                 </Button>
-              )}
+              )} */}
 
               {/* Existing Edit */}
               {record.role_name == "student" ? (
