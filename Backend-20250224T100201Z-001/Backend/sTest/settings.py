@@ -19,13 +19,13 @@ DEBUG = os.environ.get("DEBUG", default=False)
 
 ALLOWED_HOSTS = ['*']
 CORS_ALLOWED_ORIGINS = [
-    "http://95.111.226.66",
-    "http://95.111.226.66:3000",
-    "http://localhost:3000",  # React local dev server
+    # "http://95.111.226.66",
+    # "http://95.111.226.66:3000",
+    # "http://localhost:3000",  # React local dev server
     # "http://185.215.180.222",
     # "http://185.215.180.222:3000",
-    # "https://www.mathforusa.com",
-    # "https://mathforusa.com",
+    "https://www.mathforusa.com",
+    "https://mathforusa.com",
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -37,27 +37,27 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # CSRF Token settings
-CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 CSRF_TRUSTED_ORIGINS = [
-    "http://95.111.226.66",
-    "http://95.111.226.66:3000",
-    "http://localhost:3000",
+    # "http://95.111.226.66",
+    # "http://95.111.226.66:3000",
+    # "http://localhost:3000",
     # "http://185.215.180.222",
     # "http://185.215.180.222:3000",
-    # "https://www.mathforusa.com",
-    # "https://mathforusa.com",
+    "https://www.mathforusa.com",
+    "https://mathforusa.com",
 ]
 
 SESSION_SAVE_EVERY_REQUEST = True
 CSRF_USE_SESSIONS = False
 
-CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_DOMAIN = None
-SESSION_COOKIE_DOMAIN = None
+# CSRF_COOKIE_SAMESITE = "Lax"
+# SESSION_COOKIE_SAMESITE = "Lax"
+# CSRF_COOKIE_DOMAIN = None
+# SESSION_COOKIE_DOMAIN = None
 
 SESSION_COOKIE_AGE = 10800
 
@@ -249,9 +249,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'info@tstp.in' #os.environ.get("EMAIL_HOST_USER")
-# EMAIL_HOST_USER = 'agravat.prashant@gmail.com'
-EMAIL_HOST_PASSWORD = 'hkghbalicjxrfcds' #os.environ.get("EMAIL_HOST_PASSWORD")
-# EMAIL_HOST_PASSWORD ='nlufgkjvvzxvptft'
+EMAIL_HOST_PASSWORD = 'lcjqgyuyfpqzlxyx' #os.environ.get("EMAIL_HOST_PASSWORD")
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
 CELERY_BEAT_SCHEDULE = {
