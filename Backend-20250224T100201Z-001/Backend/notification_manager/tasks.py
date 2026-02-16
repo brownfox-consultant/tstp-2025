@@ -10,58 +10,58 @@ from notification_manager.models import (
 )
 
 
-@shared_task(
-    bind=True,
-    autoretry_for=(Exception,),
-    retry_backoff=30,
-    retry_kwargs={"max_retries": 3},
-)
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=30, retry_kwargs={"max_retries": 3})
 def send_question_update_email(self, student_ids, question_ids):
-    """
-    Send email + create in-app notification
-    when admin corrects a question answer.
-    """
+
+    from test_manager.models import QuestionAnswer
+    from test_manager.models import TestSubmission
 
     if not student_ids:
         return "No students to notify"
 
-    try:
-        template = NotificationTemplate.objects.get(
-            name="QUESTION_ANSWER_UPDATED"
-        )
-    except NotificationTemplate.DoesNotExist:
-        return "Template not found"
+    template = NotificationTemplate.objects.get(
+        name="QUESTION_ANSWER_UPDATED"
+    )
 
     students = User.objects.filter(id__in=student_ids)
 
-    notified_count = 0
-
     for student in students:
 
-        subject = template.subject.replace(
-            NotificationTemplate.USER_NAME,
-            student.name
-        )
+        # Get ONE related test for display
+        qa = QuestionAnswer.objects.filter(
+            question_id__in=question_ids,
+            result__test_submission__student=student
+        ).select_related(
+            "result__test_submission__test"
+        ).first()
 
-        description = template.description.replace(
-            NotificationTemplate.USER_NAME,
-            student.name
-        )
+        if qa:
+            test_name = qa.result.test_submission.test.name
+            question_srno = qa.question.srno
+        else:
+            test_name = "Your Test"
+            question_srno = question_ids[0]
 
-        # ------------------------------------
-        # 1️⃣ Create in-app notification
-        # ------------------------------------
+        subject = template.subject \
+            .replace("%USER_NAME%", student.name) \
+            .replace("%TEST_NAME%", test_name) \
+            .replace("%REFERENCE_ID%", str(question_srno))
+
+        description = template.description \
+            .replace("%USER_NAME%", student.name) \
+            .replace("%TEST_NAME%", test_name) \
+            .replace("%REFERENCE_ID%", str(question_srno))
+
+        # 🔔 In-app notification
         UserNotification.objects.create(
             user=student,
             subject=subject,
             description=description,
             category=Notification.TEST,
-            reference_id=question_ids[0],  # first updated question
+            reference_id=question_srno,
         )
 
-        # ------------------------------------
-        # 2️⃣ Send Email
-        # ------------------------------------
+        # 📧 Email
         send_mail(
             subject=subject,
             message=description,
@@ -70,6 +70,4 @@ def send_question_update_email(self, student_ids, question_ids):
             fail_silently=False,
         )
 
-        notified_count += 1
-
-    return f"Successfully notified {notified_count} students"
+    return "Emails sent successfully"
