@@ -71,7 +71,7 @@ class NotificationTemplate(models.Model):
 
     name = models.CharField(max_length=50, null=False, unique=True)
     wildcards = models.JSONField(default=list)
-    subject = models.CharField(max_length=50, null=False)
+    subject = models.CharField(max_length=255, null=False)
     description = models.TextField(null=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -113,7 +113,7 @@ class UserNotification(models.Model):
         (UNREAD, 'Unread')
     ]
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=UNREAD)
-    subject = models.CharField(max_length=50, null=False)
+    subject = models.CharField(max_length=255, null=False)
     description = models.TextField(null=False)
     category = models.CharField(max_length=30, choices=Notification.CATEGORY_CHOICES, default=Notification.TEST)
     reference_id = models.BigIntegerField(null=False)
