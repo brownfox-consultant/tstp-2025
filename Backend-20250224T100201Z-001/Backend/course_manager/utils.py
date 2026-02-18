@@ -164,3 +164,25 @@ def filter_questions_by_signature(base_question, candidates):
     return matched
 
 
+def has_options_changed(question, validated_data):
+    """
+    Returns True ONLY if options or correct_answer changed.
+    """
+
+    # If options not provided in update → no change
+    if "options" not in validated_data and "correct_answer" not in validated_data:
+        return False
+
+    old_options = question.options or []
+    new_options = validated_data.get("options", old_options)
+
+    # Compare options safely
+    if json.dumps(old_options, sort_keys=True) != json.dumps(new_options, sort_keys=True):
+        return True
+
+    # Compare correct answer
+    if "correct_answer" in validated_data:
+        if question.correct_answer != validated_data["correct_answer"]:
+            return True
+
+    return False
