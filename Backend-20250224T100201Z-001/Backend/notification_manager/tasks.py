@@ -35,6 +35,9 @@ def send_question_update_email(student_ids, question_ids):
 
     print("\n========== QUESTION UPDATE EMAIL TASK ==========\n")
 
+    all_admin_lines = ""
+    total_impacted_students = 0
+
     for student in User.objects.filter(id__in=student_ids):
 
         print("Processing Student:", student.name)
@@ -45,11 +48,9 @@ def send_question_update_email(student_ids, question_ids):
         ).select_related("result__test_submission__test")
 
         if not answers.exists():
-            print("⚠️ No impacted answers found.")
             continue
 
         submissions = {qa.result.test_submission for qa in answers}
-
         impacted_tests = []
 
         # ---------------------------------------------------
@@ -69,8 +70,7 @@ def send_question_update_email(student_ids, question_ids):
 
             for subject in detailed_view.get("subjects", []):
                 for section in subject.get("sections", []):
-                    original_section = section.get("name")
-                    section_name = map_section_name(original_section)
+                    section_name = map_section_name(section.get("name"))
 
                     for question in section.get("questions_data", []):
                         if question["question_id"] in question_ids:
@@ -85,18 +85,16 @@ def send_question_update_email(student_ids, question_ids):
                             })
 
         if not impacted_tests:
-            print("⚠️ No impacted tests found.")
             continue
 
-        # ---------------------------------------------------
-        # BUILD COMMON DETAILS
-        # ---------------------------------------------------
+        total_impacted_students += 1
+
         subject_name = impacted_tests[0]["subject"]
         topic_name = impacted_tests[0]["topic"]
         difficulty = impacted_tests[0]["difficulty"]
 
         # ---------------------------------------------------
-        # STUDENT EMAIL (PROFESSIONAL LAYOUT)
+        # STUDENT EMAIL
         # ---------------------------------------------------
         student_lines = ""
 
@@ -128,7 +126,7 @@ Please log in to your dashboard to view updated results.
 – TSTP Team
 """
 
-        # Save Notification
+        # Save notification in DB
         UserNotification.objects.create(
             user=student,
             subject="Question Correction Update",
@@ -137,7 +135,7 @@ Please log in to your dashboard to view updated results.
             reference_id=impacted_tests[0]["sr_no"],
         )
 
-        # Send Student Email
+        # Send student email
         send_mail(
             subject="Question Correction Update",
             message=student_email_body,
@@ -146,40 +144,44 @@ Please log in to your dashboard to view updated results.
             fail_silently=False,
         )
 
-        print("---- STUDENT EMAIL SENT ----")
+        # ---------------------------------------------------
+        # COLLECT ADMIN DATA (DON’T SEND YET)
+        # ---------------------------------------------------
+        admin_student_block = f"""
+Student Name  : {student.name}
+Student Email : {student.email}
 
-        # ---------------------------------------------------
-        # ADMIN EMAIL (MATCHING FORMAT)
-        # ---------------------------------------------------
-        admin_lines = ""
+"""
 
         for t in impacted_tests:
-            admin_lines += f"""
+            admin_student_block += f"""
 Test Name : {t['test_name']}
    • Section     : {t['section_name']}
    • Question No : {t['sr_no']}
 """
 
+        admin_student_block += "\n--------------------------------------------\n"
+
+        all_admin_lines += admin_student_block
+
+    # ====================================================
+    # SEND SINGLE ADMIN EMAIL
+    # ====================================================
+    if total_impacted_students > 0:
+
         admin_email_body = f"""
 Admin Notification
 
-A question correction has impacted the following student:
-
-Student Name  : {student.name}
-Student Email : {student.email}
+A question correction has impacted students.
 
 ────────────────────────────────────
-IMPACTED TEST DETAILS
+STUDENT IMPACT SUMMARY
 ────────────────────────────────────
-{admin_lines}
 
-Subject    : {subject_name}
-Topic      : {topic_name}
-Difficulty : {difficulty}
+{all_admin_lines}
 
-Updated At : {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
-
-Total Tests Impacted : {len(impacted_tests)}
+Total Students Impacted : {total_impacted_students}
+Updated At              : {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
 
 System has recalculated scores automatically.
 
@@ -187,13 +189,13 @@ System has recalculated scores automatically.
 """
 
         send_mail(
-            subject="Question Correction Impact Report",
+            subject="Question Correction Impact Summary",
             message=admin_email_body,
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[settings.EMAIL_HOST_USER],
             fail_silently=False,
         )
 
-        print("---- ADMIN EMAIL SENT ----")
+        print("✅ SINGLE ADMIN EMAIL SENT")
 
     print("\n========== TASK COMPLETED ==========\n")

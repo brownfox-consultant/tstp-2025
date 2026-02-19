@@ -1,27 +1,37 @@
 from celery import shared_task
 from django.core.mail import EmailMessage
 from django.utils import timezone
+from django.conf import settings
 
-from notification_manager.models import Notification, NotificationChannel, NotificationTemplate, UserNotification
+from notification_manager.models import (
+    Notification,
+    NotificationChannel,
+    NotificationTemplate,
+    UserNotification
+)
 from user_manager.models import TempUser, User, StudentMetadata, Role
 
 
+# ============================================================
+# MAIN NOTIFICATION DISPATCHER
+# ============================================================
+
 @shared_task
 def send_notification(notification_name, params, user_id):
-    print("hellooo")
-    # Get the notification object from the name
-    notification = Notification.objects.get(name=notification_name)
 
-    # Fetch the associated notification channels
+    notification = Notification.objects.get(name=notification_name)
     channels = NotificationChannel.objects.filter(notification=notification)
+
     reference_id = None
+
     for channel in channels:
-        # Fetch the associated template
+
         template = NotificationTemplate.objects.get(name=channel.template_name)
-        # Replace wildcards in the subject and description with the given params
+
         formatted_subject = template.subject
         formatted_description = template.description
 
+        # Replace wildcards
         for key, value in params.items():
             formatted_subject = formatted_subject.replace(key, str(value))
             formatted_description = formatted_description.replace(key, str(value))
@@ -29,24 +39,44 @@ def send_notification(notification_name, params, user_id):
             if key == NotificationTemplate.REFERENCE_ID:
                 reference_id = value
 
-        # Check the channel type and call the respective function
+        # EMAIL CHANNEL
         if channel.channel_name == NotificationChannel.EMAIL:
-            send_email(user_ids=[user_id], subject=formatted_subject, description=formatted_description,
-                       category=notification.category)
+            send_email.delay(
+                user_ids=[user_id],
+                subject=formatted_subject,
+                description=formatted_description,
+                category=notification.category
+            )
+
+        # IN-APP NOTIFICATION CHANNEL
         elif channel.channel_name == NotificationChannel.NOTIFICATION:
-            user_ids = get_users_for_notification_category(category=notification.category, user_id=user_id)
 
-            create_user_notification(user_ids=user_ids, subject=formatted_subject, description=formatted_description,
-                                     category=notification.category,
-                                     reference_id=reference_id)
+            user_ids = get_users_for_notification_category(
+                category=notification.category,
+                user_id=user_id
+            )
 
+            create_user_notification.delay(
+                user_ids=user_ids,
+                subject=formatted_subject,
+                description=formatted_description,
+                category=notification.category,
+                reference_id=reference_id
+            )
+
+
+# ============================================================
+# SEND EMAIL
+# ============================================================
 
 @shared_task
 def send_email(user_ids, subject, description, category, cc_recipients=None):
+
     for user_id in user_ids:
-        from_email = 'settings.EMAIL_HOST_USER'
-        recipient_list = None
+
         try:
+            recipient_list = None
+
             if category == Notification.REGISTRATION:
                 temp_user = TempUser.get_temp_user_using_id(user_id)
                 if not temp_user:
@@ -61,56 +91,94 @@ def send_email(user_ids, subject, description, category, cc_recipients=None):
             email = EmailMessage(
                 subject=subject,
                 body=description,
-                from_email=from_email,
+                from_email=settings.EMAIL_HOST_USER,  # ✅ FIXED
                 to=recipient_list,
                 bcc=cc_recipients
             )
-            email.send()
+
+            email.send(fail_silently=False)
 
         except Exception as e:
-            # log instead of crashing the worker
-            print(f"[send_email] Failed to send email to user_id={user_id}: {e}")
+            print(f"[send_email] Failed user_id={user_id} → {e}")
 
+
+# ============================================================
+# CREATE IN-APP NOTIFICATION
+# ============================================================
 
 @shared_task
 def create_user_notification(user_ids, subject, description, category, reference_id):
-    for user_id in user_ids:
-        UserNotification.objects.create(user_id=user_id, subject=subject, description=description, category=category,
-                                        reference_id=reference_id)
 
+    for user_id in set(user_ids):  # remove duplicates
+        try:
+            UserNotification.objects.create(
+                user_id=user_id,
+                subject=subject,
+                description=description,
+                category=category,
+                reference_id=reference_id
+            )
+        except Exception as e:
+            print(f"[create_user_notification] Failed user_id={user_id} → {e}")
+
+
+# ============================================================
+# MARK AS READ
+# ============================================================
 
 @shared_task
 def mark_notification_as_read(user_id, category, reference_id):
-    user_ids = get_users_for_notification_category(category=category, user_id=user_id)
-    for user_id in user_ids:
-        user_notification = UserNotification.objects.get(user_id=user_id, reference_id=reference_id, category=category)
-        user_notification.status = UserNotification.READ
-        user_notification.updated_at = timezone.now()
-        user_notification.save()
 
+    user_ids = get_users_for_notification_category(
+        category=category,
+        user_id=user_id
+    )
+
+    for uid in set(user_ids):
+        try:
+            user_notification = UserNotification.objects.get(
+                user_id=uid,
+                reference_id=reference_id,
+                category=category
+            )
+            user_notification.status = UserNotification.READ
+            user_notification.updated_at = timezone.now()
+            user_notification.save()
+        except UserNotification.DoesNotExist:
+            continue
+        except Exception as e:
+            print(f"[mark_notification_as_read] Error → {e}")
+
+
+# ============================================================
+# USER RESOLUTION LOGIC
+# ============================================================
 
 def get_users_for_notification_category(category, user_id):
+
     user_ids = []
-    # if user_id is not None:
 
     if category == Notification.TEST:
+
         user_ids.append(user_id)
 
-        father, mother = get_parents_for_student(user_id=user_id)
-        if father is not None:
+        father, mother = get_parents_for_student(user_id)
+
+        if father:
             user_ids.append(father.id)
-        if mother is not None:
+
+        if mother:
             user_ids.append(mother.id)
 
-        faculty = get_faculty_for_student(user_id=user_id)
-        if faculty is not None:
-            user_ids.append(faculty.id)
+        # ✅ FIXED MANY-TO-MANY FACULTIES
+        faculty_ids = get_faculty_for_student(user_id)
+        user_ids.extend(faculty_ids)
 
-        mentor = get_mentor_for_student(user_id=user_id)
-        if mentor is not None:
+        mentor = get_mentor_for_student(user_id)
+        if mentor:
             user_ids.append(mentor.id)
 
-    elif category == Notification.CONCERN or category == Notification.MEETING or category == Notification.ISSUE:
+    elif category in [Notification.CONCERN, Notification.MEETING, Notification.ISSUE]:
         admins = get_all_users_by_role(Role.get_role_using_name('admin').id)
         user_ids.extend(admins)
 
@@ -118,42 +186,84 @@ def get_users_for_notification_category(category, user_id):
         admins = get_all_users_by_role(Role.get_role_using_name('admin').id)
         user_ids.extend(admins)
 
-        content_developers = get_all_users_by_role(Role.get_role_using_name('content_developer').id)
-        user_ids.extend(content_developers)
+        content_devs = get_all_users_by_role(
+            Role.get_role_using_name('content_developer').id
+        )
+        user_ids.extend(content_devs)
 
     elif category == Notification.DOUBT:
+
         user = User.get_user_by_id(user_id)
-        if user.role.name == 'student':
+
+        if user and user.role.name == 'student':
+
             admins = get_all_users_by_role(Role.get_role_using_name('admin').id)
             user_ids.extend(admins)
-            mentor = get_mentor_for_student(user_id=user_id)
-            if mentor is not None:
+
+            mentor = get_mentor_for_student(user_id)
+            if mentor:
                 user_ids.append(mentor.id)
+
         else:
             user_ids.append(user_id)
 
-    return user_ids
+    return list(set(user_ids))  # remove duplicates
 
+
+# ============================================================
+# STUDENT RELATION HELPERS (FIXED)
+# ============================================================
 
 def get_faculty_for_student(user_id):
-    student_metadata = StudentMetadata.get_student_metadata_using_id(student_id=user_id)
-    return student_metadata.faculty
+    try:
+        student_metadata = StudentMetadata.get_student_metadata_using_id(
+            student_id=user_id
+        )
+
+        if not student_metadata:
+            return []
+
+        # ✅ faculties is ManyToMany
+        return list(
+            student_metadata.faculties.values_list("id", flat=True)
+        )
+
+    except Exception as e:
+        print(f"[get_faculty_for_student] Error → {e}")
+        return []
 
 
 def get_mentor_for_student(user_id):
-    student_metadata = StudentMetadata.get_student_metadata_using_id(student_id=user_id)
-    return student_metadata.mentor
+    try:
+        student_metadata = StudentMetadata.get_student_metadata_using_id(
+            student_id=user_id
+        )
+        return student_metadata.mentor if student_metadata else None
+    except Exception:
+        return None
 
 
 def get_parents_for_student(user_id):
-    student_metadata = StudentMetadata.get_student_metadata_using_id(student_id=user_id)
-    return student_metadata.father, student_metadata.mother
+    try:
+        student_metadata = StudentMetadata.get_student_metadata_using_id(
+            student_id=user_id
+        )
+        if not student_metadata:
+            return None, None
+
+        return student_metadata.father, student_metadata.mother
+    except Exception:
+        return None, None
 
 
 def get_all_users_by_role(role_id):
     users = User.filter_users_by_role(role_id=role_id)
     return [user.id for user in users]
 
+
+# ============================================================
+# ROLE CATEGORY MAP
+# ============================================================
 
 ROLE_CATEGORY_MAPPING = {
     'admin': ['CONCERN', 'MEETING', 'ISSUE', 'SUGGESTION', 'DOUBT'],

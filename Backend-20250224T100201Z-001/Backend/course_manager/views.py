@@ -1108,7 +1108,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 )
                 serializer.is_valid(raise_exception=True)
 
-                # ✅ Detect ONLY option change
+                # ✅ Detect ONLY options change
                 options_changed = has_options_changed(
                     question,
                     serializer.validated_data
@@ -1145,30 +1145,23 @@ class QuestionViewSet(viewsets.ModelViewSet):
             # Recalculate scores
             re_evaluate_question_answers_sync(options_changed_question_ids)
 
-            # --------------------------------------------------
-            # 5️⃣ Find affected students (Full Length Tests)
-            # --------------------------------------------------
+            # Full Length Students
             fl_students = QuestionAnswer.objects.filter(
                 question_id__in=options_changed_question_ids
             ).values_list(
                 "result__test_submission__student_id", flat=True
             )
 
-            # --------------------------------------------------
-            # 6️⃣ Find affected students (Practice Tests)
-            # --------------------------------------------------
+            # Practice Students
             pt_students = PracticeQuestionAnswer.objects.filter(
                 question_id__in=options_changed_question_ids
             ).values_list(
                 "practice_test_result__practice_test__student_id", flat=True
             )
 
-            # Remove duplicates
             affected_student_ids = list(set(fl_students) | set(pt_students))
 
-            # --------------------------------------------------
-            # 7️⃣ Send Email (Async Celery)
-            # --------------------------------------------------
+            # Send async email
             if affected_student_ids:
                 send_question_update_email.delay(
                     student_ids=affected_student_ids,
@@ -1182,6 +1175,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
             "affected_students": len(affected_student_ids),
             "updated_question_ids": [q.id for q in updated_questions],
         })
+
 
 
 
