@@ -2894,39 +2894,369 @@ class TestViewSet(viewsets.ModelViewSet):
     @action(
     detail=False,
     methods=['GET'],
-    permission_classes=[IsAdminOrMentorOrFacultyOrStudentOrParent],
-    url_path='trouble-spots'
+    permission_classes=[IsAuthenticated],
+    url_path='performance-visualization'
 )
-    def trouble_spot_analysis(self, request):
-        student_id = request.query_params.get("student_id")
-        course_id = request.query_params.get("course_id")
-        subject_id = request.query_params.get("subject_id")
-        date_range = request.query_params.get("date_range", "last_six_month")
+    def performance_visualization(self, request):
 
-        if not student_id or not course_id:
+        student_id = request.query_params.get("student_id")
+
+        if not student_id:
+            return Response({"error": "student_id is required"}, status=400)
+
+        now = timezone.now()
+        last_week = now - timedelta(days=7)
+        previous_week = now - timedelta(days=14)
+
+        # ✅ ONLY COMPLETED FULL TESTS
+        answers = QuestionAnswer.objects.filter(
+            result__test_submission__student_id=student_id,
+            result__test_submission__status=TestSubmission.COMPLETED
+        ).select_related(
+            "question",
+            "question__topic",
+            "question__sub_topic",
+            "course_subject__subject",
+            "result"
+        )
+
+        topic_map = {}
+        total_time = 0
+        total_attempts = 0
+
+        correct_last_week = 0
+        attempts_last_week = 0
+
+        correct_previous_week = 0
+        attempts_previous_week = 0
+
+        for ans in answers:
+
+            if not ans.question.topic:
+                continue
+
+            topic = ans.question.topic
+            sub_topic = ans.question.sub_topic
+            sub_topic_name = sub_topic.name if sub_topic else "General"
+
+            key = f"{topic.name}-{sub_topic_name}"
+
+            if key not in topic_map:
+                topic_map[key] = {
+                    "attempted": 0,
+                    "correct": 0,
+                    "subject": ans.course_subject.subject.name if ans.course_subject else "",
+                    "topic": topic.name,
+                    "sub_topic": sub_topic_name,
+                }
+
+            topic_map[key]["attempted"] += 1
+            total_attempts += 1
+
+            if ans.time_taken:
+                total_time += ans.time_taken
+
+            if ans.is_correct:
+                topic_map[key]["correct"] += 1
+
+            # -------- Weekly Trend --------
+            if ans.result.created_at >= last_week:
+                attempts_last_week += 1
+                if ans.is_correct:
+                    correct_last_week += 1
+
+            elif previous_week <= ans.result.created_at < last_week:
+                attempts_previous_week += 1
+                if ans.is_correct:
+                    correct_previous_week += 1
+
+        # ==============================
+        # 🔥 Weak Topics (<40%)
+        # ==============================
+
+        weak_topics = []
+
+        for data in topic_map.values():
+
+            if data["attempted"] == 0:
+                continue
+
+            accuracy = round(
+                (data["correct"] / data["attempted"]) * 100, 2
+            )
+
+            if accuracy < 40:
+                weak_topics.append({
+                    "topic": data["topic"],
+                    "sub_topic": data["sub_topic"],
+                    "subject": data["subject"],
+                    "accuracy": accuracy,
+                    "attempted": data["attempted"],
+                })
+
+        weak_topics.sort(key=lambda x: x["accuracy"])
+
+        # ==============================
+        # 🔥 Performance Trend
+        # ==============================
+
+        acc_last_week = (
+            (correct_last_week / attempts_last_week) * 100
+            if attempts_last_week > 0 else 0
+        )
+
+        acc_previous_week = (
+            (correct_previous_week / attempts_previous_week) * 100
+            if attempts_previous_week > 0 else 0
+        )
+
+        performance_trend = round(acc_last_week - acc_previous_week)
+
+        # ==============================
+        # 🔥 Time Overage (NO NEGATIVE)
+        # ==============================
+
+        avg_time = (
+            total_time / total_attempts
+            if total_attempts > 0 else 0
+        )
+
+        ideal_time = 60
+
+        raw_overage = (
+            ((avg_time - ideal_time) / ideal_time) * 100
+            if ideal_time > 0 else 0
+        )
+
+        # ✅ IMPORTANT FIX
+        time_overage_percent = round(raw_overage) if raw_overage > 0 else 0
+
+        # ==============================
+        # FINAL RESPONSE
+        # ==============================
+
+        return Response({
+            "topics": weak_topics,
+            "pro_tip": "Topics below 40% need immediate attention.",
+            "performance_trend": performance_trend,         # may be negative (valid)
+            "time_overage_percent": time_overage_percent,   # never negative now
+        })
+
+    @action(detail=False, methods=["get"], url_path="detailed-topic-analysis")
+    def detailed_topic_analysis(self, request):
+        student_id = request.GET.get("student_id")
+
+        if not student_id:
+            return Response({"error": "student_id is required"}, status=400)
+
+        # 🔥 Correct Join Chain (VERY IMPORTANT)
+        answers = (
+            QuestionAnswer.objects.filter(
+                result__test_submission__student_id=student_id
+            )
+            .select_related(
+                "question",
+                "question__topic",
+                "question__sub_topic",
+                "course_subject",
+                "course_subject__subject",
+                "result",
+                "result__test_submission",
+            )
+        )
+
+        topic_map = {}
+
+        for ans in answers:
+            question = ans.question
+            topic = getattr(question, "topic", None)
+            sub_topic = getattr(question, "sub_topic", None)
+
+            if not topic:
+                continue
+
+            topic_name = topic.name
+            sub_topic_name = sub_topic.name if sub_topic else "General"
+
+            # 🔥 Merge by NAME (not ID)
+            key = f"{topic_name}-{sub_topic_name}"
+
+            if key not in topic_map:
+                topic_map[key] = {
+                    "id": key,
+                    "topic": topic_name,
+                    "sub_topic": sub_topic_name,
+                    "subject": ans.course_subject.subject.name if ans.course_subject else "",
+                    "attempted": 0,
+                    "correct": 0,
+                    "accuracy": 0,
+                    "avg_time": 0,
+                    "ideal_time": 60,
+                    "repeated_mistakes": 0,
+                    "difficulty": question.difficulty,
+                    "last_attempted": ans.result.created_at,
+                    "total_time": 0,  # internal field
+                }
+
+            topic_map[key]["attempted"] += 1
+            topic_map[key]["total_time"] += ans.time_taken or 0
+
+            if ans.is_correct:
+                topic_map[key]["correct"] += 1
+            else:
+                topic_map[key]["repeated_mistakes"] += 1
+
+            # keep latest attempt date
+            if ans.result.created_at > topic_map[key]["last_attempted"]:
+                topic_map[key]["last_attempted"] = ans.result.created_at
+
+        # 🔥 Final Calculations
+        results = []
+
+        for data in topic_map.values():
+            if data["attempted"] > 0:
+                data["accuracy"] = round(
+                    (data["correct"] / data["attempted"]) * 100
+                )
+
+                # Weighted average time
+                data["avg_time"] = round(
+                    data["total_time"] / data["attempted"]
+                )
+
+            # Weak Topic Flag
+            data["is_weak"] = data["accuracy"] < 40
+
+            # Format date
+            data["last_attempted"] = data["last_attempted"].isoformat()
+
+            # Remove internal field
+            del data["total_time"]
+
+            results.append(data)
+
+        # 🔥 Sort by weakest first
+        results.sort(key=lambda x: x["accuracy"])
+
+        return Response(results)
+    
+    @action(detail=False, methods=["get"], url_path="topic-question-analysis")
+    def topic_question_analysis(self, request):
+        student_id = request.GET.get("student_id")
+        topic_name = request.GET.get("topic")
+        sub_topic_name = request.GET.get("sub_topic")
+
+        if not student_id or not topic_name:
             return Response(
-                {"error": "student_id and course_id are required"},
+                {"error": "student_id and topic are required"},
                 status=400
             )
 
-        # ---------------------------
-        # Date range
-        # ---------------------------
-        end_date = timezone.now()
-        if date_range == "last_week":
-            start_date = end_date - timedelta(days=7)
-        elif date_range == "last_month":
-            start_date = end_date - timedelta(days=30)
-        else:
-            start_date = end_date - timedelta(days=180)
+        submissions = TestSubmission.objects.filter(
+            student_id=student_id,
+            status=TestSubmission.COMPLETED
+        ).select_related("test", "result")
 
-        # ---------------------------
-        # Fetch answers (FULL + PRACTICE)
-        # ---------------------------
-        full_answers = QuestionAnswer.objects.filter(
+        data = []
+        modal_counter = 1
+
+        for submission in submissions:
+            result = submission.result
+            test = submission.test
+
+            if not result:
+                continue
+
+            sections = Section.objects.filter(test=test).order_by("order")
+
+            for section in sections:
+                for sub_section in section.sub_sections:
+
+                    section_id = sub_section.get("id")
+                    section_key = f"{section.course_subject.id}_{section_id}"
+
+                    # Get question IDs in correct test order
+                    if section_key in submission.selected_question_ids:
+                        question_ids = submission.selected_question_ids[section_key]
+                    else:
+                        question_ids = sub_section.get("questions", [])
+
+                    # Convert section id → A/B/C
+                    section_label = chr(64 + int(section_id)) if section_id else "A"
+
+                    for index, qid in enumerate(question_ids):
+
+                        question = Question.objects.filter(
+                            id=qid
+                        ).select_related("topic", "sub_topic").first()
+
+                        if not question or not question.topic:
+                            continue
+
+                        # Filter by topic
+                        if question.topic.name != topic_name:
+                            continue
+
+                        # Filter by sub_topic (if provided)
+                        if sub_topic_name:
+                            if not question.sub_topic or question.sub_topic.name != sub_topic_name:
+                                continue
+
+                        qa = QuestionAnswer.objects.filter(
+                            result=result,
+                            question_id=qid
+                        ).first()
+
+                        # Determine status
+                        if not qa:
+                            status = "Skipped"
+                        elif qa.is_skipped:
+                            status = "Skipped"
+                        elif qa.is_correct:
+                            status = "Correct"
+                        else:
+                            status = "Incorrect"
+
+                        real_sr_no = index + 1  # position inside test
+
+                        data.append({
+                            "id": qa.id if qa else None,
+                            "question_number": modal_counter,        # 1,2,3...
+                            "test_sr_no": real_sr_no,               # actual test position
+                            "section": section_label,               # A/B
+                            "question_text": f"{question.topic.name}"
+                                            f"{' - ' + question.sub_topic.name if question.sub_topic else ''}",
+                            "test_name": test.name,
+                            "status": status,
+                            "time_taken": qa.time_taken if qa else 0,
+                            "date": submission.assigned_date.strftime("%d %b %Y"),
+                        })
+
+                        modal_counter += 1
+
+        return Response(data)
+
+    
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="smart-insights"
+)
+    def smart_insights(self, request):
+
+        student_id = request.query_params.get("student_id")
+
+        if not student_id:
+            return Response({"error": "student_id is required"}, status=400)
+
+        # ======================================================
+        # 🔹 FULL TEST ONLY (Analytics Rule)
+        # ======================================================
+
+        answers = QuestionAnswer.objects.filter(
             result__test_submission__student_id=student_id,
-            result__test_submission__test__course_id=course_id,
-            result__created_at__range=(start_date, end_date)
+            result__test_submission__status=TestSubmission.COMPLETED
         ).select_related(
             "question",
             "question__topic",
@@ -2934,133 +3264,162 @@ class TestViewSet(viewsets.ModelViewSet):
             "course_subject__subject"
         )
 
-        practice_answers = PracticeQuestionAnswer.objects.filter(
-            practice_test_result__practice_test__student_id=student_id,
-            practice_test_result__practice_test__course_subject__course_id=course_id,
-            practice_test_result__created_at__range=(start_date, end_date)
-        ).select_related(
-            "question",
-            "question__topic",
-            "question__sub_topic",
-            "question__course_subject__subject"
-        )
+        if not answers.exists():
+            return Response({
+                "focus_this_week": [],
+                "quick_wins": [],
+                "pattern_detected": {
+                    "hard_accuracy": 0,
+                    "hard_total": 0
+                },
+                "time_management": {
+                    "average_time": 0,
+                    "overage_percent": 0
+                },
+                "recommendation": {
+                    "focus_count": 0
+                }
+            })
 
-        all_answers = list(full_answers) + list(practice_answers)
+        # ======================================================
+        # 🔹 BUILD TOPIC MAP
+        # ======================================================
 
-        # ---------------------------
-        # Aggregate by Topic + SubTopic
-        # ---------------------------
         topic_map = defaultdict(lambda: {
+            "topic": "",
+            "sub_topic": "",
+            "subject": "",
             "attempted": 0,
             "correct": 0,
-            "time": 0,
-            "mistakes": 0,
-            "last_attempted": None,
-            "difficulty": defaultdict(int),
-            "subject": ""
+            "total_time": 0,
+            "difficulty_counts": defaultdict(int),
         })
 
-        for ans in all_answers:
-            topic = ans.question.topic
-            sub_topic = ans.question.sub_topic
-            if not topic:
+        for ans in answers:
+
+            if not ans.question.topic:
                 continue
 
-            key = f"{topic.id}-{sub_topic.id if sub_topic else 0}"
+            topic_name = ans.question.topic.name
+            sub_topic_name = ans.question.sub_topic.name if ans.question.sub_topic else "General"
+            subject_name = ans.course_subject.subject.name if ans.course_subject else ""
 
+            key = (topic_name, sub_topic_name)
+
+            topic_map[key]["topic"] = topic_name
+            topic_map[key]["sub_topic"] = sub_topic_name
+            topic_map[key]["subject"] = subject_name
             topic_map[key]["attempted"] += 1
-            topic_map[key]["time"] += ans.time_taken
-            topic_map[key]["subject"] = (
-                ans.course_subject.subject.name
-                if hasattr(ans, "course_subject")
-                else ans.question.course_subject.subject.name
-            )
+            topic_map[key]["total_time"] += ans.time_taken or 0
+            topic_map[key]["difficulty_counts"][ans.question.difficulty] += 1
 
             if ans.is_correct:
                 topic_map[key]["correct"] += 1
-            elif not ans.is_skipped:
-                topic_map[key]["mistakes"] += 1
 
-            topic_map[key]["difficulty"][ans.question.difficulty] += 1
+        # ======================================================
+        # 🔹 CALCULATE ACCURACY + AVG TIME
+        # ======================================================
 
-            topic_map[key]["last_attempted"] = max(
-                topic_map[key]["last_attempted"] or ans.created_at,
-                ans.created_at
+        results = []
+
+        for data in topic_map.values():
+
+            if data["attempted"] == 0:
+                continue
+
+            accuracy = round(
+                (data["correct"] / data["attempted"]) * 100
             )
 
-        # ---------------------------
-        # Build topic list
-        # ---------------------------
-        topics = []
-        for key, data in topic_map.items():
-            accuracy = round((data["correct"] / data["attempted"]) * 100, 2)
-            avg_time = round(data["time"] / data["attempted"], 2)
-
-            topics.append({
-                "topic": topic.name,
-                "sub_topic": sub_topic.name if sub_topic else None,
-                "subject": data["subject"],
-                "attempted": data["attempted"],
-                "correct": data["correct"],
-                "accuracy": accuracy,
-                "avg_time": avg_time,
-                "ideal_time": 60,
-                "repeated_mistakes": data["mistakes"],
-                "difficulty_distribution": data["difficulty"],
-                "last_attempted": data["last_attempted"].date()
-            })
-
-        # ---------------------------
-        # Summary
-        # ---------------------------
-        weak_topics = [t for t in topics if t["accuracy"] < 60]
-        critical_topics = [t for t in topics if t["accuracy"] < 40]
-
-        summary = {
-            "total_topics_attempted": len(topics),
-            "weak_topics": len(weak_topics),
-            "critical_topics": len(critical_topics),
-            "overall_accuracy": round(
-                sum(t["accuracy"] for t in topics) / max(len(topics), 1), 2
+            avg_time = round(
+                data["total_time"] / data["attempted"]
             )
+
+            data["accuracy"] = accuracy
+            data["avg_time"] = avg_time
+
+            results.append(data)
+
+        # ======================================================
+        # 1️⃣ FOCUS THIS WEEK (<40%)
+        # ======================================================
+
+        weak_topics = sorted(
+            [t for t in results if t["accuracy"] < 40],
+            key=lambda x: x["accuracy"]
+        )[:3]
+
+        # ======================================================
+        # 2️⃣ QUICK WINS (60–70%)
+        # ======================================================
+
+        quick_wins = sorted(
+            [t for t in results if 60 <= t["accuracy"] < 70],
+            key=lambda x: -x["accuracy"]
+        )[:3]
+
+        # ======================================================
+        # 3️⃣ PATTERN DETECTED (HARD QUESTIONS)
+        # ======================================================
+
+        hard_answers = answers.filter(question__difficulty="HARD")
+
+        hard_total = hard_answers.count()
+        hard_correct = hard_answers.filter(is_correct=True).count()
+
+        hard_accuracy = round(
+            (hard_correct / hard_total) * 100
+        ) if hard_total > 0 else 0
+
+        pattern_detected = {
+            "hard_accuracy": hard_accuracy,
+            "hard_total": hard_total
         }
 
+        # ======================================================
+        # 4️⃣ TIME MANAGEMENT (NO NEGATIVE %)
+        # ======================================================
+
+        avg_time_all = answers.aggregate(
+            avg_time=Avg("time_taken")
+        )["avg_time"] or 0
+
+        ideal_time = 60
+
+        raw_overage = (
+            ((avg_time_all - ideal_time) / ideal_time) * 100
+            if ideal_time > 0 else 0
+        )
+
+        # 🔥 IMPORTANT FIX → No Negative Values
+        time_overage = round(raw_overage) if raw_overage > 0 else 0
+
+        time_management = {
+            "average_time": round(avg_time_all),
+            "overage_percent": time_overage
+        }
+
+        # ======================================================
+        # 5️⃣ RECOMMENDATION
+        # ======================================================
+
+        recommendation = {
+            "focus_count": len(weak_topics)
+        }
+
+        # ======================================================
+        # FINAL RESPONSE
+        # ======================================================
+
         return Response({
-            "summary": summary,
-            "topics": topics
+            "focus_this_week": weak_topics,
+            "quick_wins": quick_wins,
+            "pattern_detected": pattern_detected,
+            "time_management": time_management,
+            "recommendation": recommendation
         })
     
-    @action(
-    detail=False,
-    methods=['GET'],
-    permission_classes=[IsStudent],
-    url_path='trouble-spot-questions'
-)
-    def trouble_spot_questions(self, request):
-        topic_id = request.query_params.get("topic_id")
-        sub_topic_id = request.query_params.get("sub_topic_id")
-        student_id = request.query_params.get("student_id")
-
-        answers = QuestionAnswer.objects.filter(
-            result__test_submission__student_id=student_id,
-            question__topic_id=topic_id,
-            question__sub_topic_id=sub_topic_id
-        ).select_related("question", "result__test_submission__test")
-
-        data = []
-        for ans in answers:
-            data.append({
-                "question_id": ans.question.id,
-                "description": ans.question.description,
-                "status": "CORRECT" if ans.is_correct else "SKIPPED" if ans.is_skipped else "INCORRECT",
-                "time_spent": ans.time_taken,
-                "ideal_time": 60,
-                "difficulty": ans.question.difficulty,
-                "test_name": ans.result.test_submission.test.name,
-                "attempted_date": ans.result.created_at
-            })
-
-        return Response(data)
+    
 
 
 
