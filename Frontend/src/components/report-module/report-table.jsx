@@ -327,7 +327,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
       render: (value, rowData) => {
         return rowData.times_visited ? timeInMMSS(value) : "-";
       },
-      sorter: (a, b) => a.times_visited - b.times_visited,
+      sorter: (a, b) => (a.first_time_taken || 0) - (b.first_time_taken || 0),
     },
     {
       title: (
