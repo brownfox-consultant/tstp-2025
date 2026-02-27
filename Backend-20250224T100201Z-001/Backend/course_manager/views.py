@@ -50,6 +50,7 @@ from test_manager.re_evaluate import re_evaluate_question_answers_sync
 from test_manager.re_evaluate import re_evaluate_question_answers_sync
 from test_manager.models import QuestionAnswer, PracticeQuestionAnswer
 from notification_manager.tasks import send_question_update_email
+from course_manager.utils import has_options_changed
 
 
 
@@ -1089,13 +1090,14 @@ class QuestionViewSet(viewsets.ModelViewSet):
         }
 
         updated_questions = []
-        answer_changed_question_ids = []
+        options_changed_question_ids = []
         context = {"request": request}
 
         # --------------------------------------------------
         # 3️⃣ ATOMIC UPDATE
         # --------------------------------------------------
         with transaction.atomic():
+
             for question in questions_to_update:
 
                 serializer = self.get_serializer(
@@ -1106,7 +1108,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 )
                 serializer.is_valid(raise_exception=True)
 
-                answer_changed = has_answer_changed(
+                # ✅ Detect ONLY options change
+                options_changed = has_options_changed(
                     question,
                     serializer.validated_data
                 )
@@ -1122,8 +1125,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
                 updated_questions.append(updated_question)
 
-                if answer_changed:
-                    answer_changed_question_ids.append(updated_question.id)
+                if options_changed:
+                    options_changed_question_ids.append(updated_question.id)
 
                 QuestionLog.objects.create(
                     question=updated_question,
@@ -1133,45 +1136,46 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 )
 
         # --------------------------------------------------
-        # 4️⃣ RE-EVALUATE PAST TESTS (SYNC)
+        # 4️⃣ RE-EVALUATE + SEND EMAIL ONLY IF OPTIONS CHANGED
         # --------------------------------------------------
-        if answer_changed_question_ids:
+        affected_student_ids = []
 
-            re_evaluate_question_answers_sync(answer_changed_question_ids)
+        if options_changed_question_ids:
 
-            # --------------------------------------------------
-            # 5️⃣ FIND AFFECTED STUDENTS
-            # --------------------------------------------------
+            # Recalculate scores
+            re_evaluate_question_answers_sync(options_changed_question_ids)
+
+            # Full Length Students
             fl_students = QuestionAnswer.objects.filter(
-                question_id__in=answer_changed_question_ids
+                question_id__in=options_changed_question_ids
             ).values_list(
                 "result__test_submission__student_id", flat=True
             )
 
+            # Practice Students
             pt_students = PracticeQuestionAnswer.objects.filter(
-                question_id__in=answer_changed_question_ids
+                question_id__in=options_changed_question_ids
             ).values_list(
                 "practice_test_result__practice_test__student_id", flat=True
             )
 
             affected_student_ids = list(set(fl_students) | set(pt_students))
 
-            # --------------------------------------------------
-            # 6️⃣ SEND EMAIL (CELERY ASYNC)
-            # --------------------------------------------------
+            # Send async email
             if affected_student_ids:
                 send_question_update_email.delay(
                     student_ids=affected_student_ids,
-                    question_ids=answer_changed_question_ids
+                    question_ids=options_changed_question_ids
                 )
 
         return Response({
             "message": "Questions updated successfully",
             "updated_count": len(updated_questions),
-            "answer_changed": bool(answer_changed_question_ids),
-            "affected_students": len(affected_student_ids) if answer_changed_question_ids else 0,
+            "options_changed": bool(options_changed_question_ids),
+            "affected_students": len(affected_student_ids),
             "updated_question_ids": [q.id for q in updated_questions],
         })
+
 
 
 
