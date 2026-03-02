@@ -166,17 +166,29 @@ const fetchAttemptedQuestions = async (
 useEffect(() => {
   if (!selectedCourse || !selectedSubject) return;
 
+  const currentPage =
+    activeTestType === "FULL_LENGTH_TEST"
+      ? fullLengthPage
+      : practicePage;
+
+  const currentPageSize =
+    activeTestType === "FULL_LENGTH_TEST"
+      ? fullLengthPageSize
+      : practicePageSize;
+
   fetchAttemptedQuestions(
     activeTestType,
-    activeTestType === "FULL_LENGTH_TEST" ? fullLengthPage : practicePage,
-    activeTestType === "FULL_LENGTH_TEST" ? fullLengthPageSize : practicePageSize
+    currentPage,
+    currentPageSize
   );
 }, [
   selectedCourse,
   selectedSubject,
   activeTestType,
   fullLengthPage,
+  fullLengthPageSize,   // ✅ ADD THIS
   practicePage,
+  practicePageSize,     // ✅ ADD THIS
   statusFilter,
   searchText,
   difficultyFilter,
@@ -671,6 +683,11 @@ useEffect(() => {
                       onChange: (page, pageSize) => {
                           setFullLengthPage(page);
                           setFullLengthPageSize(pageSize);
+
+                          // ✅ If pageSize changed, reset page to 1
+  if (pageSize !== fullLengthPageSize) {
+    setFullLengthPage(1);
+  }
                       },
                       showTotal: (total, range) => <RenderShowTotal total={total} range={range} setPage={setFullLengthPage} />,
                       showSizeChanger: true,

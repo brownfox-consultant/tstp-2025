@@ -2920,7 +2920,15 @@ class TestViewSet(viewsets.ModelViewSet):
             "result"
         )
 
-        topic_map = {}
+        topic_map = defaultdict(lambda: {
+            "attempted": 0,
+            "correct": 0,
+            "total_time": 0,
+            "subject": "",
+            "topic": "",
+            "sub_topic": "",
+        })
+
         total_time = 0
         total_attempts = 0
 
@@ -2929,6 +2937,10 @@ class TestViewSet(viewsets.ModelViewSet):
 
         correct_previous_week = 0
         attempts_previous_week = 0
+
+        # ==============================
+        # LOOP THROUGH ANSWERS
+        # ==============================
 
         for ans in answers:
 
@@ -2941,20 +2953,18 @@ class TestViewSet(viewsets.ModelViewSet):
 
             key = f"{topic.name}-{sub_topic_name}"
 
-            if key not in topic_map:
-                topic_map[key] = {
-                    "attempted": 0,
-                    "correct": 0,
-                    "subject": ans.course_subject.subject.name if ans.course_subject else "",
-                    "topic": topic.name,
-                    "sub_topic": sub_topic_name,
-                }
+            topic_map[key]["topic"] = topic.name
+            topic_map[key]["sub_topic"] = sub_topic_name
+            topic_map[key]["subject"] = (
+                ans.course_subject.subject.name
+                if ans.course_subject else ""
+            )
 
             topic_map[key]["attempted"] += 1
-            total_attempts += 1
+            topic_map[key]["total_time"] += ans.time_taken or 0
 
-            if ans.time_taken:
-                total_time += ans.time_taken
+            total_attempts += 1
+            total_time += ans.time_taken or 0
 
             if ans.is_correct:
                 topic_map[key]["correct"] += 1
@@ -2971,7 +2981,7 @@ class TestViewSet(viewsets.ModelViewSet):
                     correct_previous_week += 1
 
         # ==============================
-        # 🔥 Weak Topics (<40%)
+        # BUILD WEAK TOPICS (≤ 39%)
         # ==============================
 
         weak_topics = []
@@ -2982,22 +2992,29 @@ class TestViewSet(viewsets.ModelViewSet):
                 continue
 
             accuracy = round(
-                (data["correct"] / data["attempted"]) * 100, 2
+                (data["correct"] / data["attempted"]) * 100,
+                2
             )
 
-            if accuracy < 40:
+            avg_time = round(
+                data["total_time"] / data["attempted"]
+            )
+
+            # ✅ Weak threshold updated to match grading system
+            if accuracy <= 39:
                 weak_topics.append({
                     "topic": data["topic"],
                     "sub_topic": data["sub_topic"],
                     "subject": data["subject"],
                     "accuracy": accuracy,
                     "attempted": data["attempted"],
+                    "avg_time": avg_time,
                 })
 
         weak_topics.sort(key=lambda x: x["accuracy"])
 
         # ==============================
-        # 🔥 Performance Trend
+        # PERFORMANCE TREND %
         # ==============================
 
         acc_last_week = (
@@ -3013,10 +3030,10 @@ class TestViewSet(viewsets.ModelViewSet):
         performance_trend = round(acc_last_week - acc_previous_week)
 
         # ==============================
-        # 🔥 Time Overage (NO NEGATIVE)
+        # TIME OVERAGE % (NO NEGATIVE)
         # ==============================
 
-        avg_time = (
+        avg_time_all = (
             total_time / total_attempts
             if total_attempts > 0 else 0
         )
@@ -3024,11 +3041,11 @@ class TestViewSet(viewsets.ModelViewSet):
         ideal_time = 60
 
         raw_overage = (
-            ((avg_time - ideal_time) / ideal_time) * 100
+            ((avg_time_all - ideal_time) / ideal_time) * 100
             if ideal_time > 0 else 0
         )
 
-        # ✅ IMPORTANT FIX
+        # Never allow negative overage
         time_overage_percent = round(raw_overage) if raw_overage > 0 else 0
 
         # ==============================
@@ -3038,8 +3055,8 @@ class TestViewSet(viewsets.ModelViewSet):
         return Response({
             "topics": weak_topics,
             "pro_tip": "Topics below 40% need immediate attention.",
-            "performance_trend": performance_trend,         # may be negative (valid)
-            "time_overage_percent": time_overage_percent,   # never negative now
+            "performance_trend": performance_trend,        # can be negative
+            "time_overage_percent": time_overage_percent,  # never negative
         })
 
     @action(detail=False, methods=["get"], url_path="detailed-topic-analysis")

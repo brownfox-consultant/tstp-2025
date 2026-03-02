@@ -30,6 +30,16 @@ function TroubleSpotPage() {
   const [accuracyFilter, setAccuracyFilter] = useState("ALL");
   const [performanceTrend, setPerformanceTrend] = useState(0);
 const [timeOveragePercent, setTimeOveragePercent] = useState(0);
+const getAccuracyStatus = (accuracy) => {
+  if (accuracy <= 19) return { label: "Critical", color: "red" };
+  if (accuracy <= 39) return { label: "Major Improvement Required", color: "volcano" };
+  if (accuracy <= 54) return { label: "Needs Significant Improvement", color: "orange" };
+  if (accuracy <= 69) return { label: "Needs Improvement", color: "gold" };
+  if (accuracy <= 79) return { label: "Satisfactory", color: "blue" };
+  if (accuracy <= 89) return { label: "Good", color: "green" };
+  if (accuracy <= 95) return { label: "Very Good", color: "cyan" };
+  return { label: "Excellent", color: "purple" };
+};
 
   const params = useParams();
 const studentId = params.id;
@@ -274,33 +284,24 @@ const openTopicModal = async (record) => {
       key: "accuracy",
       width: 150,
       render: (_, record) => {
-        let color = "red";
-        let status = "Critical";
-        if (record.accuracy >= 60) {
-          color = "orange";
-          status = "Almost There";
-        } else if (record.accuracy >= 40) {
-          color = "orange";
-          status = "Needs Work";
-        }
-        
-        return (
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`font-bold ${record.accuracy < 40 ? 'text-red-600' : record.accuracy < 60 ? 'text-orange-600' : 'text-yellow-600'}`}>
-                {record.accuracy}%
-              </span>
-              <Tag color={color} className="text-xs">{status}</Tag>
-            </div>
-            <Progress 
-              percent={record.accuracy} 
-              strokeColor={record.accuracy < 40 ? "#dc2626" : record.accuracy < 60 ? "#ea580c" : "#ca8a04"}
-              showInfo={false}
-              size="small"
-            />
-          </div>
-        );
-      },
+  const { label, color } = getAccuracyStatus(record.accuracy);
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="font-bold">
+          {record.accuracy}%
+        </span>
+        <Tag color={color}>{label}</Tag>
+      </div>
+      <Progress
+        percent={record.accuracy}
+        showInfo={false}
+        size="small"
+      />
+    </div>
+  );
+},
       sorter: (a, b) => a.accuracy - b.accuracy,
     },
     {

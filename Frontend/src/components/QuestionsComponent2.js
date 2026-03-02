@@ -299,26 +299,22 @@ function QuestionsComponent2({ courses }) {
                         }
 
                         const response = await axios.get(
-                          `${BASE_URL}/api/question/duplicates/`,
-                          {
-                            params: {
-                              export: "csv",
-                              course_subject_id: courseSubjectId, // ✅ PASSED
-                            },
-                            responseType: "blob",
-                            withCredentials: true,
-                          },
-                        );
+  `${BASE_URL}/api/question/duplicates/`,
+  {
+    params: {
+      export: "xlsx", // now exporting full Excel
+    },
+    responseType: "blob",
+    withCredentials: true,
+  },
+);
 
                         const url = window.URL.createObjectURL(
                           new Blob([response.data]),
                         );
                         const link = document.createElement("a");
                         link.href = url;
-                        link.setAttribute(
-                          "download",
-                          "duplicate_questions.csv",
-                        );
+                        link.setAttribute("download", "duplicate_questions_all_courses.xlsx");
                         document.body.appendChild(link);
                         link.click();
                         link.remove();
