@@ -137,7 +137,18 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
           <div className="border border-gray-200 rounded-md p-3 shadow-sm bg-white">
             <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase">Related Question</h3>
             <div className="text-sm scale-95 origin-top-left w-[105%] -mb-2">
-                <MathContent content={question?.description} />
+                {/* Show passage first if exists */}
+{question?.reading_comprehension_passage && (
+  <div className="mb-3 p-3 bg-gray-50 border rounded-md">
+    <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+      Passage
+    </h3>
+    <MathContent content={question?.reading_comprehension_passage} />
+  </div>
+)}
+
+{/* Then show question */}
+<MathContent content={question?.description} />
                 <div className="mt-2">
                     <Options options={question?.options} />
                 </div>

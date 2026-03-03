@@ -138,11 +138,14 @@ class DoubtListSerializer(serializers.ModelSerializer):
                     pass  # keep defaults
 
         question_data = {
-            'id': question.id,
-            'description': question.description,
-            'is_skipped': is_skipped,
-            'options': [],
-        }
+        'id': question.id,
+        'description': question.description,
+        'reading_comprehension_passage': question.reading_comprehension_passage,
+        'question_type': question.question_type,
+        'question_subtype': question.question_subtype,
+        'is_skipped': is_skipped,
+        'options': [],
+    }
 
         for index, option in enumerate(question.options):
             if isinstance(option, dict):
