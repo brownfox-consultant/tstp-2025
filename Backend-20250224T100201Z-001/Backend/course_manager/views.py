@@ -1022,8 +1022,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return get_error_response("course_updates must be provided as a list")
 
         # --------------------------------------------------
-        # 1️⃣ Find matching cloned questions
+        # 1️⃣ Find cloned questions
         # --------------------------------------------------
+
         course_subject_ids = [cu["course_subject_id"] for cu in course_updates]
 
         candidates = Question.objects.select_related(
@@ -1041,6 +1042,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         # --------------------------------------------------
         # 2️⃣ Status map
         # --------------------------------------------------
+
         status_map = {
             cu["course_subject_id"]: cu.get("is_active", True)
             for cu in course_updates
@@ -1048,11 +1050,13 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         updated_questions = []
         options_changed_question_ids = []
+
         context = {"request": request}
 
         # --------------------------------------------------
-        # 3️⃣ ATOMIC UPDATE
+        # 3️⃣ UPDATE QUESTIONS
         # --------------------------------------------------
+
         with transaction.atomic():
 
             for question in questions_to_update:
@@ -1063,14 +1067,16 @@ class QuestionViewSet(viewsets.ModelViewSet):
                     partial=True,
                     context=context
                 )
+
                 serializer.is_valid(raise_exception=True)
 
-                # ✅ Detect ONLY options change
-                options_changed = has_options_changed(
+                # Detect answer change
+                options_changed = has_answer_changed(
                     question,
                     serializer.validated_data
                 )
 
+                # Save question first
                 updated_question = serializer.save(
                     is_active=status_map.get(
                         question.course_subject_id,
@@ -1082,9 +1088,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
                 updated_questions.append(updated_question)
 
+                # Only after saving, append id
                 if options_changed:
                     options_changed_question_ids.append(updated_question.id)
 
+                # Log
                 QuestionLog.objects.create(
                     question=updated_question,
                     user=request.user,
@@ -1093,37 +1101,53 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 )
 
         # --------------------------------------------------
-        # 4️⃣ RE-EVALUATE + SEND EMAIL ONLY IF OPTIONS CHANGED
+        # 4️⃣ RE-EVALUATE TESTS
         # --------------------------------------------------
+
         affected_student_ids = []
 
         if options_changed_question_ids:
 
-            # Recalculate scores
+            # Recalculate results
             re_evaluate_question_answers_sync(options_changed_question_ids)
 
-            # Full Length Students
+            # --------------------------------------------------
+            # 5️⃣ Find affected students (Full Length Tests)
+            # --------------------------------------------------
+
             fl_students = QuestionAnswer.objects.filter(
                 question_id__in=options_changed_question_ids
             ).values_list(
-                "result__test_submission__student_id", flat=True
+                "result__test_submission__student_id",
+                flat=True
             )
 
-            # Practice Students
+            # --------------------------------------------------
+            # 6️⃣ Find affected students (Practice Tests)
+            # --------------------------------------------------
+
             pt_students = PracticeQuestionAnswer.objects.filter(
                 question_id__in=options_changed_question_ids
             ).values_list(
-                "practice_test_result__practice_test__student_id", flat=True
+                "practice_test_result__practice_test__student_id",
+                flat=True
             )
 
             affected_student_ids = list(set(fl_students) | set(pt_students))
 
-            # Send async email
+            # --------------------------------------------------
+            # 7️⃣ SEND EMAIL (CELERY)
+            # --------------------------------------------------
+
             if affected_student_ids:
                 send_question_update_email.delay(
                     student_ids=affected_student_ids,
                     question_ids=options_changed_question_ids
                 )
+
+        # --------------------------------------------------
+        # RESPONSE
+        # --------------------------------------------------
 
         return Response({
             "message": "Questions updated successfully",

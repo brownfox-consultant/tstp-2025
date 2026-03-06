@@ -9,6 +9,18 @@ from test_manager.models import (
 from test_manager.utils import evaluate_question_answer
 
 
+def check_gridin_answer(question, selected_answer):
+    if not selected_answer:
+        return False
+
+    correct_answers = question.options or []
+
+    selected_answer = str(selected_answer).strip()
+
+    correct_answers = [str(ans).strip() for ans in correct_answers]
+
+    return selected_answer in correct_answers
+
 def re_evaluate_question_answers_sync(question_ids):
     """
     Synchronous re-evaluation (NO CELERY, NO recalculation method)
@@ -29,10 +41,16 @@ def re_evaluate_question_answers_sync(question_ids):
         question = ans.question
         result_obj = ans.result
 
-        now_correct = evaluate_question_answer(
-            question=question,
-            selected_options=ans.selected_options
-        )
+        if question.question_type == "GRIDIN":
+            now_correct = check_gridin_answer(
+                question,
+                ans.selected_options
+            )
+        else:
+            now_correct = evaluate_question_answer(
+                question=question,
+                selected_options=ans.selected_options
+            )
 
         if ans.is_correct != now_correct:
             # 1️⃣ Update DB answer

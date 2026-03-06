@@ -81,18 +81,76 @@ def get_question_signature_hash(question):
 # ANSWER CHANGE DETECTION (CRITICAL)
 # ======================================================
 
+def normalize_list(values):
+    if not values:
+        return []
+    return sorted([str(v).strip().lower() for v in values])
+
+
 def has_answer_changed(question, validated_data):
     """
-    Detects whether the answer/options have changed.
-    Used before triggering score recalculation.
+    Detect answer change for all question types.
     """
-    if "options" not in validated_data:
+
+    question_type = question.question_type
+    question_subtype = question.question_subtype
+
+    old_options = question.options or []
+    new_options = validated_data.get("options")
+
+    if new_options is None:
         return False
 
-    old_options = json.dumps(question.options or {}, sort_keys=True)
-    new_options = json.dumps(validated_data.get("options") or {}, sort_keys=True)
+    # ------------------------------
+    # MCQ Single Choice
+    # ------------------------------
+    if question_type == "MCQ" and question_subtype == "SINGLE_CHOICE":
 
-    return old_options != new_options
+        return normalize_list(old_options) != normalize_list(new_options)
+
+    # ------------------------------
+    # MCQ Multi Choice
+    # ------------------------------
+    if question_type == "MCQ" and question_subtype == "MULTI_CHOICE":
+
+        return normalize_list(old_options) != normalize_list(new_options)
+
+    # ------------------------------
+    # GRIDIN Single Answer
+    # ------------------------------
+    if question_type == "GRIDIN" and question_subtype == "SINGLE_ANSWER":
+
+        return normalize_list(old_options) != normalize_list(new_options)
+
+    # ------------------------------
+    # GRIDIN Multi Answer
+    # ------------------------------
+    if question_type == "GRIDIN" and question_subtype == "MULTI_ANSWER":
+
+        return normalize_list(old_options) != normalize_list(new_options)
+
+    # ------------------------------
+    # GRIDIN Range Based
+    # ------------------------------
+    if question_type == "GRIDIN" and question_subtype == "RANGE_BASED_ANSWER":
+
+        return normalize_list(old_options) != normalize_list(new_options)
+
+    # ------------------------------
+    # Fill in the Blanks
+    # ------------------------------
+    if question_subtype == "FILL_IN_THE_BLANKS":
+
+        return normalize_list(old_options) != normalize_list(new_options)
+
+    # ------------------------------
+    # Reading Comprehension
+    # ------------------------------
+    if question_subtype == "READING_COMPREHENSION":
+
+        return normalize_list(old_options) != normalize_list(new_options)
+
+    return False
 
 
 # ======================================================
@@ -166,23 +224,20 @@ def filter_questions_by_signature(base_question, candidates):
 
 def has_options_changed(question, validated_data):
     """
-    Returns True ONLY if options or correct_answer changed.
+    Detect option/answer change for MCQ and GRIDIN questions.
     """
 
-    # If options not provided in update → no change
-    if "options" not in validated_data and "correct_answer" not in validated_data:
+    new_options = validated_data.get("options")
+
+    if new_options is None:
         return False
 
-    old_options = question.options or []
-    new_options = validated_data.get("options", old_options)
+    old_options = question.options
 
-    # Compare options safely
-    if json.dumps(old_options, sort_keys=True) != json.dumps(new_options, sort_keys=True):
-        return True
+    try:
+        old_options_clean = sorted([str(o).strip() for o in old_options])
+        new_options_clean = sorted([str(o).strip() for o in new_options])
+    except Exception:
+        return old_options != new_options
 
-    # Compare correct answer
-    if "correct_answer" in validated_data:
-        if question.correct_answer != validated_data["correct_answer"]:
-            return True
-
-    return False
+    return old_options_clean != new_options_clean
