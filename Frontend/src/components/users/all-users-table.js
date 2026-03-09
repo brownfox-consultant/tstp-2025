@@ -77,21 +77,6 @@ function AllUsersTable({ tabKey, api }) {
   const adminEmail = localStorage.getItem("email");
   const [showAssignTestModal, setShowAssignTestModal] = useState(false);
 
-  const checkStudentApproval = (record) => {
-  if (
-    record.role_name === "student" &&
-    (!record.parent_details ||
-      (!record.parent_details?.father && !record.parent_details?.mother))
-  ) {
-    Modal.warning({
-      title: "Student Not Approved",
-      content: "Please approve student first.",
-    });
-    return false;
-  }
-  return true;
-};
-
 
   const searchInput = useRef(null);
   const router = useRouter();
@@ -631,10 +616,7 @@ function AllUsersTable({ tabKey, api }) {
             </div>
           );
         },
-        
       },
-
-      
 
       // {
       //   title: "Actions",
@@ -711,22 +693,6 @@ function AllUsersTable({ tabKey, api }) {
       //     );
       //   },
       // },
-
-
-      {
-  title: "Approval",
-  key: "approval",
-  render: (_, record) => {
-    if (
-      record.role_name === "student" &&
-      (!record.parent_details ||
-        (!record.parent_details?.father && !record.parent_details?.mother))
-    ) {
-      return <Tag color="orange">Pending</Tag>;
-    }
-    return <Tag color="green">Approved</Tag>;
-  },
-},
       {
         title: "Actions",
         key: "val",
@@ -747,54 +713,46 @@ function AllUsersTable({ tabKey, api }) {
               )} */}
 
               {/* Existing Edit */}
-              {record.role_name === "student" ? (
-  <Button
-    size="small"
-    onClick={() => {
-      if (!checkStudentApproval(record)) return;
-      setStudentRecord(record); // open modal logic
-    }}
-  >
-    Edit
-  </Button>
-) : (
-  <EditUserModal
-    updated={updated}
-    setUpdated={setUpdated}
-    recordData={record}
-  />
-)}
+              {record.role_name == "student" ? (
+                <EditStudentUserModal
+                  updated={updated}
+                  setUpdated={setUpdated}
+                  recordData={record}
+                />
+              ) : (
+                <EditUserModal
+                  updated={updated}
+                  setUpdated={setUpdated}
+                  recordData={record}
+                />
+              )}
 
               {/* Results */}
               {record.role_name === "student" && (
-               <Button
-  type="default"
-  size="small"
-  onClick={() => {
-    if (!checkStudentApproval(record)) return;
-
-    set_student_id(record.id);
-    setStudentName(record.name);
-    setShowResultModal(true);
-  }}
->
-  Results
-</Button>
+                <Button
+                  type="default"
+                  size="small"
+                  onClick={() => {
+                    set_student_id(record.id);
+                    setStudentName(record.name);
+                    setShowResultModal(true);
+                  }}
+                >
+                  Results
+                </Button>
               )}
               {record.role_name === "student" && (
   <Button
-  size="small"
-  type="default"
-  onClick={() => {
-    if (!checkStudentApproval(record)) return;
-
-    set_student_id(record.id);
-    setStudentName(record.name);
-    setShowAssignTestModal(true);
-  }}
->
-  Assign Test
-</Button>
+    size="small"
+    type="default"
+    onClick={() => {
+      set_student_id(record.id);
+      setStudentName(record.name);
+      setShowAssignTestModal(true);
+    }}
+  >
+    Assign Test
+  </Button>
 )}
 
 
