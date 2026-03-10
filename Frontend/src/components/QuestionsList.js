@@ -246,7 +246,7 @@ function QuestionsList({
       dataIndex: "difficulty",
       key: "difficulty",
       filters: difficultyFilters,
-      defaultFilteredValue: searchParams.get("difficulty") || null,
+      defaultFilteredValue: searchParams.get("difficulty")?.split(",") || null,
       filterIcon: (filtered) =>
         filtered && searchParams.get("difficulty") ? (
           <FilterFilled />
@@ -619,17 +619,30 @@ function QuestionsList({
   };
 
 
-  const handleTableChange = (pagination, _filters, _sorter) => {
-    // Merge external filters (like from Advanced Search) and header filters
-    const mergedFilters = { ...filters, ..._filters };
+  const handleTableChange = (pagination, tableFilters) => {
 
-    // Normalize: convert undefined/null to []
-    Object.keys(mergedFilters).forEach((key) => {
-      if (!mergedFilters[key]) mergedFilters[key] = [];
-    });
-
-    updateURL(pagination.current, mergedFilters, searchText);
+  const currentFilters = {
+    difficulty: searchParams.get("difficulty")?.split(",") || [],
+    question_type: searchParams.get("question_type")?.split(",") || [],
+    test_type: searchParams.get("test_type")?.split(",") || [],
+    topic: searchParams.get("topic")?.split(",") || [],
+    sub_topic: searchParams.get("sub_topic")?.split(",") || [],
+    question_subtype: searchParams.get("question_subtype")?.split(",") || [],
+    is_active: searchParams.get("is_active")
+      ? [searchParams.get("is_active") === "true"]
+      : [],
   };
+
+  const mergedFilters = { ...currentFilters };
+
+  Object.keys(tableFilters).forEach((key) => {
+    if (tableFilters[key]) {
+      mergedFilters[key] = tableFilters[key];
+    }
+  });
+
+  updateURL(pagination.current, mergedFilters, searchText);
+};
 
 
   const paginationConfig = {
