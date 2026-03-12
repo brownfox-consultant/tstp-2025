@@ -168,19 +168,21 @@ const [topicOptions, setTopicOptions] = useState([]);
   title: "Action",
   width: 150,
   align: "center",
-  render: (_, record) => (
-    <div className="flex gap-2 justify-center">
+  render: (_, record) => {
 
-      <ViewDoubtModal
-        updated={updated}
-        setUpdated={setUpdated}
-        data={record}
-      />
-
-      
-
-    </div>
-  ),
+    const isRaised = record.status === "RAISED";
+    return (
+      <div className="flex justify-center">
+        <ViewDoubtModal
+          updated={updated}
+          setUpdated={setUpdated}
+          data={record}
+          label={isRaised ? "Edit Details" : "View Details"}
+          iconType={isRaised ? "edit" : "view"}
+        />
+      </div>
+    );
+  },
 }
   ];
 

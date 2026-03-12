@@ -19,7 +19,12 @@ import { getSubjectTopics } from "@/app/services/authService";
 import EditQuestionModal from "./EditQuestionModal";
 import { margin } from "@mui/system";
 
-function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
+function ViewDoubtModal({ data,
+  updated,
+  setUpdated,
+  role = "admin",
+  label = "View Details",
+  iconType = "view" }) {
   const [open, setOpen] = useState(false);
   const {
     question,
@@ -129,19 +134,26 @@ const [topicOptions, setTopicOptions] = useState([]);
   return (
     <>
       <Button
-        type="link"
-        onClick={() => setOpen(true)}
-        className="flex items-center hover:bg-gray-100 rounded-md px-2 border-0 shadow-none text-current"
-      >
-        <Image
-          src={EyeIcon}
-          alt="View Details Icon"
-          width={18}
-          height={18}
-          className="mr-2"
-        />
-        <span>View Details</span>
-      </Button>
+  type="link"
+  onClick={() => setOpen(true)}
+  className="flex items-center hover:bg-gray-100 rounded-md px-2 border-0 shadow-none text-current"
+>
+
+  {iconType === "edit" ? (
+    <EditOutlined  />
+  ) : (
+    <Image
+      src={EyeIcon}
+      alt="View Details Icon"
+      width={18}
+      height={18}
+      className="mr-2"
+    />
+  )}
+
+  <span>{label}</span>
+
+</Button>
       <Modal
         width={750}  // Reduced width
         onCancel={() => setOpen(false)}
