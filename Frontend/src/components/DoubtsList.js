@@ -177,47 +177,7 @@ const [topicOptions, setTopicOptions] = useState([]);
         data={record}
       />
 
-      {record.status === "RAISED" && (
-        <Button
-          type="text"
-          icon={<EditOutlined style={{ color: "#1890ff" }} />}
-          onClick={async () => {
-
-  const courseSubjectId =
-    record.question?.course_subject || record.course_subject_id;
-
-  try {
-    const res = await getSubjectTopics(courseSubjectId);
-
-    const topics = res.data.map((t) => ({
-      ...t,
-      label: t.name,
-      value: t.id,
-    }));
-
-    setTopicOptions(topics);
-
-    const topic = res.data.find(
-      (t) => t.name === record.question.topic
-    );
-
-    setEditQuestionData({
-      ...record.question,
-      topic: topic?.id,
-      topic_name: topic?.name
-    });
-
-    setIsEditModalOpen(true);
-
-  } catch (err) {
-    console.error(err);
-  }
-
-}}
-        >
-          Edit
-        </Button>
-      )}
+      
 
     </div>
   ),

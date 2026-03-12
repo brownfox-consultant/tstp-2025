@@ -14,6 +14,10 @@ import dayjs from "dayjs";
 import MathContent from "./MathContent";
 import EyeIcon from "../../public/icons/eye.svg";
 import Image from "next/image";
+import { EditOutlined } from "@ant-design/icons";
+import { getSubjectTopics } from "@/app/services/authService";
+import EditQuestionModal from "./EditQuestionModal";
+import { margin } from "@mui/system";
 
 function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
   const [open, setOpen] = useState(false);
@@ -37,6 +41,10 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
   let facultyAssignedDate = dayjs(date).format("MMM D, YYYY");
 
   const currentIndex = statusArray.findIndex((value) => value === status);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const [editQuestionData, setEditQuestionData] = useState(null);
+const [topicOptions, setTopicOptions] = useState([]);
+  
 
   const finalStatus = statusArray[currentIndex];
 
@@ -74,6 +82,36 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
       .catch((err) => console.log(err));
   };
 
+  const handleEdit = async () => {
+  const courseSubjectId =
+    question?.course_subject || data.course_subject_id;
+
+  try {
+    const res = await getSubjectTopics(courseSubjectId);
+
+    const topics = res.data.map((t) => ({
+      ...t,
+      label: t.name,
+      value: t.id,
+    }));
+
+    setTopicOptions(topics);
+
+    const topic = res.data.find((t) => t.name === question.topic);
+
+    setEditQuestionData({
+      ...question,
+      topic: topic?.id,
+      topic_name: topic?.name,
+    });
+
+    setIsEditModalOpen(true);
+
+  } catch (err) {
+    console.error(err);
+  }
+};
+
   const handleResolve = () => {
     patchMarkResolve(id, { resolution: value })
       .then((res) => {
@@ -109,13 +147,29 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
         onCancel={() => setOpen(false)}
         open={open}
         title={
-          <div className="flex items-center border-b border-gray-100 pb-2 mb-2 gap-5">
-            <h2 className="text-lg font-bold text-gray-800 m-0">Doubt Details</h2>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-gray-500">Status:</span>
-              <DoubtStatusTag status={finalStatus} />
-            </div>
-          </div>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
+  <div className="flex items-center gap-5">
+    <h2 className="text-lg font-bold text-gray-800 m-0">
+      Doubt Details
+    </h2>
+
+    <div className="flex items-center gap-2 text-xs">
+      <span className="text-gray-500">Status:</span>
+      <DoubtStatusTag status={finalStatus} />
+    </div>
+  </div>
+
+  {role === "admin" && status === "RAISED" && (
+  <Button
+    type="text"
+    icon={<EditOutlined style={{ color: "#1890ff" }} />}
+    onClick={handleEdit}
+    style={{ marginRight: 20 }}
+  >
+    Edit Question
+  </Button>
+)}
+</div>
         }
         footer={null}
         centered
@@ -135,7 +189,17 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
 
           {/* Section 2: Question Context */}
           <div className="border border-gray-200 rounded-md p-3 shadow-sm bg-white">
-            <h3 className="text-xs font-semibold text-gray-500 mb-2 uppercase">Related Question</h3>
+           <div className="flex items-center justify-between mb-2">
+  <h3 className="text-xs font-semibold text-gray-500 uppercase">
+    Related Question
+  </h3>
+
+  {question?.srno && (
+    <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded">
+      Sr No: {question.srno}
+    </span>
+  )}
+</div>
             <div className="text-sm scale-95 origin-top-left w-[105%] -mb-2">
                 {/* Show passage first if exists */}
 {question?.reading_comprehension_passage && (
@@ -240,6 +304,19 @@ function ViewDoubtModal({ data, updated, setUpdated, role = "admin" }) {
           )}
         </div>
       </Modal>
+      {editQuestionData && (
+  <EditQuestionModal
+    open={isEditModalOpen}
+    setOpen={setIsEditModalOpen}
+    editQuestionData={editQuestionData}
+    setEditQuestionData={setEditQuestionData}
+    topicOptions={topicOptions}
+    role={role}
+    updated={updated}
+    setUpdated={setUpdated}
+   
+  />
+)}
     </>
   );
 }
