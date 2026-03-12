@@ -137,9 +137,9 @@ function CourseMetaDetailsForm({
               className="w-full h-10"
               placeholder="Select start date"
               disabledDate={(current) => {
-                // Can not select days before today and today
-                return current && current < dayjs().endOf("day");
-              }}
+  // Cannot select dates before today
+  return current && current < dayjs().startOf("day");
+}}
             />
           </Form.Item>
         </Col>
@@ -159,9 +159,14 @@ function CourseMetaDetailsForm({
               className="w-full h-10"
               placeholder="Select end date"
               disabledDate={(current) => {
-                // Can not select days before today and today
-                return current && current < dayjs().endOf("day");
-              }}
+  const startDate = form.getFieldValue(["courses", name, "subscription_start_date"]);
+
+  if (!startDate) {
+    return current && current < dayjs().startOf("day");
+  }
+
+  return current && current <= dayjs(startDate).startOf("day");
+}}
             />
           </Form.Item>
         </Col>
