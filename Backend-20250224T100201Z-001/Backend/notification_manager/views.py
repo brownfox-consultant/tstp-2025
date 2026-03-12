@@ -10,6 +10,12 @@ from notification_manager.models import UserNotification
 from notification_manager.serializers import UserNotificationSerializer
 from notification_manager.utils import ROLE_CATEGORY_MAPPING
 from sTest.utils import get_error_response
+from datetime import datetime, timedelta
+from django.utils import timezone
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from system_manager.models import Doubt, Issue, Concern, Meeting, Suggestion
 
 
 class UserNotificationViewSet(viewsets.ModelViewSet):
@@ -41,53 +47,71 @@ class UserNotificationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='unread')
     def unread_count_by_category(self, request):
-        user = request.user
-        user_role = user.role.name
-        filter_param = request.query_params.get('filter')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
 
-        relevant_categories = ROLE_CATEGORY_MAPPING.get(user_role, [])
-        category_details = {
-            category: {'unread_count': 0, 'latest_notifications': []}
-            for category in relevant_categories
-        }
+        filter_param = request.query_params.get("filter")
+        start_date = request.query_params.get("start_date")
+        end_date = request.query_params.get("end_date")
 
-        unread_notifications = UserNotification.objects.filter(
-            user=user,
-            status=UserNotification.UNREAD,
-            category__in=relevant_categories
-        )
+        doubt_qs = Doubt.objects.filter(status=Doubt.RAISED)
+        issue_qs = Issue.objects.filter(status=Issue.RAISED)
+        concern_qs = Concern.objects.filter(status=Concern.RAISED)
+        meeting_qs = Meeting.objects.filter(status=Meeting.SCHEDULED)
+        suggestion_qs = Suggestion.objects.filter(status=Suggestion.IN_REVIEW)
 
-        now = datetime.now()
-        if filter_param == 'today':
+        now = timezone.now()
+
+        # -------- Filter Logic --------
+        if filter_param == "today":
             start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            unread_notifications = unread_notifications.filter(created_at__gte=start)
-        elif filter_param == 'last_week':
+
+            doubt_qs = doubt_qs.filter(created_at__gte=start)
+            issue_qs = issue_qs.filter(created_at__gte=start)
+            concern_qs = concern_qs.filter(created_at__gte=start)
+            meeting_qs = meeting_qs.filter(created_at__gte=start)
+            suggestion_qs = suggestion_qs.filter(created_at__gte=start)
+
+        elif filter_param == "last_week":
             start = now - timedelta(days=7)
-            unread_notifications = unread_notifications.filter(created_at__gte=start)
-        elif filter_param == 'last_month':
+
+            doubt_qs = doubt_qs.filter(created_at__gte=start)
+            issue_qs = issue_qs.filter(created_at__gte=start)
+            concern_qs = concern_qs.filter(created_at__gte=start)
+            meeting_qs = meeting_qs.filter(created_at__gte=start)
+            suggestion_qs = suggestion_qs.filter(created_at__gte=start)
+
+        elif filter_param == "last_month":
             start = now - timedelta(days=30)
-            unread_notifications = unread_notifications.filter(created_at__gte=start)
+
+            doubt_qs = doubt_qs.filter(created_at__gte=start)
+            issue_qs = issue_qs.filter(created_at__gte=start)
+            concern_qs = concern_qs.filter(created_at__gte=start)
+            meeting_qs = meeting_qs.filter(created_at__gte=start)
+            suggestion_qs = suggestion_qs.filter(created_at__gte=start)
+
         elif start_date and end_date:
             try:
-                start = datetime.strptime(start_date, '%Y-%m-%d')
-                end = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
-                unread_notifications = unread_notifications.filter(created_at__range=(start, end))
+                start = datetime.strptime(start_date, "%Y-%m-%d")
+                end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+
+                doubt_qs = doubt_qs.filter(created_at__range=(start, end))
+                issue_qs = issue_qs.filter(created_at__range=(start, end))
+                concern_qs = concern_qs.filter(created_at__range=(start, end))
+                meeting_qs = meeting_qs.filter(created_at__range=(start, end))
+                suggestion_qs = suggestion_qs.filter(created_at__range=(start, end))
+
             except ValueError:
-                return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
 
-        unread_notifications = unread_notifications.order_by('-created_at')
+        # -------- Response --------
+        data = {
+            "DOUBT": {"unread_count": doubt_qs.count()},
+            "ISSUE": {"unread_count": issue_qs.count()},
+            "CONCERN": {"unread_count": concern_qs.count()},
+            "MEETING": {"unread_count": meeting_qs.count()},
+            "SUGGESTION": {"unread_count": suggestion_qs.count()},
+        }
 
-        for notification in unread_notifications:
-            category = notification.category
-            category_details[category]['unread_count'] += 1
-            if len(category_details[category]['latest_notifications']) < 3:
-                category_details[category]['latest_notifications'].append(
-                    UserNotificationSerializer(notification).data
-                )
-
-        return Response(category_details)
+        return Response(data)
 
     @action(detail=False, methods=['get'], url_path='category')
     def category_notifications(self, request):
