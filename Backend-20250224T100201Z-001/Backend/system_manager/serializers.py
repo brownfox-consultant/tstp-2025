@@ -7,6 +7,8 @@ from test_manager.models import TestSubmission, Result
 from django.utils import timezone
 from course_manager.models import Question, CourseSubjects, Topic, SubTopic
 from test_manager.models import Test
+from course_manager.serializers import QuestionListSerializer
+from course_manager.utils import build_question_availability_map
 
 
 # class RaiseDoubtSerializer(serializers.ModelSerializer):
@@ -64,6 +66,8 @@ class DoubtListSerializer(serializers.ModelSerializer):
     faculty_assigned_date = serializers.SerializerMethodField()
     resolution_date = serializers.SerializerMethodField()
 
+    
+
     class Meta:
         model = Doubt
         fields = ['id', 'test','test_type', 'student', 'faculty','resolved_by', 'question', 'description', 'status', 'resolution',
@@ -108,64 +112,99 @@ class DoubtListSerializer(serializers.ModelSerializer):
     def get_resolved_by(self, obj):
         return obj.resolved_by.name if obj.resolved_by else None
 
+    # def get_question(self, obj):
+    #     question = obj.question
+
+    #     if not question:
+    #         return None
+
+    #     # Default values
+    #     selected_option_index = None
+    #     is_skipped = True  # assume skipped unless found
+
+    #     # Try to find student's test result for context
+    #     test_submission = TestSubmission.objects.filter(test_id=obj.test, student=obj.student).first()
+    #     if test_submission:
+    #         result = Result.objects.filter(test_submission=test_submission).first()
+    #         if result:
+    #             try:
+    #                 answers = result.detailed_view.get("answers", {})
+    #                 course_answers = answers.get(str(obj.course_subject.id), {})
+    #                 section_data = course_answers.get(str(obj.section), {})
+    #                 questions_answered = section_data.get("questions_answered", {})
+    #                 question_data = questions_answered.get(str(question.id))
+
+    #                 if question_data:
+    #                     selected_option_index = question_data.get('selected_option_index')
+    #                     is_skipped = question_data.get('is_skipped', True)
+
+    #             except Exception:
+    #                 pass  # keep defaults
+
+        
+    #     question_data = {
+    #         'id': question.id,
+    #         'srno': question.srno,
+    #         'course_subject': question.course_subject_id if question.course_subject else None,
+
+    #         # ✅ add topic & subtopic
+    #         'topic': question.topic.name if question.topic else None,
+    #         'topic_id': question.topic.id if question.topic else None,
+
+    #         'sub_topic': question.sub_topic.name if question.sub_topic else None,
+    #         'sub_topic_id': question.sub_topic.id if question.sub_topic else None,
+
+    #         'description': question.description,
+    #         'reading_comprehension_passage': question.reading_comprehension_passage,
+
+    #         'question_type': question.question_type,
+    #         'question_subtype': question.question_subtype,
+
+    #         'test_type': question.test_type,
+    #         'difficulty': question.difficulty,
+    #         'show_calculator': question.show_calculator,
+            
+            
+
+    #         'is_skipped': is_skipped,
+    #         'options': [],
+    #     }
+
+    #     for index, option in enumerate(question.options):
+    #         if isinstance(option, dict):
+    #             option_data = {
+    #                 'description': option.get('description', ''),
+    #                 'is_correct': option.get('is_correct', False),
+    #                 'selected_by_user': False if is_skipped else index == selected_option_index
+    #             }
+    #         else:
+    #             option_data = {
+    #                 'description': option,
+    #                 'is_correct': False,
+    #                 'selected_by_user': False if is_skipped else index == selected_option_index
+    #             }
+
+    #         question_data['options'].append(option_data)
+
+    #     return question_data
+
+
     def get_question(self, obj):
         question = obj.question
-
         if not question:
             return None
 
-        # Default values
-        selected_option_index = None
-        is_skipped = True  # assume skipped unless found
+        availability_map = build_question_availability_map([question])
 
-        # Try to find student's test result for context
-        test_submission = TestSubmission.objects.filter(test_id=obj.test, student=obj.student).first()
-        if test_submission:
-            result = Result.objects.filter(test_submission=test_submission).first()
-            if result:
-                try:
-                    answers = result.detailed_view.get("answers", {})
-                    course_answers = answers.get(str(obj.course_subject.id), {})
-                    section_data = course_answers.get(str(obj.section), {})
-                    questions_answered = section_data.get("questions_answered", {})
-                    question_data = questions_answered.get(str(question.id))
+        serializer = QuestionListSerializer(
+            question,
+            context={
+                "request": self.context.get("request"),
+                "availability_map": availability_map
+            }
+        )
 
-                    if question_data:
-                        selected_option_index = question_data.get('selected_option_index')
-                        is_skipped = question_data.get('is_skipped', True)
-
-                except Exception:
-                    pass  # keep defaults
-
-        question_data = {
-        'id': question.id,
-        'description': question.description,
-        'reading_comprehension_passage': question.reading_comprehension_passage,
-        'question_type': question.question_type,
-        'question_subtype': question.question_subtype,
-        'is_skipped': is_skipped,
-        'options': [],
-    }
-
-        for index, option in enumerate(question.options):
-            if isinstance(option, dict):
-                option_data = {
-                    'description': option.get('description', ''),
-                    'is_correct': option.get('is_correct', False),
-                    'selected_by_user': False if is_skipped else index == selected_option_index
-                }
-            else:
-                option_data = {
-                    'description': option,
-                    'is_correct': False,
-                    'selected_by_user': False if is_skipped else index == selected_option_index
-                }
-
-            question_data['options'].append(option_data)
-
-        return question_data
-
-
+        return serializer.data
 
 class IssueSerializer(serializers.ModelSerializer):
     student = serializers.CharField(source="student.name", read_only=True)
@@ -379,7 +418,7 @@ class CreateSuggestionSerializer(serializers.ModelSerializer):
 
 
 class SuggestionListSerializer(serializers.ModelSerializer):
-    question = QuestionListSerializer()
+    question = serializers.SerializerMethodField()
     course = serializers.SerializerMethodField()
     subject = serializers.SerializerMethodField()
     suggestion = serializers.SerializerMethodField()
@@ -408,8 +447,7 @@ class SuggestionListSerializer(serializers.ModelSerializer):
             'explanation': obj.explanation
         }
 
-    def get_created_by(self, obj):
-        return obj.created_by.username if obj.created_by else "Unknown"
+    
 
 
     def get_course(self, obj):
@@ -420,6 +458,23 @@ class SuggestionListSerializer(serializers.ModelSerializer):
 
     def get_created_by(self, obj):
         return obj.created_by.name
+    
+    def get_question(self, obj):
+        question = obj.question
+        if not question:
+            return None
+
+        availability_map = build_question_availability_map([question])
+
+        serializer = QuestionListSerializer(
+            question,
+            context={
+                "request": self.context.get("request"),
+                "availability_map": availability_map
+            }
+        )
+
+        return serializer.data
 
 
 class CreateStudentFeedbackSerializer(serializers.ModelSerializer):

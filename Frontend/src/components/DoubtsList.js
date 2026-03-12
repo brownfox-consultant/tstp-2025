@@ -9,11 +9,11 @@ import DoubtStatusTag from "./DoubtStatusTag";
 import { usePathname } from "next/navigation";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { Button, Modal } from "antd";
-import { EditOutlined, CloseOutlined } from "@ant-design/icons";
 import { getSubjectTopics } from "@/app/services/authService";
 import EditQuestionForm from "./EditQuestionForm";
-import { useRouter } from "next/navigation";
+import { Button, Modal } from "antd";
+import { EditOutlined, CloseOutlined } from "@ant-design/icons";
+import EditQuestionModal from "./EditQuestionModal";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -28,15 +28,13 @@ function DoubtsList() {
   const [sortParams, setSortParams] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const router = useRouter();
-
-const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-const [editQuestionData, setEditQuestionData] = useState(null);
-const [topicOptions, setTopicOptions] = useState([]);
   const debounceTimeoutRef = useRef(null);
   const formatDateTime = (text) =>
     text ? dayjs.utc(text).tz("Asia/Kolkata").format("MMM D, YYYY h:mm A") : "-";
   const role = usePathname().split("/")[1];
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const [editQuestionData, setEditQuestionData] = useState(null);
+const [topicOptions, setTopicOptions] = useState([]);
 
   const formatTestType = (type) => {
     if (!type) return "-";
@@ -163,6 +161,8 @@ const [topicOptions, setTopicOptions] = useState([]);
       sorter: true,
       render: (text) => <>{text || "-"}</>,
     },
+   
+
     {
   key: "action",
   title: "Action",
@@ -170,6 +170,7 @@ const [topicOptions, setTopicOptions] = useState([]);
   align: "center",
   render: (_, record) => (
     <div className="flex gap-2 justify-center">
+
       <ViewDoubtModal
         updated={updated}
         setUpdated={setUpdated}
@@ -182,36 +183,45 @@ const [topicOptions, setTopicOptions] = useState([]);
           icon={<EditOutlined style={{ color: "#1890ff" }} />}
           onClick={async () => {
 
-            const courseSubjectId =
-              record.question?.course_subject ||
-              record.question?.course_subject_id;
+  const courseSubjectId =
+    record.question?.course_subject || record.course_subject_id;
 
-            if (courseSubjectId) {
-              try {
-                const res = await getSubjectTopics(courseSubjectId);
+  try {
+    const res = await getSubjectTopics(courseSubjectId);
 
-                setTopicOptions(
-                  res.data.map((option) => ({
-                    ...option,
-                    label: option.name,
-                  }))
-                );
-              } catch (err) {
-                console.error("Failed to fetch topics:", err);
-                setTopicOptions([]);
-              }
-            }
+    const topics = res.data.map((t) => ({
+      ...t,
+      label: t.name,
+      value: t.id,
+    }));
 
-            setEditQuestionData(record.question);
-            setIsEditModalOpen(true);
-          }}
+    setTopicOptions(topics);
+
+    const topic = res.data.find(
+      (t) => t.name === record.question.topic
+    );
+
+    setEditQuestionData({
+      ...record.question,
+      topic: topic?.id,
+      topic_name: topic?.name
+    });
+
+    setIsEditModalOpen(true);
+
+  } catch (err) {
+    console.error(err);
+  }
+
+}}
         >
           Edit
         </Button>
       )}
+
     </div>
   ),
-},
+}
   ];
 
   const studentCols = [
@@ -568,58 +578,24 @@ const [topicOptions, setTopicOptions] = useState([]);
           scroll={{ x: "max-content", y: 480 }}
           onChange={handleTableChange}
         ></Table>
-        <Modal
-  open={isEditModalOpen}
-  onCancel={() => {
-    setIsEditModalOpen(false);
-    setEditQuestionData(null);
-    setUpdated((prev) => !prev);
-  }}
-  width={1300}
-  footer={null}
-  closable={false}
->
-  <div className="mb-2 flex justify-between items-center">
-    <h2 className="text-xl font-bold">Edit Question</h2>
 
-    <button
-      onClick={() => {
-        setIsEditModalOpen(false);
-        setEditQuestionData(null);
-      }}
-    >
-      <CloseOutlined />
-    </button>
-  </div>
+        
 
   <div className="p-4 max-h-[70vh] overflow-y-auto bg-gray-50">
     {editQuestionData && (
-      <EditQuestionForm
-        initialValues={editQuestionData}
-        action="edit"
-        topicOptionsParam={topicOptions}
-        subTopicOptionsParam={
-          topicOptions.find(
-            (t) => t.name === editQuestionData.topic
-          )?.subtopics || []
-        }
-        courseSubId={
-          editQuestionData.course_subject ||
-          editQuestionData.course_subject_id
-        }
-        role={role}
-        updated={updated}
-        setUpdated={setUpdated}
-        hideButtons={false}
-        closeModal={() => {
-          setIsEditModalOpen(false);
-          setEditQuestionData(null);
-          setUpdated((prev) => !prev);
-        }}
-      />
+      <EditQuestionModal
+  open={isEditModalOpen}
+  setOpen={setIsEditModalOpen}
+  editQuestionData={editQuestionData}
+  setEditQuestionData={setEditQuestionData}
+  topicOptions={topicOptions}
+  role={role}
+  updated={updated}
+  setUpdated={setUpdated}
+/>
     )}
   </div>
-</Modal>
+
       </div>
     </div>
   );

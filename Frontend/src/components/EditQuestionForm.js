@@ -567,17 +567,23 @@ const [courseStatusMap, setCourseStatusMap] = useState(
   );
 
   editQuestionService(initialValues.id, {
-    ...payload,
-    course_updates, // 🔥 FINAL
-  }).then(() => {
-    Modal.success({
-      title: "Question updated successfully",
-      content: `Updated in ${course_updates.length} course(s)`,
-      onOk: () => {
-        closeModal?.();
-      },
-    });
+  ...payload,
+  course_updates,
+}).then(() => {
+
+  // 🔁 refresh doubts + suggestions
+  if (setUpdated) {
+    setUpdated(prev => !prev);
+  }
+
+  Modal.success({
+    title: "Question updated successfully",
+    content: `Updated in ${course_updates.length} course(s)`,
+    onOk: () => {
+      closeModal?.();
+    },
   });
+});
 }
 
     

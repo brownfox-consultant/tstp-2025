@@ -19,7 +19,7 @@ import { usePathname, useRouter } from "next/navigation";
 import MathContent from "./MathContent";
 import AdvancedSearchModal1 from "./AdvancedSearchModal1";
 import EditQuestionForm from "./EditQuestionForm";
-
+import EditQuestionModal from "./EditQuestionModal";
 const { Search } = Input;
 
 function SuggestionsList() {
@@ -203,32 +203,39 @@ function SuggestionsList() {
             <Button
               type="text"
               icon={<EditOutlined style={{ color: "#1890ff" }} />}
-              onClick={async () => {
-                // Get course_subject id from the record
-                const courseSubjectId =
-                  record.question.course_subject || record.course_subject_id;
+  onClick={async () => {
 
-                // Fetch topic options if we have a course subject id
-                if (courseSubjectId) {
-                  try {
-                    const res = await getSubjectTopics(courseSubjectId);
-                    setTopicOptions(
-                      res.data.map((option) => ({
-                        ...option,
-                        label: option.name,
-                      })),
-                    );
-                  } catch (err) {
-                    console.error("Failed to fetch topics:", err);
-                    setTopicOptions([]);
-                  }
-                } else {
-                  setTopicOptions([]);
-                }
+  const courseSubjectId =
+    record.question?.course_subject || record.course_subject_id;
 
-                setEditQuestionData(record.question);
-                setIsEditModalOpen(true);
-              }}
+  try {
+    const res = await getSubjectTopics(courseSubjectId);
+
+    const topics = res.data.map((t) => ({
+      ...t,
+      label: t.name,
+      value: t.id,
+    }));
+
+    setTopicOptions(topics);
+
+    const topic = res.data.find(
+      (t) => t.name === record.question.topic
+    );
+
+    setEditQuestionData({
+      ...record.question,
+      topic: topic?.id,
+      topic_name: topic?.name
+    });
+
+    setIsEditModalOpen(true);
+
+  } catch (err) {
+    console.error(err);
+  }
+
+}}
               style={{ color: "#1890ff", fontWeight: 500 }}
             >
               Edit
@@ -297,89 +304,24 @@ function SuggestionsList() {
         data={suggestionsData}
       />
 
-      {/* Edit Question Modal - Modern UI */}
-      <Modal
-        open={isEditModalOpen}
-        onCancel={() => {
-          setIsEditModalOpen(false);
-          setEditQuestionData(null);
-          setUpdated((prev) => !prev);
-        }}
-        width={1300}
-        footer={null}
-        closable={false}
-        className="edit-question-modal"
-        styles={{
-          content: { borderRadius: "16px", overflow: "hidden" },
-          top: "20",
-        }}
-      >
-        {/* Header */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
-                <EditOutlined className="text-[#F59405] text-xl" />
-              </div>
-              <div>
-                <h2 className="text-black text-xl font-bold m-0">
-                  Edit Question
-                </h2>
-                <p className="text-gray-500 text-sm m-0">
-                  {editQuestionData?.topic &&
-                    `Topic: ${editQuestionData.topic}`}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setIsEditModalOpen(false);
-                setEditQuestionData(null);
-                setUpdated((prev) => !prev);
-              }}
-              className="w-8 h-8 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 cursor-pointer border-0 rounded-md bg-transparent"
-            >
-              <span className="text-gray-500 text-lg">
-                <CloseOutlined />
-              </span>
-            </button>
-          </div>
-        </div>
+     
 
         {/* Form Content */}
         <div className="p-4 max-h-[70vh] overflow-y-auto bg-gray-50">
           {editQuestionData && (
-            <EditQuestionForm
-              initialValues={editQuestionData}
-              action="edit"
-              topicOptionsParam={topicOptions}
-              subTopicOptionsParam={
-                topicOptions.find((t) => t.name === editQuestionData.topic)
-                  ?.subtopics || []
-              }
-              courseSubId={
-                editQuestionData.course_subject ||
-                editQuestionData.course_subject_id
-              }
-              role={role}
-              updated={updated}
-              setUpdated={setUpdated}
-              hideButtons={false}
-              closeModal={() => {
-                const courseSubjectId =
-                  editQuestionData.course_subject ||
-                  editQuestionData.course_subject_id;
-                setIsEditModalOpen(false);
-                setEditQuestionData(null);
-                setUpdated((prev) => !prev);
-                router.push(
-                  `/admin/questions/questions?course_subject_id=${courseSubjectId}&page=1`,
-                );
-              }}
-            />
+            <EditQuestionModal
+  open={isEditModalOpen}
+  setOpen={setIsEditModalOpen}
+  editQuestionData={editQuestionData}
+  setEditQuestionData={setEditQuestionData}
+  topicOptions={topicOptions}
+  role={role}
+  updated={updated}
+  setUpdated={setUpdated}
+/>
           )}
         </div>
-      </Modal>
+      
     </div>
   );
 }

@@ -184,16 +184,38 @@ class CreateQuestionSerializer(serializers.ModelSerializer):
         return question
 
     def update(self, instance, validated_data):
-        topic_name = validated_data.pop('topic', None)
-        sub_topic_name = validated_data.pop('sub_topic', None)
+        topic_value = validated_data.pop('topic', None)
+        sub_topic_value = validated_data.pop('sub_topic', None)
 
-        if topic_name:
-            topic, _ = Topic.objects.get_or_create(name=topic_name, course_subject=validated_data.get('course_subject',
-                                                                                                      instance.course_subject))
-            instance.topic = topic
-        if sub_topic_name:
-            sub_topic, _ = SubTopic.objects.get_or_create(name=sub_topic_name, topic=instance.topic)
-            instance.sub_topic = sub_topic
+        if topic_value:
+
+            # If frontend sends topic ID
+            if str(topic_value).isdigit():
+                topic = Topic.objects.filter(id=topic_value).first()
+
+            # If frontend sends topic name
+            else:
+                topic, _ = Topic.objects.get_or_create(
+                    name=topic_value,
+                    course_subject=validated_data.get(
+                        'course_subject', instance.course_subject
+                    )
+                )
+
+            if topic:
+                instance.topic = topic
+        if sub_topic_value:
+
+            if str(sub_topic_value).isdigit():
+                sub_topic = SubTopic.objects.filter(id=sub_topic_value).first()
+            else:
+                sub_topic, _ = SubTopic.objects.get_or_create(
+                    name=sub_topic_value,
+                    topic=instance.topic
+                )
+
+            if sub_topic:
+                instance.sub_topic = sub_topic
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
