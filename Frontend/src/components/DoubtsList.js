@@ -37,9 +37,16 @@ const [editQuestionData, setEditQuestionData] = useState(null);
 const [topicOptions, setTopicOptions] = useState([]);
 
   const formatTestType = (type) => {
-    if (!type) return "-";
-    return type === "EXAM" ? "Full Length Tests" : type;
-  };
+  if (!type) return "-";
+
+  if (type === "EXAM") return "Full Length Test";
+
+  // Convert: SELF_PRACTICE_TEST → Self Practice Test
+  return type
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 
   useEffect(() => {

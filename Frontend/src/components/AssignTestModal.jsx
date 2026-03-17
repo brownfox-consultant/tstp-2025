@@ -24,37 +24,68 @@ export default function AssignTestModal({ open, onClose, studentId }) {
 
     setLoading(true);
 
-    axios
-      .post(
-        `${BASE_URL}/api/test/assign/`,
-        {
-          student_id: studentId,
-          test_ids: selectedTests,
-          expiration_days: 7,
-        },
-        {
-          withCredentials: true,
-          headers: {
-            "X-CSRFToken": localStorage.getItem("csrfToken"),
-          },
-        }
-      )
-      .then((res) => {
-        const { assigned_count, skipped_count } = res.data;
+   axios
+  .post(
+    `${BASE_URL}/api/test/assign/`,
+    {
+      student_id: studentId,
+      test_ids: selectedTests,
+      expiration_days: 7,
+    },
+    {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": localStorage.getItem("csrfToken"),
+      },
+      validateStatus: () => true, // 🔥 IMPORTANT
+    }
+  )
+  .then((res) => {
+    const data = res.data;
 
-        message.success(
-          `${assigned_count} test(s) assigned${
-            skipped_count ? `, ${skipped_count} skipped` : ""
-          }`
-        );
+    if (!data) {
+      message.error("Invalid response from server");
+      return;
+    }
 
-        onClose();
-        setSelectedTests([]);
-      })
-      .catch((err) => {
-        message.error(err.response?.data?.detail || "Failed to assign tests");
-      })
-      .finally(() => setLoading(false));
+    const { assigned_count, skipped_count, skipped } = data;
+
+    // ✅ SUCCESS
+    if (assigned_count > 0) {
+      message.success(`${assigned_count} test(s) assigned successfully`);
+    }
+
+    // ⚠️ SKIPPED
+    if (skipped_count > 0) {
+      Modal.warning({
+        title: "Some tests were not assigned",
+        content: (
+          <div>
+            <p>{skipped_count} test(s) skipped:</p>
+            <ul style={{ paddingLeft: 16 }}>
+              {skipped?.map((s, i) => (
+                <li key={i}>
+                  <strong>{s.test_name}</strong> → {s.reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+      });
+    }
+
+    // ❌ NOTHING ASSIGNED
+    if (assigned_count === 0 && skipped_count > 0) {
+      message.error("No tests were assigned");
+    }
+
+    onClose();
+    setSelectedTests([]);
+  })
+  .catch((err) => {
+    message.error("Server error");
+  })
+  .finally(() => setLoading(false)); 
   };
 
   return (

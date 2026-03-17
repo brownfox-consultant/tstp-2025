@@ -5,7 +5,7 @@ import axios from "axios";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, ResponsiveContainer, Cell,
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend,Tooltip,
 } from "recharts";
 
 import {
@@ -179,53 +179,144 @@ export default function TopicWiseProgress({
 }
 
 /* ================= CHARTS SECTION ================= */
-const ChartsSection = ({ chartData, skillsData }) => (
-  <div className="flex flex-wrap gap-6">
+const ChartsSection = ({ chartData, skillsData }) => {
+  const [activeIndex, setActiveIndex] = useState(null);
+  const [activeSkillIndex, setActiveSkillIndex] = useState(null);
 
-    {/* LEFT - Topic Progress */}
-    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[350px]">
-      <h3 className="font-bold mb-4">Topic Progress Comparison</h3>
+  return (
+    <div className="flex flex-wrap gap-6">
 
-      <div className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart layout="vertical" data={chartData}>
-            <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-            <YAxis dataKey="fullName" type="category" width={150} />
-            <XAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} />
-            <RechartsTooltip />
-            <Bar dataKey="value">
-              {chartData.map((e, i) => (
-                <Cell key={i} fill={e.value >= 75 ? "#2ecc71" : "#f39c12"} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      {/* ================= LEFT CHART ================= */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[350px]">
+        <h3 className="font-bold mb-4">Topic Progress Comparison</h3>
+
+        <div className="h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              layout="vertical"
+              data={chartData}
+              barCategoryGap="30%"
+              onMouseLeave={() => setActiveIndex(null)}
+            >
+              <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+
+              <YAxis
+                dataKey="fullName"
+                type="category"
+                width={120}
+                tick={{ fontSize: 12 }}
+              />
+
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+              />
+               <Tooltip
+                                //formatter={(value) => `${value}%`}
+                                cursor={{ fill: 'transparent' }}
+                              />
+
+              <RechartsTooltip content={<CustomTooltip />} />
+
+              <Bar
+                dataKey="value"
+                barSize={18}
+                radius={[0, 6, 6, 0]}
+                onMouseEnter={(_, index) => setActiveIndex(index)}
+              >
+                {chartData.map((entry, index) => {
+                  const isActive = index === activeIndex;
+
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.value >= 75 ? "#2ecc71" : "#f39c12"}
+                      opacity={
+                        activeIndex === null
+                          ? 1
+                          : isActive
+                          ? 1
+                          : 0.3
+                      }
+                      style={{
+                        transition: "all 0.3s ease",
+                        filter: isActive
+                          ? "brightness(1.1)"
+                          : "none",
+                      }}
+                    />
+                  );
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
-    </div>
 
-    {/* RIGHT - Skills Overview */}
-    <div className="bg-white rounded-2xl p-16 shadow-sm border flex-1 min-w-[350px]">
-      <h3 className="font-bold mb-4">Skills Overview</h3>
+      {/* ================= RIGHT CHART ================= */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[350px]">
+        <h3 className="font-bold mb-4">Skills Overview</h3>
 
-      <div className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={skillsData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis domain={[0, 100]} />
-            <RechartsTooltip />
-            <Bar dataKey="value">
-              {skillsData.map((e, i) => (
-                <Cell key={i} fill={e.value >= 75 ? "#2ecc71" : "#f39c12"} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={skillsData}
+              barCategoryGap="25%"
+              onMouseLeave={() => setActiveSkillIndex(null)}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+
+              <XAxis dataKey="name" />
+
+              <YAxis domain={[0, 100]} />
+              <Tooltip
+                                //formatter={(value) => `${value}%`}
+                                cursor={{ fill: 'transparent' }}
+                              />
+
+              <RechartsTooltip />
+
+              <Bar
+                dataKey="value"
+                barSize={30}
+                radius={[6, 6, 0, 0]}
+                onMouseEnter={(_, index) =>
+                  setActiveSkillIndex(index)
+                }
+              >
+                {skillsData.map((entry, index) => {
+                  const isActive = index === activeSkillIndex;
+
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.value >= 75 ? "#2ecc71" : "#f39c12"}
+                      opacity={
+                        activeSkillIndex === null
+                          ? 1
+                          : isActive
+                          ? 1
+                          : 0.3
+                      }
+                      style={{
+                        transition: "all 0.3s ease",
+                        transform: isActive
+                          ? "scale(1.05)"
+                          : "scale(1)",
+                      }}
+                    />
+                  );
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
-    </div>
 
-  </div>
-);
+    </div>
+  );
+};
 
 /* ================= ACCORDION CARD ================= */
 const TopicCard = ({ topic }) => {
