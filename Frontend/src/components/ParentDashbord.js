@@ -843,7 +843,7 @@ export default function Dashbord() {
               />
             </div>
 
-            <div className="w-64 text-sm">
+            {/* <div className="w-64 text-sm">
               <Select
                 placeholder="Select Topic"
                 options={topics.map((t) => ({ label: t.name, value: t.id }))}
@@ -859,9 +859,9 @@ export default function Dashbord() {
                 isClearable
                 components={{ DropdownIndicator }}
               />
-            </div>
+            </div> */}
 
-            <div className="w-64 text-sm">
+            {/* <div className="w-64 text-sm">
               <Select
                 placeholder="Select Subtopic"
                 options={subtopics.map((s) => ({ label: s.name, value: s.id }))}
@@ -879,7 +879,7 @@ export default function Dashbord() {
                 isDisabled={!selectedTopic}
                 components={{ DropdownIndicator }}
               />
-            </div>
+            </div> */}
           </div>
         </div>
         <ResponsiveContainer width="100%" height={350}>

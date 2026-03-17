@@ -7,22 +7,33 @@ from system_manager.models import Suggestion
 
 class SuggestionFilter(filters.FilterSet):
     course = filters.CharFilter(method='filter_course')
+    subject = filters.CharFilter(method='filter_subject')
     created_by = filters.CharFilter(method='filter_created_by')
     status = filters.CharFilter(method='filter_status')
-    difficulty = filters.CharFilter(method='filter_difficulty')  # ✅ NEW
+    difficulty = filters.CharFilter(method='filter_difficulty')
     created_date = filters.DateFromToRangeFilter(field_name='created_at')
-    question_text = filters.CharFilter(field_name='question__description', lookup_expr='icontains')
+    question_text = filters.CharFilter(method='filter_question_text')
 
     class Meta:
         model = Suggestion
         fields = [
             'course',
+            'subject',
             'created_by',
             'status',
-            'difficulty',  # ✅ include here too
+            'difficulty',
             'created_date',
             'question_text',
         ]
+
+    def filter_question_text(self, queryset, name, value):
+        words = value.split()
+
+        query = Q()
+        for word in words:
+            query &= Q(question__description__icontains=word)
+
+        return queryset.filter(query)   
 
     def filter_course(self, queryset, name, value):
         values = value.split(",")
@@ -30,6 +41,11 @@ class SuggestionFilter(filters.FilterSet):
             question__course_subject__course__id__in=values
         )
 
+    def filter_subject(self, queryset, name, value):
+        values = value.split(",")
+        return queryset.filter(
+            question__course_subject__subject__id__in=values
+        )
 
     def filter_created_by(self, queryset, name, value):
         names = value.split(',')
@@ -41,7 +57,7 @@ class SuggestionFilter(filters.FilterSet):
 
     def filter_difficulty(self, queryset, name, value):
         difficulties = value.split(',')
-        return queryset.filter(question__difficulty__in=difficulties)  # ✅ assumes question has difficulty field
+        return queryset.filter(question__difficulty__in=difficulties)
 
 
 
@@ -98,6 +114,7 @@ class DoubtFilter(filters.FilterSet):
             ('student__name', 'student'),
             ('faculty_assigned_date', 'faculty_assigned_date'),
             ('resolved_by__name', 'resolved_by'),
+            ('test__test_type', 'test_type'),
         )
     )
 

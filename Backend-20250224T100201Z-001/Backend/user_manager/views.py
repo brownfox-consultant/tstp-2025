@@ -1208,7 +1208,7 @@ class TempUserViewSet(viewsets.ModelViewSet):
         new_user.set_password(generate_secure_password())
         new_user.change_password = True
         new_user.save()
-
+        StudentMetadata.objects.create(student=new_user)
         # TEMP USER NOT NEEDED ANYMORE
         temp_user.delete()
 
