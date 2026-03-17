@@ -43,14 +43,15 @@ function SuggestionsList() {
 
   // ✅ Map frontend column key → backend field
   const SORT_FIELD_MAP = {
-    srno: "question__srno",
-    course: "question__course__name",
-    created_by: "created_by__name",
-    created_at: "created_at",
-    status: "status",
-    difficulty: "question__difficulty",
-    question: "question__description",
-  };
+  srno: "question__srno",
+  course: "question__course_subject__course__name",
+  subject: "question__course_subject__subject__name",
+  created_by: "created_by__name",
+  created_at: "created_at",
+  status: "status",
+  difficulty: "question__difficulty",
+  question: "question__description",
+};
 
   const applyAdvancedFilters = async (filters) => {
     setAdvancedFilters(filters);

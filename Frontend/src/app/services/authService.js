@@ -284,16 +284,12 @@ export const activateQuestion = (id) => {
 
 export const deleteUser = (id) => {
   return axios
-    .patch(
-      `${USER_BASE_URL}${id}/deactivate/`,
-      {},
-      {
-        withCredentials: true,
-        headers: {
-          "X-CSRFToken": window.localStorage.getItem("csrfToken"),
-        },
-      }
-    )
+    .delete(`${USER_BASE_URL}${id}/`, {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      },
+    })
     .catch(handleAPIError);
 };
 

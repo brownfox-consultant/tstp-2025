@@ -2801,17 +2801,27 @@ class TestViewSet(viewsets.ModelViewSet):
         return Response(response_list, status=status.HTTP_200_OK)
 
     @action(
-        detail=False,
-        methods=["GET"],
-        permission_classes=[IsAdmin],
-        url_path="assignable"
-    )
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAdmin],
+    url_path="assignable"
+)
     def assignable(self, request):
         course_id = request.query_params.get("course_id")
+        student_id = request.query_params.get("student_id")  # 👈 ADD THIS
 
         qs = Test.objects.filter(is_active=True)
+
         if course_id:
             qs = qs.filter(course_id=course_id)
+
+        # 🔥 filter only tests of enrolled courses
+        if student_id:
+            enrolled_courses = CourseEnrollment.objects.filter(
+                student_id=student_id
+            ).values_list("course_id", flat=True)
+
+            qs = qs.filter(course_id__in=enrolled_courses)
 
         serializer = TestListSerializer(qs, many=True)
         return Response(serializer.data)
@@ -2830,10 +2840,16 @@ class TestViewSet(viewsets.ModelViewSet):
         if not student_id or not test_ids:
             return Response(
                 {"detail": "student_id and test_ids are required"},
-                status=400
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        student = User.objects.get(id=student_id)
+        try:
+            student = User.objects.get(id=student_id)
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "Student not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         assigned_date = timezone.now()
         expiration_date = assigned_date + timedelta(days=expiration_days)
@@ -2851,7 +2867,21 @@ class TestViewSet(viewsets.ModelViewSet):
                 })
                 continue
 
-            # 🚫 Block if already assigned OR completed
+            # 🔥 STEP 1: Check student enrolled in test course
+            is_enrolled = CourseEnrollment.objects.filter(
+                student=student,
+                course=test.course
+            ).exists()
+
+            if not is_enrolled:
+                skipped.append({
+                    "test_id": test_id,
+                    "test_name": test.name,
+                    "reason": "Student not enrolled in this course"
+                })
+                continue
+
+            # 🚫 STEP 2: Prevent duplicate assignment / already attempted
             if TestSubmission.objects.filter(
                 student=student,
                 test=test,
@@ -2868,6 +2898,7 @@ class TestViewSet(viewsets.ModelViewSet):
                 })
                 continue
 
+            # ✅ STEP 3: Assign test
             TestSubmission.objects.create(
                 student=student,
                 test=test,
@@ -2888,7 +2919,7 @@ class TestViewSet(viewsets.ModelViewSet):
                 "assigned_count": len(assigned),
                 "skipped_count": len(skipped),
             },
-            status=201 if assigned else 400
+            status=status.HTTP_201_CREATED if assigned else status.HTTP_400_BAD_REQUEST
         )
 
     @action(
@@ -4836,8 +4867,8 @@ class ResultViewSet(viewsets.ModelViewSet):
 
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        subject_name = request.GET.get("subject")        # ENGLISH / MATH
-        test_type = request.GET.get("test_type")         # FULL_LENGTH / PRACTICE
+        subject_name = request.GET.get("subject")
+        test_type = request.GET.get("test_type")
 
         if not all([student_id, course_id, subject_name, test_type]):
             return Response(
@@ -4848,9 +4879,6 @@ class ResultViewSet(viewsets.ModelViewSet):
         student = get_object_or_404(User, id=student_id)
         course = get_object_or_404(Course, id=course_id)
 
-        # =====================================================
-        # 1️⃣ Resolve CourseSubject
-        # =====================================================
         course_subject = CourseSubjects.objects.filter(
             course=course,
             subject__name__iexact=subject_name
@@ -4859,36 +4887,34 @@ class ResultViewSet(viewsets.ModelViewSet):
         if not course_subject:
             return Response({"results": []})
 
-        topic_map = {}
+        topic_map = defaultdict(lambda: {
+            "correct": 0,
+            "total": 0,
+            "sub_topics": defaultdict(lambda: {"correct": 0, "total": 0})
+        })
 
-        # =====================================================
-        # 2️⃣ FULL LENGTH — ALL TESTS
-        # =====================================================
+        total_questions = 0
+        total_correct = 0
+        total_attempted = 0
+
+        # ================= FULL LENGTH =================
         if test_type == "FULL_LENGTH":
 
-            submissions = (
-                TestSubmission.objects
-                .filter(
-                    student=student,
-                    test__course=course,
-                    status=TestSubmission.COMPLETED
-                )
-                .select_related("result")
-            )
+            submissions = TestSubmission.objects.filter(
+                student=student,
+                test__course=course,
+                status=TestSubmission.COMPLETED
+            ).select_related("result")
 
             if not submissions.exists():
                 return Response({"results": []})
 
             answers = QuestionAnswer.objects.filter(
                 result__in=submissions.values("result"),
-                course_subject=course_subject,
-                is_skipped=False
+                course_subject=course_subject
             ).select_related("question", "question__topic", "question__sub_topic")
 
-
-        # =====================================================
-        # 3️⃣ PRACTICE — ALL TESTS
-        # =====================================================
+        # ================= PRACTICE =================
         elif test_type == "PRACTICE":
 
             practice_results = PracticeTestResult.objects.filter(
@@ -4900,87 +4926,94 @@ class ResultViewSet(viewsets.ModelViewSet):
                 return Response({"results": []})
 
             answers = PracticeQuestionAnswer.objects.filter(
-                practice_test_result__in=practice_results,
-                is_skipped=False
+                practice_test_result__in=practice_results
             ).select_related("question", "question__topic", "question__sub_topic")
 
         else:
             return Response({"error": "Invalid test_type"}, status=400)
 
-        # =====================================================
-        # 4️⃣ AGGREGATE TOPIC + SUBTOPIC (AVERAGE)
-        # =====================================================
+        # ================= AGGREGATION =================
         for ans in answers:
+
+            total_questions += 1
+
+            if not ans.is_skipped:
+                total_attempted += 1
+
+            if ans.is_correct:
+                total_correct += 1
+
+            if ans.is_skipped:
+                continue
 
             question = ans.question
             topic = question.topic.name if question.topic else "General"
             sub_topic = question.sub_topic.name if question.sub_topic else "General"
 
-            topic_map.setdefault(topic, {
-                "correct": 0,
-                "total": 0,
-                "sub_topics": {}
-            })
-
             topic_map[topic]["total"] += 1
             if ans.is_correct:
                 topic_map[topic]["correct"] += 1
 
-            sub_map = topic_map[topic]["sub_topics"].setdefault(sub_topic, {
-                "correct": 0,
-                "total": 0
-            })
-
-            sub_map["total"] += 1
+            topic_map[topic]["sub_topics"][sub_topic]["total"] += 1
             if ans.is_correct:
-                sub_map["correct"] += 1
+                topic_map[topic]["sub_topics"][sub_topic]["correct"] += 1
 
-        # =====================================================
-        # 5️⃣ FORMAT RESPONSE (FRONTEND READY)
-        # =====================================================
+        # ================= FORMAT =================
         chart_data = []
         accordion_data = []
 
+        strong_topics = 0
+        weak_topics = 0
+
         for topic, data in topic_map.items():
 
-            topic_score = round(
-                (data["correct"] / data["total"]) * 100
-            ) if data["total"] else 0
+            score = round((data["correct"] / data["total"]) * 100) if data["total"] else 0
+
+            if score >= 75:
+                strong_topics += 1
+            else:
+                weak_topics += 1
 
             chart_data.append({
                 "shortName": topic.split()[0],
                 "fullName": topic,
-                "value": topic_score
+                "value": score
             })
 
             accordion_data.append({
                 "title": topic,
-                "score": topic_score,
+                "score": score,
                 "subTopics": [
                     {
-                        "name": sub_topic,
-                        "score": round(
-                            (v["correct"] / v["total"]) * 100
-                        ) if v["total"] else 0,
+                        "name": sub,
+                        "score": round((v["correct"] / v["total"]) * 100) if v["total"] else 0,
                         "status": (
                             "Strong" if (v["correct"] / v["total"]) >= 0.75
                             else "On Track" if (v["correct"] / v["total"]) >= 0.5
                             else "Needs Improvement"
                         )
                     }
-                    for sub_topic, v in data["sub_topics"].items()
+                    for sub, v in data["sub_topics"].items()
                 ]
             })
+
+        # ================= SKILLS DATA =================
+        accuracy = round((total_correct / total_attempted) * 100) if total_attempted else 0
+        attempt_rate = round((total_attempted / total_questions) * 100) if total_questions else 0
+
+        skills_data = [
+            {"name": "Accuracy", "value": accuracy},
+            {"name": "Attempt Rate", "value": attempt_rate},
+            {"name": "Strong Topics", "value": strong_topics},
+            {"name": "Weak Topics", "value": weak_topics},
+        ]
 
         return Response({
             "mode": "AVERAGE",
             "test_type": test_type,
-            "total_tests_considered": (
-                submissions.count() if test_type == "FULL_LENGTH"
-                else practice_results.count()
-            ),
             "chartData": chart_data,
-            "accordionData": accordion_data
+            "skillsData": skills_data,
+            "accordionData": accordion_data,
         })
 
     

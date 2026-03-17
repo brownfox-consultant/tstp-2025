@@ -95,6 +95,7 @@ export default function TopicWiseProgress({
   const [chartData, setChartData] = useState([]);
   const [accordionData, setAccordionData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [skillsData, setSkillsData] = useState([]);
 
   /* ================= FETCH API ================= */
   useEffect(() => {
@@ -119,6 +120,7 @@ export default function TopicWiseProgress({
     )
       .then(res => {
         setChartData(res.data.chartData || []);
+        setSkillsData(res.data.skillsData || []);
         setAccordionData(
           (res.data.accordionData || []).map(topic => ({
             ...topic,
@@ -160,7 +162,7 @@ export default function TopicWiseProgress({
     <div className="space-y-5">
 
       {/* ================= TOP CHARTS ================= */}
-      <ChartsSection chartData={chartData} />
+      <ChartsSection chartData={chartData} skillsData={skillsData} />
 
       {/* ================= ACCORDION ================= */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -177,30 +179,23 @@ export default function TopicWiseProgress({
 }
 
 /* ================= CHARTS SECTION ================= */
-const ChartsSection = ({ chartData }) => (
+const ChartsSection = ({ chartData, skillsData }) => (
   <div className="flex flex-wrap gap-6">
 
-    {/* HORIZONTAL BAR CHART */}
-    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 md:min-w-[450px] min-w-[350px]">
+    {/* LEFT - Topic Progress */}
+    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[350px]">
       <h3 className="font-bold mb-4">Topic Progress Comparison</h3>
 
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart layout="vertical" data={chartData}>
             <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-            <YAxis dataKey="fullName" type="category" width={150} tick={{ width: 150, fontSize: 11 }} />
-            <XAxis
-              type="number"
-              domain={[0, 100]}
-              tickFormatter={v => `${v}%`}
-            />
-            <RechartsTooltip content={<CustomTooltip />}  cursor={{ fill: 'transparent' }}  />
-            <Bar dataKey="value" barSize={22}>
+            <YAxis dataKey="fullName" type="category" width={150} />
+            <XAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} />
+            <RechartsTooltip />
+            <Bar dataKey="value">
               {chartData.map((e, i) => (
-                <Cell
-                  key={i}
-                  fill={e.value >= 75 ? COLORS.green : COLORS.orange}
-                />
+                <Cell key={i} fill={e.value >= 75 ? "#2ecc71" : "#f39c12"} />
               ))}
             </Bar>
           </BarChart>
@@ -208,51 +203,27 @@ const ChartsSection = ({ chartData }) => (
       </div>
     </div>
 
-    {/* VERTICAL COLUMN BAR CHART (replaced Radar) */}
-    <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 md:min-w-[450px] min-w-[350px]">
+    {/* RIGHT - Skills Overview */}
+    <div className="bg-white rounded-2xl p-16 shadow-sm border flex-1 min-w-[350px]">
       <h3 className="font-bold mb-4">Skills Overview</h3>
 
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} barGap={8} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-            <XAxis 
-              dataKey="fullName" 
-              axisLine={false} 
-              tickLine={false} 
-              // height={120}
-              interval={0}
-              tick={<CustomXAxisTick />}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              domain={[0, 100]}
-              tickFormatter={v => `${v}%`}
-              fontSize={11}
-            />
-            <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-            <Legend 
-              wrapperStyle={{ paddingTop: '10px' }}
-              formatter={() => 'Accuracy'}
-            />
-            <Bar 
-              dataKey="value" 
-              name="Accuracy"
-              radius={[6, 6, 0, 0]} 
-              barSize={40}
-            >
-              {chartData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={entry.value >= 75 ? COLORS.green : COLORS.orange}
-                />
+          <BarChart data={skillsData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis domain={[0, 100]} />
+            <RechartsTooltip />
+            <Bar dataKey="value">
+              {skillsData.map((e, i) => (
+                <Cell key={i} fill={e.value >= 75 ? "#2ecc71" : "#f39c12"} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
+
   </div>
 );
 

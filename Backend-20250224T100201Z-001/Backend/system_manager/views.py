@@ -363,7 +363,7 @@ class DoubtViewSet(viewsets.ModelViewSet):
     @permission_classes([IsAdminOrMentorOrFacultyOrStudentOrParent])
     def list(self, request):
         user = request.user
-
+       
         if user.role.name == 'admin':
             qs = self.queryset.all()
         elif user.role.name == 'student':
@@ -657,24 +657,39 @@ class SuggestionViewSet(viewsets.ModelViewSet):
     queryset = Suggestion.get_all()
     serializer_class = CreateSuggestionSerializer
     logger = logging.getLogger('Suggestion')
+    # ✅ FILTER + SORT + SEARCH
+    filter_backends = [
+        DjangoFilterBackend,
+        drf_filters.OrderingFilter,
+        drf_filters.SearchFilter
+    ]
 
-    filter_backends = [DjangoFilterBackend, drf_filters.OrderingFilter, drf_filters.SearchFilter]
     filterset_class = SuggestionFilter
+
     search_fields = [
         'question__description',
         'status',
         'created_by__name',
-        'question__course__name',
+        'question__course_subject__course__name',  # ✅ FIXED
     ]
+
+    # ✅ IMPORTANT: use REAL DB paths (NO alias here)
     ordering_fields = [
         'created_at',
         'status',
         'created_by__name',
-        'question__course__name',
+
+        # ✅ FIXED RELATIONS
+        'question__course_subject__course__name',
+        'question__course_subject__subject__name',
+
         'question__difficulty',
         'question__srno',
+        'question__description',
     ]
+
     ordering = ['-created_at']
+    
 
     @permission_classes([IsAdminOrContentDeveloperOrFaculty])
     def create(self, request, *args, **kwargs):
@@ -724,10 +739,11 @@ class SuggestionViewSet(viewsets.ModelViewSet):
 
     @permission_classes([IsAdminOrContentDeveloperOrFaculty])
     def list(self, request):
-        
+        print("ORDERING PARAM:", request.GET.get("ordering"))
 
-        # Apply pagination
         queryset = self.filter_queryset(self.get_queryset())
+
+        print("FINAL QUERY:", queryset.query)  # debug
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
