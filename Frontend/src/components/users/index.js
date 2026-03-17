@@ -11,11 +11,11 @@ function AdminUsersComponent() {
       label: "All Users",
       api: "/users/",
     },
-    {
-      key: "registered",
-      label: "Registered Students",
-      api: "/student/registered/",
-    },
+    // {
+    //   key: "registered",
+    //   label: "Registered Students",
+    //   api: "/student/registered/",
+    // },
     {
       key: "upcoming",
       label: "Upcoming students subscriptions ",

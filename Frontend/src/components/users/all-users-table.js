@@ -178,7 +178,7 @@ function AllUsersTable({ tabKey, api }) {
       if (search) params.search = search;
       if (page) params.page = page;
       if (ordering) params.ordering = ordering;
-      if (page_size) params.size = page_size;
+      if (page_size) params.page_size = page_size;
 
       const response = await axios.get(`${BASE_URL}/api/user/`, {
         params,

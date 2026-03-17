@@ -23,6 +23,13 @@ function BackdoorLoginForm() {
   const [selectedRole, setSelectedRole] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
+  const ROLE_ROUTE_MAP = {
+  content_developer: "developer",
+  student: "student",
+  parent: "parent",
+  faculty: "faculty",
+  admin: "admin",
+};
 
   /* =========================
      FETCH ALL USERS
@@ -139,7 +146,9 @@ function BackdoorLoginForm() {
 
     message.success(`Logged in as ${name}`);
 
-    const dashboardUrl = `/${role_name}/${id}/dashboard`;
+    const mappedRole = ROLE_ROUTE_MAP[role_name] || role_name;
+
+    const dashboardUrl = `/${mappedRole}/${id}/dashboard`;
 
     // ✅ SAME TAB REDIRECT
     window.location.replace(dashboardUrl);
