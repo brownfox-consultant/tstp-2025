@@ -35,7 +35,7 @@ function GridInOptions({ question }) {
           <div className="flex gap-x-4 gap-y-2">
             {question.options.map((value) => {
               return (
-                <div className="border-2 border-r-4 rounded-lg px-2 py-1 h-full">
+                <div className="border-2 rounded-md px-2 py-1 h-full">
                   {value}
                 </div>
               );
@@ -45,14 +45,14 @@ function GridInOptions({ question }) {
         {isRangeAnswer && (
           <div className="flex gap-x-4 gap-y-2">
             {isClosedRange ? (
-              <div className="border-2 border-r-4 rounded-lg px-2 py-1 h-full">
+              <div className="border-2 rounded-md px-2 py-1 h-full">
                 {/* <div> */}
                 {formState.value1} {formState.operator1}{" "}
                 <span className="font-semibold">ANS</span> {formState.operator1}{" "}
                 {formState.value2}
               </div>
             ) : (
-              <div className="border-2 border-r-4 rounded-lg px-2 py-1 h-full">
+              <div className="border-2 rounded-md px-2 py-1 h-full">
                 {/* <div> */}
                 {expressions.map((exp, index) => {
                   return (
