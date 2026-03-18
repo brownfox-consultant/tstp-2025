@@ -457,7 +457,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
           setSelectedOptions([]);
           setCurrentQuestionIndex(null);
         }}
-        style={{height:"85vh"}}
+        style={{ height: "85vh" }}
         footer={
           <div className="flex justify-between items-center w-full">
             <button
@@ -468,12 +468,14 @@ function ReportTable({ sectionData, testSubmissionId }) {
               ← Previous
             </button>
 
-            <RaiseDoubtModal
-              question={currentQuestionId}
-              section={section_id}
-              course_subject={course_subject_id}
-              test={test_id}
-            />
+            {role === "student" && (
+              <RaiseDoubtModal
+                question={currentQuestionId}
+                section={section_id}
+                course_subject={course_subject_id}
+                test={test_id}
+              />
+            )}
 
             <button
               disabled={
@@ -566,17 +568,17 @@ function ReportTable({ sectionData, testSubmissionId }) {
                     const isCorrect = is_correct;
 
                     let optionClass =
-                      "bg-white border-2 border-r-4 rounded-lg px-2 py-5";
+                      "bg-white border-2 rounded-md px-2 py-5";
 
                     if (isSelected && isCorrect)
                       optionClass =
-                        "font-bold border-2 bg-green-200 border-r-4 rounded-lg px-2 py-5";
+                        "font-bold border-2 bg-green-200 rounded-md px-2 py-5";
                     else if (isSelected)
                       optionClass =
-                        "font-bold border-2 bg-red-200 border-r-4 rounded-lg px-2 py-5";
+                        "font-bold border-2 bg-red-200 rounded-md px-2 py-5";
                     else if (isCorrect)
                       optionClass =
-                        "font-bold border-2 bg-green-200 border-r-4 rounded-lg px-2 py-5";
+                        "font-bold border-2 bg-green-200 rounded-md px-2 py-5";
 
                     return (
                       <div key={index} className="flex w-full items-center gap-1">

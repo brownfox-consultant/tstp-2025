@@ -496,7 +496,7 @@ function PracticeTestResult() {
               {modalData.question_type === "GRIDIN" && (
                 <div>
                   <div className="font-bold my-3">Your Answer:</div>
-                  <span className="border-2 border-r-4 rounded-lg px-2 py-1">
+                  <span className="border-2 rounded-md px-2 py-1">
                     {selectedListQuestion?.selected_options}
                   </span>
                   <GridInOptions question={modalData} />
