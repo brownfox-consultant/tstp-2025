@@ -8,8 +8,9 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+
+
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Ensure existing plugins are not overwritten
     config.plugins.push(
       new CopyPlugin({
         patterns: [
@@ -21,7 +22,6 @@ const nextConfig = {
       })
     );
 
-    // Add additional rule for handling .node files
     config.module.rules.push({
       test: /\.node$/,
       use: "raw-loader",
