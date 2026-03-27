@@ -1,15 +1,11 @@
-"use client";
-import Page from "./(auth)/login/page"
-import { App } from 'antd';
+// src/app/page.js
+
 export default function Home() {
   return (
-    <App>
-    {/* <main className="flex min-h-screen flex-col items-center justify-between p-24"> */}
-    <main className="flex min-h-screen flex-col items-center justify-between ">
-        
-      <Page/>
-     
-    </main>
-    </App>
+    <div className="flex h-screen items-center justify-center bg-gray-100">
+      <h1 className="text-7xl font-bold tracking-wide">
+        MathforUSA
+      </h1>
+    </div>
   );
 }

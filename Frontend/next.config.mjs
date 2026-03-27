@@ -9,8 +9,6 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
 
-  // ✅ ADD THIS LINE
-  basePath: "/tstp",
 
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     config.plugins.push(

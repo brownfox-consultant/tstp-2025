@@ -38,7 +38,7 @@ export default function RichTextEditor({ value, onChange }) {
 
   return (
     <Editor
-      tinymceScriptSrc="/tstp/assets/libs/tinymce/tinymce.min.js"
+      tinymceScriptSrc="/assets/libs/tinymce/tinymce.min.js"
       onInit={(evt, editor) => {
         editorRef.current = editor;
       }}
