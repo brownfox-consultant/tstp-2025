@@ -2,7 +2,8 @@
 
 import ForgotPasswordForm from "@/components/ForgotPasswordForm";
 import LoginForm from "@/components/LoginForm";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState,useEffect } from "react";
 import logo from "../../../../public/logo_with_tagline.png";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,6 +13,16 @@ import TrophyIcon from "@/components/icons/trophy-icon";
 
 function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+   const pathname = usePathname();
+  const router = useRouter();
+
+  // ✅ REDIRECT LOGIC
+  useEffect(() => {
+    if (pathname === "/login") {
+      router.replace("/");
+    }
+  }, [pathname, router]);
 
   function handleNavigateToForgot() {
     setShowForgotPassword(true);

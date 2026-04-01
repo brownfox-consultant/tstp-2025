@@ -69,7 +69,7 @@ function ResetPasswordPage() {
             <h1 className="text-3xl font-extrabold text-gray-800 mb-2">Reset Password</h1>
             <p className="text-gray-600">
                Remember your password?{" "}
-              <Link href="/login" className="text-orange-500 font-semibold hover:text-orange-600 hover:underline">
+              <Link href="/tstp" className="text-orange-500 font-semibold hover:text-orange-600 hover:underline">
                 Sign In
               </Link>
             </p>

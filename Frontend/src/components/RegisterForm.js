@@ -486,7 +486,7 @@ function RegisterForm() {
             setShowOtpModal(false);
             Modal.success({
               title: "Registration successful. Admin will contact you shortly.",
-              onOk: () => window.location.href = "/login",
+              onOk: () => window.location.href = "/tstp",
             });
           }}
           email={form.getFieldValue("email")}

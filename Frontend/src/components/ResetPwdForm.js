@@ -54,7 +54,7 @@ function ResetPwdForm() {
           title: "Password changed successfully.",
           onOk: () => {
             // router.push(`/login`);
-            window.location.href = "/login";
+            window.location.href = "/tstp";
             window.localStorage.clear();
           },
         });
