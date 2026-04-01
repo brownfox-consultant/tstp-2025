@@ -20,7 +20,7 @@ function ForgotPasswordForm() {
             title: data.detail,
             onOk: () => {
               // router.push("/login");
-              window.location.href = "/login";
+              window.location.href = "/tstp";
               window.sessionStorage.clear();
             },
           });

@@ -117,7 +117,7 @@ function DashboardLayout({ children }) {
       console.error("Logout error:", err);
     } finally {
       window.localStorage.clear();
-      router.replace("/login");
+      router.replace("/tstp");
     }
   }, [csrfToken, router]);
 
@@ -156,7 +156,7 @@ function DashboardLayout({ children }) {
         setEmail(window.localStorage.getItem("email"));
         setName(window.localStorage.getItem("name"));
       } else {
-        router.replace("/login");
+        router.replace("/tstp");
       }
     }
   }, [handleLogout, router]);

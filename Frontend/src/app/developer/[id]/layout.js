@@ -93,7 +93,7 @@ function DashboardLayout({ children }) {
       console.error("Logout error:", err);
     } finally {
       window.localStorage.clear();
-      window.location.href = "/login";
+      window.location.href = "/tstp";
     }
   }, [csrfToken]);
 
@@ -130,7 +130,7 @@ function DashboardLayout({ children }) {
         setEmail(window.localStorage.getItem("email"));
         setName(window.localStorage.getItem("name"));
       } else {
-        window.location.href = "/login";
+        window.location.href = "/tstp";
       }
     }
   }, [router]);

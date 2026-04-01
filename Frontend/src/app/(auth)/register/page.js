@@ -71,7 +71,7 @@ function RegisterPage() {
               <h1 className="text-2xl lg:text-3xl font-extrabold text-gray-800 mb-2">Create Account</h1>
               <p className="text-sm text-gray-600">
                 Already have an account?{" "}
-                <Link href="/login" className="text-orange-500 font-semibold hover:text-orange-600 hover:underline">
+                <Link href="/tstp" className="text-orange-500 font-semibold hover:text-orange-600 hover:underline">
                   Sign in
                 </Link>
               </p>

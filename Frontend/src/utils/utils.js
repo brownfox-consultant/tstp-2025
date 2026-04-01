@@ -46,7 +46,7 @@ export const handleAPIError = (error) => {
 
     if (error.response.status == "403") {
       setTimeout(() => {
-      window.location.href = "/login";
+      window.location.href = "/tstp";
        window.localStorage.clear();
       }, [3000]);
     }
@@ -91,7 +91,7 @@ export const handleReduxAPIError = (error) => {
 
     if (error.status == "403") {
       setTimeout(() => {
-       window.location.href = "/login";
+       window.location.href = "/tstp";
         window.localStorage.clear();
       }, [3000]);
     }
