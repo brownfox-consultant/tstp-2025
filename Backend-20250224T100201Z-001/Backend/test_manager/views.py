@@ -2143,12 +2143,25 @@ class TestViewSet(viewsets.ModelViewSet):
                     # Check if the question is unanswered
                     if question_id not in question_answer_map:
                         # Fetch the total time taken for this section from SectionStats
+                        duration_seconds = sub_section['duration'] * 60
+
                         section_stats = SectionStats.objects.filter(
                             result=result,
                             course_subject_id=section.course_subject_id,
                             section_id=sub_section['id']
                         ).first()
-                        time_taken = section_stats.time_taken if section_stats else 0
+
+                        if section_stats and section_stats.started_at:
+                            elapsed = int(
+                                (
+                                    timezone.now()
+                                    - section_stats.started_at
+                                ).total_seconds()
+                            )
+                        else:
+                            elapsed = 0
+
+                        remaining_time = max(duration_seconds - elapsed, 0)
 
                         return Response({
                             "test_id": test.id,
@@ -2159,7 +2172,7 @@ class TestViewSet(viewsets.ModelViewSet):
                             "course_subject_index": course_subject_idx,
                             "section_id": sub_section['id'],
                             "section_index": section_idx,
-                            "remaining_time": (sub_section['duration'] * 60) - time_taken,
+                            "remaining_time": remaining_time,
                             "question_id": question_id,
                             "question_index": question_idx,
                             "answer_map": answer_map
@@ -2196,6 +2209,19 @@ class TestViewSet(viewsets.ModelViewSet):
         try:
             test = Test.get_test_by_id(test_id=test_id)
             test_submission = TestSubmission.objects.get(id=test_submission_id)
+            section_key = f"{course_subject_id}_{section_id}"
+
+            last_section_key = getattr(
+                test_submission,
+                "last_section_key",
+                None
+            )
+
+            if last_section_key != section_key:
+                test_submission.current_section_started_at = timezone.now()
+                test_submission.save(
+                    update_fields=["current_section_started_at"]
+                )
             section = Section.fetch_section_using_test_course_subject(test=test_id, course_subject=course_subject_id)
             sub_section = next((ss for ss in section.sub_sections if str(ss['id']) == section_id), None)
             print(f"Sub-section found: {sub_section}")
@@ -2298,10 +2324,20 @@ class TestViewSet(viewsets.ModelViewSet):
                     question_ids = self.get_dynamic_section_questions(course_subject_id, result,
                                                                       sub_section['no_of_questions'],
                                                                       excluded_question_ids)
-                    section_stats, _ = SectionStats.objects.get_or_create(result=result,
-                                                                          course_subject_id=course_subject_id,
-                                                                          section_id=section_id,
-                                                                          time_taken=0)
+                    
+                    section_stats, created = SectionStats.objects.get_or_create(
+                        result=result,
+                        course_subject_id=course_subject_id,
+                        section_id=section_id,
+                        defaults={
+                            "time_taken": 0,
+                            "started_at": timezone.now()
+                        }
+                    )
+
+                    if created:
+                        section_stats.total_questions = len(question_ids)
+                        section_stats.save()
                     section_stats.total_questions = len(question_ids)
                     section_stats.save()
         return question_ids

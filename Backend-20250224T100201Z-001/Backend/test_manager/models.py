@@ -110,6 +110,10 @@ class TestSubmission(models.Model):
     assigned_date = models.DateTimeField(blank=False)
     expiration_date = models.DateTimeField(blank=False)
     completion_date = models.DateTimeField(null=True, blank=True)
+    current_section_started_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
     selected_question_ids = models.JSONField(
         default=dict,
         blank=True,
@@ -333,13 +337,25 @@ class Result(models.Model):
                 self.incorrect_answer_count += 1
 
         # Initialize SectionStats (if it doesn't already exist) with the correct total number of questions
-        section_stats, _ = SectionStats.objects.get_or_create(
+        section_stats, created = SectionStats.objects.get_or_create(
             result=self,
             course_subject_id=course_subject,
             section_id=section_id,
-            defaults={'time_taken': 0,
-                      'total_questions': self.get_total_questions_for_section(test, course_subject, section_id)}
+            defaults={
+                'time_taken': 0,
+                'started_at': timezone.now(),
+                'total_questions': self.get_total_questions_for_section(
+                    test,
+                    course_subject,
+                    section_id
+                )
+            }
         )
+
+        if not section_stats.started_at:
+            section_stats.started_at = timezone.now()
+            section_stats.save(update_fields=["started_at"])
+        
 
         # Update only the time_taken, not the total_questions
         section_stats.time_taken += time_taken
@@ -411,11 +427,20 @@ class QuestionAnswer(models.Model):
         ordering = ["order"]
 
 
+from django.utils import timezone
+
 class SectionStats(models.Model):
     result = models.ForeignKey(Result, on_delete=models.CASCADE, related_name='section_stats')
     course_subject = models.ForeignKey(CourseSubjects, on_delete=models.CASCADE)
     section_id = models.IntegerField()
-    time_taken = models.IntegerField()
+
+    time_taken = models.IntegerField(default=0)
+
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
     total_questions = models.IntegerField(null=True, blank=True)
 
 

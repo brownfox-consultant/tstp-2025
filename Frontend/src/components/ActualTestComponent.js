@@ -53,6 +53,9 @@ const ActualTestComponent = () => {
     })();
   }, []);
 
+
+  
+
   const handleStart = async (mode) => {
   const test_submission_id = window?.sessionStorage.getItem("test_submission_id");
 
