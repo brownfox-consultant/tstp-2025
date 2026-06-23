@@ -19,7 +19,13 @@ from rest_framework.response import Response
 from user_manager.models import User
 from django.db.models import Case, When, Value, CharField, Exists, OuterRef
 from course_manager.models import CourseEnrollment
-
+from openpyxl import load_workbook
+from rest_framework.parsers import MultiPartParser
+from django.db import transaction
+from openpyxl import load_workbook
+from rest_framework.parsers import MultiPartParser
+from dateutil.relativedelta import relativedelta
+import datetime
 
 from course_manager.models import Course, CourseEnrollment
 from notification_manager.models import Notification, NotificationTemplate
@@ -64,6 +70,298 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = UserFilter
 
+    
+
+
+    @action(
+        detail=False,
+        methods=["POST"],
+        permission_classes=[IsAdmin],
+        parser_classes=[MultiPartParser],
+        url_path="bulk-register"
+    )
+    @transaction.atomic
+    def bulk_register(self, request):
+
+        excel_file = request.FILES.get("file")
+        role_id = request.data.get("role")
+
+        if not excel_file:
+            return Response(
+                {"error": "Excel file is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not role_id:
+            return Response(
+                {"error": "role is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            role = Role.objects.get(id=role_id)
+        except Role.DoesNotExist:
+            return Response(
+                {"error": "Invalid role"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        workbook = load_workbook(excel_file)
+        sheet = workbook.active
+
+        created_users = []
+        skipped_users = []
+        errors = []
+
+        for row_no, row in enumerate(
+            sheet.iter_rows(min_row=2, values_only=True),
+            start=2
+        ):
+            try:
+
+                name = str(row[0]).strip() if row[0] else ""
+                email = str(row[1]).strip().lower() if row[1] else ""
+
+                # --------------------------------
+                # PHONE NUMBER
+                # --------------------------------
+                raw_phone = row[2]
+
+                if raw_phone:
+                    if isinstance(raw_phone, float):
+                        phone_number = str(int(raw_phone))
+                    else:
+                        phone_number = str(raw_phone).strip()
+
+                    phone_number = (
+                        phone_number
+                        .replace(" ", "")
+                        .replace("-", "")
+                        .replace(".0", "")
+                    )
+
+                    if not phone_number.startswith("+"):
+                        phone_number = f"+{phone_number}"
+                else:
+                    phone_number = ""
+
+                # --------------------------------
+                # ALTERNATIVE NUMBER
+                # --------------------------------
+                raw_alt_phone = row[3]
+
+                if raw_alt_phone:
+                    if isinstance(raw_alt_phone, float):
+                        alternative_number = str(int(raw_alt_phone))
+                    else:
+                        alternative_number = str(raw_alt_phone).strip()
+
+                    alternative_number = (
+                        alternative_number
+                        .replace(" ", "")
+                        .replace("-", "")
+                        .replace(".0", "")
+                    )
+
+                    if not alternative_number.startswith("+"):
+                        alternative_number = f"+{alternative_number}"
+                else:
+                    alternative_number = None
+
+                # --------------------------------
+                # OTHER FIELDS
+                # --------------------------------
+                address = str(row[4]).strip() if row[4] else ""
+
+                dob = None
+                if row[5]:
+                    if isinstance(row[5], datetime.datetime):
+                        dob = row[5].date()
+                    elif isinstance(row[5], datetime.date):
+                        dob = row[5]
+                    else:
+                        dob = datetime.datetime.strptime(
+                            str(row[5]),
+                            "%Y-%m-%d"
+                        ).date()
+
+                blood_group = str(row[6]).strip() if row[6] else ""
+
+                courses = []
+                if len(row) > 7 and row[7]:
+                    courses = [
+                        c.strip()
+                        for c in str(row[7]).split(",")
+                        if c.strip()
+                    ]
+
+                # --------------------------------
+                # VALIDATIONS
+                # --------------------------------
+                if not email:
+                    errors.append({
+                        "row": row_no,
+                        "error": "Email is required"
+                    })
+                    continue
+
+                if not phone_number:
+                    errors.append({
+                        "row": row_no,
+                        "error": "Phone number is required"
+                    })
+                    continue
+
+                if User.objects.filter(email=email).exists():
+                    skipped_users.append({
+                        "row": row_no,
+                        "email": email,
+                        "reason": "Email already exists"
+                    })
+                    continue
+
+                if User.objects.filter(phone_number=phone_number).exists():
+                    skipped_users.append({
+                        "row": row_no,
+                        "phone_number": phone_number,
+                        "reason": "Phone already exists"
+                    })
+                    continue
+
+                # --------------------------------
+                # CREATE USER
+                # --------------------------------
+                user = User.objects.create(
+                    name=name,
+                    email=email,
+                    phone_number=phone_number,
+                    alternative_number=alternative_number,
+                    address=address,
+                    dob=dob,
+                    blood_group=blood_group,
+                    role=role,
+                    change_password=True,
+                    is_active=True
+                )
+
+                user.set_password("tstp1")
+                user.save()
+
+                # --------------------------------
+                # STUDENT DATA
+                # --------------------------------
+                if role.name.lower() == "student":
+
+                    StudentMetadata.objects.get_or_create(
+                        student=user
+                    )
+
+                    for course_name in courses:
+                        try:
+                            course = Course.objects.get(
+                                name__iexact=course_name
+                            )
+
+                            CourseEnrollment.objects.create(
+                                student=user,
+                                course=course,
+                                subscription_start_date=datetime.date.today(),
+                                subscription_end_date=(
+                                    datetime.date.today()
+                                    + relativedelta(months=4)
+                                ),
+                                subscription_type=CourseEnrollment.FREE
+                            )
+
+                        except Course.DoesNotExist:
+                            errors.append({
+                                "row": row_no,
+                                "error": f"Course '{course_name}' not found"
+                            })
+
+                created_users.append({
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "phone_number": user.phone_number
+                })
+
+            except Exception as e:
+                errors.append({
+                    "row": row_no,
+                    "error": str(e)
+                })
+
+        return Response(
+            {
+                "message": "Bulk registration completed",
+                "created_count": len(created_users),
+                "skipped_count": len(skipped_users),
+                "error_count": len(errors),
+                "default_password": "tstp1",
+                "created_users": created_users,
+                "skipped_users": skipped_users,
+                "errors": errors
+            },
+            status=status.HTTP_200_OK
+        )
+
+    
+
+    @action(
+    detail=False,
+    methods=['POST'],
+    permission_classes=[IsAdmin],
+    url_path='generate-reset-link'
+)
+    def generate_reset_link(self, request):
+        user_id = request.data.get("user_id")
+
+        if not user_id:
+            return Response(
+                {"detail": "user_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Invalidate old tokens
+        PasswordResetToken.objects.filter(
+            user=user,
+            used=False
+        ).update(used=True)
+
+        # Create new token
+        token = PasswordResetToken.objects.create(
+            user=user,
+            expires_at=timezone.now() + timedelta(hours=24)
+        )
+
+        reset_link = (
+            f"{settings.FRONTEND_URL}/reset-password?token={token.token}"
+        )
+
+        # Optional: Email user
+        notification_params = {
+            NotificationTemplate.RESET_LINK: reset_link
+        }
+
+        send_notification.delay(
+            notification_name=Notification.FORGOT_PASSWORD_NOTIFICATION,
+            params=notification_params,
+            user_id=user.id
+        )
+
+        return Response({
+            "message": "Reset password link generated successfully",
+            "reset_link": reset_link
+        })
 
     @action(
     detail=False,
@@ -664,7 +962,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'], permission_classes=[IsAdmin], url_path='upcoming-subscription-or-free')
     def upcoming_subscription_or_free(self, request, pk=None):
         
-        upcoming_month_date = datetime.now().date() + timedelta(days=30)
+        upcoming_month_date = datetime.datetime.now().date() + timedelta(days=30)
 
         # Filter student role users
         student_role_users = User.filter_users_by_role(role_id=Role.get_role_using_name('student').id)

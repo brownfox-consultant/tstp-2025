@@ -250,7 +250,7 @@ function ApproveForm({
           onOk: () => {
             Modal.destroyAll();
             if (isCreatedFromAdmin) {
-              router.push(`/admin/${id}/users/all`);
+              router.push(`/admin/${id}/users/`);
             } else {
               router.back();
             }

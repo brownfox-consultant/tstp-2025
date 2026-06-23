@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',   
     'django_filters',
     'rest_framework',
     'rest_framework.authtoken',
@@ -251,13 +252,18 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = 'info@tstp.in' #os.environ.get("EMAIL_HOST_USER")
 # EMAIL_HOST_USER = 'agravat.prashant@gmail.com'
 EMAIL_HOST_PASSWORD = 'hkghbalicjxrfcds' #os.environ.get("EMAIL_HOST_PASSWORD")
-# EMAIL_HOST_PASSWORD ='nlufgkjvvzxvptft'
+# EMAIL_HOST_PASSWORD ='ebbpznkiegxpynws'
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
 CELERY_BEAT_SCHEDULE = {
     'check-and-update-subscriptions': {
         'task': 'user_manager.tasks.check_and_update_subscriptions',
         'schedule': crontab(hour=23, minute=55),
+    },
+
+    'pending-query-reminder': {
+        'task': 'notification_manager.tasks.send_pending_queries_reminder',
+        'schedule': crontab(hour=9, minute=0),  # Daily at 9:00 AM
     },
 }
 

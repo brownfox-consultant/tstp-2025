@@ -31,6 +31,9 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'updated_at', 'is_active')
         extra_kwargs = {'password': {'write_only': True, 'required': False}}
 
+    
+    
+
     def get_course(self, obj):
         if obj.role.name == 'student':
             enrollment = CourseEnrollment.objects.filter(student=obj).first()
@@ -173,7 +176,8 @@ class UserCreationSerializer(serializers.ModelSerializer):
                 role=role,
                 address=address,
                 dob=dob,
-                blood_group=blood_group
+                blood_group=blood_group,
+                
             )
             user.set_password(generate_secure_password())
             user.change_password = True
