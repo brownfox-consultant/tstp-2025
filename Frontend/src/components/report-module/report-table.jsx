@@ -120,7 +120,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
           >
             <Radio value="VERY_EASY">Very Easy</Radio>
             <Radio value="EASY">Easy</Radio>
-            <Radio value="MEDIUM">Moderate</Radio>
+            <Radio value="MODERATE">Moderate</Radio>
             <Radio value="HARD">Hard</Radio>
             <Radio value="VERY_HARD">Very Hard</Radio>
           </Radio.Group>

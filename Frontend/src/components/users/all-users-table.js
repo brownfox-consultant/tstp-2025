@@ -18,6 +18,8 @@ import {
   Pagination,
   Tabs,
   Modal,
+  notification,
+  Upload, message,Select,
 } from "antd";
 import React, { useEffect, useState, useRef } from "react";
 import EditStudentUserModal from "../EditStudentUserModal";
@@ -36,6 +38,7 @@ import PracticeTestsList_admin_uer from "@/components/PracticeTestsList_admin_ue
 import { impersonateUser } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
 import AssignTestModal from "../AssignTestModal";
+
 
 const { confirm } = Modal;
 
@@ -76,12 +79,72 @@ function AllUsersTable({ tabKey, api }) {
   const { setRole, setUserId, setUserName } = useGlobalContext();
   const adminEmail = localStorage.getItem("email");
   const [showAssignTestModal, setShowAssignTestModal] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+const [selectedRole, setSelectedRole] = useState(null);
+const [selectedFile, setSelectedFile] = useState(null);
+const [bulkLoading, setBulkLoading] = useState(false);
 
 
   const searchInput = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
   console.log(pathname);
+
+const submitBulkUpload = async () => {
+  if (!selectedRole) {
+    return message.error("Please select a role");
+  }
+
+  if (!selectedFile) {
+    return message.error("Please select an Excel file");
+  }
+
+  try {
+    setBulkLoading(true);
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("role", selectedRole);
+
+    const response = await axios.post(
+      `${BASE_URL}/api/user/bulk-register/`,
+      formData,
+      {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "X-CSRFToken": localStorage.getItem("csrfToken"),
+        },
+      }
+    );
+
+    notification.success({
+      message: "Bulk Registration Completed",
+      description: (
+        <div>
+          <div>Created: {response.data.created_count}</div>
+          <div>Skipped: {response.data.skipped_count}</div>
+          <div>Errors: {response.data.error_count}</div>
+        </div>
+      ),
+    });
+
+    setBulkModalOpen(false);
+    setSelectedFile(null);
+    setSelectedRole(null);
+    setUpdated((prev) => !prev);
+  } catch (error) {
+    console.log(error);
+    message.error(
+      error?.response?.data?.error || "Bulk upload failed"
+    );
+  } finally {
+    setBulkLoading(false);
+  }
+};
+
+
+
   useEffect(() => {
     getRoles().then((res) => {
       //   setOptions(res.data);
@@ -755,6 +818,46 @@ function AllUsersTable({ tabKey, api }) {
   </Button>
 )}
 
+<Button
+  size="small"
+  danger
+  type="primary"
+  onClick={async () => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/user/generate-reset-link/`,
+      {
+        user_id: record.id,
+      },
+      {
+        withCredentials: true,
+        headers: {
+          "X-CSRFToken": localStorage.getItem("csrfToken"),
+        },
+      }
+    );
+
+    
+    notification.success({
+  message: "Reset Link Sent",
+  description: `Password reset link has been sent to ${record.email}`,
+  placement: "topRight",
+});
+
+    navigator.clipboard.writeText(response.data.reset_link);
+  } catch (error) {
+    console.log(error?.response);
+
+    message.error(
+      error?.response?.data?.detail ||
+      "Failed to generate reset link"
+    );
+  }
+}}
+>
+  Reset Password Link
+</Button>
+
 
               {/* Activate / Deactivate */}
               {record.is_active ? (
@@ -837,13 +940,23 @@ function AllUsersTable({ tabKey, api }) {
               Add new user
             </Button>
             <Button
-              size="large"
-              icon={<UploadOutlined />}
-              onClick={exportToCSV}
-              className="h-10 px-4 rounded-lg border-gray-300 hover:border-gray-400 font-medium"
-            >
-              Export
-            </Button>
+  size="large"
+  icon={<UploadOutlined />}
+  onClick={exportToCSV}
+  className="h-10 px-4 rounded-lg"
+>
+  Export
+</Button>
+
+<Button
+  size="large"
+  type="primary"
+  icon={<UploadOutlined />}
+  className="h-10 px-4 bg-green-600 hover:bg-green-700 border-none rounded-lg"
+  onClick={() => setBulkModalOpen(true)}
+>
+  Bulk Register
+</Button>
             <Dropdown
               trigger={["click"]}
               open={isDropdownVisible}
@@ -988,6 +1101,71 @@ function AllUsersTable({ tabKey, api }) {
     studentId={student_id}
   />
 )}
+
+<Modal
+  title="Bulk User Registration"
+  open={bulkModalOpen}
+  onCancel={() => {
+    setBulkModalOpen(false);
+    setSelectedFile(null);
+    setSelectedRole(null);
+  }}
+  onOk={submitBulkUpload}
+  okText="Upload"
+  confirmLoading={bulkLoading}
+>
+  <div className="space-y-4">
+    <div>
+      <label className="font-medium block mb-2">
+        Select Role
+      </label>
+
+      <Select
+        style={{ width: "100%" }}
+        placeholder="Choose Role"
+        value={selectedRole}
+        onChange={setSelectedRole}
+        options={filterItems
+          .filter((r) => r.key !== "")
+          .map((r) => ({
+            value: r.key,
+            label: r.label,
+          }))}
+      />
+    </div>
+
+    <div className="mt-4">
+      <label className="font-medium block mb-2">
+        Upload Excel File
+      </label>
+
+      <Upload
+        accept=".xlsx,.xls"
+        maxCount={1}
+        beforeUpload={(file) => {
+          setSelectedFile(file);
+          return false;
+        }}
+      >
+        <Button icon={<UploadOutlined />}>
+          Select Excel File
+        </Button>
+      </Upload>
+
+      {/* <div className="mt-2 text-gray-500 text-sm">
+        Columns required:
+        <br />
+        <strong>name, email, phone_number</strong>
+      </div> */}
+    </div>
+
+    <div className="mt-4 p-3 bg-gray-50 rounded">
+      <strong>Default Password:</strong> tstp1
+      <br />
+      <strong>Username:</strong> Email Address
+    </div>
+  </div>
+</Modal>
 
     </div>
   );

@@ -2808,20 +2808,28 @@ class TestViewSet(viewsets.ModelViewSet):
 )
     def assignable(self, request):
         course_id = request.query_params.get("course_id")
-        student_id = request.query_params.get("student_id")  # 👈 ADD THIS
+        student_id = request.query_params.get("student_id")
 
         qs = Test.objects.filter(is_active=True)
 
         if course_id:
             qs = qs.filter(course_id=course_id)
 
-        # 🔥 filter only tests of enrolled courses
+        # Only tests from enrolled courses
         if student_id:
             enrolled_courses = CourseEnrollment.objects.filter(
                 student_id=student_id
             ).values_list("course_id", flat=True)
 
             qs = qs.filter(course_id__in=enrolled_courses)
+
+            # Exclude already assigned tests
+            assigned_test_ids = TestSubmission.objects.filter(
+                student_id=student_id
+            ).values_list("test_id", flat=True)
+            
+
+            qs = qs.exclude(id__in=assigned_test_ids)
 
         serializer = TestListSerializer(qs, many=True)
         return Response(serializer.data)

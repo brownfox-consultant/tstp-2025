@@ -9,12 +9,22 @@ export default function AssignTestModal({ open, onClose, studentId }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+  if (!open || !studentId) return;
 
-    axios
-      .get(`${BASE_URL}/api/test/assignable/`, { withCredentials: true })
-      .then((res) => setTests(res.data));
-  }, [open]);
+  axios
+    .get(`${BASE_URL}/api/test/assignable/`, {
+      params: {
+        student_id: studentId,
+      },
+      withCredentials: true,
+    })
+    .then((res) => {
+      setTests(res.data);
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+}, [open, studentId]);
 
   const assignTest = () => {
     if (!selectedTests.length) {
