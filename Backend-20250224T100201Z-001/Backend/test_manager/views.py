@@ -2163,6 +2163,18 @@ class TestViewSet(viewsets.ModelViewSet):
 
                         remaining_time = max(duration_seconds - elapsed, 0)
 
+                        print(
+                            "RESTORE DEBUG =>",
+                            "course_subject=", section.course_subject_id,
+                            "section=", sub_section['id'],
+                            "question=", question_id,
+                            "question_index=", question_idx,
+                            "answered_count=", len(question_answer_map),
+                            "total_questions=", len(question_ids),
+                            "remaining_time=", remaining_time,
+                        )
+
+
                         return Response({
                             "test_id": test.id,
                             "test_name": test.name,

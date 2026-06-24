@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+src/app/constants/apiConstants.js
 
 
 # Ignore API constants (contains base URL / secrets)
@@ -10,6 +11,7 @@ dist/
 build/
 .next/
 out/
+
 
 # Webpack hot-update files
 *.hot-update.js
