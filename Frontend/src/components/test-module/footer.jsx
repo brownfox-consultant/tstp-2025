@@ -137,12 +137,15 @@ function TestFooter() {
         <ReportNew testSubmissionId={submissionId} />
       ) : (
         <>
-          <footer className="w-full py-3 bg-white grid grid-cols-2 row-span-1 border-t-2 border-dashed border-black px-2 lg:px-10">
-            {/* <div className="user-name h-fit my-auto text-black">{username}</div> */}
-            <div className="section-map text-center h-fit my-auto">
-              <SectionMapDropdown onChangeQuestion={handleClick} />
-            </div>
-            <div className="test-navigation text-end h-fit my-auto">
+         <footer className="w-full py-3 bg-white grid grid-cols-3 border-t-2 border-dashed border-black px-2 lg:px-10">
+             {/* Left side (empty or username) */}
+  <div className="flex items-center">
+    {/* <div className="user-name text-black">{username}</div> */}
+  </div>
+            <div className="flex justify-center items-center">
+    <SectionMapDropdown onChangeQuestion={handleClick} />
+  </div>
+            <div className="flex justify-end items-center">
               <Button
                 disabled={
                   isReviewPage ? isReviewPage : currentQuestionIndex == 0

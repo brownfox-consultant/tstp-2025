@@ -82,6 +82,12 @@ const ActualTestComponent = () => {
 };
 
   if (status == "idle") {
+    console.log(
+  "currentArraySectionIndex",
+  currentArraySectionIndex,
+  "currentSectionName",
+  currentSectionName
+);
     return (
       <Suspense fallback={<TestLoading />}>
         <div className="w-full">
@@ -105,6 +111,7 @@ const ActualTestComponent = () => {
               </div>
               <div dangerouslySetInnerHTML={{ __html: instructions }}></div>
             </div>
+           
             <div className="w-full space-y-2 mb-10">
               <Button
                 onClick={() => handleStart("MANUAL")}

@@ -174,10 +174,24 @@ export const saveAndMove = createAsyncThunk(
 );
 
 
+
+
 export const sectionComplete = createAsyncThunk(
   "test/section-complete",
   async ({ via }, thunkAPI) => {
     const testState = thunkAPI.getState().test;
+
+    console.log(
+      "SECTION COMPLETE REQUEST",
+      {
+        currentArraySectionIndex:
+          testState.currentArraySectionIndex,
+        course_subject_id:
+          testState.courseSubject,
+        section_id:
+          testState.sectionId,
+      }
+    );
     const { testType, testId, sectionId, testSubmissionId, courseSubject } =
       testState;
 
@@ -462,7 +476,18 @@ const testSlice = createSlice({
         state.status = "loading";
       })
       .addCase(testInProgress.fulfilled, (state, action) => {
+
+        
         const { data, testSubmissionId, testId, username } = action.payload;
+
+
+        console.log(
+  "RESTORE",
+  data.course_subject_index,
+  data.section_index,
+  data.course_subject_id,
+  data.section_id
+);
         state.name = data.test_name;
         state.username = username;
         state.testType = "test";
@@ -476,22 +501,36 @@ const testSlice = createSlice({
         state.isSectionCompleted = false;
         state.isTestCompleted = false;
         state.answerMap = data.answer_map;
-        state.currentArraySectionIndex =
-          2 * Number(data.course_subject_index) + Number(data.section_index);
+        
 
         state.sectionOrderItems = data.subject
-          ?.map((subject) =>
-            subject.sections.map((section) => ({
-              subject_id: subject.id,
-              course_subject: subject.course_subject,
-              title: `${subject.name} - ${section.name}`,
-              section_id: section.id,
-              section_name: section.name,
-              duration: section.duration,
-              no_of_questions: section.no_of_questions,
-            }))
-          )
-          .flat();
+  ?.map((subject) =>
+    subject.sections.map((section) => ({
+      subject_id: subject.id,
+      course_subject: subject.course_subject,
+      title: `${subject.name} - ${section.name}`,
+      section_id: section.id,
+      section_name: section.name,
+      duration: section.duration,
+      no_of_questions: section.no_of_questions,
+    }))
+  )
+  .flat();
+
+const restoreIndex = state.sectionOrderItems.findIndex(
+  (item) =>
+    String(item.course_subject) === String(data.course_subject_id) &&
+    String(item.section_id) === String(data.section_id)
+);
+
+state.currentArraySectionIndex =
+  restoreIndex >= 0 ? restoreIndex : 0;
+  console.log(
+  "RESTORE LOOKUP",
+  data.course_subject_id,
+  data.section_id,
+  restoreIndex
+);
         state.status = "idle";
         state.isTimeUp = false;
         state.isReviewPage = false;
@@ -595,15 +634,28 @@ const testSlice = createSlice({
           //   state.currentArraySectionIndex = state.currentArraySectionIndex + 1;
           //   state.isSectionCompleted = true;
           // }
-          if (
-  state.currentArraySectionIndex == state.totalSections - 1 &&
-  action.payload.via === "FINISH"
+      if (
+  state.currentArraySectionIndex >= state.totalSections - 1
 ) {
-    state.isTestCompleted = true;
-    state.isSectionCompleted = true;
+  state.isTestCompleted = true;
+  state.isSectionCompleted = true;
 } else {
-    state.currentArraySectionIndex += 1;
-    state.isSectionCompleted = true;
+  state.currentArraySectionIndex += 1;
+
+  const nextSection =
+    state.sectionOrderItems[state.currentArraySectionIndex];
+
+  if (nextSection) {
+    state.courseSubject = nextSection.course_subject;
+    state.sectionId = nextSection.section_id;
+    console.log(
+  "NEXT ACTIVE SECTION",
+  state.courseSubject,
+  state.sectionId
+);
+  }
+
+  state.isSectionCompleted = true;
 }
 
           // if (action.payload.via == "TIMEUP") state.isTimeUp = true;

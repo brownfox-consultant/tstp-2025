@@ -110,14 +110,26 @@ class TestSubmission(models.Model):
     assigned_date = models.DateTimeField(blank=False)
     expiration_date = models.DateTimeField(blank=False)
     completion_date = models.DateTimeField(null=True, blank=True)
-    current_section_started_at = models.DateTimeField(
-        null=True,
-        blank=True
-    )
+    
     selected_question_ids = models.JSONField(
         default=dict,
         blank=True,
         help_text="Dictionary of question IDs already selected for each section of this test submission."
+    )
+
+    current_course_subject_id = models.IntegerField(
+        null=True,
+        blank=True
+    )
+
+    current_section_id = models.IntegerField(
+        null=True,
+        blank=True
+    )
+
+    current_section_started_at = models.DateTimeField(
+        null=True,
+        blank=True
     )
 
     class Meta:

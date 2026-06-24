@@ -1977,6 +1977,12 @@ class TestViewSet(viewsets.ModelViewSet):
         section_id = request.data.get('section_id')
         course_subject_id = request.data.get('course_subject_id')
 
+        print(
+    "SKIP REQUEST =>",
+    "course_subject_id=", course_subject_id,
+    "section_id=", section_id
+)
+
         test_submission = TestSubmission.objects.get(id=test_submission_id)
 
         if not test_submission:
@@ -2054,6 +2060,59 @@ class TestViewSet(viewsets.ModelViewSet):
             test_submission.status = TestSubmission.IN_PROGRESS
 
         # Save the test submission status
+
+
+        sections = list(Section.objects.filter(test=test))
+
+        all_sections = []
+
+        for sec in sections:
+            for sub_sec in sec.sub_sections:
+                all_sections.append({
+                    "course_subject_id": sec.course_subject_id,
+                    "section_id": int(sub_sec["id"])
+                })
+
+        current_index = None
+
+        for idx, item in enumerate(all_sections):
+            if (
+                str(item["course_subject_id"]) == str(course_subject_id)
+                and
+                str(item["section_id"]) == str(section_id)
+            ):
+                current_index = idx
+                break
+
+        if current_index is not None:
+
+            next_index = current_index + 1
+
+            if next_index < len(all_sections):
+
+                next_section = all_sections[next_index]
+
+                test_submission.current_course_subject_id = (
+                    next_section["course_subject_id"]
+                )
+
+                test_submission.current_section_id = (
+                    next_section["section_id"]
+                )
+
+                test_submission.current_section_started_at = timezone.now()
+
+                print(
+                    "NEXT SECTION =>",
+                    next_section["course_subject_id"],
+                    next_section["section_id"]
+                )
+
+            else:
+                print("TEST COMPLETED")
+
+                test_submission.current_course_subject_id = None
+                test_submission.current_section_id = None
         test_submission.save()
         result.save()
 
@@ -2071,8 +2130,20 @@ class TestViewSet(viewsets.ModelViewSet):
         sections = Section.objects.filter(test=test)
         serialized_sections = SectionSerializer(sections, many=True).data
 
-        result = Result.objects.filter(test_submission=test_submission).first()
+        result = Result.objects.filter(
+            test_submission=test_submission
+        ).first()
+        print(
+        "TEST PROGRESS",
+        "current_course_subject_id=",
+        test_submission.current_course_subject_id,
+        "current_section_id=",
+        test_submission.current_section_id,
+    )
+
         if not result:
+            print("NO RESULT FOUND")
+
             return Response({
                 "test_id": test.id,
                 "test_name": test.name,
@@ -2088,123 +2159,156 @@ class TestViewSet(viewsets.ModelViewSet):
                 "answer_map": {}
             }, status=status.HTTP_200_OK)
 
-        for course_subject_idx, section in enumerate(sections):  # subject
-            for section_idx, sub_section in enumerate(section.sub_sections):  # section
+
+        # =====================================================
+        # RESTORE CURRENT ACTIVE SECTION FROM DB
+        # =====================================================
+
+        if (
+            test_submission.current_course_subject_id
+            and test_submission.current_section_id
+        ):
+            current_course_subject_id = test_submission.current_course_subject_id
+            current_section_id = test_submission.current_section_id
+
+            for course_subject_idx, section in enumerate(sections):
+
+                if str(section.course_subject_id) != str(current_course_subject_id):
+                    continue
+
+                sub_section = next(
+                    (
+                        s for s in section.sub_sections
+                        if str(s["id"]) == str(current_section_id)
+                    ),
+                    None
+                )
+
+                if not sub_section:
+                    continue
+
+                # ------------------------------
+                # Question IDs
+                # ------------------------------
                 if test.format_type == Test.DYNAMIC:
-                    section_key = f'{section.course_subject_id}_{sub_section["id"]}'
-                    question_ids = test_submission.selected_question_ids.get(section_key, [])
-                else:  # For LINEAR test type
-                    question_ids = sub_section['questions']
+                    section_key = (
+                        f"{section.course_subject_id}_{sub_section['id']}"
+                    )
 
-                if not question_ids:
-                    return Response({
-                        "test_id": test.id,
-                        "test_name": test.name,
-                        "course_name": test.course.name,
-                        "course_subject_id": section.course_subject_id,
-                        "subject": serialized_sections,
-                        "course_subject_index": course_subject_idx,
-                        "section_id": sub_section['id'],
-                        "section_index": section_idx,
-                        "remaining_time": (sub_section['duration'] * 60),
-                        "question_id": 0,
-                        "question_index": 0,
-                        "answer_map": {}
-                    }, status=status.HTTP_200_OK)
+                    question_ids = test_submission.selected_question_ids.get(
+                        section_key,
+                        []
+                    )
+                else:
+                    question_ids = sub_section["questions"]
 
-                # Fetch all QuestionAnswer entries for this section
+                # ------------------------------
+                # Answers
+                # ------------------------------
                 question_answers = QuestionAnswer.objects.filter(
                     result=result,
                     course_subject_id=section.course_subject_id,
-                    section_id=sub_section['id'],
+                    section_id=sub_section["id"],
                     question_id__in=question_ids
                 )
 
-                # Create a map of question answers for easier lookup
-                question_answer_map = {qa.question_id: qa for qa in question_answers}
+                question_answer_map = {
+                    qa.question_id: qa
+                    for qa in question_answers
+                }
 
                 answer_map = {}
-                # Construct answer map for all the questions answered
-                for question_idx, question_id in enumerate(question_ids):
-                    if question_id in question_answer_map:
-                        question_details = question_answer_map[question_id]
-                        is_skipped = question_details.is_skipped
-                        is_marked_for_review = question_details.is_marked_for_review
-                        answer_map[str(question_id)] = {
-                            "selected_options": {str(key): 1 for key in
-                                                 question_details.selected_options} if not is_skipped else {},
-                            "is_marked_for_review": is_marked_for_review,
-                            "is_answered": not is_skipped,
+
+                for qid in question_ids:
+
+                    if qid in question_answer_map:
+                        qa = question_answer_map[qid]
+
+                        answer_map[str(qid)] = {
+                            "selected_options": {
+                                str(key): 1
+                                for key in qa.selected_options
+                            } if not qa.is_skipped else {},
+                            "is_marked_for_review":
+                                qa.is_marked_for_review,
+                            "is_answered":
+                                not qa.is_skipped,
                             "striked_options": {}
                         }
 
-                # Construct the response to get the current course, section, and question index
-                for question_idx, question_id in enumerate(question_ids):
-                    # Check if the question is unanswered
-                    if question_id not in question_answer_map:
-                        # Fetch the total time taken for this section from SectionStats
-                        duration_seconds = sub_section['duration'] * 60
+                # ------------------------------
+                # FIND CURRENT QUESTION
+                # ------------------------------
+                current_question_id = (
+                    question_ids[0]
+                    if question_ids else 0
+                )
 
-                        section_stats = SectionStats.objects.filter(
-                            result=result,
-                            course_subject_id=section.course_subject_id,
-                            section_id=sub_section['id']
-                        ).first()
+                current_question_index = 0
 
-                        if section_stats and section_stats.started_at:
-                            elapsed = int(
-                                (
-                                    timezone.now()
-                                    - section_stats.started_at
-                                ).total_seconds()
-                            )
-                        else:
-                            elapsed = 0
+                for idx, qid in enumerate(question_ids):
+                    if qid not in question_answer_map:
+                        current_question_id = qid
+                        current_question_index = idx
+                        break
 
-                        remaining_time = max(duration_seconds - elapsed, 0)
+                # ------------------------------
+                # TIMER RESTORE
+                # ------------------------------
+                section_stats = SectionStats.objects.filter(
+                    result=result,
+                    course_subject_id=section.course_subject_id,
+                    section_id=sub_section["id"]
+                ).first()
 
-                        print(
-                            "RESTORE DEBUG =>",
-                            "course_subject=", section.course_subject_id,
-                            "section=", sub_section['id'],
-                            "question=", question_id,
-                            "question_index=", question_idx,
-                            "answered_count=", len(question_answer_map),
-                            "total_questions=", len(question_ids),
-                            "remaining_time=", remaining_time,
-                        )
+                duration_seconds = (
+                    sub_section["duration"] * 60
+                )
 
+                if section_stats and section_stats.started_at:
+                    elapsed = int(
+                        (
+                            timezone.now()
+                            - section_stats.started_at
+                        ).total_seconds()
+                    )
+                else:
+                    elapsed = 0
 
-                        return Response({
-                            "test_id": test.id,
-                            "test_name": test.name,
-                            "course_name": test.course.name,
-                            "course_subject_id": section.course_subject_id,
-                            "subject": serialized_sections,
-                            "course_subject_index": course_subject_idx,
-                            "section_id": sub_section['id'],
-                            "section_index": section_idx,
-                            "remaining_time": remaining_time,
-                            "question_id": question_id,
-                            "question_index": question_idx,
-                            "answer_map": answer_map
-                        }, status=status.HTTP_200_OK)
+                remaining_time = max(
+                    duration_seconds - elapsed,
+                    0
+                )
 
-        # Default response if no progress found
-        return Response({
-            "test_id": test.id,
-            "test_name": test.name,
-            "course_name": test.course.name,
-            "course_subject_id": 0,
-            "subject": serialized_sections,
-            "course_subject_index": 0,
-            "section_id": 0,
-            "section_index": 0,
-            "remaining_time": -1,
-            "question_id": 0,
-            "question_index": 0,
-            "answer_map": {}
-        }, status=status.HTTP_200_OK)
+                print(
+                    "RESTORE ACTIVE SECTION =>",
+                    "course_subject=", section.course_subject_id,
+                    "section=", sub_section["id"],
+                    "question=", current_question_id,
+                    "question_index=", current_question_index,
+                    "remaining_time=", remaining_time,
+                )
+                print(
+    "RETURNING",
+    section.course_subject_id,
+    sub_section["id"]
+)
+
+                return Response({
+                    "test_id": test.id,
+                    "test_name": test.name,
+                    "course_name": test.course.name,
+                    "course_subject_id": section.course_subject_id,
+                    "subject": serialized_sections,
+                    "course_subject_index": course_subject_idx,
+                    "section_id": sub_section["id"],
+                    "section_index": 0,
+                    "remaining_time": remaining_time,
+                    "question_id": current_question_id,
+                    "question_index": current_question_index,
+                    "answer_map": answer_map
+                }, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['GET'], permission_classes=[IsStudent],
         url_path='section-questions')
@@ -2221,19 +2325,49 @@ class TestViewSet(viewsets.ModelViewSet):
         try:
             test = Test.get_test_by_id(test_id=test_id)
             test_submission = TestSubmission.objects.get(id=test_submission_id)
-            section_key = f"{course_subject_id}_{section_id}"
-
-            last_section_key = getattr(
-                test_submission,
-                "last_section_key",
-                None
+            section_changed = (
+                test_submission.current_course_subject_id != int(course_subject_id)
+                or
+                test_submission.current_section_id != int(section_id)
             )
 
-            if last_section_key != section_key:
+            test_submission.current_course_subject_id = int(course_subject_id)
+            test_submission.current_section_id = int(section_id)
+
+            if section_changed:
                 test_submission.current_section_started_at = timezone.now()
-                test_submission.save(
-                    update_fields=["current_section_started_at"]
-                )
+
+            test_submission.save(
+                update_fields=[
+                    "current_course_subject_id",
+                    "current_section_id",
+                    "current_section_started_at"
+                ]
+            )
+            result, _ = Result.objects.get_or_create(
+                test_submission=test_submission,
+                defaults={
+                    "correct_answer_count": 0,
+                    "incorrect_answer_count": 0,
+                    "time_taken": 0,
+                    "detailed_view": {}
+                }
+            )
+
+            section_stats, created = SectionStats.objects.get_or_create(
+                result=result,
+                course_subject_id=course_subject_id,
+                section_id=section_id,
+                defaults={
+                    "time_taken": 0,
+                    "started_at": timezone.now(),
+                    "total_questions": 0
+                }
+            )
+
+            if not section_stats.started_at:
+                section_stats.started_at = timezone.now()
+                section_stats.save(update_fields=["started_at"])
             section = Section.fetch_section_using_test_course_subject(test=test_id, course_subject=course_subject_id)
             sub_section = next((ss for ss in section.sub_sections if str(ss['id']) == section_id), None)
             print(f"Sub-section found: {sub_section}")

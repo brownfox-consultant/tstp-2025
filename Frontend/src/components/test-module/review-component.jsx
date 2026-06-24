@@ -1,8 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { EnvironmentOutlined } from "@ant-design/icons";
+import {
+  EnvironmentOutlined,
+} from "@ant-design/icons";
+import { Modal } from "antd";
+import useFullScreen from "@/utils/useFullScreen";
+
 import { useRouter } from "next/navigation";
 import { saveAndMove, setIsReviewPage } from "@/lib/features/test/testSlice";
 import BookmarkIcon from "./../../../public/bookmark2.svg";
@@ -12,6 +17,7 @@ function ReviewComponent() {
   const currentQuestionIndex = useSelector(
     (state) => state.test.currentQuestionIndex
   );
+  const { goFullScreen } = useFullScreen();
   const router = useRouter();
   const questions = useSelector((state) => state.test.questions);
   const name = useSelector((state) => state.test.name);
@@ -54,8 +60,103 @@ function ReviewComponent() {
     dispatch(setIsReviewPage(false));
   }
 
+  useEffect(() => {
+  const handleKeyDown = (e) => {
+    // F5
+    if (e.key === "F5") {
+      e.preventDefault();
+      return false;
+    }
+
+    // Ctrl+R
+    if (e.ctrlKey && e.key.toLowerCase() === "r") {
+      e.preventDefault();
+      return false;
+    }
+
+    // Ctrl+C
+    if (e.ctrlKey && e.key.toLowerCase() === "c") {
+      e.preventDefault();
+      return false;
+    }
+
+    // Ctrl+V
+    if (e.ctrlKey && e.key.toLowerCase() === "v") {
+      e.preventDefault();
+      return false;
+    }
+
+    // Ctrl+X
+    if (e.ctrlKey && e.key.toLowerCase() === "x") {
+      e.preventDefault();
+      return false;
+    }
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    return false;
+  };
+
+  const handleCopy = (e) => {
+    e.preventDefault();
+  };
+
+  const handleCut = (e) => {
+    e.preventDefault();
+  };
+
+  const handleSelectStart = (e) => {
+    e.preventDefault();
+    return false;
+  };
+
+  const handleFullscreenChange = () => {
+    if (!document.fullscreenElement) {
+      Modal.warning({
+        title: "Fullscreen Required",
+        content: "You cannot exit fullscreen during the test.",
+        okText: "Return to Test",
+        onOk: () => {
+          goFullScreen();
+        },
+      });
+    }
+  };
+
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("contextmenu", handleContextMenu);
+  document.addEventListener("copy", handleCopy);
+  document.addEventListener("cut", handleCut);
+  document.addEventListener("selectstart", handleSelectStart);
+  document.addEventListener(
+    "fullscreenchange",
+    handleFullscreenChange
+  );
+
+  return () => {
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("contextmenu", handleContextMenu);
+    document.removeEventListener("copy", handleCopy);
+    document.removeEventListener("cut", handleCut);
+    document.removeEventListener("selectstart", handleSelectStart);
+    document.removeEventListener(
+      "fullscreenchange",
+      handleFullscreenChange
+    );
+  };
+}, []);
+
   return (
-    <div className=" max-w-3xl my-6 mx-auto rounded-md h-96">
+    <div
+  className="max-w-3xl my-6 mx-auto rounded-md h-96"
+  style={{
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    MozUserSelect: "none",
+    msUserSelect: "none",
+  }}
+>
       <p className="review-title text-3xl text-center">Review your work</p>
       <p className="review-instructions text-center my-3">
         Confirm Your Answers Before Completion
