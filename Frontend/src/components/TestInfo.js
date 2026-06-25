@@ -1,7 +1,9 @@
 import { ExamContext } from "@/app/student/[id]/(base-layout)/test/full/[testId]/page";
-import { Steps } from "antd";
 import { useSelector } from "react-redux";
-import { useContext } from "react";
+
+import React, { useContext, useEffect } from "react";
+import { Steps, Modal } from "antd";
+import useFullScreen from "@/utils/useFullScreen";
 
 function TestInfo({ currentSubjectIndex, currentSectionIndex }) {
   // const { testDetails, currentSection, sectionOrderItems } =
@@ -13,6 +15,48 @@ function TestInfo({ currentSubjectIndex, currentSectionIndex }) {
   const currentSection = useSelector(
     (state) => state.test.currentArraySectionIndex
   );
+  const { goFullScreen } = useFullScreen();
+  useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (
+      e.key === "F5" ||
+      (e.ctrlKey && e.key.toLowerCase() === "r")
+    ) {
+      e.preventDefault();
+      return false;
+    }
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+  };
+
+  const handleFullscreenChange = () => {
+    if (!document.fullscreenElement) {
+      Modal.warning({
+        title: "Fullscreen Required",
+        content: "Please return to fullscreen mode.",
+        onOk: () => goFullScreen(),
+      });
+    }
+  };
+
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("contextmenu", handleContextMenu);
+  document.addEventListener(
+    "fullscreenchange",
+    handleFullscreenChange
+  );
+
+  return () => {
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("contextmenu", handleContextMenu);
+    document.removeEventListener(
+      "fullscreenchange",
+      handleFullscreenChange
+    );
+  };
+}, []);
   return (
     <div className="my-10 space-y-3">
       <p className="text-2xl font-semibold border-b">
