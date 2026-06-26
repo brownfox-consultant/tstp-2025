@@ -3,7 +3,10 @@
 **/venv/
 **/env/
 **/.venv/
-**/src/app/constants/apiConstants.js
+
+# Ignore API constants
+src/app/constants/apiConstants.js
+
 # Python cache
 **/__pycache__/
 **/*.pyc
