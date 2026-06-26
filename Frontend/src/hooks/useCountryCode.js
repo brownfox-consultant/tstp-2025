@@ -31,14 +31,19 @@ export const useCountryCode = (initialCode = "+91", existingPhoneNumber = null) 
 
   // Parse existing phone number to extract country code
   useEffect(() => {
-    if (existingPhoneNumber) {
-      const phoneStr = String(existingPhoneNumber);
-      const match = phoneStr.match(/^(\+\d+)(\d{10})$/);
-      if (match) {
-        setSelectedCountryCode(match[1]);
-      }
-    }
-  }, [existingPhoneNumber]);
+  if (!existingPhoneNumber || countryCodes.length === 0) return;
+
+  const phone = String(existingPhoneNumber);
+
+  // Match longest country code first
+  const matchedCountry = [...countryCodes]
+    .sort((a, b) => b.code.length - a.code.length)
+    .find(country => phone.startsWith(country.code));
+
+  if (matchedCountry) {
+    setSelectedCountryCode(matchedCountry.code);
+  }
+}, [existingPhoneNumber, countryCodes]);
 
   /**
    * Parse phone number and extract the digits without country code
@@ -46,11 +51,20 @@ export const useCountryCode = (initialCode = "+91", existingPhoneNumber = null) 
    * @returns {string} Phone number without country code
    */
   const parsePhoneNumber = (phoneNumber) => {
-    if (!phoneNumber) return '';
-    const phoneStr = String(phoneNumber);
-    const match = phoneStr.match(/^(\+\d+)(\d{10})$/);
-    return match ? match[2] : phoneStr.replace(/^\+\d+/, '');
-  };
+  if (!phoneNumber) return "";
+
+  const phone = String(phoneNumber);
+
+  const matchedCountry = [...countryCodes]
+    .sort((a, b) => b.code.length - a.code.length)
+    .find(country => phone.startsWith(country.code));
+
+  if (!matchedCountry) {
+    return phone.replace(/^\+/, "");
+  }
+
+  return phone.slice(matchedCountry.code.length);
+};
 
   /**
    * Format phone number with country code for submission

@@ -95,6 +95,62 @@ const customSelectStyles = {
   }),
 };
 
+export const PHONE_NUMBER_LENGTH = {
+  "+1": 10,     // USA, Canada
+  "+7": 10,     // Russia
+  "+20": 10,    // Egypt
+  "+27": 9,     // South Africa
+  "+30": 10,    // Greece
+  "+31": 9,     // Netherlands
+  "+32": 9,     // Belgium
+  "+33": 9,     // France
+  "+34": 9,     // Spain
+  "+39": 10,    // Italy
+  "+41": 9,     // Switzerland
+  "+43": 10,    // Austria
+  "+44": 10,    // UK
+  "+45": 8,     // Denmark
+  "+46": 9,     // Sweden
+  "+47": 8,     // Norway
+  "+48": 9,     // Poland
+  "+49": 10,    // Germany
+  "+52": 10,    // Mexico
+  "+54": 10,    // Argentina
+  "+55": 11,    // Brazil
+  "+60": 9,     // Malaysia
+  "+61": 9,     // Australia
+  "+62": 10,    // Indonesia
+  "+63": 10,    // Philippines
+  "+64": 9,     // New Zealand
+  "+65": 8,     // Singapore
+  "+66": 9,     // Thailand
+  "+81": 10,    // Japan
+  "+82": 10,    // South Korea
+  "+84": 9,     // Vietnam
+  "+86": 11,    // China
+  "+90": 10,    // Turkey
+  "+91": 10,    // India
+  "+92": 10,    // Pakistan
+  "+93": 9,     // Afghanistan
+  "+94": 9,     // Sri Lanka
+  "+98": 10,    // Iran
+  "+212": 9,    // Morocco
+  "+213": 9,    // Algeria
+  "+234": 10,   // Nigeria
+  "+351": 9,    // Portugal
+  "+353": 9,    // Ireland
+  "+355": 9,    // Albania
+  "+358": 10,   // Finland
+  "+380": 9,    // Ukraine
+  "+852": 8,    // Hong Kong
+  "+880": 10,   // Bangladesh
+  "+886": 9,    // Taiwan
+  "+964": 10,   // Iraq
+  "+966": 9,    // Saudi Arabia
+  "+971": 9,    // UAE
+  "+972": 9,    // Israel
+};
+
 const PhoneInput = ({
   value,
   onChange,
@@ -145,7 +201,7 @@ const PhoneInput = ({
         <Input
           value={value}
           onChange={onChange}
-          maxLength={10}
+          maxLength={PHONE_NUMBER_LENGTH[countryCode] || 15}
           placeholder="0000011111"
           bordered={false}
           className="h-full text-sm px-3"
@@ -166,6 +222,8 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState([]);
   const { roles } = useGlobalContext();
+  
+  
 
   const {
     countryCodes,
@@ -184,6 +242,7 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
     setSelectedCountryCode: setMotherCountryCode,
   } = useCountryCode("+91", recordData?.parent_details?.mother?.phone_number);
 
+  
   useEffect(() => {
     if (isModalOpen) {
       form.setFieldsValue(getUserInitialValues(recordData));
@@ -425,9 +484,26 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
                   name="phone_number"
                   className="mb-0"
                   rules={[
-                    { required: true, message: "Please enter contact number" },
-                    { pattern: /^\d{10}$/, message: "Must be 10 digits" },
-                  ]}
+  {
+    required: true,
+    message: "Please enter contact number",
+  },
+  {
+    validator(_, value) {
+      if (!value) return Promise.resolve();
+
+      const length = PHONE_NUMBER_LENGTH[studentCountryCode] || 15;
+
+      if (value.length !== length) {
+        return Promise.reject(
+          new Error(`Must be ${length} digits`)
+        );
+      }
+
+      return Promise.resolve();
+    },
+  },
+]}
                   normalize={(value) => value?.replace(/\D/g, "")}
                 >
                   <PhoneInput
@@ -576,7 +652,21 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
                     name="father_phone_number"
                     className="mb-0"
                     rules={[
-                      { pattern: /^\d{10}$/, message: "Must be 10 digits" },
+                      {
+  validator(_, value) {
+    if (!value) return Promise.resolve();
+
+    const length = PHONE_NUMBER_LENGTH[fatherCountryCode] || 15;
+
+    if (value.length !== length) {
+      return Promise.reject(
+        new Error(`Must be ${length} digits`)
+      );
+    }
+
+    return Promise.resolve();
+  },
+}
                     ]}
                     normalize={(value) => value?.replace(/\D/g, "")}
                   >
@@ -647,7 +737,21 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
                     name="mother_phone_number"
                     className="mb-0"
                     rules={[
-                      { pattern: /^\d{10}$/, message: "Must be 10 digits" },
+                      {
+                        validator(_, value) {
+                          if (!value) return Promise.resolve();
+
+                          const length = PHONE_NUMBER_LENGTH[motherCountryCode] || 15;
+
+                          if (value.length !== length) {
+                            return Promise.reject(
+                              new Error(`Must be ${length} digits`)
+                            );
+                          }
+
+                          return Promise.resolve();
+                        },
+                      },
                     ]}
                     normalize={(value) => value?.replace(/\D/g, "")}
                   >
