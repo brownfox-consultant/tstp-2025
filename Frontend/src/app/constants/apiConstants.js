@@ -1,4 +1,4 @@
-export const BASE_URL =   "http://localhost:8000/"; 
+export const BASE_URL =   "https://mathforusa.com"; 
 
 export const LOGIN = `${BASE_URL}/api/user/login/`;
 export const VALIDATE_SESSION = `${BASE_URL}/api/user/session_validate/`;
