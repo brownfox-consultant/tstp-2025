@@ -248,6 +248,7 @@ const testSlice = createSlice({
       return initialState;
     },
     createAnswerObject: (state, action) => {
+    if (!state.answerMap[action.payload]) {
       state.answerMap[action.payload] = {
         is_marked_for_review: false,
         isAnswered: false,
@@ -256,7 +257,8 @@ const testSlice = createSlice({
         gridinAnswer: "",
         selectionHistory: [],
       };
-    },
+    }
+  },
     toggleShowTime: (state, action) => {
       state.showTime = action.payload;
     },
@@ -332,7 +334,10 @@ const testSlice = createSlice({
       state.answerMap[action.payload.questionId].striked_options[
         action.payload.optionIndex
       ] = 0;
-
+       
+      if (!state.answerMap[questionId].selectionHistory) {
+  state.answerMap[questionId].selectionHistory = [];
+}
       state.answerMap[questionId].selectionHistory.push({
     action: "select",
     option: optionIndex,

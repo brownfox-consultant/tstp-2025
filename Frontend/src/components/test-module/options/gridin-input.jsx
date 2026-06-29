@@ -7,8 +7,9 @@ import { saveValue } from "@/lib/features/test/testSlice";
 function GridInInput({ questionId, questionType, questionSubtype }) {
   const dispatch = useDispatch();
   const ansValue = useSelector(
-    (state) => state.test.answerMap[questionId].gridinAnswer
-  );
+  (state) =>
+    state.test.answerMap[questionId]?.gridinAnswer || ""
+);
   const handleKeyDownLengthCheck = (e) => {
     const { key, target } = e;
     const value = target.value;

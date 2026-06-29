@@ -2221,19 +2221,49 @@ class TestViewSet(viewsets.ModelViewSet):
 
                 for qid in question_ids:
 
-                    if qid in question_answer_map:
-                        qa = question_answer_map[qid]
+                    qa = question_answer_map.get(qid)
+
+                    if qa:
+                        selected_options = {}
+                        gridin_answer = ""
+
+                        # GRID-IN answer stored as string
+                        if isinstance(qa.selected_options, str):
+                            gridin_answer = qa.selected_options
+
+                        # GRID-IN stored as ["10"]
+                        elif (
+                            isinstance(qa.selected_options, list)
+                            and len(qa.selected_options) == 1
+                            and isinstance(qa.selected_options[0], str)
+                        ):
+                            gridin_answer = qa.selected_options[0]
+
+                        # MCQ
+                        elif isinstance(qa.selected_options, list):
+                            selected_options = {
+                                str(i): 1
+                                for i in qa.selected_options
+                            }
 
                         answer_map[str(qid)] = {
-                            "selected_options": {
-                                str(key): 1
-                                for key in qa.selected_options
-                            } if not qa.is_skipped else {},
-                            "is_marked_for_review":
-                                qa.is_marked_for_review,
-                            "is_answered":
-                                not qa.is_skipped,
-                            "striked_options": {}
+                            "selected_options": selected_options,
+                            "gridinAnswer": gridin_answer,
+                            "striked_options": {
+                                str(i): 1 for i in qa.striked_options
+                            },
+                            "selectionHistory": [],
+                            "is_marked_for_review": qa.is_marked_for_review,
+                            "is_answered": not qa.is_skipped,
+                        }
+
+                    else:
+                        answer_map[str(qid)] = {
+                            "selected_options": {},
+                            "gridinAnswer": "",
+                            "striked_options": {},
+                            "is_marked_for_review": False,
+                            "is_answered": False,
                         }
 
                 # ------------------------------

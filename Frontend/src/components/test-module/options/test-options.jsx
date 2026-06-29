@@ -24,11 +24,14 @@ function TestOptions({
   const testState = useSelector((state) => state.test);
 
   const selected_options = useSelector(
-    (state) => state.test.answerMap[questionId].selected_options
-  );
-  const striked_options = useSelector(
-    (state) => state.test.answerMap[questionId].striked_options
-  );
+  (state) =>
+    state.test.answerMap[questionId]?.selected_options || {}
+);
+
+const striked_options = useSelector(
+  (state) =>
+    state.test.answerMap[questionId]?.striked_options || {}
+);
 
   const isFullLengthTest = testState.testType === "test"; 
   

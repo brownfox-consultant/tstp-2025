@@ -32,11 +32,13 @@ function QuestionComponent() {
   const question = questions[currentQuestionIndex];
   const { question_type, question_subtype } = question;
   const answerObject =
-    useSelector((state) => state.test?.answerMap[question.id]) || null;
+  useSelector((state) => state.test?.answerMap[question.id]) || null;
 
-  if (answerObject == null) {
+useEffect(() => {
+  if (question?.id && !answerObject) {
     dispatch(createAnswerObject(question.id));
   }
+}, [dispatch, question?.id, answerObject]);
 
   useHotkeys("alt+m", () =>
     dispatch(
