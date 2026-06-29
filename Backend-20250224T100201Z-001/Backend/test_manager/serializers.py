@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from course_manager.models import CourseEnrollment
 from user_manager.models import User
-from .models import Test, Section, TestSubmission, PracticeTestResult, PracticeTest, TestFeedback
+from .models import PracticeQuestionAnswer, Test, Section, TestSubmission, PracticeTestResult, PracticeTest, TestFeedback
 from course_manager.models import (
     Course,
     CourseSubjects,
@@ -227,18 +227,29 @@ class RecentFullLengthResultSerializer(serializers.ModelSerializer):
 
     total_score = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(source="assigned_date")
+    english_score = serializers.SerializerMethodField()
+    math_score = serializers.SerializerMethodField()
+
+    percentage = serializers.SerializerMethodField()
+    total_marks = serializers.SerializerMethodField()
 
     class Meta:
         model = TestSubmission
         fields = [
-            "id",
+             "id",
             "student_id",
             "student_name",
             "student_email",
             "test_name",
             "course_id",
             "course_name",
+
             "total_score",
+            "english_score",
+            "math_score",
+            "percentage",
+            "total_marks",
+
             "created_at",
         ]
 
@@ -294,6 +305,62 @@ class RecentFullLengthResultSerializer(serializers.ModelSerializer):
                 total_score += score_record.total_score
 
         return total_score
+    
+    def _subject_score(self, obj, subject_name):
+        if not hasattr(obj, "result") or not obj.result:
+            return 0
+
+        result = obj.result
+        test = obj.test
+
+        sections = Section.objects.filter(test=test)
+
+        subject_sections = [
+            s for s in sections
+            if s.course_subject.subject.name.lower() == subject_name.lower()
+        ]
+
+        section1 = 0
+        section2 = 0
+
+        for section in subject_sections:
+            for sub in section.sub_sections:
+
+                correct = QuestionAnswer.objects.filter(
+                    result=result,
+                    course_subject=section.course_subject,
+                    section_id=sub["id"],
+                    is_correct=True
+                ).count()
+
+                if sub["id"] == 1:
+                    section1 += correct
+                else:
+                    section2 += correct
+
+        score = CombinedScore.objects.filter(
+            subject_name__iexact=subject_name,
+            section1_correct=section1,
+            section2_correct=section2
+        ).first()
+
+        return score.total_score if score else 0
+    
+    def get_english_score(self, obj):
+        return self._subject_score(obj, "English")
+
+
+    def get_math_score(self, obj):
+        return self._subject_score(obj, "Math")
+
+
+    def get_total_marks(self, obj):
+        return 1600
+
+
+    def get_percentage(self, obj):
+        total = self.get_total_score(obj)
+        return round((total / 1600) * 100)
 
 
 
@@ -301,22 +368,68 @@ class RecentPracticeTestSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='student.name')
     test_name = serializers.SerializerMethodField()
     course_name = serializers.CharField(source='course_subject.course.name')
-    total_score = serializers.IntegerField(source='result.correct_answer_count')
+    total_score = serializers.IntegerField(source="result.correct_answer_count")
+
+    correct = serializers.IntegerField(
+        source="result.correct_answer_count"
+    )
+
+    incorrect = serializers.IntegerField(
+        source="result.incorrect_answer_count"
+    )
+
+    blank = serializers.SerializerMethodField()
+
+    marked = serializers.SerializerMethodField()
+
+    total_questions = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField()
+    
 
     class Meta:
         model = PracticeTest
         fields = [
-            'id',
-            'student_name',
-            'test_name',
-            'course_name',
-            'total_score',
-            'created_at'
+            "id",
+            "student_name",
+            "test_name",
+            "course_name",
+
+            "total_score",
+
+            "correct",
+            "incorrect",
+            "blank",
+            "marked",
+            "total_questions",
+
+            "created_at",
         ]
 
     def get_test_name(self, obj):
         return f"Practice Test - {obj.id}"
+
+    def get_total_questions(self, obj):
+        return PracticeQuestionAnswer.objects.filter(
+            practice_test_result=obj.result
+        ).count()
+
+
+    def get_blank(self, obj):
+        total = self.get_total_questions(obj)
+
+        return max(
+            total
+            - obj.result.correct_answer_count
+            - obj.result.incorrect_answer_count,
+            0,
+        )
+
+
+    def get_marked(self, obj):
+        return PracticeQuestionAnswer.objects.filter(
+            practice_test_result=obj.result,
+            is_marked_for_review=True,
+        ).count()
 
 class AttemptedQuestionSerializer(serializers.Serializer):
     id = serializers.IntegerField()

@@ -109,6 +109,7 @@ Please review and take necessary action.
             message=email_body,
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=admin_emails,
+            bcc=["vijayaluguvelli@gmail.com"],
             fail_silently=False,
         )
 
@@ -249,6 +250,7 @@ Please log in to your dashboard to view updated results.
             message=student_email_body,
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[student.email],
+            bcc=["vijayaluguvelli@gmail.com"],
             fail_silently=False,
         )
 
@@ -301,6 +303,7 @@ System has recalculated scores automatically.
             message=admin_email_body,
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[settings.EMAIL_HOST_USER],
+            bcc=["vijayaluguvelli@gmail.com"],
             fail_silently=False,
         )
 

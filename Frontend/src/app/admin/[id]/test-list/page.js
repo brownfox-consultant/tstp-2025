@@ -10,6 +10,7 @@ import {
   Input,
   Tag,
   Modal,
+  Tooltip, 
 } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -34,6 +35,148 @@ const TestListPage = () => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [submissionId, setSubmissionId] = useState(null);
   const [testType, setTestType] = useState(null);
+
+ const ResultSummary = ({ summary }) => {
+  
+
+  const items = [
+    {
+      label: "All",
+      value: summary.total_questions,
+      color: "#374151",
+      bg: "#F9FAFB",
+      icon: "📋",
+    },
+    {
+      label: "Correct",
+      value: summary.correct,
+      color: "#16A34A",
+      bg: "#F0FDF4",
+      icon: "✔",
+    },
+    {
+      label: "Incorrect",
+      value:  summary.incorrect,
+      color: "#DC2626",
+      bg: "#FEF2F2",
+      icon: "✖",
+    },
+    {
+      label: "Blank",
+      value: summary.blank,
+      color: "#6B7280",
+      bg: "#F3F4F6",
+      icon: "○",
+    },
+    {
+      label: "Marked",
+      value: summary.marked,
+      color: "#EA580C",
+      bg: "#FFF7ED",
+      icon: "⚑",
+    },
+  ];
+
+  return (
+    <div className="w-[430px] rounded-xl overflow-hidden bg-white shadow-xl border">
+      <div className="px-4 py-3 border-b bg-gradient-to-r from-blue-600 to-indigo-600">
+        <h3 className="text-white text-sm font-semibold">
+          Question Summary
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-5 gap-3 p-4">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl p-3 text-center transition-all duration-200 hover:scale-105"
+            style={{ background: item.bg }}
+          >
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center mx-auto mb-2 text-lg font-bold"
+              style={{
+                backgroundColor: item.color + "20",
+                color: item.color,
+              }}
+            >
+              {item.icon}
+            </div>
+
+            <div
+              className="text-xl font-bold"
+              style={{ color: item.color }}
+            >
+              {item.value}
+            </div>
+
+            <div className="text-xs text-gray-500 mt-1">
+              {item.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const FullLengthScoreCard = ({ record  }) => {
+  const score = record.total_score;
+const total = record.total_marks;
+const percentage = record.percentage;
+
+  return (
+    <div className="w-[360px] rounded-xl overflow-hidden bg-white">
+      <div
+        className="p-5 text-white"
+        style={{
+          background: "linear-gradient(135deg,#38bdf8,#0ea5e9)",
+        }}
+      >
+        <div className="flex justify-between text-xs font-semibold uppercase">
+          <span>Total Score</span>
+          <span>{percentage}%</span>
+        </div>
+
+        <div className="mt-4 flex items-end gap-2">
+          <span className="text-5xl font-bold">{score}</span>
+          <span className="text-sm mb-1 opacity-90">
+            OUT OF {total}
+          </span>
+        </div>
+
+        <div className="mt-5 h-2 rounded-full bg-white/30 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-white"
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 p-4">
+        <div className="rounded-lg border p-3">
+          <div className="text-xs text-gray-500 uppercase">
+            English
+          </div>
+          <div className="text-2xl font-bold text-gray-400">{record.english_score}</div>
+          <div className="text-xs text-gray-400">
+            OUT OF 800
+          </div>
+        </div>
+
+        <div className="rounded-lg border p-3">
+          <div className="text-xs text-gray-500 uppercase">
+            Math
+          </div>
+          <div className="text-2xl font-bold text-gray-400">{record.math_score}</div>
+          <div className="text-xs text-gray-400">
+            OUT OF 800
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
   // ==================== FETCH DATA ====================
   useEffect(() => {
@@ -166,14 +309,32 @@ const TestListPage = () => {
       dataIndex: "total_score",
       key: "total_score",
       sorter: (a, b) => (a.total_score || 0) - (b.total_score || 0),
-      render: (score) => (
-        <Tag
-          color={score >= 500 ? "green" : "red"}
-          className="rounded-full px-3"
-        >
-          {score ?? "N/A"}
-        </Tag>
-      ),
+      render: (score, record) => (
+  <Tooltip
+  title={
+  type === "practice" ? (
+    <ResultSummary summary={record} />
+  ) : (
+    <FullLengthScoreCard record={record} />
+  )
+}
+  color="#fff"
+  overlayInnerStyle={{
+    padding: 0,
+    borderRadius: 12,
+  }}
+  overlayStyle={{
+    boxShadow: "none",
+  }}
+>
+    <Tag
+      color={score >= 500 ? "green" : "red"}
+      className="rounded-full px-3 cursor-pointer"
+    >
+      {score ?? "N/A"}
+    </Tag>
+  </Tooltip>
+),
     },
     {
       title: "View Result",
