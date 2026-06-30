@@ -119,57 +119,64 @@ const TestListPage = () => {
   );
 };
 
-const FullLengthScoreCard = ({ record  }) => {
-  const score = record.total_score;
-const total = record.total_marks;
-const percentage = record.percentage;
-
+const FullLengthScoreCard = ({ record }) => {
   return (
-    <div className="w-[360px] rounded-xl overflow-hidden bg-white">
-      <div
-        className="p-5 text-white"
-        style={{
-          background: "linear-gradient(135deg,#38bdf8,#0ea5e9)",
-        }}
-      >
-        <div className="flex justify-between text-xs font-semibold uppercase">
-          <span>Total Score</span>
-          <span>{percentage}%</span>
-        </div>
-
-        <div className="mt-4 flex items-end gap-2">
-          <span className="text-5xl font-bold">{score}</span>
-          <span className="text-sm mb-1 opacity-90">
-            OUT OF {total}
+    <div className="w-[270px] rounded-lg overflow-hidden bg-white shadow-md border border-gray-200">
+      {/* Header */}
+      <div className="bg-sky-500 text-white px-3 py-2">
+        <div className="flex justify-between items-center">
+          <span className="text-[11px] font-semibold uppercase">
+            Total Score
+          </span>
+          <span className="text-xs font-semibold">
+            {record.percentage}%
           </span>
         </div>
 
-        <div className="mt-5 h-2 rounded-full bg-white/30 overflow-hidden">
+        <div className="mt-2 flex items-end gap-1">
+          <span className="text-3xl font-bold">
+            {record.total_score}
+          </span>
+          <span className="text-[11px] mb-1 opacity-90">
+            / {record.total_marks}
+          </span>
+        </div>
+
+        <div className="mt-2 h-1.5 rounded-full bg-white/30 overflow-hidden">
           <div
-            className="h-full rounded-full bg-white"
-            style={{ width: `${percentage}%` }}
+            className="h-full bg-white rounded-full"
+            style={{ width: `${record.percentage}%` }}
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 p-4">
-        <div className="rounded-lg border p-3">
-          <div className="text-xs text-gray-500 uppercase">
+      {/* Section Scores */}
+      <div className="grid grid-cols-2 divide-x">
+        <div className="p-3 text-center">
+          <div className="text-[11px] uppercase text-gray-500">
             English
           </div>
-          <div className="text-2xl font-bold text-gray-400">{record.english_score}</div>
-          <div className="text-xs text-gray-400">
-            OUT OF 800
+
+          <div className="text-xl font-bold text-gray-800">
+            {record.english_score}
+          </div>
+
+          <div className="text-[10px] text-gray-400">
+            / 800
           </div>
         </div>
 
-        <div className="rounded-lg border p-3">
-          <div className="text-xs text-gray-500 uppercase">
+        <div className="p-3 text-center">
+          <div className="text-[11px] uppercase text-gray-500">
             Math
           </div>
-          <div className="text-2xl font-bold text-gray-400">{record.math_score}</div>
-          <div className="text-xs text-gray-400">
-            OUT OF 800
+
+          <div className="text-xl font-bold text-gray-800">
+            {record.math_score}
+          </div>
+
+          <div className="text-[10px] text-gray-400">
+            / 800
           </div>
         </div>
       </div>
