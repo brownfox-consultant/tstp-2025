@@ -61,8 +61,12 @@ function QuestionReviewModal({
       console.log("params.test_submission_id", params.test_submission_id)
       console.log("params.practice_test_result_id", params.practice_test_result_id)
       getQuestionDetails(currentQuestionId, params).then((res) => {
-        setData(res.data.detail);
-      });
+  setData({
+    ...res.data.detail,
+    doubt_created: res.data.doubt_created,
+    doubt: res.data.doubt,
+  });
+});
     }
   }, [currentQuestionId]);
 
@@ -262,6 +266,11 @@ function QuestionReviewModal({
                 >
                   Raise a doubt
                 </button>
+                {data.doubt_created && (
+      <span className="text-red-600 text-sm font-medium ml-4 flex items-center gap-1">
+        {data.doubt}
+      </span>
+    )}
               </div>
             )}
           </>

@@ -54,8 +54,12 @@ function ReportTable({ sectionData, testSubmissionId }) {
     console.log("params.practice_test_result_id", params.practice_test_result_id)
     if (currentQuestionId) {
       getQuestionDetails(currentQuestionId, params).then((res) => {
-        setModalData(res.data.detail);
-      });
+  setModalData({
+    ...res.data.detail,
+    doubt_created: res.data.doubt_created,
+    doubt: res.data.doubt,
+  });
+});
     }
   }, [currentQuestionId]);
 
@@ -469,13 +473,22 @@ function ReportTable({ sectionData, testSubmissionId }) {
             </button>
 
             {role === "student" && (
-              <RaiseDoubtModal
-                question={currentQuestionId}
-                section={section_id}
-                course_subject={course_subject_id}
-                test={test_id}
-              />
-            )}
+  <div className="flex items-center gap-3">
+    <RaiseDoubtModal
+      question={currentQuestionId}
+      section={section_id}
+      course_subject={course_subject_id}
+      test={test_id}
+      doubtCreated={modalData.doubt_created}
+    />
+
+    {modalData.doubt_created && (
+      <span className="text-red-600 text-sm font-medium">
+        {modalData.doubt}
+      </span>
+    )}
+  </div>
+)}
 
             <button
               disabled={

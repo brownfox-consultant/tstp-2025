@@ -51,6 +51,7 @@ from test_manager.re_evaluate import re_evaluate_question_answers_sync
 from test_manager.models import QuestionAnswer, PracticeQuestionAnswer
 from notification_manager.tasks import send_question_update_email
 from course_manager.utils import has_options_changed
+from system_manager.models import Doubt
 
 
 
@@ -1168,7 +1169,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     @permission_classes([IsAdminOrContentDeveloperOrFaculty])
     def retrieve(self, request, pk=None, *args, **kwargs):
         instance = Question.get_question_by_id(question_id=pk)
-        
+
         serializer = QuestionListSerializer(
             instance=instance,
             context={
@@ -1180,7 +1181,23 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         topics = Topic.objects.filter(course_subject_id=instance.course_subject)
         topics_serializer = TopicSerializer(topics, many=True)
-        return Response({'detail': serializer.data, 'topics': topics_serializer.data})
+
+        # Check if the logged-in student has already raised a doubt
+        doubt_exists = Doubt.objects.filter(
+            student=request.user,
+            question=instance
+        ).exists()
+        print(f"Doubt exists for student {request.user.id} and question {instance.id}: {doubt_exists}")
+
+        return Response({
+            "detail": serializer.data,
+            "topics": topics_serializer.data,
+            "doubt_created": doubt_exists,
+            "doubt": (
+                "You have already created a doubt about this question."
+                if doubt_exists else ""
+            )
+        })
 
 
     @permission_classes([IsAdminOrContentDeveloper])
