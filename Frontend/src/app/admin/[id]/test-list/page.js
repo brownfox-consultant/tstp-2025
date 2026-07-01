@@ -37,8 +37,6 @@ const TestListPage = () => {
   const [testType, setTestType] = useState(null);
 
  const ResultSummary = ({ summary }) => {
-  
-
   const items = [
     {
       label: "All",
@@ -56,7 +54,7 @@ const TestListPage = () => {
     },
     {
       label: "Incorrect",
-      value:  summary.incorrect,
+      value: summary.incorrect,
       color: "#DC2626",
       bg: "#FEF2F2",
       icon: "✖",
@@ -78,22 +76,32 @@ const TestListPage = () => {
   ];
 
   return (
-    <div className="w-[430px] rounded-xl overflow-hidden bg-white shadow-xl border">
-      <div className="px-4 py-3 border-b bg-gradient-to-r from-blue-600 to-indigo-600">
-        <h3 className="text-white text-sm font-semibold">
+    <div className="w-[280px] rounded-lg overflow-hidden bg-white border border-gray-200 shadow-md">
+
+      {/* Header */}
+      <div className="bg-blue-600 px-3 py-2 flex justify-between items-center">
+        <span className="text-white text-xs font-semibold">
           Question Summary
-        </h3>
+        </span>
+
+        <span
+          className="text-white text-[11px] max-w-[90px] truncate"
+          title={summary.student_name}
+        >
+          {summary.student_name}
+        </span>
       </div>
 
-      <div className="grid grid-cols-5 gap-3 p-4">
+      {/* Summary */}
+      <div className="grid grid-cols-5 gap-1 p-2">
         {items.map((item) => (
           <div
             key={item.label}
-            className="rounded-xl p-3 text-center transition-all duration-200 hover:scale-105"
+            className="rounded-md py-2 px-1 text-center"
             style={{ background: item.bg }}
           >
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center mx-auto mb-2 text-lg font-bold"
+              className="w-6 h-6 rounded-full flex items-center justify-center mx-auto mb-1 text-xs font-bold"
               style={{
                 backgroundColor: item.color + "20",
                 color: item.color,
@@ -103,13 +111,16 @@ const TestListPage = () => {
             </div>
 
             <div
-              className="text-xl font-bold"
+              className="text-sm font-bold"
               style={{ color: item.color }}
             >
               {item.value}
             </div>
 
-            <div className="text-xs text-gray-500 mt-1">
+            <div
+              className="text-[9px] leading-tight text-gray-500"
+              title={item.label}
+            >
               {item.label}
             </div>
           </div>
