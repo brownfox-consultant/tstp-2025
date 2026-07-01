@@ -11,6 +11,7 @@ import {
   testInProgress,
   getQuestionForSection,
   setTestRunning,
+  clearSectionCompleted,
 } from "@/lib/features/test/testSlice";
 
 import BreakTimer from "./test-module/break-timer";
@@ -37,6 +38,91 @@ const ActualTestComponent = () => {
   const currentSectionName = useSelector(
     (state) => state.test.sectionOrderItems[currentArraySectionIndex]?.title
   );
+  const [remainingBreak, setRemainingBreak] = useState(0);
+
+const expiryTimestamp = React.useMemo(() => {
+  return new Date(Date.now() + remainingBreak * 1000);
+}, [remainingBreak]);
+
+useEffect(() => {
+
+  if (breakTimer <= 0) {
+    setRemainingBreak(0);
+    return;
+  }
+
+  const saved = localStorage.getItem("breakEndTime");
+
+  if (saved) {
+
+    const remaining = Math.max(
+      Math.floor((Number(saved) - Date.now()) / 1000),
+      0
+    );
+
+    if (remaining > 0) {
+      setRemainingBreak(remaining);
+      return;
+    }
+
+    localStorage.removeItem("breakEndTime");
+  }
+
+  const endTime = Date.now() + breakTimer * 1000;
+
+  localStorage.setItem(
+    "breakEndTime",
+    endTime.toString()
+  );
+
+  setRemainingBreak(breakTimer);
+
+}, [breakTimer]);
+
+
+
+
+
+useEffect(() => {
+  console.log("Timer effect started");
+
+  const interval = setInterval(() => {
+    const saved = localStorage.getItem("breakEndTime");
+
+    console.log("Tick", saved);
+
+    if (!saved) {
+      console.log("No breakEndTime");
+      return;
+    }
+
+    const remaining = Math.max(
+      Math.floor((Number(saved) - Date.now()) / 1000),
+      0
+    );
+
+    console.log("Remaining =", remaining);
+
+    setRemainingBreak(remaining);
+
+    if (remaining <= 0) {
+      console.log("AUTO START");
+
+      clearInterval(interval);
+
+      localStorage.removeItem("breakEndTime");
+
+      handleStart("AUTO");
+    }
+  }, 1000);
+
+  return () => {
+    console.log("Interval destroyed");
+    clearInterval(interval);
+  };
+}, []);
+
+
 
   const { goFullScreen, isFullScreen } = useFullScreen();
   const dispatch = useDispatch();
@@ -56,27 +142,36 @@ const ActualTestComponent = () => {
 
   
 
-  const handleStart = async (mode) => {
-  const test_submission_id = window?.sessionStorage.getItem("test_submission_id");
+ const handleStart = async (mode) => {
+  console.log("handleStart called", mode);
+  const test_submission_id =
+    window.sessionStorage.getItem("test_submission_id");
 
   try {
+    console.log("Fetching next section...");
     await dispatch(
-      getQuestionForSection({ testId, test_submission_id })
-    ).unwrap(); // <-- unwrap gives direct errors from rejectWithValue
+      getQuestionForSection({
+        testId,
+        test_submission_id,
+      })
+    ).unwrap();
+    console.log("Next section fetched");
+    dispatch(clearSectionCompleted());
 
-    if (questionsStatus === "idle") {
-      router.replace(`/student/${id}/test/${testId}/`);
-      dispatch(setTestRunning(true));
-    }
+    localStorage.removeItem("breakEndTime");
+    setRemainingBreak(0);
+
+    dispatch(setTestRunning(true));
+
+    router.replace(`/student/${id}/test/${testId}/`);
 
     if (mode !== "AUTO" && !isFullScreen) {
       goFullScreen();
     }
-
   } catch (errorMsg) {
     Modal.error({
       title: "Section Load Failed",
-      content: errorMsg, // e.g. "Not enough active questions. Required: 20, Available: 4"
+      content: errorMsg,
     });
   }
 };
@@ -88,6 +183,13 @@ const ActualTestComponent = () => {
   "currentSectionName",
   currentSectionName
 );
+console.log({
+  breakTimer,
+  remainingBreak,
+  isTestRunning,
+  currentArraySectionIndex,
+  totalSections,
+});
     return (
       <Suspense fallback={<TestLoading />}>
         <div className="w-full">
@@ -119,14 +221,15 @@ const ActualTestComponent = () => {
               >
                 Start {currentSectionName}
               </Button>
-              {isTestRunning &&
-                currentArraySectionIndex > 0 &&
-                currentArraySectionIndex < totalSections && (
-                  <BreakTimer
-                    onExpire={() => handleStart("AUTO")}
-                    expiryTimestamp={new Date(d1.getTime() + breakTimer * 1000)}
-                  />
-                )}
+              {remainingBreak > 0 && (
+  <BreakTimer
+    key={remainingBreak}
+    expiryTimestamp={expiryTimestamp}
+    onExpire={() => {
+      localStorage.removeItem("breakEndTime");
+    }}
+  />
+)}
               {/* <BreakTimer
                 onExpire={() => alert("Hello")}
                 expiryTimestamp={new Date(d1.getTime() + 1000 * 1000)}

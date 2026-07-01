@@ -38,7 +38,7 @@ const initialState = {
   courseName: null,
   totalSections: 0,
   isTestRunning: false,
-  breakTimer: 300,
+  breakTimer: 0,
 };
 
 export const fetchMultipleQuestionDetails = createAsyncThunk(
@@ -81,6 +81,7 @@ export const testInProgress = createAsyncThunk(
 export const getQuestionForSection = createAsyncThunk(
   "test/getQuestionForSection",
   async ({ testId, test_submission_id }, thunkAPI) => {
+    console.log("getQuestionForSection START");
     const testState = thunkAPI.getState().test;
     const { sectionOrderItems, currentArraySectionIndex } = testState;
     const params = {
@@ -247,6 +248,9 @@ const testSlice = createSlice({
     resetTestSlice: (state, action) => {
       return initialState;
     },
+    clearSectionCompleted: (state) => {
+  state.isSectionCompleted = false;
+},
     createAnswerObject: (state, action) => {
     if (!state.answerMap[action.payload]) {
       state.answerMap[action.payload] = {
@@ -546,6 +550,30 @@ state.currentArraySectionIndex =
           sectionOrderItems[currentArraySectionIndex].course_subject;
         state.sectionId =
           sectionOrderItems[currentArraySectionIndex].section_id;
+
+         
+ if (typeof window !== "undefined") {
+  const savedBreak = localStorage.getItem("breakEndTime");
+
+  if (savedBreak && restoreIndex > 0) {
+
+    const remaining = Math.max(
+      Math.floor((Number(savedBreak) - Date.now()) / 1000),
+      0
+    );
+
+    state.breakTimer = remaining;
+    state.isTestRunning = remaining > 0;
+
+  } else {
+
+    state.breakTimer = 0;
+    state.isTestRunning = false;
+
+  }
+}
+
+
         const remainingTimeForFirstSection =
           sectionOrderItems[currentArraySectionIndex].duration * 60;
         state.timeLeft =
@@ -565,6 +593,7 @@ state.currentArraySectionIndex =
         state.status = "loading";
       })
       .addCase(getQuestionForSection.fulfilled, (state, action) => {
+        console.log("Reducer fulfilled");
         state.status = "idle";
       })
       // .addCase(getQuestionForSection.rejected, (state, action) => {
@@ -594,25 +623,7 @@ state.currentArraySectionIndex =
         
            const currTitle = sectionOrderItems?.[currentArraySectionIndex]?.title || "";
 
-  // Reset break
-  state.breakTimer = 0;
-
-  // if (currTitle.toLowerCase().includes("sec a")) {
-  //   state.breakTimer = 600; // 10 min
-  //       } 
-        
-        if (state.currentArraySectionIndex != state.totalSections - 1) {
-          console.log("state.currentArraySectionIndex", state.currentArraySectionIndex);
-          console.log("state.totalSections - 1",state.totalSections - 1)
-          if (
-            state.currentArraySectionIndex==1
-          ) {
-            state.breakTimer = 600;
-          } 
-          else {
-            state.breakTimer = 0;
-          }
-        }
+  
 
         // if (state.currentArraySectionIndex != state.totalSections - 1) {
         //   console.log("state.currentArraySectionIndex", state.currentArraySectionIndex);
@@ -639,25 +650,42 @@ state.currentArraySectionIndex =
           //   state.currentArraySectionIndex = state.currentArraySectionIndex + 1;
           //   state.isSectionCompleted = true;
           // }
-      if (
-  state.currentArraySectionIndex >= state.totalSections - 1
-) {
+     if (state.currentArraySectionIndex >= state.totalSections - 1) {
+
   state.isTestCompleted = true;
   state.isSectionCompleted = true;
+  state.breakTimer = 0;
+
 } else {
-  state.currentArraySectionIndex += 1;
 
-  const nextSection =
-    state.sectionOrderItems[state.currentArraySectionIndex];
+  state.currentArraySectionIndex++;
 
-  if (nextSection) {
-    state.courseSubject = nextSection.course_subject;
-    state.sectionId = nextSection.section_id;
-    console.log(
-  "NEXT ACTIVE SECTION",
-  state.courseSubject,
-  state.sectionId
-);
+state.questions = [];
+state.currentQuestionIndex = 0;
+state.isReviewPage = false;
+
+const nextSection =
+  state.sectionOrderItems[state.currentArraySectionIndex];
+
+  state.courseSubject = nextSection.course_subject;
+  state.sectionId = nextSection.section_id;
+
+  switch (state.currentArraySectionIndex) {
+
+    case 1: // English B
+      state.breakTimer = 5;
+      break;
+
+    case 2: // Math A
+      state.breakTimer = 600;
+      break;
+
+    case 3: // Math B
+      state.breakTimer = 5;
+      break;
+
+    default:
+      state.breakTimer = 0;
   }
 
   state.isSectionCompleted = true;
@@ -701,5 +729,6 @@ export const {
   setAnswerMap,
   setCurrentQuestionIndex,
   setTestRunning,
+  clearSectionCompleted,
 } = testSlice.actions;
 export default testSlice.reducer;
