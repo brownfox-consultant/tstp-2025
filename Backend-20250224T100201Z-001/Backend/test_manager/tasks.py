@@ -24,12 +24,14 @@ from datetime import timedelta
 from user_manager.models import User
 from test_manager.models import TestSubmission
 from test_manager.serializers import RecentFullLengthResultSerializer
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 
 
 @shared_task
 def send_weekly_test_summary():
-
     end_date = timezone.now()
     start_date = end_date - timedelta(days=7)
 
@@ -55,76 +57,55 @@ def send_weekly_test_summary():
     if not admin_emails:
         return
 
+    # Prepare data for template
+    test_data = []
     total_scores = []
-    report = []
 
     for submission in tests:
-
         serializer = RecentFullLengthResultSerializer(submission)
         data = serializer.data
-
         score = data["total_score"]
         total_scores.append(score)
-
-        report.append(
-            f"""
-==================================================
-Student Name : {submission.student.name}
-Email        : {submission.student.email}
-
-Test Name    : {submission.test.name}
-Course       : {submission.test.course.name}
-Completed On : {timezone.localtime(submission.completion_date):%d-%m-%Y %I:%M %p}
-
-Total Score  : {data['total_score']} / 1600
-Math Score   : {data['math_score']}
-English Score: {data['english_score']}
-Percentage   : {data['percentage']} %
-
-==================================================
-"""
-        )
+        
+        test_data.append({
+            'student_name': submission.student.name,
+            'student_email': submission.student.email,
+            'test_name': submission.test.name,
+            'course_name': submission.test.course.name,
+            'completion_date': timezone.localtime(submission.completion_date),
+            'total_score': data['total_score'],
+            'math_score': data['math_score'],
+            'english_score': data['english_score'],
+            'percentage': data['percentage'],
+        })
 
     highest_score = max(total_scores) if total_scores else 0
     lowest_score = min(total_scores) if total_scores else 0
     average_score = round(sum(total_scores) / len(total_scores), 2) if total_scores else 0
 
-    body = f"""
-Hello Admin,
+    context = {
+        'start_date': start_date,
+        'end_date': end_date,
+        'total_tests': total_tests,
+        'unique_students': unique_students,
+        'highest_score': highest_score,
+        'lowest_score': lowest_score,
+        'average_score': average_score,
+        'test_data': test_data,
+    }
 
-Weekly Test Report
-==================================================
-
-Report Period
-{start_date:%d %b %Y} - {end_date:%d %b %Y}
-
-Overall Summary
---------------------------------------------------
-
-Total Tests Completed : {total_tests}
-Students Attempted    : {unique_students}
-Highest Score         : {highest_score} / 1600
-Lowest Score          : {lowest_score} / 1600
-Average Score         : {average_score} / 1600
-
-==================================================
-Student-wise Test Details
-==================================================
-
-{''.join(report)}
-
-Regards,
-TSTP System
-"""
+    # Render HTML template
+    html_content = render_to_string('emails/weekly_test_summary.html', context)
+    text_content = strip_tags(html_content)  # Fallback plain text
 
     msg = EmailMultiAlternatives(
         subject=f"Weekly Test Summary ({start_date:%d %b} - {end_date:%d %b %Y})",
-        body=body,
+        body=text_content,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=admin_emails,
         bcc=["vijayaluguvelli@gmail.com"],
     )
-
+    msg.attach_alternative(html_content, "text/html")
     msg.send()
 
 @shared_task

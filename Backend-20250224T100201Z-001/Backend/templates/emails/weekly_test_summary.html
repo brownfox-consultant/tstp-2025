@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        
+        .email-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 35px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .header .period {
+            margin-top: 8px;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .summary-section {
+            padding: 25px 30px;
+        }
+        
+        .summary-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .summary-title span {
+            margin-right: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #e8ecf1;
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .stat-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-card .icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+        
+        .stat-card .label {
+            font-size: 12px;
+            color: #8b96a8;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .stat-card .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a202c;
+            white-space: nowrap;
+        }
+        
+        .stat-card .sub-value {
+            font-size: 12px;
+            font-weight: 400;
+            color: #718096;
+            margin-left: 2px;
+        }
+        
+        /* Color coded left borders */
+        .stat-card.total-tests {
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-card.students {
+            border-left: 4px solid #48bb78;
+        }
+        
+        .stat-card.highest {
+            border-left: 4px solid #4299e1;
+        }
+        
+        .stat-card.lowest {
+            border-left: 4px solid #f6ad55;
+        }
+        
+        .stat-card.average {
+            border-left: 4px solid #ed64a6;
+        }
+        
+        .test-details-section {
+            padding: 0 30px 30px 30px;
+        }
+        
+        .test-details-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .test-table-wrapper {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .test-table thead {
+            background: #f7fafc;
+        }
+        
+        .test-table th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        
+        .test-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f4f8;
+            vertical-align: middle;
+        }
+        
+        .test-table tbody tr:hover {
+            background: #f7fafc;
+        }
+        
+        .student-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .student-email {
+            font-size: 12px;
+            color: #718096;
+            display: block;
+        }
+        
+        .score-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .score-high {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .score-medium {
+            background: #fefcbf;
+            color: #744210;
+        }
+        
+        .score-low {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .test-name {
+            font-weight: 500;
+        }
+        
+        .course-name {
+            font-size: 12px;
+            color: #718096;
+            display: block;
+        }
+        
+        .footer {
+            background: #f7fafc;
+            padding: 25px 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer p {
+            margin: 0;
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .footer .timestamp {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-top: 5px;
+        }
+        
+        .no-tests {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        @media only screen and (max-width: 992px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+        }
+        
+        @media only screen and (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 12px 14px;
+            }
+            
+            .stat-card .value {
+                font-size: 18px;
+            }
+            
+            .test-table {
+                font-size: 13px;
+            }
+            
+            .test-table th,
+            .test-table td {
+                padding: 10px 12px;
+            }
+        }
+        
+        @media only screen and (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
+            
+            .stat-card {
+                padding: 10px 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Weekly Test Report</h1>
+            <div class="period">{{ start_date|date:"d M Y" }} - {{ end_date|date:"d M Y" }}</div>
+        </div>
+        
+        <!-- Summary Statistics with Single-Line Cards -->
+       <!-- Summary Statistics -->
+<div class="summary-section">
+
+    <div class="summary-title">
+        📈 Weekly Summary
+    </div>
+
+    <table style="
+        width:100%;
+        border-collapse:collapse;
+        margin-top:15px;
+        border:1px solid #e5e7eb;
+        border-radius:8px;
+        overflow:hidden;
+    ">
+
+        <thead>
+            <tr style="background:#667eea;color:#fff;">
+                <th style="padding:14px;">Tests</th>
+                <th style="padding:14px;">Students</th>
+                <th style="padding:14px;">Highest</th>
+                <th style="padding:14px;">Lowest</th>
+                <th style="padding:14px;">Average</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr style="background:#fff;text-align:center;">
+
+                <td style="padding:18px;">
+                    <div style="font-size:24px;font-weight:bold;color:#667eea;">
+                        {{ total_tests }}
+                    </div>
+                </td>
+
+                <td style="padding:18px;">
+                    <div style="font-size:24px;font-weight:bold;color:#38a169;">
+                        {{ unique_students }}
+                    </div>
+                </td>
+
+                <td style="padding:18px;">
+                    <div style="font-size:24px;font-weight:bold;color:#3182ce;">
+                        {{ highest_score }}
+                    </div>
+                    <small>/1600</small>
+                </td>
+
+                <td style="padding:18px;">
+                    <div style="font-size:24px;font-weight:bold;color:#dd6b20;">
+                        {{ lowest_score }}
+                    </div>
+                    <small>/1600</small>
+                </td>
+
+                <td style="padding:18px;">
+                    <div style="font-size:24px;font-weight:bold;color:#d53f8c;">
+                        {{ average_score }}
+                    </div>
+                    <small>/1600</small>
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+        
+        <!-- Test Details -->
+        <div class="test-details-section">
+            <div class="test-details-title">
+                📋 Student-wise Test Details
+            </div>
+            
+            <div class="test-table-wrapper">
+                <table class="test-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Test</th>
+                            <th>Course</th>
+                            <th>Completed</th>
+                            <th>Math</th>
+                            <th>English</th>
+                            <th>Total</th>
+                            <th>%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in test_data %}
+                        <tr>
+                            <td>
+                                <div class="student-name">{{ test.student_name }}</div>
+                                <span class="student-email">{{ test.student_email }}</span>
+                            </td>
+                            <td>
+                                <div class="test-name">{{ test.test_name }}</div>
+                            </td>
+                            <td>
+                                <span class="course-name">{{ test.course_name }}</span>
+                            </td>
+                            <td>{{ test.completion_date|date:"d M Y, h:i A" }}</td>
+                            <td><strong>{{ test.math_score }}</strong></td>
+                            <td><strong>{{ test.english_score }}</strong></td>
+                            <td>
+                                {% if test.total_score >= 1200 %}
+                                    <span class="score-badge score-high">{{ test.total_score }}</span>
+                                {% elif test.total_score >= 800 %}
+                                    <span class="score-badge score-medium">{{ test.total_score }}</span>
+                                {% else %}
+                                    <span class="score-badge score-low">{{ test.total_score }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if test.percentage >= 75 %}
+                                    <span class="score-badge score-high">{{ test.percentage }}%</span>
+                                {% elif test.percentage >= 50 %}
+                                    <span class="score-badge score-medium">{{ test.percentage }}%</span>
+                                {% else %}
+                                    <span class="score-badge score-low">{{ test.percentage }}%</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="no-tests">
+                                <p>📭 No tests completed this week</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>🤖 This is an automated report from TSTP System</p>
+            <div class="timestamp">Generated on {% now "d M Y, h:i A" %}</div>
+        </div>
+    </div>
+</body>
+</html>
