@@ -265,6 +265,16 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'notification_manager.tasks.send_pending_queries_reminder',
         'schedule': crontab(hour=9, minute=0),  # Daily at 9:00 AM
     },
+
+    # Every Sunday at 8:00 AM
+    'weekly-test-summary-email': {
+        'task': 'test_manager.tasks.send_weekly_test_summary',
+        'schedule': crontab(
+            hour=8,
+            minute=0,
+            day_of_week='sun'
+        ),
+    },
 }
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL")

@@ -184,6 +184,7 @@ from test_manager.models import (
 )
 
 from .serializers import AttemptedQuestionSerializer
+from test_manager.tasks import send_test_completion_email
 
 
 class AttemptedQuestionsPagination(PageNumberPagination):
@@ -2111,8 +2112,20 @@ class TestViewSet(viewsets.ModelViewSet):
             else:
                 print("TEST COMPLETED")
 
+                # Final section completed
                 test_submission.current_course_subject_id = None
                 test_submission.current_section_id = None
+                test_submission.status = TestSubmission.COMPLETED
+                test_submission.completion_date = timezone.now()
+                test_submission.save()
+
+                send_test_completion_email.delay(test_submission.id)
+
+                mark_notification_as_read.delay(
+                    user_id=test_submission.student.id,
+                    category=Notification.TEST,
+                    reference_id=test_submission.id,
+                )
         test_submission.save()
         result.save()
 
