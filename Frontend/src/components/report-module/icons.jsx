@@ -1,5 +1,84 @@
 import React from 'react';
 
+
+
+
+// ✅ NEW: Trending Up Icon - For Sequential Moves
+export const TrendingUpIcon = ({ className = "", size = 24, color = "currentColor" }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke={color} 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    className={className}
+  >
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+    <polyline points="17 6 23 6 23 12" />
+  </svg>
+);
+
+// ✅ NEW: Trending Down Icon - For Jump Moves
+export const TrendingDownIcon = ({ className = "", size = 24, color = "currentColor" }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke={color} 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    className={className}
+  >
+    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+    <polyline points="17 18 23 18 23 12" />
+  </svg>
+);
+
+// ✅ NEW: Activity Icon - For Total Navigations
+export const ActivityIcon = ({ className = "", size = 24, color = "currentColor" }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke={color} 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    className={className}
+  >
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
+
+// ✅ NEW: Target Icon - For Revisits
+export const TargetIcon = ({ className = "", size = 24, color = "currentColor" }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke={color} 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    className={className}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
+);
+
 // Trophy Icon - For Total Score
 export const TrophyIcon = ({ className = "", size = 24, color = "currentColor" }) => (
   <svg 
@@ -263,5 +342,9 @@ export default {
   UserIcon,
   FileTextIcon,
   CalendarIcon,
-  SparklesIcon
+  SparklesIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  ActivityIcon,
+  TargetIcon
 };

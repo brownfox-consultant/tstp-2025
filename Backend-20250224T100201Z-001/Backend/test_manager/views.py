@@ -185,6 +185,7 @@ from test_manager.models import (
 
 from .serializers import AttemptedQuestionSerializer
 from test_manager.tasks import send_test_completion_email
+from test_manager.models import TestNavigationHistory, TestPatternSummary, SelectionHistory
 
 
 class AttemptedQuestionsPagination(PageNumberPagination):
@@ -195,6 +196,296 @@ class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.get_all()
     serializer_class = TestSerializer
     logger = logging.getLogger('Tests')
+
+
+    @action(detail=True, methods=['POST'], url_path='track-navigation')
+    def track_navigation(self, request, pk=None):
+        """
+        Track student navigation pattern during test taking
+        """
+        test = Test.get_test_by_id(test_id=pk)
+        test_submission_id = request.data.get('test_submission_id')
+        action_type = request.data.get('action_type')  # NEXT, PREVIOUS, JUMP, SECTION_SKIP, REVIEW
+        from_question_id = request.data.get('from_question_id')
+        to_question_id = request.data.get('to_question_id')
+        from_section_id = request.data.get('from_section_id')
+        to_section_id = request.data.get('to_section_id')
+        time_spent = request.data.get('time_spent', 0)
+        current_question_index = request.data.get('current_question_index', 0)
+        total_questions = request.data.get('total_questions', 0)
+        device_info = request.data.get('device_info', {})
+        
+        # Validate
+        if not test_submission_id or not action_type:
+            return Response(
+                {"detail": "test_submission_id and action_type are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            test_submission = TestSubmission.objects.get(id=test_submission_id)
+            question = None
+            if to_question_id:
+                question = Question.objects.get(id=to_question_id)
+        except (TestSubmission.DoesNotExist, Question.DoesNotExist):
+            return Response(
+                {"detail": "Invalid submission or question ID."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create navigation history entry
+        navigation = TestNavigationHistory.objects.create(
+            student=request.user,
+            test_submission=test_submission,
+            question=question,
+            action_type=action_type,
+            from_question_id=from_question_id,
+            to_question_id=to_question_id,
+            from_section_id=from_section_id,
+            to_section_id=to_section_id,
+            time_spent_on_previous_question=time_spent,
+            current_section_id=to_section_id or from_section_id,
+            current_question_index=current_question_index,
+            total_questions_in_section=total_questions,
+            device_info=device_info
+        )
+        
+        # Analyze and update pattern summary
+        self._analyze_pattern(test_submission)
+        
+        return Response({
+            "detail": "Navigation tracked successfully.",
+            "navigation_id": navigation.id
+        }, status=status.HTTP_201_CREATED)
+
+
+    def _analyze_pattern(self, test_submission):
+        """
+        Analyze navigation pattern and create/update summary
+        """
+        from test_manager.models import TestNavigationHistory, TestPatternSummary
+        
+        # Get all navigation history for this submission
+        navigations = TestNavigationHistory.objects.filter(
+            test_submission=test_submission
+        ).order_by('timestamp')
+        
+        if navigations.count() < 3:
+            return  # Need at least 3 navigations to analyze
+        
+        # Initialize counters
+        sequential_count = 0
+        jump_count = 0
+        back_and_forth_count = 0
+        total_revisits = 0
+        revisits_per_question = defaultdict(int)
+        sections_skipped = 0
+        reviews = 0
+        total_time_before_nav = 0
+        
+        prev_question = None
+        visited_questions = set()
+        
+        for nav in navigations:
+            # Count navigation types
+            if nav.action_type == 'NEXT':
+                sequential_count += 1
+            elif nav.action_type == 'PREVIOUS':
+                back_and_forth_count += 1
+            elif nav.action_type == 'JUMP':
+                jump_count += 1
+            elif nav.action_type == 'SECTION_SKIP':
+                sections_skipped += 1
+            elif nav.action_type == 'REVIEW':
+                reviews += 1
+            
+            # Track revisits
+            if nav.to_question_id:
+                if nav.to_question_id in visited_questions:
+                    total_revisits += 1
+                    revisits_per_question[nav.to_question_id] += 1
+                else:
+                    visited_questions.add(nav.to_question_id)
+            
+            # Track time
+            total_time_before_nav += nav.time_spent_on_previous_question
+            prev_question = nav.to_question_id
+        
+        # Determine primary pattern
+        total_nav = navigations.count()
+        sequential_percent = (sequential_count / total_nav) * 100
+        jump_percent = (jump_count / total_nav) * 100
+        back_forth_percent = (back_and_forth_count / total_nav) * 100
+        
+        if sequential_percent > 60:
+            primary_pattern = TestPatternSummary.PATTERN_SEQUENTIAL
+        elif back_forth_percent > 40:
+            primary_pattern = TestPatternSummary.PATTERN_BACK_AND_FORTH
+        elif jump_percent > 40:
+            primary_pattern = TestPatternSummary.PATTERN_JUMPING
+        else:
+            primary_pattern = TestPatternSummary.PATTERN_MIXED
+        
+        # Calculate efficiency score (higher is better)
+        # Sequential pattern is generally more efficient
+        efficiency_score = 0
+        if primary_pattern == TestPatternSummary.PATTERN_SEQUENTIAL:
+            efficiency_score = 85 + (sequential_percent - 60) * 0.3
+        elif primary_pattern == TestPatternSummary.PATTERN_JUMPING:
+            efficiency_score = 60 + (100 - jump_percent) * 0.3
+        elif primary_pattern == TestPatternSummary.PATTERN_BACK_AND_FORTH:
+            efficiency_score = 40 + (100 - back_forth_percent) * 0.4
+        else:
+            efficiency_score = 50
+        
+        efficiency_score = min(100, max(0, efficiency_score))
+        
+        # Calculate time management score
+        avg_time = total_time_before_nav / total_nav if total_nav > 0 else 0
+        # Ideal time per question is around 60 seconds
+        time_score = 100 - max(0, (avg_time - 60) / 60 * 10)  # 10% penalty per 60 seconds over
+        time_score = max(0, min(100, time_score))
+        
+        # Create or update summary
+        summary, created = TestPatternSummary.objects.get_or_create(
+            student=test_submission.student,
+            test_submission=test_submission,
+            defaults={
+                'primary_pattern': primary_pattern,
+                'total_navigations': total_nav,
+                'sequential_moves': sequential_count,
+                'jump_moves': jump_count,
+                'back_and_forth_moves': back_and_forth_count,
+                'total_revisits': total_revisits,
+                'avg_revisits_per_question': total_revisits / len(visited_questions) if visited_questions else 0,
+                'avg_time_before_navigation': int(avg_time),
+                'sections_skipped': sections_skipped,
+                'questions_marked_for_review': reviews,
+                'review_visit_count': reviews,
+                'navigation_efficiency_score': round(efficiency_score, 2),
+                'time_management_score': round(time_score, 2),
+            }
+        )
+        
+        if not created:
+            # Update existing summary
+            summary.primary_pattern = primary_pattern
+            summary.total_navigations = total_nav
+            summary.sequential_moves = sequential_count
+            summary.jump_moves = jump_count
+            summary.back_and_forth_moves = back_and_forth_count
+            summary.total_revisits = total_revisits
+            summary.avg_revisits_per_question = total_revisits / len(visited_questions) if visited_questions else 0
+            summary.avg_time_before_navigation = int(avg_time)
+            summary.sections_skipped = sections_skipped
+            summary.questions_marked_for_review = reviews
+            summary.review_visit_count = reviews
+            summary.navigation_efficiency_score = round(efficiency_score, 2)
+            summary.time_management_score = round(time_score, 2)
+            summary.save()
+    
+
+    @action(detail=True, methods=['GET'], url_path='pattern-analysis')
+    def get_pattern_analysis(self, request, pk=None):
+        """
+        Get detailed pattern analysis for a test submission
+        """
+        test_submission_id = request.query_params.get('test_submission_id')
+        
+        if not test_submission_id:
+            return Response(
+                {"error": "test_submission_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            test_submission = TestSubmission.objects.get(id=test_submission_id)
+        except TestSubmission.DoesNotExist:
+            return Response(
+                {"error": "Test submission not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get pattern summary
+        try:
+            summary = TestPatternSummary.objects.get(
+                student=request.user,
+                test_submission=test_submission
+            )
+        except TestPatternSummary.DoesNotExist:
+            return Response({
+                "message": "No pattern data available yet. Student needs to take the test first.",
+                "has_data": False
+            })
+        
+        # Get detailed navigation history
+        navigations = TestNavigationHistory.objects.filter(
+            student=request.user,
+            test_submission=test_submission
+        ).order_by('timestamp')
+        
+        # Prepare navigation timeline
+        timeline = []
+        for nav in navigations:
+            timeline.append({
+                "timestamp": nav.timestamp.isoformat(),
+                "action": nav.action_type,
+                "from_question": nav.from_question_id,
+                "to_question": nav.to_question_id,
+                "time_spent": nav.time_spent_on_previous_question,
+                "section": nav.current_section_id,
+                "index": nav.current_question_index
+            })
+        
+        # Pattern interpretation
+        pattern_meanings = {
+            TestPatternSummary.PATTERN_SEQUENTIAL: {
+                "description": "Student follows the test in order, one question at a time.",
+                "recommendation": "Good time management. Student is systematic."
+            },
+            TestPatternSummary.PATTERN_JUMPING: {
+                "description": "Student skips difficult questions and returns later.",
+                "recommendation": "Strategic approach. Good for time management on hard questions."
+            },
+            TestPatternSummary.PATTERN_BACK_AND_FORTH: {
+                "description": "Student frequently revisits questions, indicating possible uncertainty.",
+                "recommendation": "May need to build confidence. Consider more practice."
+            },
+            TestPatternSummary.PATTERN_MIXED: {
+                "description": "Student uses a combination of navigation strategies.",
+                "recommendation": "Adaptive approach. Monitor which strategy works best."
+            }
+        }
+        
+        meaning = pattern_meanings.get(summary.primary_pattern, {})
+        
+        return Response({
+            "has_data": True,
+            "summary": {
+                "primary_pattern": summary.primary_pattern,
+                "pattern_description": meaning.get("description", ""),
+                "recommendation": meaning.get("recommendation", ""),
+                "navigation_efficiency": summary.navigation_efficiency_score,
+                "time_management_score": summary.time_management_score,
+            },
+            "statistics": {
+                "total_navigations": summary.total_navigations,
+                "sequential_moves": summary.sequential_moves,
+                "jump_moves": summary.jump_moves,
+                "back_and_forth_moves": summary.back_and_forth_moves,
+                "questions_revisited": summary.total_revisits,
+                "avg_revisits_per_question": summary.avg_revisits_per_question,
+                "sections_skipped": summary.sections_skipped,
+                "questions_marked_for_review": summary.questions_marked_for_review,
+            },
+            "timeline": timeline,
+            "interpretation": {
+                "is_sequential": summary.primary_pattern == TestPatternSummary.PATTERN_SEQUENTIAL,
+                "is_jumping": summary.primary_pattern == TestPatternSummary.PATTERN_JUMPING,
+                "is_back_and_forth": summary.primary_pattern == TestPatternSummary.PATTERN_BACK_AND_FORTH,
+                "confidence_level": "High" if summary.total_navigations > 20 else "Medium" if summary.total_navigations > 10 else "Low"
+            }
+        })
 
     @action(detail=True, methods=['POST'], url_path='selection-history')
     def save_selection_history(self, request, pk=None, *args, **kwargs):
@@ -1909,31 +2200,109 @@ class TestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'], url_path='take-test')
     def take_test(self, request, pk=None, *args, **kwargs):
+        """
+        Submit an answer for a question in a test and track navigation patterns
+        """
         test = Test.get_test_by_id(test_id=pk)
         test_submission_id = request.data.get('test_submission_id')
+        
+        if not test_submission_id:
+            return get_error_response(message='test_submission_id is required.')
+        
+        try:
+            existing_submission = TestSubmission.objects.get(id=test_submission_id)
+        except TestSubmission.DoesNotExist:
+            return get_error_response(message='Test submission not found.')
 
-        existing_submission = TestSubmission.objects.get(id=test_submission_id)
-
-        # Check if the expiration date has already passed
+        # Check if the test has expired
         if existing_submission.status == TestSubmission.EXPIRED:
-            return get_error_response(message='Test has expired. Please contact the Admin to reassign the Test.')
+            return get_error_response(
+                message='Test has expired. Please contact the Admin to reassign the Test.'
+            )
 
-        # Extract and validate data
+        # Extract data from request - support both formats
         course_subject = request.data.get('course_subject')
         section_id = request.data.get('section_id')
-        question_id, answer_data = list(request.data.get('answer', {}).items())[0]
+        
+        # ✅ FIX: Support both formats
+        # Format 1: question_id directly
+        question_id = request.data.get('question_id')
+        answer_data = request.data.get('answer_data', [])
+        selected_options = request.data.get('selected_options', [])
+        
+        # Format 2: answer dict {question_id: [selected_options]}
+        if not question_id:
+            answer_dict = request.data.get('answer', {})
+            if answer_dict:
+                # Get the first key-value pair
+                question_id = list(answer_dict.keys())[0] if answer_dict else None
+                selected_options = answer_dict.get(question_id, [])
+                answer_data = selected_options
+        
+        # Format 3: selected_options as dict with question_id as key
+        if not question_id:
+            selected_options_dict = request.data.get('selected_options', {})
+            if isinstance(selected_options_dict, dict) and selected_options_dict:
+                question_id = list(selected_options_dict.keys())[0] if selected_options_dict else None
+                selected_options = selected_options_dict.get(question_id, [])
+                answer_data = selected_options
+        
         is_skipped = request.data.get('is_skipped', False)
         time_taken = request.data.get('time_taken', 0)
         is_marked_for_review = request.data.get('is_marked_for_review', False)
-
-        result, _ = Result.objects.get_or_create(test_submission=existing_submission,
-                                                 defaults={"correct_answer_count": 0,
-                                                           "incorrect_answer_count": 0,
-                                                           "time_taken": 0,
-                                                           "detailed_view": {}})
+        striked_options = request.data.get('striked_options', {})
+        
+        # Handle striked_options - could be dict or list
+        if isinstance(striked_options, dict):
+            striked_list = striked_options.get(question_id, []) if question_id else []
+        else:
+            striked_list = striked_options
+        
+        # Navigation tracking data
+        navigation_action = request.data.get('navigation_action', 'NEXT')
+        from_question_id = request.data.get('from_question_id')
+        to_question_id = request.data.get('to_question_id', question_id)
+        from_section_id = request.data.get('from_section_id', section_id)
+        to_section_id = request.data.get('to_section_id', section_id)
+        current_question_index = request.data.get('current_question_index', 0)
+        total_questions = request.data.get('total_questions', 0)
+        time_spent_on_question = request.data.get('time_spent_on_question', time_taken)
+        device_info = request.data.get('device_info', {})
+        
+        # ✅ Validate required fields
+        if not course_subject:
+            return get_error_response(message='course_subject is required.')
+        
+        if not section_id:
+            return get_error_response(message='section_id is required.')
+        
+        if not question_id:
+            return get_error_response(
+                message='question_id is required. Please provide either "question_id" or "answer" field.'
+            )
+        
+        # Convert question_id to int if it's a string
+        try:
+            question_id = int(question_id)
+        except (ValueError, TypeError):
+            return get_error_response(message='Invalid question_id format.')
 
         try:
+            # Get or create result
+            result, created = Result.objects.get_or_create(
+                test_submission=existing_submission,
+                defaults={
+                    "correct_answer_count": 0,
+                    "incorrect_answer_count": 0,
+                    "time_taken": 0,
+                    "detailed_view": {}
+                }
+            )
+
+            # Get the question
             question = Question.get_question_by_id(question_id=question_id)
+            
+            # Determine if the answer is correct
             is_correct = None
             if is_skipped:
                 is_correct = False  # Mark skipped questions as incorrect
@@ -1941,35 +2310,294 @@ class TestViewSet(viewsets.ModelViewSet):
                 correct_answers_lower = [ans.lower() for ans in question.options]
                 user_answers_lower = [ans.lower() for ans in answer_data]
                 is_correct = correct_answers_lower == user_answers_lower
-
             elif question.question_type == Question.GRIDIN:
-                answer_data = answer_data[0]
-                if question.question_subtype in [Question.GRIDIN_SINGLE_ANSWER, Question.GRIDIN_MULTI_ANSWER]:
-                    is_correct = Question.compare_answers(answer_data, question.options)
+                if answer_data and len(answer_data) > 0:
+                    answer_value = answer_data[0]
+                    if question.question_subtype in [Question.GRIDIN_SINGLE_ANSWER, Question.GRIDIN_MULTI_ANSWER]:
+                        is_correct = Question.compare_answers(answer_value, question.options)
+                    else:
+                        is_correct = evaluate_expression(question.options, answer_value)
                 else:
-                    is_correct = evaluate_expression(question.options, answer_data)
+                    is_correct = False
             else:
-                correct_options = [index for index, option in enumerate(question.options) if option['is_correct']]
+                # MCQ type questions
+                correct_options = [index for index, option in enumerate(question.options) if option.get('is_correct', False)]
                 if not is_skipped:
-                    is_correct = set(answer_data) == set(correct_options)
+                    # Convert selected_options to list of indices
+                    if isinstance(selected_options, dict):
+                        selected_indices = [int(k) for k, v in selected_options.items() if v]
+                    elif isinstance(selected_options, list):
+                        selected_indices = selected_options
+                    else:
+                        selected_indices = []
+                    is_correct = set(selected_indices) == set(correct_options)
+                else:
+                    is_correct = False
 
-            # Update Result
-            result.update_question_answer_and_stats(test=test, course_subject=course_subject, section_id=section_id,
-                                                    question=question, answer_data=answer_data,
-                                                    time_taken=time_taken, correct_answer=is_correct,
-                                                    is_skipped=is_skipped,
-                                                    is_marked_for_review=is_marked_for_review)
+            # Update Result with the answer
+            result.update_question_answer_and_stats(
+                test=test,
+                course_subject=course_subject,
+                section_id=section_id,
+                question=question,
+                answer_data=answer_data if not is_skipped else [],
+                time_taken=time_taken,
+                correct_answer=is_correct,
+                is_skipped=is_skipped,
+                is_marked_for_review=is_marked_for_review
+            )
+
+            # ✅ Save selection history for analytics
+            SelectionHistory.objects.create(
+                student=request.user,
+                question=question,
+                test_submission=existing_submission,
+                selected_options=selected_options if not is_skipped else [],
+                striked_options=striked_list,
+                action_type='SUBMIT' if not is_skipped else 'SKIP'
+            )
+
+            # ✅ TRACK NAVIGATION PATTERN
+            self._track_navigation_internal(
+                test_submission_id=test_submission_id,
+                student=request.user,
+                action_type=navigation_action,
+                from_question_id=from_question_id or question_id,
+                to_question_id=to_question_id or question_id,
+                from_section_id=from_section_id or section_id,
+                to_section_id=to_section_id or section_id,
+                time_spent=time_spent_on_question or time_taken,
+                current_question_index=current_question_index,
+                total_questions=total_questions,
+                device_info=device_info
+            )
+
+            # Check if the test is completed
+            self._check_test_completion(existing_submission, result)
+
+            response = {
+                'correct_answer_count': result.correct_answer_count,
+                'incorrect_answer_count': result.incorrect_answer_count,
+                'time_taken': result.time_taken,
+                'is_correct': is_correct,
+                'status': existing_submission.status,
+                'test_submission_id': existing_submission.id,
+                'question_id': question_id,
+                'is_skipped': is_skipped,
+                'is_marked_for_review': is_marked_for_review
+            }
+
+            return Response(data=response, status=status.HTTP_200_OK)
 
         except Question.DoesNotExist:
-            return get_error_response(message=f'Question with ID {question_id} does not exist.')
+            return get_error_response(
+                message=f'Question with ID {question_id} does not exist.'
+            )
+        except Exception as e:
+            self.logger.error(f'Error in take_test: {str(e)}')
+            return get_error_response(message=f'Error processing test: {str(e)}')
 
-        response = {
-            'correct_answer_count': result.correct_answer_count,
-            'incorrect_answer_count': result.incorrect_answer_count,
-            'time_taken': result.time_taken
-        }
 
-        return Response(data=response, status=status.HTTP_200_OK)
+    def _track_navigation_internal(self, test_submission_id, student, action_type, 
+                                from_question_id=None, to_question_id=None,
+                                from_section_id=None, to_section_id=None,
+                                time_spent=0, current_question_index=0, 
+                                total_questions=0, device_info=None):
+        """
+        Internal method to track navigation without exposing as API
+        """
+        try:
+            test_submission = TestSubmission.objects.get(id=test_submission_id)
+            question = None
+            if to_question_id:
+                question = Question.objects.get(id=to_question_id)
+        except (TestSubmission.DoesNotExist, Question.DoesNotExist):
+            return
+        
+        # Create navigation history entry
+        TestNavigationHistory.objects.create(
+            student=student,
+            test_submission=test_submission,
+            question=question,
+            action_type=action_type,
+            from_question_id=from_question_id,
+            to_question_id=to_question_id,
+            from_section_id=from_section_id,
+            to_section_id=to_section_id,
+            time_spent_on_previous_question=time_spent,
+            current_section_id=to_section_id or from_section_id,
+            current_question_index=current_question_index,
+            total_questions_in_section=total_questions,
+            device_info=device_info or {}
+        )
+        
+        # Analyze and update pattern summary (only if enough data)
+        self._analyze_pattern(test_submission)
+
+
+    def _check_test_completion(self, test_submission, result):
+        """
+        Check if the test is completed and update status
+        """
+        # Get total questions from all sections
+        sections = Section.objects.filter(test=test_submission.test)
+        total_questions = 0
+        for section in sections:
+            for sub_section in section.sub_sections:
+                if test_submission.test.format_type == Test.DYNAMIC:
+                    section_key = f'{section.course_subject.id}_{sub_section["id"]}'
+                    questions = test_submission.selected_question_ids.get(section_key, [])
+                else:
+                    questions = sub_section.get('questions', [])
+                total_questions += len(questions)
+        
+        # Count answered questions
+        answered_count = QuestionAnswer.objects.filter(result=result).count()
+        
+        # Check if all questions are answered
+        if answered_count >= total_questions:
+            test_submission.status = TestSubmission.COMPLETED
+            test_submission.completion_date = timezone.now()
+            test_submission.save()
+            
+            # Send completion notification
+            send_test_completion_email.delay(test_submission.id)
+            mark_notification_as_read.delay(
+                user_id=test_submission.student.id,
+                category=Notification.TEST,
+                reference_id=test_submission.id
+            )
+            
+            # Analyze final pattern
+            self._analyze_pattern(test_submission)
+        else:
+            test_submission.status = TestSubmission.IN_PROGRESS
+            test_submission.save()
+
+
+    def _analyze_pattern(self, test_submission):
+        """
+        Analyze navigation pattern and create/update summary
+        """
+        from test_manager.models import TestNavigationHistory, TestPatternSummary
+        
+        # Get all navigation history for this submission
+        navigations = TestNavigationHistory.objects.filter(
+            test_submission=test_submission
+        ).order_by('timestamp')
+        
+        if navigations.count() < 3:
+            return  # Need at least 3 navigations to analyze
+        
+        # Initialize counters
+        sequential_count = 0
+        jump_count = 0
+        back_and_forth_count = 0
+        total_revisits = 0
+        revisits_per_question = defaultdict(int)
+        sections_skipped = 0
+        reviews = 0
+        total_time_before_nav = 0
+        
+        prev_question = None
+        visited_questions = set()
+        
+        for nav in navigations:
+            # Count navigation types
+            if nav.action_type == 'NEXT':
+                sequential_count += 1
+            elif nav.action_type == 'PREVIOUS':
+                back_and_forth_count += 1
+            elif nav.action_type == 'JUMP':
+                jump_count += 1
+            elif nav.action_type == 'SECTION_SKIP':
+                sections_skipped += 1
+            elif nav.action_type == 'REVIEW':
+                reviews += 1
+            
+            # Track revisits
+            if nav.to_question_id:
+                if nav.to_question_id in visited_questions:
+                    total_revisits += 1
+                    revisits_per_question[nav.to_question_id] += 1
+                else:
+                    visited_questions.add(nav.to_question_id)
+            
+            # Track time
+            total_time_before_nav += nav.time_spent_on_previous_question
+            prev_question = nav.to_question_id
+        
+        # Determine primary pattern
+        total_nav = navigations.count()
+        sequential_percent = (sequential_count / total_nav) * 100
+        jump_percent = (jump_count / total_nav) * 100
+        back_forth_percent = (back_and_forth_count / total_nav) * 100
+        
+        if sequential_percent > 60:
+            primary_pattern = TestPatternSummary.PATTERN_SEQUENTIAL
+        elif back_forth_percent > 40:
+            primary_pattern = TestPatternSummary.PATTERN_BACK_AND_FORTH
+        elif jump_percent > 40:
+            primary_pattern = TestPatternSummary.PATTERN_JUMPING
+        else:
+            primary_pattern = TestPatternSummary.PATTERN_MIXED
+        
+        # Calculate efficiency score (higher is better)
+        efficiency_score = 0
+        if primary_pattern == TestPatternSummary.PATTERN_SEQUENTIAL:
+            efficiency_score = 85 + (sequential_percent - 60) * 0.3
+        elif primary_pattern == TestPatternSummary.PATTERN_JUMPING:
+            efficiency_score = 60 + (100 - jump_percent) * 0.3
+        elif primary_pattern == TestPatternSummary.PATTERN_BACK_AND_FORTH:
+            efficiency_score = 40 + (100 - back_forth_percent) * 0.4
+        else:
+            efficiency_score = 50
+        
+        efficiency_score = min(100, max(0, efficiency_score))
+        
+        # Calculate time management score
+        avg_time = total_time_before_nav / total_nav if total_nav > 0 else 0
+        # Ideal time per question is around 60 seconds
+        time_score = 100 - max(0, (avg_time - 60) / 60 * 10)  # 10% penalty per 60 seconds over
+        time_score = max(0, min(100, time_score))
+        
+        # Create or update summary
+        summary, created = TestPatternSummary.objects.get_or_create(
+            student=test_submission.student,
+            test_submission=test_submission,
+            defaults={
+                'primary_pattern': primary_pattern,
+                'total_navigations': total_nav,
+                'sequential_moves': sequential_count,
+                'jump_moves': jump_count,
+                'back_and_forth_moves': back_and_forth_count,
+                'total_revisits': total_revisits,
+                'avg_revisits_per_question': total_revisits / len(visited_questions) if visited_questions else 0,
+                'avg_time_before_navigation': int(avg_time),
+                'sections_skipped': sections_skipped,
+                'questions_marked_for_review': reviews,
+                'review_visit_count': reviews,
+                'navigation_efficiency_score': round(efficiency_score, 2),
+                'time_management_score': round(time_score, 2),
+            }
+        )
+        
+        if not created:
+            # Update existing summary
+            summary.primary_pattern = primary_pattern
+            summary.total_navigations = total_nav
+            summary.sequential_moves = sequential_count
+            summary.jump_moves = jump_count
+            summary.back_and_forth_moves = back_and_forth_count
+            summary.total_revisits = total_revisits
+            summary.avg_revisits_per_question = total_revisits / len(visited_questions) if visited_questions else 0
+            summary.avg_time_before_navigation = int(avg_time)
+            summary.sections_skipped = sections_skipped
+            summary.questions_marked_for_review = reviews
+            summary.review_visit_count = reviews
+            summary.navigation_efficiency_score = round(efficiency_score, 2)
+            summary.time_management_score = round(time_score, 2)
+            summary.save()
 
     @action(detail=True, methods=['POST'], url_path='skip-section')
     def skip_section(self, request, pk=None, *args, **kwargs):
@@ -3724,7 +4352,9 @@ class ResultViewSet(viewsets.ModelViewSet):
             'testDate': test_submission.assigned_date.strftime('%Y-%m-%d'),
             'studentName': student.name,
             'total_score': 0,
-            'subjects': []
+            'subjects': [],
+            'navigation_pattern': self._get_navigation_pattern_summary(test_submission),
+            'test_taking_behavior': self._analyze_test_behavior(test_submission, result)
         }
 
         total_score = 0
@@ -3792,7 +4422,6 @@ class ResultViewSet(viewsets.ModelViewSet):
                     question_map = {q.id: q for q in Question.objects.filter(id__in=question_ids)}
 
                     # Bulk fetch selection history for this subsection's questions
-                    # Fetch all SelectionHistory for these question_ids and this test_submission (or practice_test_result)
                     selection_hist_qs = SelectionHistory.objects.filter(
                         test_submission=test_submission,
                         question_id__in=question_ids
@@ -3812,7 +4441,19 @@ class ResultViewSet(viewsets.ModelViewSet):
                         }
                         selection_map.setdefault(qid, []).append(entry)
 
-                    self.logger.info(f"✅ Loaded {len(question_map)} Questions, {len(question_answers)} QuestionAnswers, selection history for {len(selection_map)} questions")
+                    # Fetch navigation history for this section
+                    navigation_history_qs = TestNavigationHistory.objects.filter(
+                        test_submission=test_submission,
+                        current_section_id=sub_section['id']
+                    ).order_by('timestamp').values(
+                        'action_type', 'timestamp', 'from_question_id', 'to_question_id',
+                        'time_spent_on_previous_question', 'current_question_index'
+                    )
+                    navigation_history = list(navigation_history_qs)
+
+                    self.logger.info(f"✅ Loaded {len(question_map)} Questions, {len(question_answers)} QuestionAnswers, "
+                                   f"selection history for {len(selection_map)} questions, "
+                                   f"navigation history for {len(navigation_history)} actions")
 
                     # Prepare counters and lists
                     section_correct_count = section_incorrect_count = section_blank_count = marked = 0
@@ -3866,8 +4507,10 @@ class ResultViewSet(viewsets.ModelViewSet):
                             'db_Srno': question.srno,
                             'difficulty': question.difficulty,
                             'test_type': question.test_type,
-                            # <-- new field
                             'selection_history': q_selection_history,
+                            'navigation_actions': self._get_question_navigation_actions(
+                                navigation_history, question.id, idx
+                            )
                         }
                         sr_counter += 1
 
@@ -3907,6 +4550,11 @@ class ResultViewSet(viewsets.ModelViewSet):
 
                     section_score = (section_correct_count * correct_marks) - (section_incorrect_count * incorrect_marks)
 
+                    # Get section navigation summary
+                    section_navigation_summary = self._get_section_navigation_summary(
+                        navigation_history, sub_section['id']
+                    )
+
                     section_data = {
                         'name': sub_section['name'],
                         'section_id': sub_section['id'],
@@ -3925,9 +4573,9 @@ class ResultViewSet(viewsets.ModelViewSet):
                         'questions_data': questions_data,
                         'areas_of_focus': areas_of_focus,
                         'areas_of_strength': areas_of_strength,
+                        'navigation_summary': section_navigation_summary,
                     }
-                        # NEW — now track for all courses
-                    print("hii",sub_section)    
+                    
                     if sub_section['id'] == 1:
                         section_1_score = section_correct_count
                     else:
@@ -3941,8 +4589,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                     subject_data['subject_min_score'] += section_min_score
                     subject_data['subject_score'] += section_score
 
-            # NEW — CombinedScore used for ALL courses
-            
+            # CombinedScore used for ALL courses
             score_record = CombinedScore.objects.filter(
                 section1_correct=section_1_score,
                 section2_correct=section_2_score,
@@ -3954,12 +4601,135 @@ class ResultViewSet(viewsets.ModelViewSet):
                 subject_data['subject_max_score'] = 800
                 subject_data['subject_score'] = score_record.total_score
                 total_score += score_record.total_score
-                print("score_record.total_score",score_record.total_score)
+                print("score_record.total_score", score_record.total_score)
             response_data['subjects'].append(subject_data)
 
         response_data['total_score'] = total_score
         self.logger.info(f"✅ Final Total Score: {total_score}")
         return JsonResponse(response_data)
+
+    def _get_navigation_pattern_summary(self, test_submission):
+        """
+        Get navigation pattern summary for a test submission
+        """
+        try:
+            summary = TestPatternSummary.objects.get(
+                test_submission=test_submission
+            )
+            return {
+                'primary_pattern': summary.primary_pattern,
+                'navigation_efficiency': summary.navigation_efficiency_score,
+                'time_management_score': summary.time_management_score,
+                'total_navigations': summary.total_navigations,
+                'sequential_moves': summary.sequential_moves,
+                'jump_moves': summary.jump_moves,
+                'back_and_forth_moves': summary.back_and_forth_moves,
+                'total_revisits': summary.total_revisits,
+                'avg_revisits_per_question': summary.avg_revisits_per_question,
+                'questions_marked_for_review': summary.questions_marked_for_review
+            }
+        except TestPatternSummary.DoesNotExist:
+            return None
+
+    def _analyze_test_behavior(self, test_submission, result):
+        """
+        Analyze overall test-taking behavior
+        """
+        # Get all navigation history
+        navigations = TestNavigationHistory.objects.filter(
+            test_submission=test_submission
+        ).order_by('timestamp')
+        
+        total_navigations = navigations.count()
+        
+        if total_navigations == 0:
+            return None
+        
+        # Calculate average time per question
+        avg_time = 0
+        total_time = 0
+        count_with_time = 0
+        
+        for nav in navigations:
+            if nav.time_spent_on_previous_question > 0:
+                total_time += nav.time_spent_on_previous_question
+                count_with_time += 1
+        
+        avg_time = total_time / count_with_time if count_with_time > 0 else 0
+        
+        # Count unique questions visited
+        visited_questions = set()
+        for nav in navigations:
+            if nav.to_question_id:
+                visited_questions.add(nav.to_question_id)
+        
+        # Count revisits
+        question_visits = defaultdict(int)
+        for nav in navigations:
+            if nav.to_question_id:
+                question_visits[nav.to_question_id] += 1
+        
+        revisit_count = sum(1 for visits in question_visits.values() if visits > 1)
+        avg_visits_per_question = sum(question_visits.values()) / len(question_visits) if question_visits else 0
+        
+        # Check for patterns
+        is_sequential = True
+        previous_question = None
+        for nav in navigations:
+            if nav.action_type == 'JUMP' or (previous_question and nav.to_question_id and 
+                                             nav.to_question_id != previous_question + 1):
+                is_sequential = False
+                break
+            previous_question = nav.to_question_id
+        
+        return {
+            'total_navigations': total_navigations,
+            'unique_questions_visited': len(visited_questions),
+            'total_revisits': revisit_count,
+            'avg_visits_per_question': round(avg_visits_per_question, 2),
+            'avg_time_per_question': round(avg_time, 2),
+            'is_sequential': is_sequential,
+            'has_jumps': any(nav.action_type == 'JUMP' for nav in navigations),
+            'has_back_and_forth': any(nav.action_type == 'PREVIOUS' for nav in navigations),
+            'question_visits': dict(question_visits)
+        }
+
+    def _get_question_navigation_actions(self, navigation_history, question_id, question_index):
+        """
+        Get navigation actions related to a specific question
+        """
+        actions = []
+        for nav in navigation_history:
+            # Check if this navigation involves the question
+            if nav.get('from_question_id') == question_id or nav.get('to_question_id') == question_id:
+                actions.append({
+                    'action_type': nav.get('action_type'),
+                    'timestamp': nav.get('timestamp').isoformat() if nav.get('timestamp') else None,
+                    'from_question': nav.get('from_question_id'),
+                    'to_question': nav.get('to_question_id'),
+                    'time_spent': nav.get('time_spent_on_previous_question', 0),
+                    'question_index': nav.get('current_question_index')
+                })
+        return actions
+
+    def _get_section_navigation_summary(self, navigation_history, section_id):
+        """
+        Get navigation summary for a section
+        """
+        if not navigation_history:
+            return {
+                'total_actions': 0,
+                'action_breakdown': {}
+            }
+        
+        action_breakdown = defaultdict(int)
+        for nav in navigation_history:
+            action_breakdown[nav.get('action_type', 'UNKNOWN')] += 1
+        
+        return {
+            'total_actions': len(navigation_history),
+            'action_breakdown': dict(action_breakdown)
+        }
 
         #             # SAT special handling (unchanged)
         #             if course_subject.course.name == 'SAT':

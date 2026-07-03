@@ -7,6 +7,9 @@ from notification_manager.utils import mark_notification_as_read
 from user_manager.models import User
 
 
+
+
+
 class Test(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     name = models.CharField(max_length=30)
@@ -677,3 +680,113 @@ class SelectionHistory(models.Model):
 
     def __str__(self):
         return f"History - {self.student.name} - Q{self.question.id} ({self.action_type})"
+    
+
+# Add this to test_manager/models.py
+
+class TestNavigationHistory(models.Model):
+    """Tracks student navigation patterns during test taking"""
+    
+    # Navigation action types
+    NEXT = 'NEXT'
+    PREVIOUS = 'PREVIOUS'
+    JUMP = 'JUMP'
+    SECTION_SKIP = 'SECTION_SKIP'
+    REVIEW = 'REVIEW'
+    
+    ACTION_CHOICES = [
+        (NEXT, 'Next Question'),
+        (PREVIOUS, 'Previous Question'),
+        (JUMP, 'Jump to Question'),
+        (SECTION_SKIP, 'Skip Section'),
+        (REVIEW, 'Mark for Review'),
+    ]
+    
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    test_submission = models.ForeignKey(TestSubmission, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, null=True, blank=True)
+    
+    # Navigation details
+    action_type = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    from_question_id = models.IntegerField(null=True, blank=True)
+    to_question_id = models.IntegerField(null=True, blank=True)
+    from_section_id = models.IntegerField(null=True, blank=True)
+    to_section_id = models.IntegerField(null=True, blank=True)
+    
+    # Timing
+    timestamp = models.DateTimeField(auto_now_add=True)
+    time_spent_on_previous_question = models.IntegerField(default=0)  # in seconds
+    
+    # Context
+    current_section_id = models.IntegerField(null=True, blank=True)
+    current_question_index = models.IntegerField(null=True, blank=True)
+    total_questions_in_section = models.IntegerField(null=True, blank=True)
+    
+    # Metadata
+    device_info = models.JSONField(default=dict, blank=True)  # browser, OS, etc.
+    
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['student', 'test_submission']),
+            models.Index(fields=['test_submission', 'action_type']),
+        ]
+    
+    def __str__(self):
+        return f"{self.student.name} - {self.action_type} - {self.timestamp}"
+
+# Add this to test_manager/models.py
+
+class TestPatternSummary(models.Model):
+    """Stores analyzed test-taking patterns for a student"""
+    
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    test_submission = models.ForeignKey(TestSubmission, on_delete=models.CASCADE)
+    
+    # Navigation pattern categories
+    PATTERN_SEQUENTIAL = 'SEQUENTIAL'
+    PATTERN_JUMPING = 'JUMPING'
+    PATTERN_BACK_AND_FORTH = 'BACK_AND_FORTH'
+    PATTERN_MIXED = 'MIXED'
+    PATTERN_CHOICES = [
+        (PATTERN_SEQUENTIAL, 'Sequential - follows question order'),
+        (PATTERN_JUMPING, 'Jumping - skips and returns later'),
+        (PATTERN_BACK_AND_FORTH, 'Back and Forth - revisits questions frequently'),
+        (PATTERN_MIXED, 'Mixed - combination of patterns'),
+    ]
+    
+    primary_pattern = models.CharField(max_length=20, choices=PATTERN_CHOICES)
+    
+    # Statistics
+    total_navigations = models.IntegerField(default=0)
+    sequential_moves = models.IntegerField(default=0)
+    jump_moves = models.IntegerField(default=0)
+    back_and_forth_moves = models.IntegerField(default=0)
+    
+    # Question revisit metrics
+    total_revisits = models.IntegerField(default=0)
+    avg_revisits_per_question = models.FloatField(default=0.0)
+    
+    # Time metrics
+    avg_time_before_navigation = models.IntegerField(default=0)  # seconds
+    
+    # Section skipping
+    sections_skipped = models.IntegerField(default=0)
+    
+    # Review patterns
+    questions_marked_for_review = models.IntegerField(default=0)
+    review_visit_count = models.IntegerField(default=0)
+    
+    # Calculated scores
+    navigation_efficiency_score = models.FloatField(default=0.0)  # 0-100
+    time_management_score = models.FloatField(default=0.0)  # 0-100
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['student', 'test_submission']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.student.name} - {self.primary_pattern} - {self.test_submission.test.name}"
