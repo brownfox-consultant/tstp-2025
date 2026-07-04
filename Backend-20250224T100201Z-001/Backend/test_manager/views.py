@@ -2460,13 +2460,7 @@ class TestViewSet(viewsets.ModelViewSet):
             test_submission.completion_date = timezone.now()
             test_submission.save()
             
-            # Send completion notification
-            send_test_completion_email.delay(test_submission.id)
-            mark_notification_as_read.delay(
-                user_id=test_submission.student.id,
-                category=Notification.TEST,
-                reference_id=test_submission.id
-            )
+            
             
             # Analyze final pattern
             self._analyze_pattern(test_submission)
