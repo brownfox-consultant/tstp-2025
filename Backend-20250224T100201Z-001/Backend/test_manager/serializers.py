@@ -83,11 +83,23 @@ class TestSubmissionSerializer(serializers.ModelSerializer):
         return False
 
     def is_eligible_for_student(self, test_submission, user):
-        first_eligible_test = TestSubmission.objects.filter(
-            student=user, status__in=[TestSubmission.YET_TO_START, TestSubmission.IN_PROGRESS]
-        ).order_by('assigned_date').first()
+        active_test = TestSubmission.objects.filter(
+            student=user,
+            status=TestSubmission.IN_PROGRESS
+        ).first()
 
-        return test_submission == first_eligible_test
+        if active_test:
+            return active_test.id == test_submission.id
+
+        first_test = TestSubmission.objects.filter(
+            student=user,
+            status=TestSubmission.YET_TO_START
+        ).order_by("assigned_date").first()
+
+        return (
+            first_test is not None
+            and first_test.id == test_submission.id
+        )
 
     def get_assigned_date(self, obj):
         return obj.assigned_date.strftime('%b %d, %Y') if obj.assigned_date else None

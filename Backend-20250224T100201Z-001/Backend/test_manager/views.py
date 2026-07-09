@@ -2347,6 +2347,19 @@ class TestViewSet(viewsets.ModelViewSet):
                 is_marked_for_review=is_marked_for_review
             )
 
+            section_stats = SectionStats.objects.filter(
+                result=result,
+                course_subject_id=course_subject,
+                section_id=section_id,
+            ).first()
+
+            if section_stats:
+                print(
+                    "SAVE =>",
+                    "received=", time_taken,
+                    "total=", section_stats.time_taken,
+                )
+
             # ✅ Save selection history for analytics
             SelectionHistory.objects.create(
                 student=request.user,
@@ -2374,6 +2387,11 @@ class TestViewSet(viewsets.ModelViewSet):
 
             # Check if the test is completed
             self._check_test_completion(existing_submission, result)
+            print("correct_answer_count",result.correct_answer_count)   
+            print("incorrect_answer_count",result.incorrect_answer_count)  
+            print("time_taken",result.time_taken)
+            
+
 
             response = {
                 'correct_answer_count': result.correct_answer_count,
@@ -2455,8 +2473,20 @@ class TestViewSet(viewsets.ModelViewSet):
         answered_count = QuestionAnswer.objects.filter(result=result).count()
         
         # Check if all questions are answered
+
+        print("TOTAL QUESTIONS:", total_questions)
+        print("ANSWERED:", answered_count)
+
+        print(
+            QuestionAnswer.objects.filter(result=result).values(
+                "question_id",
+                "course_subject_id",
+                "section_id",
+                "is_skipped",
+            )
+        )
         if answered_count >= total_questions:
-            test_submission.status = TestSubmission.COMPLETED
+            test_submission.status = TestSubmission.IN_PROGRESS
             test_submission.completion_date = timezone.now()
             test_submission.save()
             
@@ -2926,25 +2956,20 @@ class TestViewSet(viewsets.ModelViewSet):
                     section_id=sub_section["id"]
                 ).first()
 
-                duration_seconds = (
-                    sub_section["duration"] * 60
-                )
+                duration_seconds = sub_section["duration"] * 60
 
-                if section_stats and section_stats.started_at:
-                    elapsed = int(
-                        (
-                            timezone.now()
-                            - section_stats.started_at
-                        ).total_seconds()
-                    )
+                if section_stats:
+                    time_taken = section_stats.time_taken
+                    started_at = section_stats.started_at
                 else:
-                    elapsed = 0
+                    time_taken = 0
+                    started_at = None
 
-                remaining_time = max(
-                    duration_seconds - elapsed,
-                    0
-                )
+                remaining_time = max(duration_seconds - time_taken, 0)
 
+                print("STARTED AT:", started_at)
+                print("NOW:", timezone.now())
+                print("TIME TAKEN:", time_taken)
                 print(
                     "RESTORE ACTIVE SECTION =>",
                     "course_subject=", section.course_subject_id,
@@ -3001,6 +3026,10 @@ class TestViewSet(viewsets.ModelViewSet):
 
             if section_changed:
                 test_submission.current_section_started_at = timezone.now()
+            
+            # ✅ Mark test as started as soon as student enters it
+            if test_submission.status == TestSubmission.YET_TO_START:
+                test_submission.status = TestSubmission.IN_PROGRESS
 
             test_submission.save(
                 update_fields=[

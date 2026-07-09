@@ -90,6 +90,11 @@ function TestList() {
       .finally(() => setTableLoading(false));
   }, [current, sortParams, debouncedSearchTerm]);
 
+
+  useEffect(() => {
+    console.log("Fetching test list");
+}, [current, sortParams, debouncedSearchTerm]);
+
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
