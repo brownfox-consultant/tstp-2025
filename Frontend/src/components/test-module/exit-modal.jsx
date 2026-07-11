@@ -7,6 +7,8 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import TestFeedbackModal from "./test-feedback-modal";
+import { insideAuthInstance } from "@/lib/AxiosInstance";
+
 
 function ExitExamModal({ openModal, setOpenModal }) {
   const { id, testType, testId } = useParams();
@@ -34,25 +36,38 @@ function ExitExamModal({ openModal, setOpenModal }) {
   };
 
   const handleExit = async () => {
-    try {
-      await dispatch(
-        saveAndMove({ operation: "EXIT", questionIndex: -1 })
-      ).unwrap();
+  try {
+    // Save current answer before exiting
+    await dispatch(
+      saveAndMove({
+        operation: "EXIT",
+        questionIndex: -1,
+      })
+    ).unwrap();
 
-      await dispatch(sectionComplete({ via: "EXIT" })).unwrap();
-
-      // Show feedback modal instead of instant redirect
-      if (testType !== "practice") {
-        setShowFeedback(true);
-      } else {
-        handleFeedbackClose();
+    // Exit the test
+    await insideAuthInstance.post(
+      `/test/${testId}/exit-test/`,
+      {
+        test_submission_id: testSubmissionId,
       }
-    } catch (error) {
-      console.log("Exit Error", error);
-    }
+    );
 
+    if (testType !== "practice") {
+      setShowFeedback(true);
+    } else {
+      handleFeedbackClose();
+    }
+  } catch (error) {
+    console.error("Exit Test Error:", error);
+    Modal.error({
+      title: "Exit Failed",
+      content: "Unable to exit the test. Please try again.",
+    });
+  } finally {
     setOpenModal(false);
-  };
+  }
+};
 
   return (
     <div>

@@ -359,6 +359,7 @@ class Result(models.Model):
             defaults={
                 'time_taken': 0,
                 'started_at': timezone.now(),
+                "last_sync_at": timezone.now(),   # NEW
                 'total_questions': self.get_total_questions_for_section(
                     test,
                     course_subject,
@@ -369,7 +370,14 @@ class Result(models.Model):
 
         if not section_stats.started_at:
             section_stats.started_at = timezone.now()
-            section_stats.save(update_fields=["started_at"])
+
+        if not section_stats.last_sync_at:
+            section_stats.last_sync_at = timezone.now()
+
+        section_stats.save(update_fields=[
+            "started_at",
+            "last_sync_at",
+        ])
         
 
         # Update only the time_taken, not the total_questions
@@ -445,13 +453,19 @@ class QuestionAnswer(models.Model):
 from django.utils import timezone
 
 class SectionStats(models.Model):
-    result = models.ForeignKey(Result, on_delete=models.CASCADE, related_name='section_stats')
+    result = models.ForeignKey(Result, on_delete=models.CASCADE, related_name="section_stats")
     course_subject = models.ForeignKey(CourseSubjects, on_delete=models.CASCADE)
     section_id = models.IntegerField()
 
     time_taken = models.IntegerField(default=0)
 
     started_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    # NEW FIELD
+    last_sync_at = models.DateTimeField(
         null=True,
         blank=True
     )

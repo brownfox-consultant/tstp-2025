@@ -14,6 +14,7 @@ import TestFeedbackModal from "@/components/test-module/test-feedback-modal";
 import Loading from "@/app/student/[id]/(base-layout)/loading";
 import TestFooter from "@/components/test-module/footer";
 import TestHeader from "@/components/test-module/header";
+import { useRef } from "react";
 
 function Page() {
   const router = useRouter();
@@ -21,6 +22,7 @@ function Page() {
   const { id, testType, testId } = useParams();
   const { exitFullScreen } = useFullScreen();
   const { userId } = useGlobalContext();
+  const hasRestored = useRef(false);
 
   const questions = useSelector((state) => state.test.questions);
   const questionsStatus = useSelector((state) => state.test.questionsStatus);
@@ -50,82 +52,70 @@ function Page() {
   }, [answerMap, currentQuestionIndex, testType, isRestoring, questions.length]);
 
   useEffect(() => {
-    const restoreTest = async () => {
-      // IDOR Protection: Ensure user accessing the test matches logged-in user
-      if (userId && String(userId) !== String(id)) {
-        router.replace(`/student/${userId}/dashboard`);
-        return;
-      }
+  if (hasRestored.current) return;
 
-      if (questions.length === 0 && !isSectionCompleted) {
-        const username = window?.sessionStorage.getItem("name");
-        
-        try {
-          if (testType === "practice") {
-            const storedPracticeIds = window?.sessionStorage.getItem("practice_question_ids");
-            const storedTimer = window?.sessionStorage.getItem("timer");
-            const storedAnswers = window.sessionStorage.getItem("practice_answers");
-            const storedIndex = window.sessionStorage.getItem("practice_current_index");
+  hasRestored.current = true;
 
-            if (storedPracticeIds) {
-              const parsedIds = JSON.parse(storedPracticeIds);
-              dispatch(fetchMultipleQuestionDetails(parsedIds));
-              dispatch(setTestDetails({
-                testId: testId,
-                time: JSON.parse(storedTimer),
-                testType: "practice"
-              }));
-
-              if (storedAnswers) {
-                dispatch(setAnswerMap(JSON.parse(storedAnswers)));
-              }
-              if (storedIndex) {
-                dispatch(setCurrentQuestionIndex(Number(storedIndex)));
-              }
-            } else {
-              throw new Error("No practice data");
-            }
-          } else {
-            // Restore Full Length Test
-            const test_submission_id = window?.sessionStorage.getItem("test_submission_id");
-            if (test_submission_id) {
-              await dispatch(testInProgress({ testId, test_submission_id, username })).unwrap();
-              await dispatch(getQuestionForSection({ testId, test_submission_id })).unwrap();
-            } else {
-              throw new Error("No submission ID");
-            }
-          }
-        } catch (error) {
-          console.error("Auto-resume failed:", error);
-          router.replace(
-            testType === "practice"
-              ? `/student/${id}/test/practice/create`
-              : `/student/${id}/full/${testId}/begin`
-          );
-        } finally {
-          setIsRestoring(false);
-        }
-      } else {
-        setIsRestoring(false);
-      }
-    };
-
-    restoreTest();
-  }, [questions.length, isSectionCompleted, testType, testId, id, userId]);
-
-  // Proper TIMEUP dispatch
-  useEffect(() => {
-    if (isTimeUp) {
-      (async () => {
-        await dispatch(
-          saveAndMove({
-            operation: "TIMEUP",
-            questionIndex: -1,
-          })
-        ).unwrap();
-      })();
+  const restoreTest = async () => {
+    if (userId && String(userId) !== String(id)) {
+      router.replace(`/student/${userId}/dashboard`);
+      return;
     }
-  }, [isTimeUp]);
+
+    const username = window.sessionStorage.getItem("name");
+
+    try {
+      const test_submission_id =
+        window.sessionStorage.getItem("test_submission_id");
+
+      if (!test_submission_id) {
+        throw new Error("No submission ID");
+      }
+
+      await dispatch(
+        testInProgress({
+          testId,
+          test_submission_id,
+          username,
+        })
+      ).unwrap();
+
+      await dispatch(
+        getQuestionForSection({
+          testId,
+          test_submission_id,
+        })
+      ).unwrap();
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  restoreTest();
+}, []);
+
+  useEffect(() => {
+  if (!isTimeUp) return;
+
+  const finishSection = async () => {
+    // 1. Save last answer
+    await dispatch(
+      saveAndMove({
+        operation: "TIMEUP",
+        questionIndex: -1,
+      })
+    ).unwrap();
+
+    // 2. Skip section AFTER save
+    await dispatch(
+      sectionComplete({
+        via: "TIMEUP",
+      })
+    ).unwrap();
+  };
+
+  finishSection();
+}, [isTimeUp]);
 
   return (
     <Suspense fallback={<Loading />}>

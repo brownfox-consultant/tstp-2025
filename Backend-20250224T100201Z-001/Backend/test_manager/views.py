@@ -2622,6 +2622,57 @@ class TestViewSet(viewsets.ModelViewSet):
             summary.navigation_efficiency_score = round(efficiency_score, 2)
             summary.time_management_score = round(time_score, 2)
             summary.save()
+    
+
+
+
+    @action(detail=True, methods=["POST"], url_path="sync-time")
+    def sync_time(self, request, pk=None):
+        test_submission_id = request.data.get("test_submission_id")
+        course_subject = request.data.get("course_subject_id")
+        section_id = request.data.get("section_id")
+        time_taken = int(request.data.get("time_taken", 0))
+
+        result = Result.objects.filter(
+            test_submission_id=test_submission_id
+        ).first()
+
+        if not result:
+            return get_error_response(message="Result not found.")
+
+        section_stats = SectionStats.objects.filter(
+            result=result,
+            course_subject_id=course_subject,
+            section_id=section_id,
+        ).first()
+
+        if not section_stats:
+            return get_error_response(message="Section stats not found.")
+
+        print("SYNC REQUEST")
+        print("DB =", section_stats.time_taken)
+        print("CLIENT =", time_taken)
+
+        # Never decrease time
+        if time_taken > section_stats.time_taken:
+            section_stats.time_taken = time_taken
+
+        # Always update last sync time
+        section_stats.last_sync_at = timezone.now()
+
+        section_stats.save(update_fields=[
+            "time_taken",
+            "last_sync_at",
+        ])
+
+        return Response(
+            {
+                "success": True,
+                "time_taken": section_stats.time_taken,
+                "last_sync_at": section_stats.last_sync_at,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=['POST'], url_path='skip-section')
     def skip_section(self, request, pk=None, *args, **kwargs):
@@ -2693,7 +2744,12 @@ class TestViewSet(viewsets.ModelViewSet):
             result=result,
             course_subject_id=course_subject_id,
             section_id=section_id,
-            defaults={'time_taken': 0, 'total_questions': len(question_ids)}
+            defaults={
+                "time_taken": 0,
+                "started_at": timezone.now(),
+                "last_sync_at": timezone.now(),
+                "total_questions": len(question_ids),
+            },
         )
 
         # Ensure total_questions is correctly set
@@ -2701,16 +2757,16 @@ class TestViewSet(viewsets.ModelViewSet):
         section_stats.save()
 
         # Check if the test is completed
-        all_answered = QuestionAnswer.objects.filter(result=result).count() >= \
-                       sum([stats.total_questions for stats in SectionStats.objects.filter(result=result)])
+        # all_answered = QuestionAnswer.objects.filter(result=result).count() >= \
+        #                sum([stats.total_questions for stats in SectionStats.objects.filter(result=result)])
 
-        if all_answered:
-            test_submission.status = TestSubmission.COMPLETED
-            test_submission.completion_date = timezone.now()
-            mark_notification_as_read.delay(user_id=test_submission.student.id, category=Notification.TEST,
-                                            reference_id=test_submission.id)
-        else:
-            test_submission.status = TestSubmission.IN_PROGRESS
+        # if all_answered:
+        #     test_submission.status = TestSubmission.COMPLETED
+        #     test_submission.completion_date = timezone.now()
+        #     mark_notification_as_read.delay(user_id=test_submission.student.id, category=Notification.TEST,
+        #                                     reference_id=test_submission.id)
+        # else:
+        #     test_submission.status = TestSubmission.IN_PROGRESS
 
         # Save the test submission status
 
@@ -2778,10 +2834,129 @@ class TestViewSet(viewsets.ModelViewSet):
                     category=Notification.TEST,
                     reference_id=test_submission.id,
                 )
+                return Response({
+                    "detail": "Test completed.",
+                    "completed": True,
+                    "next_course_subject_id": None,
+                    "next_section_id": None,
+                }, status=status.HTTP_200_OK)
         test_submission.save()
         result.save()
 
-        return Response({"detail": "Section marked as completed."}, status=status.HTTP_200_OK)
+        return Response({"detail": "Section marked as completed.","next_course_subject_id": next_section["course_subject_id"],
+    "next_section_id": next_section["section_id"],}, status=status.HTTP_200_OK)
+
+
+    @action(detail=True, methods=['POST'], url_path='exit-test')
+    def exit_test(self, request, pk=None, *args, **kwargs):
+        test_submission_id = request.data.get("test_submission_id")
+
+        try:
+            test_submission = TestSubmission.objects.get(id=test_submission_id)
+        except TestSubmission.DoesNotExist:
+            return get_error_response(message="Test submission not found.")
+
+        test = test_submission.test
+
+        result, _ = Result.objects.get_or_create(
+            test_submission=test_submission,
+            defaults={
+                "correct_answer_count": 0,
+                "incorrect_answer_count": 0,
+                "time_taken": 0,
+                "detailed_view": {},
+            }
+        )
+
+        sections = Section.objects.filter(test=test)
+
+        # Mark every unanswered question as skipped
+        for section in sections:
+            for sub_section in section.sub_sections:
+
+                if test.format_type == Test.DYNAMIC:
+                    section_key = f"{section.course_subject_id}_{sub_section['id']}"
+                    question_ids = test_submission.selected_question_ids.get(
+                        section_key,
+                        []
+                    )
+                else:
+                    question_ids = sub_section["questions"]
+
+                questions = Question.objects.filter(id__in=question_ids)
+
+                for question in questions:
+                    QuestionAnswer.objects.get_or_create(
+                        result=result,
+                        course_subject_id=section.course_subject_id,
+                        section_id=sub_section["id"],
+                        question=question,
+                        defaults={
+                            "is_correct": False,
+                            "is_skipped": True,
+                            "time_taken": 0,
+                            "selected_options": [],
+                            "times_visited": 1,
+                            "first_time_taken": 0,
+                            "is_marked_for_review": False,
+                            "order": result.get_question_order(
+                                test,
+                                section.course_subject_id,
+                                sub_section["id"],
+                                question.id
+                            )
+                        }
+                    )
+
+                # Ensure SectionStats exists
+                SectionStats.objects.get_or_create(
+                    result=result,
+                    course_subject_id=section.course_subject_id,
+                    section_id=sub_section["id"],
+                    defaults={
+                        "time_taken": 0,
+                        "total_questions": len(question_ids)
+                    }
+                )
+
+        # Recalculate counts
+        result.correct_answer_count = QuestionAnswer.objects.filter(
+            result=result,
+            is_correct=True
+        ).count()
+
+        result.incorrect_answer_count = QuestionAnswer.objects.filter(
+            result=result,
+            is_correct=False
+        ).count()
+
+        result.save()
+
+        # Complete test
+        test_submission.status = TestSubmission.COMPLETED
+        test_submission.completion_date = timezone.now()
+        test_submission.current_course_subject_id = None
+        test_submission.current_section_id = None
+        test_submission.current_section_started_at = None
+        test_submission.save()
+
+        mark_notification_as_read.delay(
+            user_id=test_submission.student.id,
+            category=Notification.TEST,
+            reference_id=test_submission.id,
+        )
+
+        return Response(
+            {
+                "detail": "Test exited successfully.",
+                "status": TestSubmission.COMPLETED,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+
+    
 
     @action(detail=True, methods=['GET'], url_path='test-progress')
     def get_test_progress(self, request, pk=None, *args, **kwargs):
@@ -2953,23 +3128,27 @@ class TestViewSet(viewsets.ModelViewSet):
                 section_stats = SectionStats.objects.filter(
                     result=result,
                     course_subject_id=section.course_subject_id,
-                    section_id=sub_section["id"]
+                    section_id=sub_section["id"],
                 ).first()
 
                 duration_seconds = sub_section["duration"] * 60
 
-                if section_stats:
-                    time_taken = section_stats.time_taken
-                    started_at = section_stats.started_at
+                if section_stats and section_stats.time_taken is not None:
+                    stored_time = section_stats.time_taken
                 else:
-                    time_taken = 0
-                    started_at = None
+                    stored_time = 0
 
-                remaining_time = max(duration_seconds - time_taken, 0)
+                remaining_time = max(
+                    duration_seconds - stored_time,
+                    0,
+                )
 
-                print("STARTED AT:", started_at)
+               
+                
+
+               
                 print("NOW:", timezone.now())
-                print("TIME TAKEN:", time_taken)
+               
                 print(
                     "RESTORE ACTIVE SECTION =>",
                     "course_subject=", section.course_subject_id,
@@ -3055,6 +3234,7 @@ class TestViewSet(viewsets.ModelViewSet):
                 defaults={
                     "time_taken": 0,
                     "started_at": timezone.now(),
+                     "last_sync_at": timezone.now(),
                     "total_questions": 0
                 }
             )
@@ -3171,6 +3351,7 @@ class TestViewSet(viewsets.ModelViewSet):
                         section_id=section_id,
                         defaults={
                             "time_taken": 0,
+                             "last_sync_at": timezone.now(),
                             "started_at": timezone.now()
                         }
                     )

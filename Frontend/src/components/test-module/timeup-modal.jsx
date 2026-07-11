@@ -81,7 +81,7 @@ function TimeupModal({ openModal }) {
           router.replace(`/student/${id}/test/${testId}/begin`);
         }
       }
-    }, 10000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [isSectionCompleted, isTestCompleted, openModal]);
