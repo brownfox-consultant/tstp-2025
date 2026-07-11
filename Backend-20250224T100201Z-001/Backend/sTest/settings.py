@@ -251,10 +251,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-# EMAIL_HOST_USER = 'info@tstp.in' #os.environ.get("EMAIL_HOST_USER")
-EMAIL_HOST_USER = 'agravat.prashant@gmail.com'
-# EMAIL_HOST_PASSWORD = 'axoouohvgraxjnzl' #os.environ.get("EMAIL_HOST_PASSWORD")
-EMAIL_HOST_PASSWORD ='ebbpznkiegxpynws'
+EMAIL_HOST_USER = 'info@tstp.in' #os.environ.get("EMAIL_HOST_USER")
+# EMAIL_HOST_USER = 'agravat.prashant@gmail.com'
+EMAIL_HOST_PASSWORD = 'axoouohvgraxjnzl' #os.environ.get("EMAIL_HOST_PASSWORD")
+# EMAIL_HOST_PASSWORD ='ebbpznkiegxpynws'
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
 CELERY_BEAT_SCHEDULE = {

@@ -4,6 +4,10 @@
 **/env/
 **/.venv/
 
+
+# Django settings
+Backend-20250224T100201Z-001/Backend/sTest/settings.py
+
 # Ignore API constants
 src/app/constants/apiConstants.js
 
