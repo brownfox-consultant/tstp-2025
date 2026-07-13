@@ -13,6 +13,7 @@ import { useMediaQuery } from "react-responsive";
 import Image from "next/image";
 import LogoutIcon from "@/components/icons/logout-icon";
 import UserProfileIcon from "@/components/icons/user-profile-icon";
+import { LinkOutlined } from "@ant-design/icons";
 
 import {
   DashboardOutlined,
@@ -72,6 +73,13 @@ const AdminMenuItems = [
     icon: <FontSizeOutlined />,
     label: "Full Length Tests",
   },
+  {
+  key: "mentoring",
+  icon: <LinkOutlined />,
+  label: "Mentoring",
+  external: true,
+  url: "https://cadence-scheduler.vercel.app/",
+},
   {
     key: "test-list",
     icon: <UnorderedListOutlined />,
@@ -158,12 +166,23 @@ function DashboardLayout({ children }) {
     }
   }, [isMobile, mobileMenuOpen, collapsed]);
 
-  const handleMenuClick = useCallback((key) => {
-    router.push(`/admin/${id}/${key}`);
+  const handleMenuClick = useCallback((item) => {
+  if (item.external) {
+    window.open(item.url, "_blank", "noopener,noreferrer");
+
     if (isMobile) {
       setMobileMenuOpen(false);
     }
-  }, [router, id, isMobile]);
+
+    return;
+  }
+
+  router.push(`/admin/${id}/${item.key}`);
+
+  if (isMobile) {
+    setMobileMenuOpen(false);
+  }
+}, [router, id, isMobile]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -274,7 +293,7 @@ function DashboardLayout({ children }) {
             const menuItemContent = (
               <div
                 key={item.key}
-                onClick={() => handleMenuClick(item.key)}
+               onClick={() => handleMenuClick(item)}
                 className={`
                   flex items-center h-12 mb-1 rounded-lg cursor-pointer
                   transition-all duration-200 ease-in-out
@@ -289,7 +308,7 @@ function DashboardLayout({ children }) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    handleMenuClick(item.key);
+                    handleMenuClick(item);
                   }
                 }}
               >

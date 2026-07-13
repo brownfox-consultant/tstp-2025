@@ -15,6 +15,7 @@ import LogoutIcon from "@/components/icons/logout-icon";
 import UserProfileIcon from "@/components/icons/user-profile-icon";
 import FullLengthTestIcon from "@/components/icons/full-length-test-icon";
 import FileTextOutlined from "@/components/icons/full-length-test-icon";
+import { LinkOutlined } from "@ant-design/icons";
 
 import {
   DashboardOutlined,
@@ -62,6 +63,13 @@ function DashboardLayout({ children }) {
       label: "Full-Length Test",
       disabled: false,
     },
+     {
+        key: "mentoring",
+        icon: <LinkOutlined />,
+        label: "Mentoring",
+        external: true,
+        url: "https://cadence-scheduler.vercel.app/",
+      },
      {
       key: "attempted-questions",
       icon: <CheckSquareOutlined />,
@@ -142,13 +150,30 @@ function DashboardLayout({ children }) {
     }
   }, [isMobile, mobileMenuOpen, collapsed, setCollapsed]);
 
-  const handleMenuClick = useCallback((key, disabled) => {
-    if (disabled) return;
-    router.push(`/student/${id}/${key}`);
+  const handleMenuClick = useCallback(
+  (item) => {
+    if (item.disabled) return;
+
+    // Open external link
+    if (item.external) {
+      window.open(item.url, "_blank", "noopener,noreferrer");
+
+      if (isMobile) {
+        setMobileMenuOpen(false);
+      }
+
+      return;
+    }
+
+    // Internal pages
+    router.push(`/student/${id}/${item.key}`);
+
     if (isMobile) {
       setMobileMenuOpen(false);
     }
-  }, [router, id, isMobile]);
+  },
+  [router, id, isMobile]
+);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -273,7 +298,7 @@ function DashboardLayout({ children }) {
             const menuItemContent = (
               <div
                 key={item.key}
-                onClick={() => handleMenuClick(item.key, item.disabled)}
+                onClick={() => handleMenuClick(item)}
                 className={`
                   flex items-center h-12 mb-1 rounded-lg cursor-pointer
                   transition-all duration-200 ease-in-out
@@ -290,7 +315,7 @@ function DashboardLayout({ children }) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    handleMenuClick(item.key, item.disabled);
+                    handleMenuClick(item);
                   }
                 }}
               >
