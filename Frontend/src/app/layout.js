@@ -6,6 +6,8 @@ import { GlobalContextProvider } from "@/context/store";
 import Script from "next/script";
 import StoreProvider from "@/lib/StoreProvider";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import ErrorListener from "@/components/ErrorListener";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -57,9 +59,12 @@ function RootLayout({ children }) {
                 },
               }}
             >
-            <GlobalContextProvider>
-  <ImpersonationBanner />
-  {children}
+           <GlobalContextProvider>
+  <ErrorBoundary>
+    <ErrorListener />
+    <ImpersonationBanner />
+    {children}
+  </ErrorBoundary>
 </GlobalContextProvider>
 
             </ConfigProvider>

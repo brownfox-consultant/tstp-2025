@@ -80,6 +80,8 @@ INSTALLED_APPS = [
     'system_manager',
     'test_manager',
     'notification_manager',
+    "monitoring",
+    
 ]
 
 MIDDLEWARE = [
@@ -202,6 +204,14 @@ LOGGING = {
             'backupCount': 10,  # Keep 10 days of backups
             'formatter': 'verbose',
         },
+        'frontend_file': {
+        'level': 'ERROR',
+        'class': 'logging.handlers.TimedRotatingFileHandler',
+        'filename': f'{BASE_DIR}/logs/frontend-errors.log',
+        'when': 'midnight',
+        'backupCount': 10,
+        'formatter': 'verbose',
+    },
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
@@ -244,6 +254,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'frontend_errors': {
+    'handlers': ['frontend_file', 'console'],
+    'level': 'ERROR',
+    'propagate': False,
+},
     },
 }
 
