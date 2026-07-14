@@ -38,23 +38,7 @@ function TimeupModal({ openModal }) {
     );
   };
 
-  useEffect(() => {
-    if (!openModal || sectionCompletedOnce) return;
-
-    const completeSection = async () => {
-      try {
-        await dispatch(sectionComplete({ via: "TIMEUP" })).unwrap();
-        if (currentArraySectionIndex === totalSections - 1) {
-          dispatch(setTestAsCompleted());
-        }
-        setSectionCompletedOnce(true);
-      } catch (error) {
-        console.error("Error during section completion:", error);
-      }
-    };
-
-    completeSection();
-  }, [openModal, sectionCompletedOnce]);
+  
 
   useEffect(() => {
     if (isSectionCompleted && isTestCompleted) {

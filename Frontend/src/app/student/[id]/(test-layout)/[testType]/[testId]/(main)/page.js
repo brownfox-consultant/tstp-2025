@@ -3,7 +3,7 @@
 import Question from "@/components/test-module/question";
 import ReviewComponent from "@/components/test-module/review-component";
 import TimeupModal from "@/components/test-module/timeup-modal";
-import { saveAndMove, testInProgress, getQuestionForSection, fetchMultipleQuestionDetails, setTestDetails, setAnswerMap, setCurrentQuestionIndex } from "@/lib/features/test/testSlice";
+import { saveAndMove, testInProgress,sectionComplete, getQuestionForSection, fetchMultipleQuestionDetails, setTestDetails, setAnswerMap, setCurrentQuestionIndex } from "@/lib/features/test/testSlice";
 import { useGlobalContext } from "@/context/store";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
