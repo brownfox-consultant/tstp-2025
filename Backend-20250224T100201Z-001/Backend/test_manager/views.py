@@ -2622,11 +2622,18 @@ class TestViewSet(viewsets.ModelViewSet):
         section_id = request.data.get("section_id")
         time_taken = int(request.data.get("time_taken", 0))
 
+        print("\n================ SYNC-TIME =================")
+        print("Submission :", test_submission_id)
+        print("Course     :", course_subject)
+        print("Section    :", section_id)
+        print("Client Time:", time_taken)
+
         result = Result.objects.filter(
             test_submission_id=test_submission_id
         ).first()
 
         if not result:
+            print("❌ Result not found")
             return get_error_response(message="Result not found.")
 
         section_stats = SectionStats.objects.filter(
@@ -2636,23 +2643,34 @@ class TestViewSet(viewsets.ModelViewSet):
         ).first()
 
         if not section_stats:
+            print("❌ SectionStats not found")
             return get_error_response(message="Section stats not found.")
 
-        print("SYNC REQUEST")
-        print("DB =", section_stats.time_taken)
-        print("CLIENT =", time_taken)
+        print("--------- BEFORE UPDATE ---------")
+        print("DB time_taken :", section_stats.time_taken)
+        print("started_at    :", section_stats.started_at)
+        print("last_sync_at  :", section_stats.last_sync_at)
 
-        # Never decrease time
         if time_taken > section_stats.time_taken:
+            print(f"Updating DB time {section_stats.time_taken} -> {time_taken}")
             section_stats.time_taken = time_taken
+        else:
+            print("No update required")
 
-        # Always update last sync time
         section_stats.last_sync_at = timezone.now()
 
         section_stats.save(update_fields=[
             "time_taken",
             "last_sync_at",
         ])
+
+        section_stats.refresh_from_db()
+
+        print("--------- AFTER UPDATE ---------")
+        print("DB time_taken :", section_stats.time_taken)
+        print("started_at    :", section_stats.started_at)
+        print("last_sync_at  :", section_stats.last_sync_at)
+        print("================================\n")
 
         return Response(
             {
@@ -3122,15 +3140,39 @@ class TestViewSet(viewsets.ModelViewSet):
 
                 duration_seconds = sub_section["duration"] * 60
 
-                if section_stats and section_stats.time_taken is not None:
-                    stored_time = section_stats.time_taken
+                print("\n================ RESTORE TIMER ================")
+                print("NOW               :", timezone.now())
+                print("Submission        :", test_submission.id)
+                print("Course Subject    :", section.course_subject_id)
+                print("Section           :", sub_section["id"])
+                print("Duration (sec)    :", duration_seconds)
+
+                if section_stats:
+                    print("SectionStats ID   :", section_stats.id)
+                    print("DB time_taken     :", section_stats.time_taken)
+                    print("started_at        :", section_stats.started_at)
+                    print("last_sync_at      :", section_stats.last_sync_at)
+
+                    if section_stats.time_taken is not None:
+                        stored_time = section_stats.time_taken
+                    else:
+                        stored_time = 0
                 else:
+                    print("SectionStats      : NOT FOUND")
                     stored_time = 0
 
                 remaining_time = max(
                     duration_seconds - stored_time,
                     0,
                 )
+
+                print("----------------------------------------------")
+                print("Stored Time       :", stored_time)
+                print("Remaining Time    :", remaining_time)
+                print("Question Count    :", len(question_ids))
+                print("Current Question  :", current_question_id)
+                print("Current Index     :", current_question_index)
+                print("==============================================\n")
 
                
                 
@@ -3150,7 +3192,15 @@ class TestViewSet(viewsets.ModelViewSet):
     "RETURNING",
     section.course_subject_id,
     sub_section["id"]
-)
+)               
+
+                print("RETURN RESPONSE =>", {
+    "course_subject_id": section.course_subject_id,
+    "section_id": sub_section["id"],
+    "remaining_time": remaining_time,
+    "question_id": current_question_id,
+    "question_index": current_question_index,
+})    
 
                 return Response({
                     "test_id": test.id,

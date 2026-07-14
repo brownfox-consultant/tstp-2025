@@ -381,8 +381,7 @@ class Result(models.Model):
         
 
         # Update only the time_taken, not the total_questions
-        section_stats.time_taken += time_taken
-        section_stats.save()
+        
 
         # Update the overall time taken in Result
         self.time_taken += time_taken
