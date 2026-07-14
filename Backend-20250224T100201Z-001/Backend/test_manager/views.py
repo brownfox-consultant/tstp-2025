@@ -2347,18 +2347,7 @@ class TestViewSet(viewsets.ModelViewSet):
                 is_marked_for_review=is_marked_for_review
             )
 
-            section_stats = SectionStats.objects.filter(
-                result=result,
-                course_subject_id=course_subject,
-                section_id=section_id,
-            ).first()
-
-            if section_stats:
-                print(
-                    "SAVE =>",
-                    "received=", time_taken,
-                    "total=", section_stats.time_taken,
-                )
+            
 
             # ✅ Save selection history for analytics
             SelectionHistory.objects.create(
