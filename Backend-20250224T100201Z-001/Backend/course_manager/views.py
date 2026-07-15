@@ -52,6 +52,29 @@ from test_manager.models import QuestionAnswer, PracticeQuestionAnswer
 from notification_manager.tasks import send_question_update_email
 from course_manager.utils import has_options_changed
 from system_manager.models import Doubt
+from io import BytesIO
+
+from django.http import HttpResponse
+from openpyxl import Workbook
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from course_manager.models import Question
+from django.utils.html import strip_tags
+from xml.sax.saxutils import escape
+from io import BytesIO
+from django.http import HttpResponse
+from django.utils.html import strip_tags
+from xml.sax.saxutils import escape
+from openpyxl import Workbook
+
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 
 
@@ -541,6 +564,87 @@ class QuestionViewSet(viewsets.ModelViewSet):
             ])
 
         return response
+
+
+    @action(detail=False, methods=["get"], url_path="export_by_question")
+    def export_by_question(self, request):
+        course_id = request.query_params.get("course_id")
+
+        if not course_id:
+            return Response(
+                {"error": "course_id is required"},
+                status=400
+            )
+
+        questions = (
+            Question.objects
+            .filter(course_subject__course_id=course_id)
+            .select_related(
+                "course_subject__course",
+                "course_subject__subject",
+                "topic",
+                "sub_topic",
+            )
+            .order_by(
+                "course_subject__subject__name",
+                "srno"
+            )
+        )
+
+        if not questions.exists():
+            return Response(
+                {"error": "No questions found."},
+                status=404
+            )
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Questions"
+
+        ws.append([
+            "Sr No",
+            "Question ID",
+            "Course",
+            "Subject",
+            "Topic",
+            "Sub Topic",
+            "Question",
+            "Question Type",
+            "Difficulty",
+            "Test Type",
+            "Explanation",
+        ])
+
+        for index, q in enumerate(questions, start=1):
+            ws.append([
+                index,
+                q.id,
+                q.course_subject.course.name,
+                q.course_subject.subject.name,
+                q.topic.name if q.topic else "",
+                q.sub_topic.name if q.sub_topic else "",
+                strip_tags(q.description or ""),
+                q.question_type,
+                q.difficulty,
+                q.test_type,
+                strip_tags(q.explanation or ""),
+            ])
+
+        # Optional: Auto-size columns
+        for column_cells in ws.columns:
+            length = max(len(str(cell.value or "")) for cell in column_cells)
+            ws.column_dimensions[column_cells[0].column_letter].width = min(length + 5, 80)
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="questions_course_{course_id}.xlsx"'
+        )
+
+        wb.save(response)
+        return response
+
 
     @action(detail=False, methods=['get'], url_path='duplicates')
     def find_duplicates(self, request):

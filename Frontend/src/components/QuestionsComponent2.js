@@ -1,4 +1,4 @@
-import { Input, Tabs, Button, Spin, Tooltip } from "antd";
+import { Input, Tabs, Button, Spin, Tooltip ,Dropdown } from "antd";
 import {
   LoadingOutlined,
   DownloadOutlined,
@@ -13,6 +13,7 @@ import SubjectQuestionnaire2 from "./SubjectQuestionnaire2";
 import AdvancedSearchModal from "./AdvancedSearchModal";
 import axios from "axios";
 import { BASE_URL } from "@/app/constants/apiConstants";
+import { FilePdfOutlined, FileExcelOutlined } from "@ant-design/icons";
 
 function QuestionsComponent2({ courses }) {
   const router = useRouter();
@@ -25,13 +26,15 @@ function QuestionsComponent2({ courses }) {
     searchParams.get("query") || "",
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+const [exportLoading, setExportLoading] = useState(false);
+const [duplicateLoading, setDuplicateLoading] = useState(false);
   const [topics, setTopics] = useState([]);
   const [difficultyList, setDifficultyList] = useState([]);
   const [questionTypeList, setQuestionTypeList] = useState([]);
   const [testTypeList, setTestTypeList] = useState([]);
   const [questionSubtypeList, setQuestionSubtypeList] = useState([]);
-
+  
   const role = pathname.split("/")[1];
 
   // 🔧 Utility: parse and convert query params to arrays
@@ -85,6 +88,54 @@ function QuestionsComponent2({ courses }) {
     }
   }, [courses, role]);
 
+  const handleExport = async () => {
+  const courseSubjectId = Number(searchParams.get("course_subject_id"));
+
+  let selectedCourseId = null;
+
+  for (const course of courses) {
+    const subject = course.subjects.find(
+      (sub) => sub.course_subject_id === courseSubjectId
+    );
+
+    if (subject) {
+      selectedCourseId = course.id;
+      break;
+    }
+  }
+
+  try {
+    setExportLoading(true);
+
+    const response = await axios.get(
+      `${BASE_URL}/api/question/export_by_question/`,
+      {
+        params: {
+          course_id: selectedCourseId,
+        },
+        responseType: "blob",
+        withCredentials: true,
+      }
+    );
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "questions.xlsx";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setExportLoading(false);
+  }
+};
+
   const handleDownload = async () => {
     const courseSubjectId = Number(searchParams.get("course_subject_id"));
 
@@ -108,7 +159,7 @@ function QuestionsComponent2({ courses }) {
     }
 
     try {
-      setLoading(true); // Start loader
+      setDownloadLoading(true);
       const response = await axios.get(
         `${BASE_URL}/api/question/download-report/`,
         {
@@ -131,7 +182,7 @@ function QuestionsComponent2({ courses }) {
     } catch (error) {
       console.error("Error downloading report", error);
     } finally {
-      setLoading(false); // Stop loader
+    setDownloadLoading(false);
     }
   };
 
@@ -187,6 +238,7 @@ function QuestionsComponent2({ courses }) {
       "srno",
       "is_active",
       "question_subtype",
+       "has_explanation", 
     ].forEach((key) => {
       updatedSearchParams.delete(key);
     });
@@ -211,6 +263,11 @@ function QuestionsComponent2({ courses }) {
     if (filters.question_text)
       updatedSearchParams.set("question_text", filters.question_text);
     if (filters.srno) updatedSearchParams.set("srno", filters.srno);
+    if (filters.has_explanation)
+  updatedSearchParams.set(
+    "has_explanation",
+    filters.has_explanation
+  );
 
     if (filters.is_active?.length) {
       updatedSearchParams.set(
@@ -253,16 +310,27 @@ function QuestionsComponent2({ courses }) {
           {/* Right Side: Action Buttons */}
           {role === "admin" && (
             <div className="flex flex-wrap items-center gap-3">
-              <Button
-                type="primary"
-                size="large"
-                onClick={handleDownload}
-                icon={loading ? <LoadingOutlined /> : <DownloadOutlined />}
-                disabled={loading}
-                className="action-button"
-              >
-                {loading ? "Downloading..." : "Download Report"}
-              </Button>
+             <div className="flex items-center gap-2">
+  <Button
+  type="primary"
+  onClick={handleDownload}
+  icon={
+    downloadLoading ? <LoadingOutlined /> : <DownloadOutlined />
+  }
+  loading={downloadLoading}
+>
+  Download Report
+</Button>
+
+  <Button
+  size="large"
+  icon={<FileExcelOutlined />}
+  loading={exportLoading}
+  onClick={handleExport}
+>
+  Export XLS
+</Button>
+</div>
 
               <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
                 <Tooltip title="View the history logs of question changes">
@@ -281,13 +349,14 @@ function QuestionsComponent2({ courses }) {
                 <Tooltip title="Export a CSV of duplicate questions">
                   <Button
                     type="text"
-                    icon={loading ? <LoadingOutlined /> : <CopyOutlined />}
-                    disabled={loading}
+                    icon={<CopyOutlined />}
+                    
+                    loading={duplicateLoading}
                     className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
                     title="Export Duplicate Questions"
                     onClick={async () => {
                       try {
-                        setLoading(true);
+                        setDuplicateLoading(true);
 
                         const courseSubjectId = Number(
                           searchParams.get("course_subject_id"),
@@ -324,7 +393,7 @@ function QuestionsComponent2({ courses }) {
                           error,
                         );
                       } finally {
-                        setLoading(false);
+                        setDuplicateLoading(false);
                       }
                     }}
                   >
@@ -357,6 +426,8 @@ function QuestionsComponent2({ courses }) {
           option_text: searchParams.get("option_text") || "",
           question_text: searchParams.get("question_text") || "",
           srno: searchParams.get("srno") || "",
+          has_explanation:
+  searchParams.get("has_explanation") || "",
           is_active: searchParams.get("is_active")
             ? [searchParams.get("is_active") === "true" ? true : false]
             : [],

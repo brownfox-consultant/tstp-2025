@@ -1,5 +1,13 @@
 import {
-  CaretDownFilled, CaretRightFilled, DeleteTwoTone, EditOutlined, FilterFilled, FilterOutlined, SearchOutlined, WarningTwoTone,
+  CaretDownFilled,
+  CaretRightFilled,
+  DeleteTwoTone,
+  EditOutlined,
+  EyeOutlined,
+  FilterFilled,
+  FilterOutlined,
+  SearchOutlined,
+  WarningTwoTone,
 } from "@ant-design/icons";
 import { Button, Col, Row, Table, Input, Space, Popconfirm, Popover, Tag, Badge, Tooltip, Modal } from "antd";
 import React, { useEffect, useRef, useState } from "react";
@@ -31,6 +39,8 @@ import MathContent from "./MathContent";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import GridInOptions from "./question-list/gridin-options";
 import McqOptions from "./question-list/mcq-options";
+import PreviewQuestionModal from "./PreviewQuestionModal";
+import ViewQuestionForm from "./ViewQuestionForm";
 
 function QuestionsList({
   courseSubId,
@@ -64,6 +74,8 @@ function QuestionsList({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editQuestionData, setEditQuestionData] = useState(null);
   const [topicOptions, setTopicOptions] = useState([]);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewQuestionData, setViewQuestionData] = useState(null);
 
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
@@ -460,7 +472,33 @@ function QuestionsList({
       width: 100,
       render: (record) => {
         return (
+
+          
+
           <Space>
+      <EyeOutlined
+  className="text-blue-500 cursor-pointer"
+  onClick={async () => {
+    // Fetch topics if needed
+    const courseSubjectId =
+      record.course_subject || searchParams.get("course_subject_id");
+
+    let topicOptions = [];
+    if (courseSubjectId) {
+      const res = await getSubjectTopics(courseSubjectId);
+      topicOptions = res.data.map(opt => ({
+        ...opt,
+        label: opt.name,
+        value: opt.name,
+      }));
+    }
+
+    // Set view data and open view modal
+    setViewQuestionData(record);
+    setTopicOptions(topicOptions);
+    setIsViewModalOpen(true);
+  }}
+/>
             <Popover
               content={
                 role == "admin"
@@ -545,6 +583,7 @@ function QuestionsList({
         option_text: filters.option_text || "",
         question_text: filters.question_text || searchText || "",
         srno: filters.srno || "",
+         has_explanation: filters.has_explanation || "",   // <-- ADD THIS
         is_active:
           filters.is_active && filters.is_active.length > 0
             ? (filters.is_active[0] === true || filters.is_active[0] === "true"
@@ -628,6 +667,7 @@ function QuestionsList({
     topic: searchParams.get("topic")?.split(",") || [],
     sub_topic: searchParams.get("sub_topic")?.split(",") || [],
     question_subtype: searchParams.get("question_subtype")?.split(",") || [],
+    has_explanation: searchParams.get("has_explanation") || "",
     is_active: searchParams.get("is_active")
       ? [searchParams.get("is_active") === "true"]
       : [],
@@ -793,6 +833,67 @@ function QuestionsList({
           )}
         </div>
       </Modal>
+      {/* View Question Modal */}
+<Modal
+  open={isViewModalOpen}
+  onCancel={() => {
+    setIsViewModalOpen(false);
+    setViewQuestionData(null);
+  }}
+  width={1300}
+  centered
+  footer={null}
+  closable={false}
+  className="view-question-modal"
+  styles={{
+    body: { padding: 0 },
+    content: { borderRadius: '16px', overflow: 'hidden' }
+  }}
+>
+  {/* Header */}
+  <div className="mb-2">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+          <EyeOutlined className="text-[#007FBC] text-xl" />
+        </div>
+        <div>
+          <h2 className="text-black text-xl font-bold m-0">View Question</h2>
+          <p className="text-gray-500 text-sm m-0">
+            {viewQuestionData?.topic && `Topic: ${viewQuestionData.topic}`}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={() => {
+          setIsViewModalOpen(false);
+          setViewQuestionData(null);
+        }}
+        className="w-8 h-8 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 cursor-pointer border-0 bg-transparent rounded-md"
+      >
+        <span className="text-gray-500 text-lg"><CloseOutlined /></span>
+      </button>
+    </div>
+  </div>
+
+  {/* Form Content */}
+  <div className="p-4 max-h-[70vh] overflow-y-auto bg-gray-50">
+    {viewQuestionData && (
+      <ViewQuestionForm
+        key={viewQuestionData.id}
+        initialValues={viewQuestionData}
+        topicOptionsParam={topicOptions}
+        subTopicOptionsParam={
+          topicOptions.find((t) => t.name === viewQuestionData.topic)?.subtopics || []
+        }
+        closeModal={() => {
+          setIsViewModalOpen(false);
+          setViewQuestionData(null);
+        }}
+      />
+    )}
+  </div>
+</Modal>
     </>
   );
 }

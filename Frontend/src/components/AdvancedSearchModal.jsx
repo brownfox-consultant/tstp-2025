@@ -14,6 +14,7 @@ const keywordMap = [
   { key: "sub_topic", label: "Subtopic" },
   { key: "srno", label: "Que. Id" },
   { key: "is_active", label: "Status" },
+  { key: "has_explanation", label: "Explanation" },
 ];
 
 function groupTopicsBySubject(topics) {
@@ -229,6 +230,24 @@ export default function AdvancedSearchModal({
       case "question_type": return renderCheckboxList("question_type", questionTypeList);
       case "question_subtype": return renderCheckboxList("question_subtype", questionSubtypeList);
       case "test_type": return renderCheckboxList("test_type", testTypeList);
+      case "has_explanation":
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+      <Radio.Group
+        value={localFilters.has_explanation || null}
+        onChange={(e) =>
+          setLocalFilters((prev) => ({
+            ...prev,
+            has_explanation: e.target.value,
+          }))
+        }
+        className="w-full flex flex-col gap-3"
+      >
+        <Radio value="has">Has Explanation</Radio>
+        <Radio value="blank">No Explanation</Radio>
+      </Radio.Group>
+    </div>
+  );
       case "srno":
         return (
           <Input
@@ -307,6 +326,16 @@ export default function AdvancedSearchModal({
       } else if (key === "is_active" && Array.isArray(values)) {
         values.forEach((val) => tags.push({ key, value: val, label: val === "true" ? "Active" : "Inactive" }));
       }
+      else if (key === "has_explanation" && values) {
+  tags.push({
+    key,
+    value: values,
+    label:
+      values === "has"
+        ? "Has Explanation"
+        : "No Explanation",
+  });
+}
     }
     return tags;
   };
@@ -327,7 +356,11 @@ export default function AdvancedSearchModal({
         if (typeof values === "string" && values.trim() !== "") cleaned[key] = values.trim();
       } else if (key === "is_active") {
         if (Array.isArray(values) && values.length > 0) cleaned[key] = values.map((v) => v === "true");
-      } else {
+      }
+      else if (key === "has_explanation") {
+  if (values) cleaned[key] = values;
+}
+       else {
         cleaned[key] = (values || []).filter((v) => v !== 0 && v !== null && v !== "");
       }
     });

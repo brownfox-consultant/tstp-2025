@@ -80,6 +80,7 @@ function SubjectQuestionnaire2({ course, subjectsData, role }) {
               option_text: searchParams.get("option_text") || "",
               question_text: searchParams.get("question_text") || searchParams.get("query") || "",
               srno: searchParams.get("srno") || "",
+               has_explanation: searchParams.get("has_explanation") || "",   // <-- ADD THIS
               is_active: searchParams.get("is_active")
                 ? [searchParams.get("is_active") === "true" ? true : false]
                 : [],

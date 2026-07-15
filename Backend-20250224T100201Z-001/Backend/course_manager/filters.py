@@ -40,13 +40,14 @@ class QuestionFilter(filters.FilterSet):
     difficulty = CharListFilter()
     question_type = CharListFilter()
     question_subtype = CharListFilter()
+    has_explanation = filters.CharFilter(method="filter_has_explanation")
 
     class Meta:
         model = Question
         fields = [
             'srno', 'description', 'question_text', 'option_text',
             'is_active', 'topic', 'sub_topic', 'test_type',
-            'difficulty', 'question_type','question_subtype'
+            'difficulty', 'question_type','question_subtype','has_explanation',
         ]
 
     def filter_queryset(self, queryset):
@@ -73,6 +74,21 @@ class QuestionFilter(filters.FilterSet):
         if self.data.get('srno'):
             return queryset
         return queryset.filter(options__icontains=value).distinct()
+    
+    def filter_has_explanation(self, queryset, name, value):
+        if value == "has":
+            return queryset.exclude(
+                Q(explanation__isnull=True) |
+                Q(explanation__regex=r'^\s*$')
+            )
+
+        elif value == "blank":
+            return queryset.filter(
+                Q(explanation__isnull=True) |
+                Q(explanation__regex=r'^\s*$')
+            )
+
+        return queryset
 
     def filter_description_or_option(self, queryset, name, value):
         if self.data.get('srno'):
