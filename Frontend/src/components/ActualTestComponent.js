@@ -18,10 +18,12 @@ import BreakTimer from "./test-module/break-timer";
 
 import TestLoading from "@/app/student/[id]/(test-layout)/[testType]/[testId]/loading";
 
+let fsModalInstance = null;
+
 const ActualTestComponent = () => {
   const params = useParams();
   const router = useRouter();
-  const { id, testId } = params;
+  const { id, testId, testType } = params;
   const pathname = usePathname();
   const [progressDataLoader, setProgressDataLoader] = useState(false);
   const currentArraySectionIndex = useSelector(
@@ -79,6 +81,23 @@ useEffect(() => {
 
 }, [breakTimer]);
 
+  // Prevent back navigation effectively
+  useEffect(() => {
+    if (testType === "practice") {
+      return; // Allow going back in practice mode
+    }
+
+    window.history.pushState(null, null, window.location.href);
+    
+    const handlePopState = (e) => {
+      e.preventDefault();
+      window.history.forward();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [testType]);
+
 
 
 
@@ -127,6 +146,40 @@ useEffect(() => {
   const { goFullScreen, isFullScreen } = useFullScreen();
   const dispatch = useDispatch();
   let d1 = new Date();
+
+  useEffect(() => {
+    const checkFullscreen = () => {
+      if (!document.fullscreenElement) {
+        if (!fsModalInstance) {
+          fsModalInstance = Modal.warning({
+            title: "Fullscreen Required",
+            content: "You cannot exit fullscreen during the test.",
+            okText: "Return to Test",
+            keyboard: false,
+            maskClosable: false,
+            onOk: () => {
+              goFullScreen();
+              fsModalInstance = null;
+            },
+          });
+        }
+      } else {
+        if (fsModalInstance) {
+          fsModalInstance.destroy();
+          fsModalInstance = null;
+        }
+      }
+    };
+
+    // Check immediately on mount
+    checkFullscreen();
+
+    document.addEventListener("fullscreenchange", checkFullscreen);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", checkFullscreen);
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {

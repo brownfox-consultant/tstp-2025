@@ -18,9 +18,13 @@ import {
 import GridInInput from "../options/gridin-input";
 import { useHotkeys } from "react-hotkeys-hook";
 import useFullScreen from "@/utils/useFullScreen";
+import { useParams } from "next/navigation";
+
+let fsModalInstance = null;
 
 function QuestionComponent() {
   const dispatch = useDispatch();
+  const { testType } = useParams();
   const { goFullScreen } = useFullScreen();
   const showStrikeThrough = useSelector(
     (state) => state.test.showStrikeThrough
@@ -33,6 +37,23 @@ function QuestionComponent() {
   const { question_type, question_subtype } = question;
   const answerObject =
   useSelector((state) => state.test?.answerMap[question.id]) || null;
+
+  // Prevent back navigation effectively
+  useEffect(() => {
+    if (testType === "practice") {
+      return; // Allow going back in practice mode
+    }
+
+    window.history.pushState(null, null, window.location.href);
+    
+    const handlePopState = (e) => {
+      e.preventDefault();
+      window.history.forward();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [testType]);
 
 useEffect(() => {
   if (question?.id && !answerObject) {
@@ -95,14 +116,24 @@ useEffect(() => {
   // Detect ESC / fullscreen exit
   const handleFullscreenChange = () => {
     if (!document.fullscreenElement) {
-      Modal.warning({
-        title: "Fullscreen Required",
-        content: "You cannot exit fullscreen during the test.",
-        okText: "Return to Test",
-        onOk: () => {
-          goFullScreen();
-        },
-      });
+      if (!fsModalInstance) {
+        fsModalInstance = Modal.warning({
+          title: "Fullscreen Required",
+          content: "You cannot exit fullscreen during the test.",
+          okText: "Return to Test",
+          keyboard: false,
+          maskClosable: false,
+          onOk: () => {
+            goFullScreen();
+            fsModalInstance = null;
+          },
+        });
+      }
+    } else {
+      if (fsModalInstance) {
+        fsModalInstance.destroy();
+        fsModalInstance = null;
+      }
     }
   };
 
@@ -134,18 +165,23 @@ useEffect(() => {
     sessionStorage.getItem("test_submission_id");
 
   if (wasTestRunning && !document.fullscreenElement) {
-    Modal.confirm({
-      title: "Resume Test",
-      content:
-        "Please return to fullscreen mode to continue the test.",
-      okText: "Enter Fullscreen",
-      cancelButtonProps: {
-        style: { display: "none" },
-      },
-      onOk: () => {
-        goFullScreen();
-      },
-    });
+    if (!fsModalInstance) {
+      fsModalInstance = Modal.confirm({
+        title: "Resume Test",
+        content:
+          "Please return to fullscreen mode to continue the test.",
+        okText: "Enter Fullscreen",
+        keyboard: false,
+        maskClosable: false,
+        cancelButtonProps: {
+          style: { display: "none" },
+        },
+        onOk: () => {
+          goFullScreen();
+          fsModalInstance = null;
+        },
+      });
+    }
   }
 }, []);
 

@@ -77,6 +77,8 @@ function TimeupModal({ openModal }) {
           style={{ top: "calc(50% - 100px)" }}
           open={openModal}
           closable={false}
+          keyboard={false}
+          maskClosable={false}
           footer={null}
         >
           <div className="flex flex-col justify-center items-center gap-5">

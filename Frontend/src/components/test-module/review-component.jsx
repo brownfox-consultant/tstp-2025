@@ -13,6 +13,8 @@ import { saveAndMove, setIsReviewPage } from "@/lib/features/test/testSlice";
 import BookmarkIcon from "./../../../public/bookmark2.svg";
 import Image from "next/image";
 
+let fsModalInstance = null;
+
 function ReviewComponent() {
   const currentQuestionIndex = useSelector(
     (state) => state.test.currentQuestionIndex
@@ -111,18 +113,31 @@ function ReviewComponent() {
     return false;
   };
 
-  const handleFullscreenChange = () => {
+  const checkFullscreen = () => {
     if (!document.fullscreenElement) {
-      Modal.warning({
-        title: "Fullscreen Required",
-        content: "You cannot exit fullscreen during the test.",
-        okText: "Return to Test",
-        onOk: () => {
-          goFullScreen();
-        },
-      });
+      if (!fsModalInstance) {
+        fsModalInstance = Modal.warning({
+          title: "Fullscreen Required",
+          content: "You cannot exit fullscreen during the test.",
+          okText: "Return to Test",
+          keyboard: false,
+          maskClosable: false,
+          onOk: () => {
+            goFullScreen();
+            fsModalInstance = null;
+          },
+        });
+      }
+    } else {
+      if (fsModalInstance) {
+        fsModalInstance.destroy();
+        fsModalInstance = null;
+      }
     }
   };
+
+  // Check immediately on mount
+  checkFullscreen();
 
   document.addEventListener("keydown", handleKeyDown);
   document.addEventListener("contextmenu", handleContextMenu);
@@ -131,7 +146,7 @@ function ReviewComponent() {
   document.addEventListener("selectstart", handleSelectStart);
   document.addEventListener(
     "fullscreenchange",
-    handleFullscreenChange
+    checkFullscreen
   );
 
   return () => {
@@ -142,7 +157,7 @@ function ReviewComponent() {
     document.removeEventListener("selectstart", handleSelectStart);
     document.removeEventListener(
       "fullscreenchange",
-      handleFullscreenChange
+      checkFullscreen
     );
   };
 }, []);
