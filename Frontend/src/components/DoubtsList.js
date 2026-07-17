@@ -35,6 +35,9 @@ function DoubtsList() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 const [editQuestionData, setEditQuestionData] = useState(null);
 const [topicOptions, setTopicOptions] = useState([]);
+const pathParts = usePathname().split("/");
+  
+  const currentUserId = pathParts[2]; // the "247" in /faculty/247/doubts
 
   const formatTestType = (type) => {
   if (!type) return "-";
@@ -272,6 +275,19 @@ const [topicOptions, setTopicOptions] = useState([]);
       sorter: true,
       render: (text) => <>{text || "-"}</>,
     },
+
+    {
+  key: "scheduled_slot",
+  dataIndex: "scheduled_slot",
+  title: "Explanation Time",
+  width: 200,
+  render: (slot) =>
+    slot ? (
+      <span>{dayjs(slot.date).format("MMM D")}, {slot.start_time}–{slot.end_time}</span>
+    ) : (
+      <span className="text-gray-400">Not scheduled</span>
+    ),
+},
     {
       key: "action",
       title: "   ",
@@ -366,6 +382,8 @@ const [topicOptions, setTopicOptions] = useState([]);
       render: (id, record, index) => {
         return (
           <ViewDoubtModal
+            role="faculty"
+            currentUserId={currentUserId}
             updated={updated}
             setUpdated={setUpdated}
             data={record}

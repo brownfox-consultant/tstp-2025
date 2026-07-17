@@ -54,7 +54,9 @@ import {
   GET_DASHBOARD_AREAS,
   GET_DASHBOARD_TEST_PER_DAY,
   student_count_by_course_BASE_URL,
-  GET_USER_BY_ID
+  GET_USER_BY_ID,
+  FACULTY_SLOTS_BASE_URL,
+  FACULTY_SLOTS_AVAILABLE_URL
 } from "../constants/apiConstants";
 import { handleAPIError } from "@/utils/utils";
 
@@ -1156,6 +1158,59 @@ export const exitImpersonation = () => {
   );
 };
 
+export const getAvailableFacultySlots = (params) => {
+  return axios
+    .get(FACULTY_SLOTS_AVAILABLE_URL, {
+      params: params,
+      withCredentials: true,
+      headers: {
+        "ngrok-skip-browser-warning": "69420",
+      },
+    })
+    .catch(handleAPIError);
+};
 
+export const getFacultySlotsList = (params) => {
+  return axios
+    .get(FACULTY_SLOTS_BASE_URL, {
+      params: params,
+      withCredentials: true,
+      headers: {
+        "ngrok-skip-browser-warning": "69420",
+      },
+    })
+    .catch(handleAPIError);
+};
 
+export const createFacultySlot = (payload) => {
+  return axios
+    .post(FACULTY_SLOTS_BASE_URL, payload, {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      },
+    })
+    .catch(handleAPIError);
+};
 
+export const deleteFacultySlot = (id) => {
+  return axios
+    .delete(`${FACULTY_SLOTS_BASE_URL}${id}/`, {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      },
+    })
+    .catch(handleAPIError);
+};
+
+export const patchSetTimeSlot = (id, payload) => {
+  return axios
+    .patch(`${DOUBT_BASE}${id}/set-time-slot/`, payload, {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      },
+    })
+    .catch(handleAPIError);
+};

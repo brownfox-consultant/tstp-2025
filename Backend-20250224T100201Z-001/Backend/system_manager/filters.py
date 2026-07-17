@@ -1,9 +1,19 @@
 from django.db.models import Q
 from django_filters import rest_framework as filters
 
-from system_manager.models import Doubt, Issue, StudentFeedback,Concern,Meeting 
+from system_manager.models import Doubt, FacultyTimeSlot, Issue, StudentFeedback,Concern,Meeting 
 from system_manager.models import Suggestion
 
+
+
+class FacultyTimeSlotFilter(filters.FilterSet):
+    faculty_id = filters.NumberFilter(field_name='faculty_id')
+    date = filters.DateFilter(field_name='date')
+    is_booked = filters.BooleanFilter(field_name='is_booked')
+
+    class Meta:
+        model = FacultyTimeSlot
+        fields = ['faculty_id', 'date', 'is_booked']
 
 class SuggestionFilter(filters.FilterSet):
     course = filters.CharFilter(method='filter_course')

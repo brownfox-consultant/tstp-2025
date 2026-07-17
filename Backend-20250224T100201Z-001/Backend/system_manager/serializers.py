@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from course_manager.models import Topic, Question, SubTopic
 from course_manager.serializers import QuestionListSerializer
-from system_manager.models import Doubt, Issue, Concern, Meeting, Suggestion, StudentFeedback
+from system_manager.models import Doubt, FacultyTimeSlot, Issue, Concern, Meeting, Suggestion, StudentFeedback
 from test_manager.models import TestSubmission, Result
 from django.utils import timezone
 from course_manager.models import Question, CourseSubjects, Topic, SubTopic
@@ -29,6 +29,19 @@ class AssignFacultySerializer(serializers.ModelSerializer):
     class Meta:
         model = Doubt
         fields = ['faculty']
+
+
+class SetTimeSlotSerializer(serializers.ModelSerializer):
+    scheduled_slot = serializers.PrimaryKeyRelatedField(queryset=FacultyTimeSlot.objects.all())
+
+    class Meta:
+        model = Doubt
+        fields = ['scheduled_slot']
+
+    def validate_scheduled_slot(self, slot):
+        if slot.is_booked:
+            raise serializers.ValidationError("That time slot has already been booked.")
+        return slot
 
 
 class ResolveDoubtSerializer(serializers.ModelSerializer):
@@ -61,17 +74,18 @@ class DoubtListSerializer(serializers.ModelSerializer):
     faculty = serializers.SerializerMethodField()
     resolved_by = serializers.SerializerMethodField()
     question = serializers.SerializerMethodField()
-
+    faculty_id = serializers.IntegerField(source='faculty.id', read_only=True, allow_null=True)  # NEW
     created_at = serializers.SerializerMethodField()
     faculty_assigned_date = serializers.SerializerMethodField()
     resolution_date = serializers.SerializerMethodField()
+    scheduled_slot = serializers.SerializerMethodField()
 
     
 
     class Meta:
         model = Doubt
-        fields = ['id', 'test','test_type', 'student', 'faculty','resolved_by', 'question', 'description', 'status', 'resolution',
-                  'created_at', 'faculty_assigned_date', 'resolution_date']
+        fields = ['id', 'test','test_type', 'student', 'faculty','faculty_id','resolved_by', 'question', 'description', 'status', 'resolution',
+                  'created_at', 'faculty_assigned_date', 'resolution_date','scheduled_slot']
 
     def get_test(self, obj):
         if obj.test:
@@ -205,6 +219,18 @@ class DoubtListSerializer(serializers.ModelSerializer):
         )
 
         return serializer.data
+
+    def get_scheduled_slot(self, obj):
+        slot = obj.scheduled_slot
+        if not slot:
+            return None
+        return {
+            'date': slot.date.strftime('%Y-%m-%d'),
+            'start_time': slot.start_time.strftime('%H:%M'),
+            'end_time': slot.end_time.strftime('%H:%M'),
+        }
+
+        
 
 class IssueSerializer(serializers.ModelSerializer):
     student = serializers.CharField(source="student.name", read_only=True)
@@ -500,3 +526,22 @@ class StudentFeedbackSerializer(serializers.ModelSerializer):
 
     def get_created_by(self, obj):
         return obj.created_by.name
+
+class FacultyTimeSlotSerializer(serializers.ModelSerializer):
+    faculty_name = serializers.CharField(source='faculty.name', read_only=True)
+
+    class Meta:
+        model = FacultyTimeSlot
+        fields = ['id', 'faculty', 'faculty_name', 'date', 'start_time', 'end_time', 'is_booked']
+        read_only_fields = ['is_booked']
+
+
+class CreateFacultyTimeSlotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FacultyTimeSlot
+        fields = ['faculty', 'date', 'start_time', 'end_time']
+
+    def validate(self, data):
+        if data['start_time'] >= data['end_time']:
+            raise serializers.ValidationError("start_time must be before end_time.")
+        return data

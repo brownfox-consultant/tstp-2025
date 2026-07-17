@@ -18,7 +18,7 @@ from user_manager.models import StudentMetadata
 from .filters import DoubtFilter, IssueFilter, StudentFeedbackFilter
 from .serializers import RaiseDoubtSerializer, AssignFacultySerializer, ResolveDoubtSerializer, IssueSerializer, \
     IssueResolveSerializer, ConcernSerializer, ConcernResolveSerializer, MeetingSerializer, \
-    RaiseIssueSerializer, DoubtListSerializer, CreateSuggestionSerializer, SuggestionListSerializer, \
+    RaiseIssueSerializer, DoubtListSerializer, CreateSuggestionSerializer, SetTimeSlotSerializer, SuggestionListSerializer, \
     RaiseConcernSerializer, ScheduleMeetingSerializer, CreateStudentFeedbackSerializer, StudentFeedbackSerializer, \
     ApproveMeetingSerializer
 from .filters import ConcernFilter
@@ -65,6 +65,9 @@ from course_manager.models import Course
 from user_manager.models import User
 from django.db.models import Count, Avg, F, Q, ExpressionWrapper, DurationField
 from django.db.models.functions import TruncMonth
+from system_manager.models import FacultyTimeSlot
+from .serializers import FacultyTimeSlotSerializer, CreateFacultyTimeSlotSerializer
+from .filters import FacultyTimeSlotFilter
 
 
 
@@ -307,7 +310,7 @@ class DoubtViewSet(viewsets.ModelViewSet):
             return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
 
     @action(detail=True, methods=['PATCH'], permission_classes=[IsAdminOrMentor],
-            serializer_class=AssignFacultySerializer)
+        serializer_class=AssignFacultySerializer)
     def assign_faculty(self, request, pk=None):
         doubt = Doubt.get_doubt_by_id(pk)
         serializer = self.get_serializer(doubt, data=request.data, partial=True)
@@ -316,13 +319,51 @@ class DoubtViewSet(viewsets.ModelViewSet):
             serializer.save(status=Doubt.ASSIGNED_TO_FACULTY, faculty_assigned_date=timezone.now())
 
             notification_params = {NotificationTemplate.USER_NAME: doubt.student.name,
-                                   NotificationTemplate.REFERENCE_ID: doubt.id}
+                                NotificationTemplate.REFERENCE_ID: doubt.id}
             send_notification.delay(notification_name=Notification.DOUBT_RAISED_NOTIFICATION,
                                     params=notification_params,
                                     user_id=doubt.faculty.id)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
+        except Exception:
+            return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
+
+
+    @action(detail=True, methods=['PATCH'], permission_classes=[IsFaculty],
+        serializer_class=SetTimeSlotSerializer, url_path='set-time-slot')
+    def set_time_slot(self, request, pk=None):
+        doubt = Doubt.get_doubt_by_id(pk)
+
+        if doubt.faculty_id != request.user.id:
+            return Response({"detail": "You are not assigned to this doubt."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(doubt, data=request.data, partial=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+            new_slot = serializer.validated_data['scheduled_slot']
+            old_slot = doubt.scheduled_slot
+
+            serializer.save()
+
+            if old_slot and old_slot != new_slot:
+                old_slot.release()
+            new_slot.book()
+
+            notification_params = {
+                NotificationTemplate.USER_NAME: doubt.student.name,
+                NotificationTemplate.REFERENCE_ID: doubt.id,
+                NotificationTemplate.SCHEDULED_MEETING_TIME: (
+                    f"{new_slot.date.strftime('%Y-%m-%d')} {new_slot.start_time.strftime('%H:%M')}"
+                ),
+            }
+            send_notification.delay(
+                notification_name=Notification.DOUBT_SCHEDULED_NOTIFICATION,
+                params=notification_params,
+                user_id=doubt.student.id
+            )
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception:
             return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
 
     @action(detail=True, methods=['PATCH'], permission_classes=[IsAdminOrFaculty],
@@ -394,6 +435,59 @@ class DoubtViewSet(viewsets.ModelViewSet):
 
         # Return the paginated response
         return paginator.get_paginated_response(serializer.data)
+
+
+
+class FacultyTimeSlotViewSet(viewsets.ModelViewSet):
+    queryset = FacultyTimeSlot.objects.all()
+    serializer_class = FacultyTimeSlotSerializer
+    logger = logging.getLogger('FacultyTimeSlot')
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreateFacultyTimeSlotSerializer
+        return FacultyTimeSlotSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'destroy']:
+            return [IsFaculty()]
+        return [IsAdminOrMentorOrFaculty()]
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        data['faculty'] = request.user.id
+        serializer = self.get_serializer(data=data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            slot = serializer.save()
+            return Response(FacultyTimeSlotSerializer(slot).data, status=status.HTTP_201_CREATED)
+        except Exception:
+            return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
+
+    def destroy(self, request, *args, **kwargs):
+        slot = self.get_object()
+        if slot.faculty_id != request.user.id:
+            return Response({"detail": "Access Denied"}, status=status.HTTP_403_FORBIDDEN)
+        if slot.is_booked:
+            return get_error_response("Cannot delete a slot that is already booked.")
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminOrMentorOrFaculty], url_path='available')
+    def available(self, request):
+        faculty_id = request.query_params.get('faculty_id')
+        date = request.query_params.get('date')
+        if not faculty_id:
+            return Response({"error": "faculty_id is required."}, status=400)
+        slots = FacultyTimeSlot.get_available_slots(faculty_id=faculty_id, date=date)
+        return Response(FacultyTimeSlotSerializer(slots, many=True).data)
+
+    def list(self, request, *args, **kwargs):
+        filterset = FacultyTimeSlotFilter(request.GET, queryset=self.queryset)
+        if not filterset.is_valid():
+            return Response({"detail": "Invalid filter parameters"}, status=status.HTTP_400_BAD_REQUEST)
+        paginator = CustomPageNumberPagination()
+        paginated = paginator.paginate_queryset(filterset.qs, request)
+        return paginator.get_paginated_response(FacultyTimeSlotSerializer(paginated, many=True).data)
 
 
 class IssueViewSet(viewsets.ModelViewSet):

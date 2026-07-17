@@ -15,6 +15,7 @@ class Notification(models.Model):
     SUGGESTION_RAISED_NOTIFICATION = "SUGGESTION_RAISED_NOTIFICATION"
     FEEDBACK_PROVIDED_NOTIFICATION = "FEEDBACK_PROVIDED_NOTIFICATION"
     DOUBT_RAISED_NOTIFICATION = "DOUBT_RAISED_NOTIFICATION"
+    DOUBT_SCHEDULED_NOTIFICATION = "DOUBT_SCHEDULED_NOTIFICATION"
     NOTIFICATION_NAME = [
         (REGISTRATION_OTP_NOTIFICATION, 'Registration OTP Notification'),
         (REGISTRATION_NOTIFICATION, 'Registration Notification'),
@@ -26,6 +27,7 @@ class Notification(models.Model):
         (SUGGESTION_RAISED_NOTIFICATION, 'Suggestion Raised Notification'),
         (FEEDBACK_PROVIDED_NOTIFICATION, 'Feedback Provided Notification'),
         (DOUBT_RAISED_NOTIFICATION, 'Doubt Raised Notification'),
+         (DOUBT_SCHEDULED_NOTIFICATION, 'Doubt Scheduled Notification'),
     ]
     name = models.CharField(max_length=50, null=False, choices=NOTIFICATION_NAME, unique=True)
 
