@@ -1,9 +1,44 @@
+from django.utils import timezone
+
 from django.db import models
 
 from course_manager.models import Question, CourseSubjects, Topic, SubTopic
 from test_manager.models import Test
 from user_manager.models import User
 from django.contrib.postgres.fields import ArrayField
+from django.db.models import Q
+
+
+class FacultyTimeSlot(models.Model):
+    faculty = models.ForeignKey(User, on_delete=models.CASCADE, related_name='time_slots')
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_booked = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date', 'start_time']
+        unique_together = ('faculty', 'date', 'start_time', 'end_time')
+
+    @classmethod
+    def get_available_slots(cls, faculty_id, date=None):
+        qs = cls.objects.filter(faculty_id=faculty_id, is_booked=False)
+        if date:
+            qs = qs.filter(date=date)
+        return qs.filter(
+            # drop anything already in the past today
+            Q(date__gt=timezone.localdate()) |
+            Q(date=timezone.localdate(), start_time__gte=timezone.localtime().time())
+        )
+
+    def book(self):
+        self.is_booked = True
+        self.save(update_fields=['is_booked'])
+
+    def release(self):
+        self.is_booked = False
+        self.save(update_fields=['is_booked'])
 
 
 class Doubt(models.Model):
@@ -14,6 +49,7 @@ class Doubt(models.Model):
     section = models.IntegerField( null=True, blank=True)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     description = models.TextField(null=False)
+
 
     RAISED = 'RAISED'
     ASSIGNED_TO_FACULTY = 'ASSIGNED_TO_FACULTY'
@@ -37,6 +73,9 @@ class Doubt(models.Model):
         null=True,
         blank=True,
         related_name="resolved_doubts"
+    )
+    scheduled_slot = models.OneToOneField(
+        FacultyTimeSlot, on_delete=models.SET_NULL, null=True, blank=True, related_name='doubt'
     )
 
     class Meta:
@@ -179,3 +218,4 @@ class StudentFeedback(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
