@@ -38,17 +38,22 @@ function QuestionComponent() {
   const answerObject =
   useSelector((state) => state.test?.answerMap[question.id]) || null;
 
-  // Prevent back navigation effectively
+  // Prevent back navigation effectively — persists across refreshes
   useEffect(() => {
     if (testType === "practice") {
       return; // Allow going back in practice mode
     }
 
-    window.history.pushState(null, null, window.location.href);
+    // Push an initial guard entry
+    window.history.pushState({ backGuard: true }, null, window.location.href);
     
     const handlePopState = (e) => {
-      e.preventDefault();
-      window.history.forward();
+      // Re-push the guard entry so the next back-press is also blocked
+      window.history.pushState({ backGuard: true }, null, window.location.href);
+      // Auto-enter fullscreen if not already in fullscreen
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      }
     };
 
     window.addEventListener("popstate", handlePopState);

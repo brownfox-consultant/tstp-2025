@@ -24,6 +24,28 @@ function Page() {
   const { userId } = useGlobalContext();
   const hasRestored = useRef(false);
 
+  // Prevent back navigation effectively — active from mount (including after refresh)
+  useEffect(() => {
+    if (testType === "practice") {
+      return; // Allow going back in practice mode
+    }
+
+    // Push an initial guard entry
+    window.history.pushState({ backGuard: true }, null, window.location.href);
+    
+    const handlePopState = (e) => {
+      // Re-push the guard entry so the next back-press is also blocked
+      window.history.pushState({ backGuard: true }, null, window.location.href);
+      // Auto-enter fullscreen if not already in fullscreen
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [testType]);
+
   const questions = useSelector((state) => state.test.questions);
   const questionsStatus = useSelector((state) => state.test.questionsStatus);
   const isTimeUp = useSelector((state) => state.test.isTimeUp);
