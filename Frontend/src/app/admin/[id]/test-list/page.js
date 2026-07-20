@@ -241,7 +241,9 @@ const FullLengthScoreCard = ({ record }) => {
       }
 
       if (dateRange && dateRange[0] && dateRange[1]) {
-        const itemDate = new Date(item.created_at);
+        const itemDate = new Date(
+  item.completion_date || item.created_at
+);
         const startDate = dateRange[0].startOf("day").toDate();
         const endDate = dateRange[1].endOf("day").toDate();
         matchesDate = itemDate >= startDate && itemDate <= endDate;
@@ -297,6 +299,19 @@ const FullLengthScoreCard = ({ record }) => {
         </span>
       ),
     },
+
+    {
+  title: "Completion Date",
+  dataIndex: "completion_date",
+  key: "completion_date",
+  sorter: (a, b) =>
+    new Date(a.completion_date || 0) - new Date(b.completion_date || 0),
+  render: (date) => (
+    <span className="text-green-600 font-medium">
+      {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
+    </span>
+  ),
+},
     {
       title: "Test Name",
       dataIndex: "test_name",

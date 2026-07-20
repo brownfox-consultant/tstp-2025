@@ -5022,20 +5022,20 @@ class ResultViewSet(viewsets.ModelViewSet):
         limit = int(request.query_params.get("limit", 10))
 
         submissions = (
-            TestSubmission.objects
-            .filter(
-                test__test_type=Test.EXAM,
-                status=TestSubmission.COMPLETED,
-                completion_date__isnull=False,
-            )
-            .select_related(
-                "student",
-                "test",
-                "test__course",
-                "result",
-            )
-            .order_by("-completion_date")[:limit]
+        TestSubmission.objects
+        .filter(
+            test__test_type=Test.EXAM,
+            status=TestSubmission.COMPLETED,
+            completion_date__isnull=False,
         )
+        .select_related(
+            "student",
+            "test",
+            "test__course",
+            "result",
+        )
+        .order_by("-completion_date")[:limit]
+    )
 
         serializer = RecentFullLengthResultSerializer(submissions, many=True)
         return Response(serializer.data)

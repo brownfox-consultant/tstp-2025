@@ -239,6 +239,11 @@ class RecentFullLengthResultSerializer(serializers.ModelSerializer):
 
     total_score = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(source="assigned_date")
+    completion_date = serializers.DateTimeField(
+        format="%b %d, %Y %I:%M %p",
+        allow_null=True,
+        read_only=True,
+    )
     english_score = serializers.SerializerMethodField()
     math_score = serializers.SerializerMethodField()
 
@@ -261,7 +266,7 @@ class RecentFullLengthResultSerializer(serializers.ModelSerializer):
             "math_score",
             "percentage",
             "total_marks",
-
+            "completion_date",
             "created_at",
         ]
 
@@ -377,26 +382,24 @@ class RecentFullLengthResultSerializer(serializers.ModelSerializer):
 
 
 class RecentPracticeTestSerializer(serializers.ModelSerializer):
-    student_name = serializers.CharField(source='student.name')
+    student_name = serializers.CharField(source="student.name")
     test_name = serializers.SerializerMethodField()
-    course_name = serializers.CharField(source='course_subject.course.name')
+    course_name = serializers.CharField(source="course_subject.course.name")
+
     total_score = serializers.IntegerField(source="result.correct_answer_count")
 
-    correct = serializers.IntegerField(
-        source="result.correct_answer_count"
-    )
-
-    incorrect = serializers.IntegerField(
-        source="result.incorrect_answer_count"
-    )
+    correct = serializers.IntegerField(source="result.correct_answer_count")
+    incorrect = serializers.IntegerField(source="result.incorrect_answer_count")
 
     blank = serializers.SerializerMethodField()
-
     marked = serializers.SerializerMethodField()
-
     total_questions = serializers.SerializerMethodField()
+
     created_at = serializers.DateTimeField()
-    
+    completion_date = serializers.DateTimeField(
+        source="created_at",
+        read_only=True,
+    )
 
     class Meta:
         model = PracticeTest
@@ -415,6 +418,7 @@ class RecentPracticeTestSerializer(serializers.ModelSerializer):
             "total_questions",
 
             "created_at",
+            "completion_date",
         ]
 
     def get_test_name(self, obj):
@@ -425,17 +429,14 @@ class RecentPracticeTestSerializer(serializers.ModelSerializer):
             practice_test_result=obj.result
         ).count()
 
-
     def get_blank(self, obj):
         total = self.get_total_questions(obj)
-
         return max(
             total
             - obj.result.correct_answer_count
             - obj.result.incorrect_answer_count,
             0,
         )
-
 
     def get_marked(self, obj):
         return PracticeQuestionAnswer.objects.filter(
