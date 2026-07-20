@@ -609,13 +609,58 @@ class QuestionViewSet(viewsets.ModelViewSet):
             "Topic",
             "Sub Topic",
             "Question",
+            "Reading Passage",
+            "Option A",
+            "Option B",
+            "Option C",
+            "Option D",
+            "Correct Answer",
             "Question Type",
+            "Question Sub Type",
             "Difficulty",
             "Test Type",
             "Explanation",
         ])
 
         for index, q in enumerate(questions, start=1):
+
+            option_values = []
+            correct_answers = []
+
+            options = q.options or []
+
+            # If whole options field is stored as JSON string
+            if isinstance(options, str):
+                try:
+                    options = json.loads(options)
+                except Exception:
+                    options = []
+
+            for opt in options:
+
+                # If each option itself is a JSON string
+                if isinstance(opt, str):
+                    try:
+                        opt = json.loads(opt)
+                    except Exception:
+                        option_values.append(strip_tags(opt))
+                        continue
+
+                if isinstance(opt, dict):
+                    text = strip_tags(str(opt.get("description", "")))
+                    option_values.append(text)
+
+                    if opt.get("is_correct"):
+                        correct_answers.append(text)
+
+                else:
+                    option_values.append(strip_tags(str(opt)))
+
+            option1 = option_values[0] if len(option_values) > 0 else ""
+            option2 = option_values[1] if len(option_values) > 1 else ""
+            option3 = option_values[2] if len(option_values) > 2 else ""
+            option4 = option_values[3] if len(option_values) > 3 else ""
+
             ws.append([
                 index,
                 q.id,
@@ -624,25 +669,42 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 q.topic.name if q.topic else "",
                 q.sub_topic.name if q.sub_topic else "",
                 strip_tags(q.description or ""),
+                strip_tags(q.reading_comprehension_passage or ""),
+                option1,
+                option2,
+                option3,
+                option4,
+                ", ".join(correct_answers),
                 q.question_type,
+                q.question_subtype,
                 q.difficulty,
                 q.test_type,
                 strip_tags(q.explanation or ""),
             ])
 
-        # Optional: Auto-size columns
+        # Auto-size columns
         for column_cells in ws.columns:
-            length = max(len(str(cell.value or "")) for cell in column_cells)
-            ws.column_dimensions[column_cells[0].column_letter].width = min(length + 5, 80)
+            max_length = 0
+
+            for cell in column_cells:
+                try:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                except Exception:
+                    pass
+
+            ws.column_dimensions[column_cells[0].column_letter].width = min(max_length + 5, 80)
 
         response = HttpResponse(
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
         response["Content-Disposition"] = (
             f'attachment; filename="questions_course_{course_id}.xlsx"'
         )
 
         wb.save(response)
+
         return response
 
 
