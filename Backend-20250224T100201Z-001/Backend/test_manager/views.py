@@ -5012,29 +5012,29 @@ class ResultViewSet(viewsets.ModelViewSet):
 
     
     @action(
-        detail=False,
-        methods=["GET"],
-        permission_classes=[IsAuthenticated],
-        url_path="recent/full-length"
-    )
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="recent/full-length"
+)
     def recent_full_length(self, request):
-        """
-        Latest 10 FULL LENGTH tests of ALL students (date-wise)
-        """
+
+        limit = int(request.query_params.get("limit", 10))
 
         submissions = (
             TestSubmission.objects
             .filter(
                 test__test_type=Test.EXAM,
-                status=TestSubmission.COMPLETED
+                status=TestSubmission.COMPLETED,
+                completion_date__isnull=False,
             )
             .select_related(
                 "student",
                 "test",
                 "test__course",
-                "result"
+                "result",
             )
-            .order_by("-assigned_date")[:10]
+            .order_by("-completion_date")[:limit]
         )
 
         serializer = RecentFullLengthResultSerializer(submissions, many=True)
