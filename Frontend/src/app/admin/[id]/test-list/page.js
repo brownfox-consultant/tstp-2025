@@ -304,7 +304,7 @@ const FullLengthScoreCard = ({ record }) => {
           const date = record.completion_date || record.created_at;
 
           return (
-            <span className="text-green-600 font-medium">
+             <span className="text-gray-500">
               {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
             </span>
           );
