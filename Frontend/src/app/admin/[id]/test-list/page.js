@@ -288,30 +288,43 @@ const FullLengthScoreCard = ({ record }) => {
 
   // ==================== TABLE COLUMNS ====================
   const getTableColumns = (type) => [
-    {
-      title: "Date",
-      dataIndex: "created_at",
-      key: "created_at",
-      sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
-      render: (date) => (
-        <span className="text-gray-500">
-          {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
-        </span>
-      ),
-    },
+   ...(type === "fullLength"
+  ? [
+      
 
-    {
-  title: "Completion Date",
-  dataIndex: "completion_date",
-  key: "completion_date",
-  sorter: (a, b) =>
-    new Date(a.completion_date || 0) - new Date(b.completion_date || 0),
-  render: (date) => (
-    <span className="text-green-600 font-medium">
-      {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
-    </span>
-  ),
-},
+
+      {
+        title: "Completion Date",
+        dataIndex: "completion_date",
+        key: "completion_date",
+        sorter: (a, b) =>
+          new Date(a.completion_date || a.created_at) -
+          new Date(b.completion_date || b.created_at),
+        render: (_, record) => {
+          const date = record.completion_date || record.created_at;
+
+          return (
+            <span className="text-green-600 font-medium">
+              {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
+            </span>
+          );
+        },
+      },
+    ]
+  : [
+      {
+        title: "Date",
+        dataIndex: "created_at",
+        key: "created_at",
+        sorter: (a, b) =>
+          new Date(a.created_at) - new Date(b.created_at),
+        render: (date) => (
+          <span className="text-gray-500">
+            {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
+          </span>
+        ),
+      },
+    ]),
     {
       title: "Test Name",
       dataIndex: "test_name",
