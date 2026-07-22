@@ -97,7 +97,10 @@ class Section(models.Model):
 class TestSubmission(models.Model):
     test = models.ForeignKey(Test, on_delete=models.CASCADE)
     student = models.ForeignKey(User, on_delete=models.CASCADE)
-
+    current_question_id = models.IntegerField(
+    null=True,
+    blank=True
+)
     YET_TO_START = 'YET_TO_START'
     IN_PROGRESS = 'IN_PROGRESS'
     COMPLETED = 'COMPLETED'
@@ -678,13 +681,14 @@ class SelectionHistory(models.Model):
     action_type = models.CharField(
         max_length=20,
         choices=[
-            ('SELECT', 'Select'),
-            ('DESELECT', 'Deselect'),
-            ('STRIKE', 'Strike'),
-            ('UNSTRIKE', 'Unstrike'),
-            ('VISIT', 'Visit'),
-            ('SUBMIT', 'Submit')
-        ],
+        ("SELECT", "Select"),
+        ("DESELECT", "Answer Removed"),
+        ("STRIKE", "Strike"),
+        ("UNSTRIKE", "Unstrike"),
+        ("VISIT", "Visit"),
+        ("SUBMIT", "Submit"),
+        ("SKIPPED", "Skipped"),
+    ],
         default='VISIT'
     )
 

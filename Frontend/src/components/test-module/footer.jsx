@@ -6,6 +6,7 @@ import {
   saveAndMove,
   sectionComplete,
   setTestRunning,
+   updateCurrentQuestion,
 } from "@/lib/features/test/testSlice";
 import { useParams, useRouter } from "next/navigation";
 import useFullScreen from "@/utils/useFullScreen";
@@ -40,6 +41,36 @@ function TestFooter() {
 
   const dispatch = useDispatch();
 
+  const courseSubject = useSelector(
+  (state) => state.test.courseSubject
+);
+
+const sectionId = useSelector(
+  (state) => state.test.sectionId
+);
+
+useEffect(() => {
+  if (!questions.length) return;
+  if (!questions[currentQuestionIndex]) return;
+
+  dispatch(
+    updateCurrentQuestion({
+      testId,
+      testSubmissionId,
+      courseSubject,
+      sectionId,
+      questionId: questions[currentQuestionIndex].id,
+    })
+  );
+}, [
+  currentQuestionIndex,
+  questions,
+  courseSubject,
+  sectionId,
+  testSubmissionId,
+  testId,
+]);
+
   useEffect(() => {
     if (questions.length == 0 && !isSectionCompleted) {
       router.replace(
@@ -52,13 +83,14 @@ function TestFooter() {
   }, [questions, isSectionCompleted]);
 
   async function handleClick(type, toIndex = null) {
-    await dispatch(
-      saveAndMove({
-        operation: type,
-        questionIndex: toIndex,
-      })
-    ).unwrap();
-  }
+  await dispatch(
+    saveAndMove({
+      operation: type,
+      questionIndex: toIndex,
+    })
+  ).unwrap();
+
+}
 
 
 

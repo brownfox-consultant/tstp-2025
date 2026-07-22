@@ -2,10 +2,18 @@ import { Input } from "antd";
 import React, { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import debounce from "lodash/debounce";
-import { saveValue } from "@/lib/features/test/testSlice";
+import {
+  saveValue,
+  recordSelectionHistory,
+} from "@/lib/features/test/testSlice";
 
 function GridInInput({ questionId, questionType, questionSubtype }) {
   const dispatch = useDispatch();
+
+  const testState = useSelector((state) => state.test);
+
+const isFullLengthTest = testState.testType === "test";
+
   const ansValue = useSelector(
   (state) =>
     state.test.answerMap[questionId]?.gridinAnswer || ""
@@ -71,10 +79,14 @@ function GridInInput({ questionId, questionType, questionSubtype }) {
   //   }, 300),
   //   [dispatch]
   // );
-  const handleChange = (e) => {
-    const value = e.target.value;
-    dispatch(saveValue({ questionId, value: value ?? "" }));
-  };
+ const handleChange = (e) => {
+  dispatch(
+    saveValue({
+      questionId,
+      value: e.target.value,
+    })
+  );
+};
 
   return (
     <div className="">

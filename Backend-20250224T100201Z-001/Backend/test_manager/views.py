@@ -487,28 +487,62 @@ class TestViewSet(viewsets.ModelViewSet):
             }
         })
 
-    @action(detail=True, methods=['POST'], url_path='selection-history')
-    def save_selection_history(self, request, pk=None, *args, **kwargs):
-        """
-        Store user's selection history for a question (for analytics / behavior tracking)
-        """
-        test = Test.get_test_by_id(test_id=pk)
-        test_submission_id = request.data.get('test_submission_id')
-        question_id = request.data.get('question_id')
-        selected_options = request.data.get('selected_options', [])
-        striked_options = request.data.get('striked_options', [])
-        action_type = request.data.get('action_type', 'SELECT')
+    @action(detail=True, methods=["POST"], url_path="selection-history")
+    def save_selection_history(self, request, pk=None):
+        test_submission_id = request.data.get("test_submission_id")
+        question_id = request.data.get("question_id")
 
-        # Validate
+        selected_options = request.data.get("selected_options", [])
+        striked_options = request.data.get("striked_options", [])
+        action_type = request.data.get("action_type", "SELECT")
+
         if not test_submission_id or not question_id:
-            return Response({"detail": "Missing test_submission_id or question_id."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Missing test_submission_id or question_id"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             test_submission = TestSubmission.objects.get(id=test_submission_id)
             question = Question.objects.get(id=question_id)
         except (TestSubmission.DoesNotExist, Question.DoesNotExist):
-            return Response({"detail": "Invalid submission or question ID."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid submission/question"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Normalize
+        selected_options = selected_options or []
+        striked_options = striked_options or []
+
+        # Determine action automatically
+        if not selected_options:
+            action_type = "SKIPPED"
+
+        # Previous history
+        last = (
+            SelectionHistory.objects.filter(
+                test_submission=test_submission,
+                question=question,
+            )
+            .order_by("-timestamp")
+            .first()
+        )
+
+        # -------------------------------
+        # Don't save duplicate history
+        # -------------------------------
+        if last:
+
+            if (
+                last.selected_options == selected_options
+                and last.striked_options == striked_options
+                and last.action_type == action_type
+            ):
+                return Response(
+                    {"detail": "No change"},
+                    status=status.HTTP_200_OK,
+                )
 
         SelectionHistory.objects.create(
             student=request.user,
@@ -516,10 +550,13 @@ class TestViewSet(viewsets.ModelViewSet):
             test_submission=test_submission,
             selected_options=selected_options,
             striked_options=striked_options,
-            action_type=action_type
+            action_type=action_type,
         )
 
-        return Response({"detail": "Selection history recorded successfully."}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"detail": "Recorded"},
+            status=status.HTTP_201_CREATED,
+        )
 
      # ✅ New API to get full-length test list
     @action(detail=False, methods=['GET'], url_path='full-list')
@@ -2346,18 +2383,19 @@ class TestViewSet(viewsets.ModelViewSet):
                 is_skipped=is_skipped,
                 is_marked_for_review=is_marked_for_review
             )
+            existing_submission.current_course_subject_id = course_subject
+            existing_submission.current_section_id = section_id
+            existing_submission.current_question_id = question_id
+
+            existing_submission.save(update_fields=[
+                "current_course_subject_id",
+                "current_section_id",
+                "current_question_id",
+            ])
 
             
 
-            # ✅ Save selection history for analytics
-            SelectionHistory.objects.create(
-                student=request.user,
-                question=question,
-                test_submission=existing_submission,
-                selected_options=selected_options if not is_skipped else [],
-                striked_options=striked_list,
-                action_type='SUBMIT' if not is_skipped else 'SKIP'
-            )
+            
 
             # ✅ TRACK NAVIGATION PATTERN
             self._track_navigation_internal(
@@ -2614,6 +2652,54 @@ class TestViewSet(viewsets.ModelViewSet):
     
 
 
+
+    @action(detail=True, methods=["post"], url_path="current-question")
+    def current_question(self, request, pk=None):
+        """
+        Save the currently opened question.
+        Called whenever student navigates to another question.
+        """
+
+        test_submission_id = request.data.get("test_submission_id")
+        course_subject = request.data.get("course_subject")
+        section_id = request.data.get("section_id")
+        question_id = request.data.get("question_id")
+
+        if not test_submission_id:
+            return Response(
+                {"error": "test_submission_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            submission = TestSubmission.objects.get(id=test_submission_id)
+        except TestSubmission.DoesNotExist:
+            return Response(
+                {"error": "Test submission not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        submission.current_course_subject_id = course_subject
+        submission.current_section_id = section_id
+        submission.current_question_id = question_id
+
+        submission.save(
+            update_fields=[
+                "current_course_subject_id",
+                "current_section_id",
+                "current_question_id",
+            ]
+        )
+
+        return Response(
+            {
+                "success": True,
+                "course_subject": course_subject,
+                "section_id": section_id,
+                "question_id": question_id,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=["POST"], url_path="sync-time")
     def sync_time(self, request, pk=None):
@@ -3116,18 +3202,17 @@ class TestViewSet(viewsets.ModelViewSet):
                 # ------------------------------
                 # FIND CURRENT QUESTION
                 # ------------------------------
-                current_question_id = (
-                    question_ids[0]
-                    if question_ids else 0
-                )
+                saved_question_id = test_submission.current_question_id
 
+                current_question_id = question_ids[0] if question_ids else 0
                 current_question_index = 0
 
-                for idx, qid in enumerate(question_ids):
-                    if qid not in question_answer_map:
-                        current_question_id = qid
-                        current_question_index = idx
-                        break
+                if (
+                    saved_question_id
+                    and saved_question_id in question_ids
+                ):
+                    current_question_id = saved_question_id
+                    current_question_index = question_ids.index(saved_question_id)
 
                 # ------------------------------
                 # TIMER RESTORE

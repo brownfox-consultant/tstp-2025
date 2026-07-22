@@ -108,10 +108,35 @@ export const getQuestionForSection = createAsyncThunk(
 );
 
 
+export const updateCurrentQuestion = createAsyncThunk(
+  "test/updateCurrentQuestion",
+  async (
+    {
+      testId,
+      testSubmissionId,
+      courseSubject,
+      sectionId,
+      questionId,
+    },
+    thunkAPI
+  ) => {
+    await insideAuthInstance.post(
+      `/test/${testId}/current-question/`,
+      {
+        test_submission_id: testSubmissionId,
+        course_subject: courseSubject,
+        section_id: sectionId,
+        question_id: questionId,
+      }
+    );
+  }
+);
+
 export const saveAndMove = createAsyncThunk(
   "test/save-and-move",
   async ({ operation = "", questionIndex = null }, thunkAPI) => {
     const testState = thunkAPI.getState().test;
+
     const {
       testId,
       questions,
@@ -126,9 +151,9 @@ export const saveAndMove = createAsyncThunk(
 
     const questionId = questions[currentQuestionIndex].id;
     const question_type = questions[currentQuestionIndex].question_type;
-    const isPractice = testType == "practice";
+    const isPractice = testType === "practice";
 
-    const currentTime = Math.floor(new Date().getTime() / 1000);
+    const currentTime = Math.floor(Date.now() / 1000);
 
     const selectedOptionIndices = Object.keys(
       answerMap[questionId].selected_options
@@ -142,23 +167,30 @@ export const saveAndMove = createAsyncThunk(
       .filter((key) => answerMap[questionId].striked_options[key] === 1)
       .map((key) => parseInt(key, 10));
 
-    let payload = {
+    const gridAnswer = (
+      answerMap[questionId].gridinAnswer || ""
+    ).trim();
+
+    const payload = {
       answer: {
         [questionId]:
-          question_type == "GRIDIN"
-            ? [answerMap[questionId].gridinAnswer ?? ""]
+          question_type === "GRIDIN"
+            ? [gridAnswer]
             : selectedOptionIndices,
       },
-      striked_options: { [questionId]: strikedOptionIndices }, // 👈 NEW FIELD
-      is_marked_for_review: answerMap[questionId].is_marked_for_review,
+      striked_options: {
+        [questionId]: strikedOptionIndices,
+      },
+      is_marked_for_review:
+        answerMap[questionId].is_marked_for_review,
       is_skipped:
-        question_type == "GRIDIN"
-          ? !answerMap[questionId].gridinAnswer
+        question_type === "GRIDIN"
+          ? gridAnswer === ""
           : selectedOptionIndices.length === 0,
       time_taken: currentTime - lastRecordedTime,
     };
 
-    let examPayload = {
+    const examPayload = {
       ...payload,
       test_submission_id: testSubmissionId,
       course_subject: courseSubject,
@@ -170,7 +202,46 @@ export const saveAndMove = createAsyncThunk(
       isPractice ? payload : examPayload
     );
 
-    return { operation, questionIndex, data: response.data };
+    // -----------------------------
+    // Record Selection History
+    // -----------------------------
+    // -----------------------------
+// Record Selection History
+// -----------------------------
+if (!isPractice) {
+  let selectedOptions = [];
+  let actionType = "SKIPPED";
+
+  if (question_type === "GRIDIN") {
+    if (gridAnswer !== "") {
+      selectedOptions = [gridAnswer];
+      actionType = "SELECT";
+    }
+  } else {
+    selectedOptions = selectedOptionIndices;
+
+    if (selectedOptionIndices.length > 0) {
+      actionType = "SELECT";
+    }
+  }
+
+  await thunkAPI.dispatch(
+    recordSelectionHistory({
+      testId,
+      testSubmissionId,
+      questionId,
+      selectedOptions,
+      strikedOptions: strikedOptionIndices,
+      actionType,
+    })
+  );
+}
+
+    return {
+      operation,
+      questionIndex,
+      data: response.data,
+    };
   }
 );
 

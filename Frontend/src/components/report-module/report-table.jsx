@@ -390,21 +390,41 @@ function ReportTable({ sectionData, testSubmissionId }) {
     },
 
     {
-      title: 'Selection History',
-      dataIndex: 'selection_history',
-      key: 'selection_history',
-      render: (selection_history) => {
-        if (!selection_history || selection_history.length === 0) return '-';
-        // Convert selected option indexes (like [0,2]) into letters (A,B)
-        const alphabets = ['A', 'B', 'C', 'D', 'E'];
-        const allSelections = selection_history
-          .filter((item) => item.selected_options && item.selected_options.length > 0)
-          .map((item) =>
-            item.selected_options.map((opt) => alphabets[opt]).join(',')
-          );
-        return allSelections.join(', ');
-      },
-    },
+  title: "Selection History",
+  dataIndex: "selection_history",
+  key: "selection_history",
+  render: (selection_history) => {
+    if (!selection_history || selection_history.length === 0) {
+      return "-";
+    }
+
+    const alphabets = ["A", "B", "C", "D", "E"];
+
+    return selection_history
+      .map((item) => {
+        if (!item.selected_options || item.selected_options.length === 0) {
+          return item.action_type === "SKIPPED"
+            ? "Skipped"
+            : item.action_type === "DESELECT"
+            ? "Answer Removed"
+            : "-";
+        }
+
+        return item.selected_options
+          .map((opt) => {
+            // MCQ option index
+            if (typeof opt === "number") {
+              return alphabets[opt];
+            }
+
+            // GRID-IN value
+            return String(opt);
+          })
+          .join(",");
+      })
+      .join(" → ");
+  },
+},
 
     {
       title: "Marked",
