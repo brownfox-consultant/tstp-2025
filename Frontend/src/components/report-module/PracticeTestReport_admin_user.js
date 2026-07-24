@@ -157,7 +157,7 @@ function PracticeTestReport({ practiceTestId, onClose }) {
 
         {/* Time Stats Row */}
         <div className="mt-4 pt-4 border-t border-gray-100">
-          <div className="flex flex-wrap gap-6">
+          <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
               <ClockIcon />
               <span className="text-gray-600">Time On Section:</span>

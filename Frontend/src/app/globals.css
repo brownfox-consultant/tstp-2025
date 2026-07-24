@@ -64,7 +64,6 @@
   }
 }
 
-/* Mobile and Tablet Responsive Styles */
 @media (max-width: 1024px) {
   .login-form,
   .register-form {
@@ -73,7 +72,7 @@
     .ant-input-number,
     .ant-picker {
       min-height: 44px !important;
-      font-size: 16px !important; /* Prevents zoom on iOS */
+      font-size: 16px !important; 
     }
 
     .ant-btn {
@@ -99,8 +98,8 @@
 }
 
 .pdf-page {
-  border: 1px solid #000; /* Example: 1px solid black border */
-  box-sizing: border-box; /* This ensures the border doesn't affect the size */
+  border: 1px solid #000;
+  box-sizing: border-box;
 }
 
 .ql-toolbar.ql-snow {
@@ -146,17 +145,17 @@
 }
 
 .quizModalCustom {
-  max-width: 75vw !important; /* Maximum width */
-  width: 75vw !important; /* Width */
-  height: 75vh !important; /* Height */
-  top: 12.5vh !important; /* Position from top */
-  overflow-y: auto !important; /* Scroll for overflow content */
+  max-width: 75vw !important; 
+  width: 75vw !important; 
+  height: 75vh !important; 
+  top: 12.5vh !important; 
+  overflow-y: auto !important; 
 }
 
 .ant-badge-count {
-  border-radius: 4px !important; /* Adjust for desired roundness */
-  width: 20px !important; /* Set a fixed width */
-  height: 20px !important; /* Set a fixed height to make it square */
+  border-radius: 4px !important;
+  width: 20px !important; 
+  height: 20px !important; 
   display: flex;
   justify-content: center;
   align-items: center;
@@ -176,7 +175,7 @@
 .custom-ul li {
   list-style-type: "|";
   margin-right: 5px;
-  margin-left: 20px; /* Adjust as needed for proper indentation */
+  margin-left: 20px; 
 }
 
 /* ::-webkit-scrollbar {
@@ -209,18 +208,27 @@
 
 .reading-passage::-webkit-scrollbar-thumb {
   border-radius: 8px;
-  border: 2px solid white; /* should match background, can't be transparent */
+  border: 2px solid white;
   background-color: rgba(0, 0, 0, 0.5);
 }
 
 .question-table-class table {
-  border-collapse: collapse; /* This is important for border display */
+  border-collapse: collapse; 
+  margin: 12px auto;
+  width: auto;
+  max-width: 100%;
 }
 
 .question-table-class td,
-.myTableClass th {
-  border: 1px solid black; /* Adjust the color and width as needed */
-  padding: 8px; /* Optional: Adjust padding for cell content */
+.question-table-class th {
+  border: 1px solid #d1d5db; 
+  padding: 10px 14px; 
+  text-align: center;
+}
+
+.question-table-class th {
+  background-color: #f3f4f6;
+  font-weight: 600;
 }
 
 /* Hide the default checkbox */
@@ -240,24 +248,23 @@
   position: relative;
 }
 
-/* Style the "X" sign using ::before and ::after for the diagonal lines */
 .custom-checkbox input:checked + .checkmark::before,
 .custom-checkbox input:checked + .checkmark::after {
   content: "";
   position: absolute;
   background-color: #333;
-  height: 2px; /* Line thickness */
-  width: 24px; /* Line length - should be slightly longer to go corner to corner */
-  top: 9px; /* Center vertically */
-  left: -2px; /* Adjust based on width to ensure centering */
+  height: 2px;
+  width: 24px;
+  top: 9px;
+  left: -2px; 
 }
 
 .custom-checkbox input:checked + .checkmark::before {
-  transform: rotate(45deg); /* Diagonal line */
+  transform: rotate(45deg); 
 }
 
 .custom-checkbox input:checked + .checkmark::after {
-  transform: rotate(-45deg); /* Opposite diagonal line */
+  transform: rotate(-45deg); 
 }
 
 .bookmark {
@@ -265,10 +272,10 @@
   top: 0;
   right: 0;
   transform: translate(50%, -50%);
-  background-color: maroon; /* Visual styling */
-  padding: 5px; /* Padding around the text */
-  border-radius: 8px; /* Rounded corner for aesthetics */
-  text-decoration: none; /* Removes the underline from the link */
+  background-color: maroon;
+  padding: 5px;
+  border-radius: 8px;
+  text-decoration: none;
   color: black;
 }
 
@@ -317,7 +324,6 @@ body.fullscreen-mode footer {
 .tablestyles {
   .ant-table {
     border: 1px solid #e0e0e0;
-    height: 70%;
   }
   .ant-table-thead > tr > th {
     background-color: #ffffff;
@@ -374,22 +380,20 @@ body.fullscreen-mode footer {
 }
 
 
-/* Remove TinyMCE overlay background completely */
 .tox-dialog-wrap__backdrop {
-  background: transparent !important;  /* remove dimming */
+  background: transparent !important;
 }
 
 .tox-dialog-wrap {
-  pointer-events: none !important;     /* let clicks pass through backdrop */
+  pointer-events: none !important;
 }
 
 .tox-dialog {
-  pointer-events: auto !important;     /* keep dialog usable */
+  pointer-events: auto !important;
 }
 
-/* Highlight label when TinyMCE focused */
 .editor-focused .ant-form-item-label > label {
-  color: #1677ff !important; /* AntD blue */
+  color: #1677ff !important;
   font-weight: 600;
 }
 

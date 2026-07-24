@@ -166,7 +166,7 @@ function Page() {
   return (
     <div className="w-full">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
+        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
           <div className="text-xl font-bold text-gray-800">Courses List</div>
           <div className="flex gap-2 items-center">
             <Input
@@ -178,10 +178,9 @@ function Page() {
               allowClear
             />
             <Button
-              size="large"
               type="primary"
               onClick={() => router.push(`${pathname}/create`)}
-              className="action-button h-11"
+              className="action-button !h-9 !px-4 !text-sm !font-medium"
             >
               Create Course
             </Button>
@@ -193,6 +192,8 @@ function Page() {
             dataSource={filteredCourses}
             columns={cols}
             loading={loading}
+            size="small"
+            className="[&_.ant-table-tbody>tr>td]:!py-2 [&_.ant-table-thead>tr>th]:!py-1.5"
             rowKey="id"
             rowClassName={(record, index) =>
               `text-sm ${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-orange-50/50 transition-colors cursor-pointer`

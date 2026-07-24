@@ -166,7 +166,7 @@ function DashboardLayout({ children }) {
   }, [router]);
 
   // Sidebar widths
-  const sidebarWidth = collapsed ? 67 : 280;
+  const sidebarWidth = collapsed ? 67 : 240;
 
   return (
     <Layout className="min-h-screen">
@@ -184,7 +184,7 @@ function DashboardLayout({ children }) {
           flex flex-col transition-all duration-300 ease-in-out
           ${isMobile ? (mobileMenuOpen ? 'translate-x-0' : '-translate-x-full') : ''}
         `}
-        style={{ width: isMobile ? 280 : sidebarWidth }}
+        style={{ width: isMobile ? 240 : sidebarWidth }}
       >
         {!isMobile && (
           <button
@@ -231,7 +231,7 @@ function DashboardLayout({ children }) {
 
         {/* Logo Section */}
         <div className={`
-          flex items-center h-20 min-h-[60px] px-4
+          flex items-center h-16 px-4
           transition-all duration-300 ease-in-out
         `}>
           {collapsed && !isMobile ? (
@@ -254,7 +254,7 @@ function DashboardLayout({ children }) {
         </div>
 
         {/* Menu Section */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 ">
           {MentorMenuItems.map((item) => {
             const isActive = tab === item.key;
             const menuItemContent = (
@@ -262,7 +262,7 @@ function DashboardLayout({ children }) {
                 key={item.key}
                 onClick={() => handleMenuClick(item.key, item.disabled)}
                 className={`
-                  flex items-center h-12 mb-1 rounded-lg cursor-pointer
+                  flex items-center h-11 mb-1 rounded-lg cursor-pointer
                   transition-all duration-200 ease-in-out
                   ${isActive 
                     ? 'bg-primary-light-color text-primary-color' 
@@ -293,7 +293,7 @@ function DashboardLayout({ children }) {
                   transition-all duration-300 ease-in-out
                   ${collapsed && !isMobile 
                     ? 'w-0 opacity-0 ml-0' 
-                    : 'opacity-100 ml-1'
+                    : 'opacity-100'
                   }
                 `}>
                   {item.label}
@@ -318,7 +318,7 @@ function DashboardLayout({ children }) {
           })}
         </nav>
 
-        <div className="mt-auto border-t border-gray-200 p-3">
+        <div className="mt-auto border-t border-gray-200 p-2">
           {/* When collapsed: Show Profile and Logout icons stacked */}
           {collapsed && !isMobile ? (
             <div className="flex flex-col items-center gap-2">
@@ -327,7 +327,7 @@ function DashboardLayout({ children }) {
                 <div
                   onClick={handleProfileClick}
                   className="
-                    flex items-center justify-center rounded-lg cursor-pointer p-2
+                    flex items-center justify-center rounded-lg cursor-pointer
                     hover:bg-gray-100 transition-colors duration-200
                   "
                   role="button"
@@ -349,7 +349,7 @@ function DashboardLayout({ children }) {
                 <div
                   onClick={handleLogout}
                   className="
-                    flex items-center justify-center rounded-lg cursor-pointer p-2
+                    flex items-center justify-center rounded-lg cursor-pointer
                     hover:bg-red-50 transition-colors duration-200
                   "
                   role="button"

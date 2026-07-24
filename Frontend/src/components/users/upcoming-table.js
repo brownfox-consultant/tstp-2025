@@ -98,20 +98,12 @@ function UpcomingTable({ tabKey, api }) {
   const cols = [
     {
       title: (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center">
           <span>Course</span>
-          <Image
-            src={downArrowIcon}
-            alt="Down Arrow"
-            width={18}
-            height={20}
-            style={{ marginLeft: "8px" }}
-          />
         </div>
       ),
       dataIndex: "course_details",
       key: "course",
-      align: "center",
       render: (_, record) => {
         return (
           <>
@@ -129,58 +121,37 @@ function UpcomingTable({ tabKey, api }) {
     },
     {
       title: (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center">
           <span>Name</span>
-          <Image
-            src={downArrowIcon}
-            alt="Down Arrow"
-            width={18}
-            height={20}
-            style={{ marginLeft: "8px" }}
-          />
         </div>
       ),
       dataIndex: "name",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       key: "name",
       render: (text) => <>{text}</>,
       width: 150,
-      align: "center",
     },
     {
       title: (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center">
           <span>Email address</span>
-          <Image
-            src={downArrowIcon}
-            alt="Down Arrow"
-            width={18}
-            height={20}
-            style={{ marginLeft: "8px" }}
-          />
         </div>
       ),
       dataIndex: "email",
+      sorter: (a, b) => (a.email || "").localeCompare(b.email || ""),
       key: "email",
       render: (text) => <>{text}</>,
       width: 150,
-      align: "center",
     },
     {
       title: (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center">
           <span>Contact number</span>
-          <Image
-            src={downArrowIcon}
-            alt="Down Arrow"
-            width={18}
-            height={20}
-            style={{ marginLeft: "8px" }}
-          />
         </div>
       ),
       dataIndex: "phone_number",
+      sorter: (a, b) => (a.phone_number || "").localeCompare(b.phone_number || ""),
       key: "phone_number",
-      align: "center",
       render: (text) => <>{text}</>,
       width: 200,
     },
@@ -192,42 +163,26 @@ function UpcomingTable({ tabKey, api }) {
     // },
     {
       title: (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center">
           <span>Sub. type</span>
-          <Image
-            src={downArrowIcon}
-            alt="Down Arrow"
-            width={18}
-            height={20}
-            style={{ marginLeft: "8px" }}
-          />
         </div>
       ),
       key: "subscription_type",
       dataIndex: "course_details",
       width: 150,
-      align: "center",
       render: (courseArray, record) => {
         return <>{courseArray[0].subscription_type}</>;
       },
     },
     {
       title: (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center">
           <span>Sub. end on</span>
-          <Image
-            src={downArrowIcon}
-            alt="Down Arrow"
-            width={18}
-            height={20}
-            style={{ marginLeft: "8px" }}
-          />
         </div>
       ),
       key: "subscription_end_date",
       dataIndex: "course_details",
       width: 120,
-      align: "center",
       render: (courseArray, record) => {
         return <>{courseArray[0].subscription_end_date}</>;
       },
@@ -313,19 +268,53 @@ function UpcomingTable({ tabKey, api }) {
       </div>
     );
   }
-  const itemRender = (_, type, originalElement) => {
-    if (type === "prev") {
-      return <a>Previous</a>;
-    }
-    if (type === "next") {
-      return <a>Next</a>;
-    }
-    return originalElement;
+  const paginationConfig = {
+    current: current || 1,
+    total: total,
+    pageSize: 10,
+    showSizeChanger: false,
+    position: ["bottomRight"],
+    showTotal: (total, range) => {
+      let inputValue = "";
+      const maxPages = totalPages;
+
+      const handleGoToPage = () => {
+        const page = Number(inputValue);
+        if (page >= 1 && page <= maxPages) {
+          setCurrent(page);
+        }
+      };
+
+      return (
+        <div className="flex items-center gap-2">
+          <span>
+            Showing {range[0]}–{range[1]} of {total}
+          </span>
+          <span>| Go to page:</span>
+          <Input
+            type="number"
+            min={1}
+            max={maxPages}
+            size="small"
+            style={{ width: 70 }}
+            onChange={(e) => (inputValue = e.target.value)}
+            onPressEnter={handleGoToPage}
+          />
+          <Button type="primary" size="small" onClick={handleGoToPage}>
+            Go
+          </Button>
+        </div>
+      );
+    },
+  };
+
+  const handleTableChange = (pagination) => {
+    setCurrent(pagination.current);
   };
   return (
     <>
       {" "}
-      <div className="w-full flex justify-between mb-8">
+      <div className="w-full flex justify-between mb-4">
         <div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
           <Input
             prefix={<SearchOutlined />}
@@ -341,24 +330,6 @@ function UpcomingTable({ tabKey, api }) {
         </div>
       </div>
       <Table
-        footer={() => (
-          <div className="footer-container">
-            <div className="flex justify-end mr-5">
-              Page {current} of {totalPages} (Total: {total} records)
-            </div>
-            <Pagination
-              className="size-changer"
-              current={current}
-              pageSize={10}
-              total={total}
-              itemRender={itemRender}
-              onChange={(page) => {
-                setCurrent(page);
-              }}
-              showSizeChanger={false}
-            />
-          </div>
-        )}
         loading={loading}
         dataSource={studentsData.map((student) => {
           return {
@@ -374,11 +345,13 @@ function UpcomingTable({ tabKey, api }) {
         return index % 2 === 0 ? "bg-even-color" : "bg-odd-color";
       }} */
         rowKey={(record) => record.id}
-        pagination={false}
+        pagination={paginationConfig}
+        onChange={handleTableChange}
         rowClassName={(record, index) =>
           index % 2 === 0 ? "even-row" : "odd-row"
         }
-        className="tablestyles mt-4"
+        size="small"
+        className="tablestyles mt-4 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
         //scroll={{ x: "max-content", y: 550 }}
         /* pagination={{
           position: "topRight",

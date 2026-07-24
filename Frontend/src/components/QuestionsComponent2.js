@@ -1,4 +1,4 @@
-import { Input, Tabs, Button, Spin, Tooltip ,Dropdown } from "antd";
+import { Input, Tabs, Button, Spin, Tooltip, Dropdown } from "antd";
 import {
   LoadingOutlined,
   DownloadOutlined,
@@ -27,14 +27,14 @@ function QuestionsComponent2({ courses }) {
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
-const [exportLoading, setExportLoading] = useState(false);
-const [duplicateLoading, setDuplicateLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [duplicateLoading, setDuplicateLoading] = useState(false);
   const [topics, setTopics] = useState([]);
   const [difficultyList, setDifficultyList] = useState([]);
   const [questionTypeList, setQuestionTypeList] = useState([]);
   const [testTypeList, setTestTypeList] = useState([]);
   const [questionSubtypeList, setQuestionSubtypeList] = useState([]);
-  
+
   const role = pathname.split("/")[1];
 
   // 🔧 Utility: parse and convert query params to arrays
@@ -89,52 +89,52 @@ const [duplicateLoading, setDuplicateLoading] = useState(false);
   }, [courses, role]);
 
   const handleExport = async () => {
-  const courseSubjectId = Number(searchParams.get("course_subject_id"));
+    const courseSubjectId = Number(searchParams.get("course_subject_id"));
 
-  let selectedCourseId = null;
+    let selectedCourseId = null;
 
-  for (const course of courses) {
-    const subject = course.subjects.find(
-      (sub) => sub.course_subject_id === courseSubjectId
-    );
+    for (const course of courses) {
+      const subject = course.subjects.find(
+        (sub) => sub.course_subject_id === courseSubjectId,
+      );
 
-    if (subject) {
-      selectedCourseId = course.id;
-      break;
-    }
-  }
-
-  try {
-    setExportLoading(true);
-
-    const response = await axios.get(
-      `${BASE_URL}/api/question/export_by_question/`,
-      {
-        params: {
-          course_id: selectedCourseId,
-        },
-        responseType: "blob",
-        withCredentials: true,
+      if (subject) {
+        selectedCourseId = course.id;
+        break;
       }
-    );
+    }
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    try {
+      setExportLoading(true);
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "questions.xlsx";
+      const response = await axios.get(
+        `${BASE_URL}/api/question/export_by_question/`,
+        {
+          params: {
+            course_id: selectedCourseId,
+          },
+          responseType: "blob",
+          withCredentials: true,
+        },
+      );
 
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
 
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setExportLoading(false);
-  }
-};
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "questions.xlsx";
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const handleDownload = async () => {
     const courseSubjectId = Number(searchParams.get("course_subject_id"));
@@ -182,7 +182,7 @@ const [duplicateLoading, setDuplicateLoading] = useState(false);
     } catch (error) {
       console.error("Error downloading report", error);
     } finally {
-    setDownloadLoading(false);
+      setDownloadLoading(false);
     }
   };
 
@@ -238,7 +238,7 @@ const [duplicateLoading, setDuplicateLoading] = useState(false);
       "srno",
       "is_active",
       "question_subtype",
-       "has_explanation", 
+      "has_explanation",
     ].forEach((key) => {
       updatedSearchParams.delete(key);
     });
@@ -264,10 +264,7 @@ const [duplicateLoading, setDuplicateLoading] = useState(false);
       updatedSearchParams.set("question_text", filters.question_text);
     if (filters.srno) updatedSearchParams.set("srno", filters.srno);
     if (filters.has_explanation)
-  updatedSearchParams.set(
-    "has_explanation",
-    filters.has_explanation
-  );
+      updatedSearchParams.set("has_explanation", filters.has_explanation);
 
     if (filters.is_active?.length) {
       updatedSearchParams.set(
@@ -310,27 +307,28 @@ const [duplicateLoading, setDuplicateLoading] = useState(false);
           {/* Right Side: Action Buttons */}
           {role === "admin" && (
             <div className="flex flex-wrap items-center gap-3">
-             <div className="flex items-center gap-2">
-  <Button
-  type="primary"
-  onClick={handleDownload}
-  icon={
-    downloadLoading ? <LoadingOutlined /> : <DownloadOutlined />
-  }
-  loading={downloadLoading}
->
-  Download Report
-</Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={handleDownload}
+                  icon={
+                    downloadLoading ? <LoadingOutlined /> : <DownloadOutlined />
+                  }
+                  loading={downloadLoading}
+                >
+                  Download Report
+                </Button>
 
-  <Button
-  size="large"
-  icon={<FileExcelOutlined />}
-  loading={exportLoading}
-  onClick={handleExport}
->
-  Export XLS
-</Button>
-</div>
+                <Button
+                  size="large"
+                  icon={<FileExcelOutlined />}
+                  loading={exportLoading}
+                  onClick={handleExport}
+                >
+                  Export XLS
+                </Button>
+              </div>
 
               <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
                 <Tooltip title="View the history logs of question changes">
@@ -350,7 +348,6 @@ const [duplicateLoading, setDuplicateLoading] = useState(false);
                   <Button
                     type="text"
                     icon={<CopyOutlined />}
-                    
                     loading={duplicateLoading}
                     className="rounded-md text-gray-600 hover:bg-white hover:shadow-sm h-9"
                     title="Export Duplicate Questions"
@@ -368,22 +365,25 @@ const [duplicateLoading, setDuplicateLoading] = useState(false);
                         }
 
                         const response = await axios.get(
-  `${BASE_URL}/api/question/duplicates/`,
-  {
-    params: {
-      export: "xlsx", // now exporting full Excel
-    },
-    responseType: "blob",
-    withCredentials: true,
-  },
-);
+                          `${BASE_URL}/api/question/duplicates/`,
+                          {
+                            params: {
+                              export: "xlsx", // now exporting full Excel
+                            },
+                            responseType: "blob",
+                            withCredentials: true,
+                          },
+                        );
 
                         const url = window.URL.createObjectURL(
                           new Blob([response.data]),
                         );
                         const link = document.createElement("a");
                         link.href = url;
-                        link.setAttribute("download", "duplicate_questions_all_courses.xlsx");
+                        link.setAttribute(
+                          "download",
+                          "duplicate_questions_all_courses.xlsx",
+                        );
                         document.body.appendChild(link);
                         link.click();
                         link.remove();
@@ -426,8 +426,7 @@ const [duplicateLoading, setDuplicateLoading] = useState(false);
           option_text: searchParams.get("option_text") || "",
           question_text: searchParams.get("question_text") || "",
           srno: searchParams.get("srno") || "",
-          has_explanation:
-  searchParams.get("has_explanation") || "",
+          has_explanation: searchParams.get("has_explanation") || "",
           is_active: searchParams.get("is_active")
             ? [searchParams.get("is_active") === "true" ? true : false]
             : [],

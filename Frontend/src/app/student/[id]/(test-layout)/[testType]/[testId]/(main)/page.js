@@ -14,6 +14,7 @@ import TestFeedbackModal from "@/components/test-module/test-feedback-modal";
 import Loading from "@/app/student/[id]/(base-layout)/loading";
 import TestFooter from "@/components/test-module/footer";
 import TestHeader from "@/components/test-module/header";
+import NetworkOfflineModal from "@/components/test-module/network-offline-modal";
 import { useRef } from "react";
 
 function Page() {
@@ -141,6 +142,7 @@ function Page() {
 
   return (
     <Suspense fallback={<Loading />}>
+      <NetworkOfflineModal />
       {isRestoring ? (
         <TestLoading />
       ) : questionsStatus === "idle" && (

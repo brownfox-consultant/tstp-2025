@@ -4,6 +4,7 @@ import { getCoursesInsideAuth } from "@/app/services/courseService";
 import { testFormatTypeFilters } from "@/utils/utils";
 import {
   DeleteTwoTone,
+  EditTwoTone,
   SearchOutlined,
   PlusOutlined,
   FileTextOutlined,
@@ -242,21 +243,38 @@ function AdminTestList() {
       align: "start",
       render: (_, record) => {
         return (
-          <Popconfirm
-            placement="leftTop"
-            title="Delete the test"
-            description="Are you sure to delete this test?"
-            onConfirm={() => deleteConfirm(record.id)}
-            okText="Yes"
-            cancelText="No"
-            okButtonProps={{
-              loading: confirmLoading,
-            }}
-          >
-            <button className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all border border-red-200 ">
-              <DeleteTwoTone twoToneColor="#eb2f96" />
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`${pathname}/edit/${record.id}`);
+              }}
+              className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-all border border-blue-200"
+            >
+              <EditTwoTone twoToneColor="#1677ff" />
             </button>
-          </Popconfirm>
+            <Popconfirm
+              placement="leftTop"
+              title="Delete the test"
+              description="Are you sure to delete this test?"
+              onConfirm={(e) => {
+                e.stopPropagation();
+                deleteConfirm(record.id);
+              }}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{
+                loading: confirmLoading,
+              }}
+            >
+              <button 
+                onClick={(e) => e.stopPropagation()}
+                className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all border border-red-200 "
+              >
+                <DeleteTwoTone twoToneColor="#eb2f96" />
+              </button>
+            </Popconfirm>
+          </div>
         );
       },
     },
@@ -329,7 +347,7 @@ function AdminTestList() {
     <div className="min-h-screen">
       <div className="max-w-8xl mx-auto">
         {/* Header */}
-        <div className="flex flex-row gap-4 mb-6 justify-between">
+        <div className="flex flex-row gap-4 mb-4 justify-between">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-gray-800">Full Length Tests</h1>
             <p className="text-sm text-gray-500 mt-1">Manage and create full length tests</p>
@@ -349,29 +367,8 @@ function AdminTestList() {
 
         {/* Stats Card */}
         <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm mb-4 space-y-4">
-          {/* Row 1: Title, Search, Page Info */}
-          <div className="flex flex-row md:items-center lg:items-center justify-between gap-4">
-            {/* Title */}
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
-                <FileTextOutlined className="text-gray-600 text-xl" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-800">Tests Library</h3>
-                <p className="text-sm text-gray-500">{total} tests available</p>
-              </div>
-            </div>
-
-            {/* Page Info */}
-            <div className="flex items-center gap-2 px-5 py-2 rounded-md bg-gray-50 border border-gray-200">
-              <span className="text-sm text-gray-500">Page</span>
-              <span className="text-lg font-bold text-gray-800">{current}</span>
-              <span className="text-sm text-gray-500">of {totalPages}</span>
-            </div>
-          </div>
-
           {/* Row 2: Filters */}
-          <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-gray-100 justify-between">
+          <div className="flex items-center gap-3 flex-wrap justify-between">
             {/* Search Input */}
 
             <div className="flex items-center gap-3 flex-1 max-w-md">
@@ -469,6 +466,18 @@ function AdminTestList() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <Table
             loading={tableLoading}
+            size="small"
+            className="[&_.ant-table-tbody>tr>td]:!py-2 [&_.ant-table-thead>tr>th]:!py-2 border-t border-gray-200"
+            rowClassName={(record, index) =>
+              `text-sm bg-white hover:bg-gray-50 transition-colors cursor-pointer group`
+            }
+            onRow={(record) => {
+              return {
+                onClick: () => {
+                  router.push(`${pathname}/edit/${record.id}`);
+                },
+              };
+            }}
             dataSource={testsData}
             columns={colsMap[role]}
             onChange={handleTableChange}

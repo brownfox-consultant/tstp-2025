@@ -100,7 +100,7 @@ export default function SubTopicPracticeStyled({
         </div>
 
         {/* Global Legend */}
-        <div className="flex flex-wrap gap-6 bg-white px-6 py-3 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex flex-wrap gap-4 bg-white px-6 py-3 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-2">
             <span className="w-3.5 h-3.5 rounded-md shadow-sm" style={{ backgroundColor: "#F59403" }}></span>
             <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Questions</span>

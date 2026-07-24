@@ -58,7 +58,7 @@ export default function ReportPage() {
         Student Reports
       </div>
 
-      <div className="mb-6 flex items-center gap-4 flex-wrap">
+      <div className="mb-4 flex items-center gap-4 flex-wrap">
         <span className="font-semibold text-gray-700">
           Select Student:
         </span>
