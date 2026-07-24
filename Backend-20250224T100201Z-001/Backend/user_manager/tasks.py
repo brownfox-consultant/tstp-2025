@@ -14,6 +14,7 @@ from django.core.cache import cache
 
 from course_manager.models import CourseEnrollment
 from notification_manager.utils import send_notification
+from notification_manager.tasks import send_subscription_summary_email
 
 logger = logging.getLogger("subscription_tasks")
 
@@ -27,25 +28,43 @@ def check_and_update_subscriptions():
     - Sends email + in-app notification
     """
 
+    print("=" * 80)
+    print("CHECK SUBSCRIPTIONS TASK STARTED")
+    print("=" * 80)
+
     today = timezone.now().date()
+    reminder_date = today + timedelta(days=3)
+    reminder_admin_summary = []
+    expired_admin_summary = []
+
+    print("Today:", today)
+    print("Reminder Date:", reminder_date)
 
     # =====================================================
     # 1️⃣ REMINDER BEFORE EXPIRY (3 DAYS)
     # =====================================================
-    reminder_date = today + timedelta(days=3)
-
     reminder_enrollments = CourseEnrollment.objects.filter(
         subscription_type=CourseEnrollment.PAID,
         subscription_end_date=reminder_date
     )
 
+    print("Reminder enrollments count:", reminder_enrollments.count())
+
     for enrollment in reminder_enrollments:
+        print("-" * 60)
+        print("Reminder Enrollment ID:", enrollment.id)
+        print("Student:", enrollment.student.name, enrollment.student.id)
+        print("Course:", enrollment.course.name)
+        print("Expiry:", enrollment.subscription_end_date)
+
         cache_key = f"subscription_reminder_sent_{enrollment.id}"
+        print("Cache Key:", cache_key)
 
         if cache.get(cache_key):
+            print("Reminder already sent. Skipping.")
             continue
 
-        logger.info(f"Sending subscription reminder for enrollment {enrollment.id}")
+        print("Calling send_notification() for REMINDER")
 
         send_notification.delay(
             notification_name="SUBSCRIPTION_REMINDER_NOTIFICATION",
@@ -57,8 +76,15 @@ def check_and_update_subscriptions():
             },
             user_id=enrollment.student.id
         )
+        reminder_admin_summary.append({
+            "student": enrollment.student.name,
+            "email": enrollment.student.email,
+            "course": enrollment.course.name,
+            "expiry": enrollment.subscription_end_date,
+        })
 
-        # prevent duplicate reminders for 7 days
+        print("Reminder task queued successfully.")
+
         cache.set(cache_key, True, timeout=7 * 24 * 60 * 60)
 
     # =====================================================
@@ -69,19 +95,29 @@ def check_and_update_subscriptions():
         subscription_end_date__lt=today
     )
 
+    print("Expired enrollments count:", expired_enrollments.count())
+
     for enrollment in expired_enrollments:
+        print("-" * 60)
+        print("Expired Enrollment ID:", enrollment.id)
+        print("Student:", enrollment.student.name, enrollment.student.id)
+        print("Course:", enrollment.course.name)
+        print("Expiry:", enrollment.subscription_end_date)
+
         cache_key = f"subscription_expired_sent_{enrollment.id}"
+        print("Cache Key:", cache_key)
 
         if cache.get(cache_key):
+            print("Expiry notification already sent. Skipping.")
             continue
 
-        logger.info(f"Expiring subscription for enrollment {enrollment.id}")
+        print("Updating subscription to FREE")
 
-        # downgrade subscription
         enrollment.subscription_type = CourseEnrollment.FREE
         enrollment.save(update_fields=["subscription_type"])
 
-        # send notification
+        print("Calling send_notification() for EXPIRED")
+
         send_notification.delay(
             notification_name="SUBSCRIPTION_EXPIRED_NOTIFICATION",
             params={
@@ -92,9 +128,31 @@ def check_and_update_subscriptions():
             },
             user_id=enrollment.student.id
         )
+        expired_admin_summary.append({
+            "student": enrollment.student.name,
+            "email": enrollment.student.email,
+            "course": enrollment.course.name,
+            "expiry": enrollment.subscription_end_date,
+        })
 
-        # prevent duplicate expiry notifications (30 days)
+        print("Expired notification task queued successfully.")
+
         cache.set(cache_key, True, timeout=30 * 24 * 60 * 60)
+
+    print("=" * 80)
+    print("CHECK SUBSCRIPTIONS TASK FINISHED")
+    print("=" * 80)
+    if reminder_admin_summary:
+        send_subscription_summary_email.delay(
+            reminder_admin_summary,
+            "Reminder"
+        )
+
+    if expired_admin_summary:
+        send_subscription_summary_email.delay(
+            expired_admin_summary,
+            "Expired"
+        )
 
 
 @app.task

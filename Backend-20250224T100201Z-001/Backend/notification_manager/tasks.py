@@ -16,6 +16,7 @@ from datetime import timedelta
 
 from system_manager.models import Doubt, Issue
 from user_manager.models import User
+from django.core.mail import EmailMessage
 
 
 
@@ -106,16 +107,17 @@ Please review and take necessary action.
     )
 
     if admin_emails:
-        send_mail(
-            subject="Reminder: Pending Doubts & Issues Older Than 7 Days",
-            message=email_body,
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=admin_emails,
-            bcc=["vijayaluguvelli@gmail.com"],
-            fail_silently=False,
-        )
+        email = EmailMessage(
+        subject="Reminder: Pending Doubts & Issues Older Than 7 Days",
+        body=email_body,
+        from_email=settings.EMAIL_HOST_USER,
+        to=admin_emails,
+        bcc=["vijayaluguvelli@gmail.com"],
+    )
 
-        print(f"✅ Reminder email sent to {len(admin_emails)} admin(s)")
+    email.send(fail_silently=False)
+
+    print(f"✅ Reminder email sent to {len(admin_emails)} admin(s)")
 
     print("\n========== REMINDER TASK COMPLETED ==========\n")
 
@@ -247,14 +249,15 @@ Please log in to your dashboard to view updated results.
         )
 
         # Send student email
-        send_mail(
+        email = EmailMessage(
             subject="Question Correction Update",
-            message=student_email_body,
+            body=student_email_body,
             from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[student.email],
+            to=[student.email],
             bcc=["vijayaluguvelli@gmail.com"],
-            fail_silently=False,
         )
+
+        email.send(fail_silently=False)
 
         # ---------------------------------------------------
         # COLLECT ADMIN DATA (DON’T SEND YET)
@@ -300,15 +303,65 @@ System has recalculated scores automatically.
 – TSTP System
 """
 
-        send_mail(
+        email = EmailMessage(
             subject="Question Correction Impact Summary",
-            message=admin_email_body,
+            body=admin_email_body,
             from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[settings.EMAIL_HOST_USER],
+            to=[settings.EMAIL_HOST_USER],
             bcc=["vijayaluguvelli@gmail.com"],
-            fail_silently=False,
         )
+
+        email.send(fail_silently=False)
 
         print("✅ SINGLE ADMIN EMAIL SENT")
 
     print("\n========== TASK COMPLETED ==========\n")
+
+
+@shared_task
+def send_subscription_summary_email(students, report_type):
+
+    body = f"""
+Admin Notification
+
+Subscription {report_type} Summary
+
+"""
+
+    for i, student in enumerate(students, start=1):
+        body += f"""
+{i}.
+
+Student : {student['student']}
+Email   : {student['email']}
+Course  : {student['course']}
+Expiry  : {student['expiry']}
+
+------------------------------------------
+"""
+
+    body += f"""
+
+Total Students : {len(students)}
+
+Generated At : {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+- TSTP System
+"""
+
+    admin_emails = list(
+        User.objects.filter(
+            is_superuser=True,
+            is_active=True
+        ).values_list("email", flat=True)
+    )
+
+    if admin_emails:
+
+        EmailMessage(
+            subject=f"Subscription {report_type} Summary",
+            body=body,
+            from_email=settings.EMAIL_HOST_USER,
+            to=admin_emails,
+            bcc=["vijayaluguvelli@gmail.com"],
+        ).send(fail_silently=False)

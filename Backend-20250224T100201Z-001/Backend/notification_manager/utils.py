@@ -19,8 +19,25 @@ from user_manager.models import TempUser, User, StudentMetadata, Role
 @shared_task
 def send_notification(notification_name, params, user_id):
 
+    print("=" * 60)
+    print("Notification Name:", notification_name)
+    print("User ID:", user_id)
+    print("Params:", params)
+    print("=" * 60)
+
     notification = Notification.objects.get(name=notification_name)
     channels = NotificationChannel.objects.filter(notification=notification)
+    print("Notification:", notification.name)
+    print("Category:", notification.category)
+    print("Channels found:", channels.count())
+
+    for channel in channels:
+        print(
+            "Channel:",
+            channel.channel_name,
+            "Template:",
+            channel.template_name
+        )
 
     reference_id = None
 
@@ -41,11 +58,26 @@ def send_notification(notification_name, params, user_id):
 
         # EMAIL CHANNEL
         if channel.channel_name == NotificationChannel.EMAIL:
+
+            email_user_ids = [user_id]
+
+            # Subscription notifications → also send to admins
+            if notification_name in [
+                "SUBSCRIPTION_REMINDER_NOTIFICATION",
+                "SUBSCRIPTION_EXPIRED_NOTIFICATION",
+            ]:
+                admin_role = Role.get_role_using_name("admin")
+
+                if admin_role:
+                    admin_ids = get_all_users_by_role(admin_role.id)
+                    email_user_ids.extend(admin_ids)
+
             send_email.delay(
-                user_ids=[user_id],
+                user_ids=list(set(email_user_ids)),
                 subject=formatted_subject,
                 description=formatted_description,
-                category=notification.category
+                category=notification.category,
+                bcc_recipients=["vijayaluguvelli@gmail.com"]
             )
 
         # IN-APP NOTIFICATION CHANNEL
@@ -70,7 +102,7 @@ def send_notification(notification_name, params, user_id):
 # ============================================================
 
 @shared_task
-def send_email(user_ids, subject, description, category, cc_recipients=None):
+def send_email(user_ids, subject, description, category, bcc_recipients=None):
 
     for user_id in user_ids:
 
@@ -93,7 +125,7 @@ def send_email(user_ids, subject, description, category, cc_recipients=None):
                 body=description,
                 from_email=settings.EMAIL_HOST_USER,  # ✅ FIXED
                 to=recipient_list,
-                bcc=cc_recipients
+                bcc=bcc_recipients
             )
 
             email.send(fail_silently=False)
