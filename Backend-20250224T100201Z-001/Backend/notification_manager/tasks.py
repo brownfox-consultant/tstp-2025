@@ -53,13 +53,14 @@ PENDING DOUBTS ({pending_doubts.count()})
 
     for doubt in pending_doubts:
         email_body += f"""
-Reference ID : {doubt.id}
-Raised By    : {getattr(doubt.created_by, 'name', 'N/A')}
-Created On   : {doubt.created_at.strftime('%d-%m-%Y')}
-Status       : {doubt.status}
+    Reference ID : {doubt.id}
+    Raised By    : {getattr(doubt.student, 'name', 'N/A')}
+    Email        : {getattr(doubt.student, 'email', 'N/A')}
+    Created On   : {doubt.created_at.strftime('%d-%m-%Y')}
+    Status       : {doubt.status}
 
-----------------------------------------
-"""
+    ----------------------------------------
+    """
 
     email_body += f"""
 
@@ -71,13 +72,14 @@ PENDING ISSUES ({pending_issues.count()})
 
     for issue in pending_issues:
         email_body += f"""
-Reference ID : {issue.id}
-Raised By    : {getattr(issue.created_by, 'name', 'N/A')}
-Created On   : {issue.created_at.strftime('%d-%m-%Y')}
-Status       : {issue.status}
+    Reference ID : {issue.id}
+    Raised By    : {getattr(issue.student, 'name', 'N/A')}
+    Email        : {getattr(issue.student, 'email', 'N/A')}
+    Created On   : {issue.created_at.strftime('%d-%m-%Y')}
+    Status       : {issue.status}
 
-----------------------------------------
-"""
+    ----------------------------------------
+    """
 
     email_body += f"""
 
