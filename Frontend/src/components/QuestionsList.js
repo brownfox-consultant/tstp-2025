@@ -691,10 +691,10 @@ function QuestionsList({
     pageSize: 15,
     showSizeChanger: false,
 
-    // ✅ Position top-left and bottom-right
+    // Position top-left and bottom-right
     position: ["topLeft", "bottomRight"],
 
-    // ✅ Custom pagination footer (shared for both)
+    // Custom pagination footer (shared for both)
     showTotal: (total, range) => {
       let inputValue = "";
       const totalPages = Math.ceil(total / 15);
@@ -736,6 +736,8 @@ function QuestionsList({
     <>
       <Table
         loading={tableLoading}
+        size="small"
+        className="[&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
         rowKey={(record) => record.id}
         dataSource={questions}
         columns={columns}

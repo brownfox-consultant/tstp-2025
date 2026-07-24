@@ -63,7 +63,7 @@ export default function UtilisationOfResources({
     const unansweredPercentage = total > 0 ? (unanswered / total) * 100 : 0;
 
     return (
-      <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] p-8 border border-gray-100 hover:shadow-[0_12px_40px_rgba(0,0,0,0.12)] transition-all">
+      <div className="bg-white rounded-lg  p-8 border border-gray-100 shadow transition-all">
         
         {/* Header */}
         <div className="flex items-center gap-3 mb-8 pb-4 border-b-2 border-gray-50">
@@ -138,7 +138,7 @@ export default function UtilisationOfResources({
 
   return (
     <div className="w-full pb-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mx-auto">
         {data.English && (
           <ChartCard
             title="English"

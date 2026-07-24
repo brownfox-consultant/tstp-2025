@@ -165,7 +165,7 @@ export default function TopicWiseProgress({
       <ChartsSection chartData={chartData} skillsData={skillsData} />
 
       {/* ================= ACCORDION ================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {accordionData.map((topic, idx) => (
           <TopicCard key={idx} topic={topic} />
         ))}
@@ -184,10 +184,10 @@ const ChartsSection = ({ chartData, skillsData }) => {
   const [activeSkillIndex, setActiveSkillIndex] = useState(null);
 
   return (
-    <div className="flex flex-wrap gap-6">
+    <div className="flex flex-wrap gap-4">
 
       {/* ================= LEFT CHART ================= */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[350px]">
+      <div className="bg-white rounded-lg p-6 shadow-sm border flex-1 min-w-[350px]">
         <h3 className="font-bold mb-4">Topic Progress Comparison</h3>
 
         <div className="h-[260px]">
@@ -255,7 +255,7 @@ const ChartsSection = ({ chartData, skillsData }) => {
       </div>
 
       {/* ================= RIGHT CHART ================= */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border flex-1 min-w-[350px]">
+      <div className="bg-white rounded-lg p-6 shadow-sm border flex-1 min-w-[350px]">
         <h3 className="font-bold mb-4">Skills Overview</h3>
 
         <div className="h-[260px]">
@@ -326,12 +326,12 @@ const TopicCard = ({ topic }) => {
   const isStrong = topic.score >= 75;
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border">
+    <div className="bg-white rounded-lg p-5 shadow-sm border">
       <div
         className="flex gap-4 cursor-pointer"
         onClick={() => setOpen(!open)}
       >
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${topic.iconBg}`}>
+        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${topic.iconBg}`}>
           <Icon className="text-xl" />
         </div>
 
@@ -356,11 +356,11 @@ const TopicCard = ({ topic }) => {
       </div>
 
       {open && (
-        <div className="mt-5 space-y-3">
+        <div className="mt-3 space-y-3">
           {topic.subTopics.map((s, i) => {
             const strong = s.score >= 75;
             return (
-              <div key={i} className="bg-gray-50 p-4 rounded-xl border">
+              <div key={i} className="bg-gray-50 p-4 rounded-lg border">
                 <div className="flex justify-between mb-1">
                   <span className="font-medium">{s.name}</span>
                   <span className={`font-bold ${strong ? "text-emerald-600" : "text-orange-500"}`}>
@@ -399,14 +399,14 @@ const TopicLeaderboard = ({ allData }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {flat.map((i, idx) => (
-          <div key={idx} className="bg-white rounded-2xl p-6 shadow-sm border">
+          <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border">
             <div className="flex justify-between mb-2">
               <span className="text-xs text-gray-400">{i.parent}</span>
               <span className={`text-xl font-bold ${i.score >= 75 ? "text-emerald-500" : "text-orange-500"}`}>
                 {i.score}%
               </span>
             </div>
-            <h4 className="font-bold mb-3">{i.name}</h4>
+            <h4 className="font-bold mb-2">{i.name}</h4>
             <div className="h-2 bg-gray-200 rounded-full">
               <div
                 className={`h-2 rounded-full ${i.score >= 75 ? "bg-emerald-500" : "bg-orange-400"}`}

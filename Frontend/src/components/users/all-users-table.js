@@ -900,19 +900,56 @@ const submitBulkUpload = async () => {
     upcoming: [],
   };
 
-  const itemRender = (_, type, originalElement) => {
-    if (type === "prev") {
-      return <a>Previous</a>;
-    }
-    if (type === "next") {
-      return <a>Next</a>;
-    }
-    return originalElement;
+  const paginationConfig = {
+    current: current || 1,
+    total: total,
+    pageSize: pageSize,
+    showSizeChanger: false,
+    position: ["bottomRight"],
+    showTotal: (total, range) => {
+      let inputValue = "";
+      const maxPages = totalPages;
+
+      const handleGoToPage = () => {
+        const page = Number(inputValue);
+        if (page >= 1 && page <= maxPages) {
+          setCurrent(page);
+          fetchUsers({
+            role: filterKey,
+            page: page,
+            search: searchText,
+            ordering,
+            page_size: pageSize,
+          });
+        }
+      };
+
+      return (
+        <div className="flex items-center gap-2">
+          <span>
+            Showing {range[0]}–{range[1]} of {total}
+          </span>
+          <span>| Go to page:</span>
+          <Input
+            type="number"
+            min={1}
+            max={maxPages}
+            size="small"
+            style={{ width: 70 }}
+            onChange={(e) => (inputValue = e.target.value)}
+            onPressEnter={handleGoToPage}
+          />
+          <Button type="primary" size="small" onClick={handleGoToPage}>
+            Go
+          </Button>
+        </div>
+      );
+    },
   };
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 mt-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         {/* Search Input */}
         <div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
           <Input
@@ -984,46 +1021,6 @@ const submitBulkUpload = async () => {
       </div>
 
       <Table
-        footer={() => (
-          <div className="footer-container">
-            <div className="flex justify-end mr-5">
-              Page {current} of {totalPages} (Total: {total} records)
-            </div>
-            <Pagination
-              className="size-changer pagination-styled"
-              current={current}
-              pageSize={pageSize}
-              total={total}
-              itemRender={itemRender}
-              showSizeChanger
-              pageSizeOptions={["10", "20", "50", "100"]}
-              onChange={(page, size) => {
-                setCurrent(page);
-                setPageSize(size);
-
-                fetchUsers({
-                  role: filterKey,
-                  page,
-                  search: searchText,
-                  ordering,
-                  page_size: size,
-                });
-              }}
-              onShowSizeChange={(page, size) => {
-                setCurrent(1);
-                setPageSize(size);
-
-                fetchUsers({
-                  role: filterKey,
-                  page: 1,
-                  search: searchText,
-                  ordering,
-                  page_size: size,
-                });
-              }}
-            />
-          </div>
-        )}
         dataSource={dataList}
         columns={UsersColumnsMap[tabKey]}
         loading={loading}
@@ -1056,13 +1053,14 @@ const submitBulkUpload = async () => {
               />
             ), */
         }}
-        scroll={{ x: "max-content", y: 550 }}
-        pagination={false}
+        scroll={{ x: "max-content" }}
+        size="small"
+        pagination={paginationConfig}
         onChange={handleTableChange}
         rowClassName={(record, index) =>
           index % 2 === 0 ? "even-row" : "odd-row"
         }
-        className="tablestyles mt-4"
+        className="tablestyles mt-4 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
       />
       {showResultModal && (
         <Modal

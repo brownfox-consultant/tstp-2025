@@ -83,7 +83,7 @@ export default function StatusOfDoubts({
       <div className="flex flex-col xxl:flex-row gap-6">
 
         {/* ================= LEFT SIDE: GRAPH ================= */}
-        <div className="flex-1 rounded-2xl shadow-sm border p-6 flex flex-col">
+        <div className="bg-white flex-1 rounded-lg shadow-sm border p-6 flex flex-col">
           <div className="flex flex-wrap items-center justify-between mb-2 gap-y-2">
             <h2 className="text-xl font-extrabold text-dark flex items-center gap-2">
               <span className="hidden lg:inline-flex p-2 bg-gray-500 text-white rounded-lg text-lg">

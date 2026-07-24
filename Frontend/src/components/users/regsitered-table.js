@@ -278,6 +278,8 @@ function RegisteredTable({ tabKey, api }) {
         })}
       /> */}
       <Table
+        size="small"
+        className="[&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
         rowClassName={(record, index) => {
           return index % 2 === 0 ? "bg-even-color" : "bg-odd-color";
         }}

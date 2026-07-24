@@ -10,125 +10,124 @@ import {
   Input,
   Tag,
   Modal,
-  Tooltip, 
+  Tooltip,
+  Pagination,
 } from "antd";
-import { EyeOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  LineOutlined,
+  SearchOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  HistoryOutlined,
+  CheckOutlined,
+  RightOutlined,
+  DownOutlined,
+  ClearOutlined,
+} from "@ant-design/icons";
 import axios from "axios";
-import { BASE_URL } from "@/app/constants/apiConstants";
+import { BASE_URL, GET_Students } from "@/app/constants/apiConstants";
 import dayjs from "dayjs";
 import Admin_Report_New from "@/components/report-module/Admin_Report_New";
 import PracticeTestReport from "@/components/report-module/PracticeTestReport_admin_user";
 
+
 const { RangePicker } = DatePicker;
 
 const TestListPage = () => {
-  // ==================== DATA FETCHING STATE ====================
-  const [initialFullLengthData, setInitialFullLengthData] = useState([]);
-  const [initialPracticeData, setInitialPracticeData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const ResultSummary = ({ summary }) => {
+    const items = [
+      {
+        label: "All",
+        value: summary?.total_questions ?? 0,
+        color: "#475569",
+        bg: "#F8FAFC",
+        icon: "📋",
+      },
+      {
+        label: "Correct",
+        value: summary?.correct ?? 0,
+        color: "#16A34A",
+        bg: "#F0FDF4",
+        icon: "✔",
+      },
+      {
+        label: "Incorrect",
+        value: summary?.incorrect ?? 0,
+        color: "#DC2626",
+        bg: "#FEF2F2",
+        icon: "✖",
+      },
+      {
+        label: "Blank",
+        value: summary?.blank ?? 0,
+        color: "#64748B",
+        bg: "#F1F5F9",
+        icon: "○",
+      },
+      {
+        label: "Marked",
+        value: summary?.marked ?? 0,
+        color: "#EA580C",
+        bg: "#FFF7ED",
+        icon: "⚑",
+      },
+    ];
 
-  // ==================== FILTER STATE ====================
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateRange, setDateRange] = useState(null);
-
-  // ==================== MODAL STATE ====================
-  const [showResultModal, setShowResultModal] = useState(false);
-  const [submissionId, setSubmissionId] = useState(null);
-  const [testType, setTestType] = useState(null);
-
- const ResultSummary = ({ summary }) => {
-  const items = [
-    {
-      label: "All",
-      value: summary.total_questions,
-      color: "#374151",
-      bg: "#F9FAFB",
-      icon: "📋",
-    },
-    {
-      label: "Correct",
-      value: summary.correct,
-      color: "#16A34A",
-      bg: "#F0FDF4",
-      icon: "✔",
-    },
-    {
-      label: "Incorrect",
-      value: summary.incorrect,
-      color: "#DC2626",
-      bg: "#FEF2F2",
-      icon: "✖",
-    },
-    {
-      label: "Blank",
-      value: summary.blank,
-      color: "#6B7280",
-      bg: "#F3F4F6",
-      icon: "○",
-    },
-    {
-      label: "Marked",
-      value: summary.marked,
-      color: "#EA580C",
-      bg: "#FFF7ED",
-      icon: "⚑",
-    },
-  ];
-
-  return (
-    <div className="w-[280px] rounded-lg overflow-hidden bg-white border border-gray-200 shadow-md">
-
-      {/* Header */}
-      <div className="bg-blue-600 px-3 py-2 flex justify-between items-center">
-        <span className="text-white text-xs font-semibold">
-          Question Summary
-        </span>
-
-        <span
-          className="text-white text-[11px] max-w-[90px] truncate"
-          title={summary.student_name}
-        >
-          {summary.student_name}
-        </span>
-      </div>
-
-      {/* Summary */}
-      <div className="grid grid-cols-5 gap-1 p-2">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className="rounded-md py-2 px-1 text-center"
-            style={{ background: item.bg }}
+    return (
+      <div className="w-[330px] rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm">
+        {/* Header */}
+        <div className="bg-blue-600 px-3 py-2 flex justify-between items-center text-white">
+          <span className="text-xs font-semibold">
+            Question Summary
+          </span>
+          <span
+            className="text-xs font-semibold max-w-[130px] truncate opacity-95"
+            title={summary?.student_name}
           >
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center mx-auto mb-1 text-xs font-bold"
-              style={{
-                backgroundColor: item.color + "20",
-                color: item.color,
-              }}
-            >
-              {item.icon}
-            </div>
+            {summary?.student_name || "Student"}
+          </span>
+        </div>
 
+        {/* Summary Grid */}
+        <div className="grid grid-cols-5 gap-1 p-2 bg-white">
+          {items.map((item) => (
             <div
-              className="text-sm font-bold"
-              style={{ color: item.color }}
+              key={item.label}
+              className="rounded-lg py-1.5 px-0.5 text-center flex flex-col items-center justify-between"
+              style={{ background: item.bg }}
             >
-              {item.value}
-            </div>
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center mb-0.5 text-[10px] font-bold"
+                style={{
+                  backgroundColor: item.color + "20",
+                  color: item.color,
+                }}
+              >
+                {item.icon}
+              </div>
 
-            <div
-              className="text-[9px] leading-tight text-gray-500"
-              title={item.label}
-            >
-              {item.label}
+              <div
+                className="text-xs font-extrabold leading-none mb-1"
+                style={{ color: item.color }}
+              >
+                {item.value}
+              </div>
+
+              <div
+                className="text-[9px] font-semibold text-gray-500 truncate w-full px-0.5 leading-none"
+                title={item.label}
+              >
+                {item.label}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 const FullLengthScoreCard = ({ record }) => {
   return (
@@ -196,10 +195,43 @@ const FullLengthScoreCard = ({ record }) => {
 };
 
 
+  // ==================== DATA FETCHING STATE ====================
+  const [initialFullLengthData, setInitialFullLengthData] = useState([]);
+  const [initialPracticeData, setInitialPracticeData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
+  const [activeTabKey, setActiveTabKey] = useState("fullLength"); //   
+  const [expandedFullLengthKeys, setExpandedFullLengthKeys] = useState([]);
+  const [expandedPracticeKeys, setExpandedPracticeKeys] = useState([]);
+  const [timelinePage, setTimelinePage] = useState(1);
+  const [timelinePageSize, setTimelinePageSize] = useState(5);
+  const [expandedTimelineKeys, setExpandedTimelineKeys] = useState([]);
+
+  // ==================== FILTER STATE ====================
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState(null);
+
+  // ==================== MODAL STATE ====================
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [submissionId, setSubmissionId] = useState(null);
+  const [testType, setTestType] = useState(null);
+
   // ==================== FETCH DATA ====================
   useEffect(() => {
     fetchData();
+    fetchStudents();
   }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const res = await axios.get(GET_Students, { withCredentials: true });
+      setStudents(res.data || []);
+    } catch (error) {
+      console.error("Failed to fetch students list:", error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -225,6 +257,76 @@ const FullLengthScoreCard = ({ record }) => {
       setLoading(false);
     }
   };
+
+  // ==================== COMPUTED TRENDS ====================
+  const fullLengthDataWithTrends = useMemo(() => {
+    const dataCopy = [...initialFullLengthData];
+    const groups = {};
+    dataCopy.forEach(item => {
+      const key = item.student_id || item.student_name || "unknown";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(item);
+    });
+    
+    Object.keys(groups).forEach(key => {
+      // Sort ascending (chronological) to calculate trends
+      groups[key].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      for (let i = 0; i < groups[key].length; i++) {
+        if (i === 0) {
+          groups[key][i].trend = { type: "first", text: "First Test", diff: 0, prevScore: 0 };
+        } else {
+          const currScore = parseInt(groups[key][i].total_score) || 0;
+          const prevScore = parseInt(groups[key][i - 1].total_score) || 0;
+          const diff = currScore - prevScore;
+          if (diff > 0) {
+            groups[key][i].trend = { type: "up", text: `+${diff}`, diff, prevScore };
+          } else if (diff < 0) {
+            groups[key][i].trend = { type: "down", text: `-${Math.abs(diff)}`, diff, prevScore };
+          } else {
+            groups[key][i].trend = { type: "flat", text: "0", diff, prevScore };
+          }
+        }
+      }
+    });
+    return dataCopy;
+  }, [initialFullLengthData]);
+
+  const practiceDataWithTrends = useMemo(() => {
+    const dataCopy = [...initialPracticeData];
+    const groups = {};
+    dataCopy.forEach(item => {
+      const key = item.student_id || item.student_name || "unknown";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(item);
+    });
+    
+    Object.keys(groups).forEach(key => {
+      // Sort ascending (chronological) to calculate trends
+      groups[key].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      for (let i = 0; i < groups[key].length; i++) {
+        if (i === 0) {
+          groups[key][i].trend = { type: "first", text: "First Test", diff: 0, prevScore: 0 };
+        } else {
+          const currScore = parseInt(groups[key][i].correct ?? groups[key][i].total_score) || 0;
+          const prevScore = parseInt(groups[key][i - 1].correct ?? groups[key][i - 1].total_score) || 0;
+          const diff = currScore - prevScore;
+          if (diff > 0) {
+            groups[key][i].trend = { type: "up", text: `+${diff}`, diff, prevScore };
+          } else if (diff < 0) {
+            groups[key][i].trend = { type: "down", text: `-${Math.abs(diff)}`, diff, prevScore };
+          } else {
+            groups[key][i].trend = { type: "flat", text: "0", diff, prevScore };
+          }
+        }
+      }
+    });
+    return dataCopy;
+  }, [initialPracticeData]);
+
+  const selectedStudentObj = useMemo(() => {
+    if (!selectedStudent) return null;
+    return students.find(s => s.id.toString() === selectedStudent.toString());
+  }, [selectedStudent, students]);
 
   // ==================== FILTER LOGIC ====================
   const filterData = (data) => {
@@ -255,23 +357,189 @@ const FullLengthScoreCard = ({ record }) => {
 
   // Apply filters with memoization
   const filteredFullLengthData = useMemo(
-    () => filterData(initialFullLengthData),
-    [initialFullLengthData, searchQuery, dateRange]
+    () => filterData(fullLengthDataWithTrends),
+    [fullLengthDataWithTrends, searchQuery, dateRange]
   );
 
   const filteredPracticeData = useMemo(
-    () => filterData(initialPracticeData),
-    [initialPracticeData, searchQuery, dateRange]
+    () => filterData(practiceDataWithTrends),
+    [practiceDataWithTrends, searchQuery, dateRange]
   );
+
+  // Client-side SEARCH-WITHIN-RESULTS (Local search)
+  const displayedFullLength = useMemo(() => {
+    let data = filteredFullLengthData;
+    if (selectedStudentObj) {
+      data = data.filter(item => 
+        item.student_name === selectedStudentObj.name || item.student_id?.toString() === selectedStudentObj.id?.toString()
+      );
+    }
+    if (localSearchQuery) {
+      const q = localSearchQuery.toLowerCase();
+      data = data.filter(item => 
+        (item.test_name || "").toLowerCase().includes(q) ||
+        (item.student_name || "").toLowerCase().includes(q) ||
+        (item.course_name || "").toLowerCase().includes(q)
+      );
+    }
+    return data;
+  }, [filteredFullLengthData, selectedStudentObj, localSearchQuery]);
+
+  const displayedPractice = useMemo(() => {
+    let data = filteredPracticeData;
+    if (selectedStudentObj) {
+      data = data.filter(item => 
+        item.student_name === selectedStudentObj.name || item.student_id?.toString() === selectedStudentObj.id?.toString()
+      );
+    }
+    if (localSearchQuery) {
+      const q = localSearchQuery.toLowerCase();
+      data = data.filter(item => 
+        (item.test_name || "").toLowerCase().includes(q) ||
+        (item.student_name || "").toLowerCase().includes(q) ||
+        (item.course_name || "").toLowerCase().includes(q)
+      );
+    }
+    return data;
+  }, [filteredPracticeData, selectedStudentObj, localSearchQuery]);
+
+  // Combined timeline data for single student timeline view
+  const combinedTimelineData = useMemo(() => {
+    if (!selectedStudentObj) return [];
+    
+    const flFiltered = fullLengthDataWithTrends.filter(item => 
+      item.student_name === selectedStudentObj.name || item.student_id?.toString() === selectedStudentObj.id?.toString()
+    ).map(item => ({ ...item, timelineType: "fullLength" }));
+
+    const prFiltered = practiceDataWithTrends.filter(item => 
+      item.student_name === selectedStudentObj.name || item.student_id?.toString() === selectedStudentObj.id?.toString()
+    ).map(item => ({ ...item, timelineType: "practice" }));
+
+    return [...flFiltered, ...prFiltered].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+  }, [selectedStudentObj, fullLengthDataWithTrends, practiceDataWithTrends]);
+
+  const displayedTimeline = useMemo(() => {
+    let data = combinedTimelineData;
+    if (localSearchQuery) {
+      const q = localSearchQuery.toLowerCase();
+      data = data.filter(item => 
+        (item.test_name || "").toLowerCase().includes(q) ||
+        (item.course_name || "").toLowerCase().includes(q)
+      );
+    }
+    return data;
+  }, [combinedTimelineData, localSearchQuery]);
+
+  // ==================== RENDERING HELPERS ====================
+  const renderScoreTag = (score, record, type) => {
+    if (score === undefined || score === null) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+          N/A
+        </span>
+      );
+    }
+    
+    let colorClass = "";
+    let scorePercent = 0;
+    const isFL = type === "fullLength" || record.timelineType === "fullLength";
+    
+    if (isFL) {
+      const totalMarks = record.total_marks || 1600;
+      scorePercent = (score / totalMarks) * 100;
+    } else {
+      const totalQuestions = record.total_questions || 10;
+      scorePercent = (score / totalQuestions) * 100;
+    }
+    
+    if (scorePercent >= 80) {
+      colorClass = "text-emerald-700";
+    } else if (scorePercent >= 50) {
+      colorClass = "text-amber-700";
+    } else {
+      colorClass = "text-rose-700";
+    }
+    
+    const tooltipContent = (!isFL) ? (
+      <ResultSummary summary={record} />
+    ) : (
+      <FullLengthScoreCard record={record} />
+    );
+    
+    return (
+      <Tooltip
+        title={tooltipContent}
+        color="#fff"
+        overlayInnerStyle={{ padding: 0, borderRadius: 12 }}
+        overlayStyle={{ boxShadow: "none" }}
+      >
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className={`prevent-row-expand inline-flex items-center text-sm font-bold transition-all duration-200 cursor-pointer ${colorClass}`}
+        >
+          {score}
+        </span>
+      </Tooltip>
+    );
+  };
+
+  const renderTrendIndicator = (trend) => {
+    if (!trend || trend.type === "first") {
+      return (
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="prevent-row-expand text-[10px] text-gray-400 font-medium ml-2 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-100 whitespace-nowrap cursor-default"
+        >
+          First Test
+        </span>
+      );
+    }
+    
+    if (trend.type === "up") {
+      return (
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="prevent-row-expand inline-flex items-center text-[11px] text-emerald-600 font-bold ml-2 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-100 whitespace-nowrap cursor-default"
+          title={`Improved by ${trend.diff} points`}
+        >
+          <ArrowUpOutlined className="mr-0.5 text-[9px]" /> {trend.text}
+        </span>
+      );
+    }
+    
+    if (trend.type === "down") {
+      return (
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="prevent-row-expand inline-flex items-center text-[11px] text-rose-600 font-bold ml-2 px-1.5 py-0.5 rounded bg-rose-50 border border-rose-100 whitespace-nowrap cursor-default"
+          title={`Dropped from ${trend.prevScore} (fell by ${Math.abs(trend.diff)} points)`}
+        >
+          <ArrowDownOutlined className="mr-0.5 text-[9px]" /> {trend.text}
+        </span>
+      );
+    }
+    
+    return (
+      <span
+        onClick={(e) => e.stopPropagation()}
+        className="prevent-row-expand inline-flex items-center text-[11px] text-gray-500 font-semibold ml-2 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-100 whitespace-nowrap cursor-default"
+      >
+        <LineOutlined className="mr-0.5 text-[9px]" /> {trend.text}
+      </span>
+    );
+  };
 
   // ==================== HANDLERS ====================
   const handleViewResult = (record, type) => {
-    if (type === "practice") {
+    if (type === "practice" || record.timelineType === "practice") {
       setSubmissionId(record.test_submission_id || record.id);
+      setTestType("practice");
     } else {
       setSubmissionId(record.id);
+      setTestType("fullLength");
     }
-    setTestType(type);
     setShowResultModal(true);
   };
 
@@ -284,15 +552,24 @@ const FullLengthScoreCard = ({ record }) => {
   const handleReset = () => {
     setSearchQuery("");
     setDateRange(null);
+    setSelectedStudent(null);
+    setLocalSearchQuery("");
   };
+
+  const handleTimelinePageChange = (page, pageSize) => {
+    setTimelinePage(page);
+    if (pageSize) setTimelinePageSize(pageSize);
+  };
+
+  const paginatedTimelineData = useMemo(() => {
+    const startIndex = (timelinePage - 1) * timelinePageSize;
+    return displayedTimeline.slice(startIndex, startIndex + timelinePageSize);
+  }, [displayedTimeline, timelinePage, timelinePageSize]);
 
   // ==================== TABLE COLUMNS ====================
   const getTableColumns = (type) => [
    ...(type === "fullLength"
   ? [
-      
-
-
       {
         title: "Completion Date",
         dataIndex: "completion_date",
@@ -304,7 +581,7 @@ const FullLengthScoreCard = ({ record }) => {
           const date = record.completion_date || record.created_at;
 
           return (
-             <span className="text-gray-500">
+             <span className="text-gray-500 font-medium">
               {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
             </span>
           );
@@ -319,7 +596,7 @@ const FullLengthScoreCard = ({ record }) => {
         sorter: (a, b) =>
           new Date(a.created_at) - new Date(b.created_at),
         render: (date) => (
-          <span className="text-gray-500">
+          <span className="text-gray-500 font-medium">
             {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
           </span>
         ),
@@ -330,7 +607,7 @@ const FullLengthScoreCard = ({ record }) => {
       dataIndex: "test_name",
       key: "test_name",
       sorter: (a, b) => (a.test_name || "").localeCompare(b.test_name || ""),
-      render: (text) => <span className="text-[#805830]">{text || "N/A"}</span>,
+      render: (text) => <span className="text-[#805830] font-semibold">{text || "N/A"}</span>,
     },
     {
       title: "Student Name",
@@ -339,7 +616,7 @@ const FullLengthScoreCard = ({ record }) => {
       sorter: (a, b) =>
         (a.student_name || "").localeCompare(b.student_name || ""),
       render: (text) => (
-        <span className="font-medium text-[#2E2725]">{text || "N/A"}</span>
+        <span className="font-semibold text-[#2E2725]">{text || "N/A"}</span>
       ),
     },
     {
@@ -356,67 +633,93 @@ const FullLengthScoreCard = ({ record }) => {
       key: "total_score",
       sorter: (a, b) => (a.total_score || 0) - (b.total_score || 0),
       render: (score, record) => (
-  <Tooltip
-  title={
-  type === "practice" ? (
-    <ResultSummary summary={record} />
-  ) : (
-    <FullLengthScoreCard record={record} />
-  )
-}
-  color="#fff"
-  overlayInnerStyle={{
-    padding: 0,
-    borderRadius: 12,
-  }}
-  overlayStyle={{
-    boxShadow: "none",
-  }}
->
-    <Tag
-      color={score >= 500 ? "green" : "red"}
-      className="rounded-full px-3 cursor-pointer"
-    >
-      {score ?? "N/A"}
-    </Tag>
-  </Tooltip>
-),
+        <div
+          className="flex items-center prevent-row-expand"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {renderScoreTag(score, record, type)}
+          {renderTrendIndicator(record.trend)}
+        </div>
+      ),
     },
     {
-      title: "View Result",
+      title: "Action",
       key: "action",
+      align: "center",
       render: (_, record) => (
-        <Space size="middle">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-center">
           <Button
             type="primary"
             icon={<EyeOutlined />}
             size="small"
-            onClick={() => handleViewResult(record, type)}
+            style={{ backgroundColor: "#f59e0b", borderColor: "#f59e0b", color: "white" }}
+            className="hover:!bg-amber-600 hover:!border-amber-600 font-medium shadow-sm flex items-center gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewResult(record, type);
+            }}
           >
             View Result
           </Button>
-        </Space>
+        </div>
       ),
+      width: 130,
     },
   ];
 
-  // ==================== RENDER ====================
+  
+
   return (
-    <div>
+    <div className="pb-10">
       {/* Page Title */}
-      <h1 className="text-2xl font-bold mb-6">Test List</h1>
+      <h1 className="text-2xl font-bold text-[#2E2725] mb-2 flex items-center gap-2">
+     
+        Test List
+      </h1>
 
       {/* Filter Section */}
-      <div className="bg-white p-4 mb-4 rounded-xl shadow-sm border border-gray-100">
-        <div className="flex flex-wrap items-center gap-4">
-          <Input
-            placeholder="Search by Test or Student Name"
-            style={{ width: 300 }}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+      <div className="bg-white p-4 mb-4 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Student Selector Autocomplete */}
+          <Select
+            showSearch
+            placeholder="Search student to view timeline..."
+            optionFilterProp="children"
+            style={{ width: 280 }}
+            value={selectedStudent}
+            onChange={(value) => {
+              setSelectedStudent(value);
+              setTimelinePage(1);
+              setLocalSearchQuery("");
+            }}
+            allowClear
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+            options={[
+              { value: "", label: "All Students (Flat Table)" },
+              ...students.map(s => ({ value: s.id.toString(), label: s.name }))
+            ]}
+            suffixIcon={<UserOutlined className="text-gray-400" />}
+            className="h-10 text-sm hover:border-amber-400 focus:border-amber-500 rounded-lg"
           />
+
+          <Input
+            placeholder="Search by Test, Student, or Course..."
+            style={{ width: 320 }}
+            value={searchQuery}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchQuery(val);
+              setLocalSearchQuery(val);
+            }}
+            allowClear
+            className="h-10 text-sm rounded-lg"
+            prefix={<SearchOutlined className="text-gray-400 mr-1" />}
+          />
+          
           <RangePicker
-            className="w-64"
+            className="h-10 w-64 rounded-lg"
             value={dateRange}
             onChange={setDateRange}
           />
@@ -426,66 +729,234 @@ const FullLengthScoreCard = ({ record }) => {
               borderColor: "#f59e0b",
               color: "white",
             }}
-            className="hover:!bg-amber-600 hover:!border-amber-600"
+            className="!h-10 hover:!bg-amber-600 hover:!border-amber-600 rounded-lg font-semibold flex items-center px-4"
+            onClick={fetchData}
           >
-            Apply
+            Apply Filters
           </Button>
-          <Button onClick={handleReset}>Reset</Button>
+          <Button onClick={handleReset} className="!h-10 rounded-lg flex items-center">Reset</Button>
         </div>
       </div>
 
-      {/* Tabs for Full Length and Practice Tests */}
-      <Tabs
-        defaultActiveKey="1"
-        items={[
-          {
-            key: "1",
-            label: "Full Length Test",
-            children: (
-              <Table
-                columns={getTableColumns("fullLength")}
-                dataSource={filteredFullLengthData}
-                loading={loading}
-                pagination={{
-                  position: ["topRight", "bottomRight"],
-                  defaultPageSize: 10,
-                  showSizeChanger: true,
-                  pageSizeOptions: ["10", "25", "50", "100"],
-                  showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} of ${total} items`,
-                }}
-                bordered
-                className="shadow-sm rounded-lg overflow-hidden"
-                rowKey={(record) => record.id || record.test_submission_id}
-              />
-            ),
-          },
-          {
-            key: "2",
-            label: "Practice Test",
-            children: (
-              <Table
-                columns={getTableColumns("practice")}
-                dataSource={filteredPracticeData}
-                loading={loading}
-                pagination={{
-                  position: ["topRight", "bottomRight"],
-                  defaultPageSize: 10,
-                  showSizeChanger: true,
-                  pageSizeOptions: ["10", "25", "50", "100"],
-                  showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} of ${total} items`,
-                }}
-                bordered
-                className="shadow-sm rounded-lg overflow-hidden"
-                rowKey={(record) => record.id || record.test_submission_id}
-              />
-            ),
-          },
-        ]}
-        size="large"
-        className="bg-white !px-4 !mb-0 !rounded-xl shadow-sm border border-gray-100"
-      />
+      {/* Segmented Table Card View */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        {selectedStudentObj && (
+          <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 mb-4 bg-amber-50/60 border border-amber-100 rounded-xl animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#f59e0b] text-white font-bold text-base flex items-center justify-center shadow-xs">
+                {selectedStudentObj.name?.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  {selectedStudentObj.name}
+                  <span className="text-[10px] font-bold uppercase text-[#f59e0b] bg-white border border-amber-200 px-2 py-0.5 rounded-full">
+                    Student Profile Filter
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Showing tests for this student ({displayedFullLength.length} Full Length, {displayedPractice.length} Practice)
+                </p>
+              </div>
+            </div>
+            <Button
+              icon={<ClearOutlined />}
+              size="small"
+              className="hover:!text-amber-600 hover:!border-amber-600 rounded-lg flex items-center gap-1.5 text-xs font-semibold"
+              onClick={() => {
+                setSelectedStudent(null);
+                setLocalSearchQuery("");
+              }}
+            >
+              Clear Student Filter
+            </Button>
+          </div>
+        )}
+          {/* Modern Segmented Pill Switcher Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100">
+            <div className="inline-flex items-center bg-gray-100/90 p-1 rounded-xl gap-1">
+              <button
+                onClick={() => setActiveTabKey("fullLength")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                  activeTabKey === "fullLength"
+                    ? "bg-[#f59e0b] text-white shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <span>Full Length Test</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                    activeTabKey === "fullLength"
+                      ? "bg-white/25 text-white"
+                      : "bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  {displayedFullLength.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveTabKey("practice")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                  activeTabKey === "practice"
+                    ? "bg-[#f59e0b] text-white shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <span>Practice Test</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                    activeTabKey === "practice"
+                      ? "bg-white/25 text-white"
+                      : "bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  {displayedPractice.length}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Render Table based on Segmented Switcher selection */}
+          {activeTabKey === "fullLength" ? (
+            <Table
+              size="small"
+              columns={getTableColumns("fullLength")}
+              dataSource={displayedFullLength}
+              loading={loading}
+              expandable={{
+                showExpandColumn: false,
+                expandedRowRender: (record) => (
+                  <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-6 animate-fadeIn">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-extrabold text-sky-600 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md tracking-wider">
+                          Full Length Mock
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 pt-1">Student: <span className="font-bold text-gray-800">{record.student_name}</span></p>
+                      <p className="text-xs text-gray-600">Test: <span className="font-bold text-gray-800">{record.test_name}</span></p>
+                      <p className="text-xs text-gray-500">Submitted: <span className="font-medium text-gray-700">{dayjs(record.created_at).format("MMM D, YYYY h:mm A")}</span></p>
+                    </div>
+                    <div className="flex items-center gap-5 flex-wrap">
+                      <FullLengthScoreCard record={record} />
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        style={{ backgroundColor: "#f59e0b", borderColor: "#f59e0b", color: "white" }}
+                        className="hover:!bg-amber-600 hover:!border-amber-600 font-bold px-4 h-10 rounded-xl flex items-center gap-1.5 shadow-sm"
+                        onClick={() => handleViewResult(record, "fullLength")}
+                      >
+                        View Full Report
+                      </Button>
+                    </div>
+                  </div>
+                ),
+                rowExpandable: () => true,
+                expandedRowKeys: expandedFullLengthKeys,
+                onExpandedRowsChange: setExpandedFullLengthKeys,
+              }}
+              onRow={(record) => ({
+                onClick: (e) => {
+                  if (
+                    e.target.closest("button") ||
+                    e.target.closest(".ant-tag") ||
+                    e.target.closest(".ant-tooltip") ||
+                    e.target.closest(".ant-table-row-expand-icon") ||
+                    e.target.closest(".prevent-row-expand")
+                  ) return;
+                  const key = record.id || record.test_submission_id;
+                  if (expandedFullLengthKeys.includes(key)) {
+                    setExpandedFullLengthKeys(expandedFullLengthKeys.filter(k => k !== key));
+                  } else {
+                    setExpandedFullLengthKeys([...expandedFullLengthKeys, key]);
+                  }
+                }
+              })}
+              pagination={{
+                position: ["topRight", "bottomRight"],
+                defaultPageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                pageSizeOptions: ["10", "25", "50", "100"],
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total} items`,
+              }}
+              bordered
+              rowClassName={() => "group cursor-pointer hover:bg-slate-50/50 transition-colors"}
+              className="shadow-sm rounded-lg overflow-hidden mt-0 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5 [&_.ant-table-pagination-top]:!my-1.5 [&_.ant-table-pagination-top]:!mt-0"
+              rowKey={(record) => record.id || record.test_submission_id}
+            />
+          ) : (
+            <Table
+              size="small"
+              columns={getTableColumns("practice")}
+              dataSource={displayedPractice}
+              loading={loading}
+              expandable={{
+                showExpandColumn: false,
+                expandedRowRender: (record) => (
+                  <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-6 animate-fadeIn">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-extrabold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md tracking-wider">
+                          Practice Details
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 pt-1">Student: <span className="font-bold text-gray-800">{record.student_name}</span></p>
+                      <p className="text-xs text-gray-600">Test: <span className="font-bold text-gray-800">{record.test_name}</span></p>
+                      <p className="text-xs text-gray-500">Submitted: <span className="font-medium text-gray-700">{dayjs(record.created_at).format("MMM D, YYYY h:mm A")}</span></p>
+                    </div>
+                    <div className="flex items-center gap-5 flex-wrap">
+                      <ResultSummary summary={record} />
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        style={{ backgroundColor: "#f59e0b", borderColor: "#f59e0b", color: "white" }}
+                        className="hover:!bg-amber-600 hover:!border-amber-600 font-bold px-4 h-10 rounded-xl flex items-center gap-1.5 shadow-sm"
+                        onClick={() => handleViewResult(record, "practice")}
+                      >
+                        View Full Report
+                      </Button>
+                    </div>
+                  </div>
+                ),
+                rowExpandable: () => true,
+                expandedRowKeys: expandedPracticeKeys,
+                onExpandedRowsChange: setExpandedPracticeKeys,
+              }}
+              onRow={(record) => ({
+                onClick: (e) => {
+                  if (
+                    e.target.closest("button") ||
+                    e.target.closest(".ant-tag") ||
+                    e.target.closest(".ant-tooltip") ||
+                    e.target.closest(".ant-table-row-expand-icon") ||
+                    e.target.closest(".prevent-row-expand")
+                  ) return;
+                  const key = record.id || record.test_submission_id;
+                  if (expandedPracticeKeys.includes(key)) {
+                    setExpandedPracticeKeys(expandedPracticeKeys.filter(k => k !== key));
+                  } else {
+                    setExpandedPracticeKeys([...expandedPracticeKeys, key]);
+                  }
+                }
+              })}
+              pagination={{
+                position: ["topRight", "bottomRight"],
+                defaultPageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                pageSizeOptions: ["10", "25", "50", "100"],
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total} items`,
+              }}
+              bordered
+              rowClassName={() => "group cursor-pointer hover:bg-slate-50/50 transition-colors"}
+              className="shadow-sm rounded-lg overflow-hidden mt-0 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5 [&_.ant-table-pagination-top]:!my-1.5 [&_.ant-table-pagination-top]:!mt-0"
+              rowKey={(record) => record.id || record.test_submission_id}
+            />
+          )}
+        </div>
 
       {/* Test Result Modal */}
       <Modal

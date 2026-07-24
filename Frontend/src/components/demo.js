@@ -24,6 +24,8 @@ import {
 import {
   getStudentCountByCourse,
   getTestResult,
+  getDoubtsList,
+  getIssuesList,
 } from "@/app/services/authService";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -39,6 +41,14 @@ import {
   NoDataClockIcon,
   BadgeCheckIcon,
   ChevronIcon,
+  ActivityFeedCalendarIcon,
+  QuestionMarkCircleIcon,
+  BookOpenNodeIcon,
+  CheckCircleNodeIcon,
+  PlusCircleNodeIcon,
+  ClockMiniIcon,
+  BookMiniIcon,
+  CheckMiniIcon,
 } from "./icons/dashboard-icons";
 import { NoDataIcon } from "@/components/icons/improvement-strength-icons";
 import { components } from "react-select";
@@ -56,91 +66,171 @@ const DropdownIndicator = (props) => {
   );
 };
 
-const DUMMY_FULL_LENGTH = [
+
+
+const DUMMY_TODAY_ACTIVITIES = [
   {
-    id: 1,
-    student_name: "Rahul Sharma",
-    test_name: "Algebra Baseline Test",
-    course_name: "SAT Math",
-    total_score: 85,
-    created_at: "2024-02-20T10:30:00Z",
+    id: "doubt-today-1",
+    type: "doubt",
+    title: "Pending Doubts",
+    description: "There are 112 unresolved doubts awaiting tutor response.",
+    time: new Date().toISOString(),
+    meta: "Action Required",
   },
   {
-    id: 2,
-    student_name: "Priya Patel",
-    test_name: "Geometry Mid-Term",
-    course_name: "SAT Math",
-    total_score: 92,
-    created_at: "2024-02-19T14:15:00Z",
+    id: "fl-today-1",
+    type: "fl-test",
+    title: "FLT Completed",
+    description: "Rahul Sharma finished Algebra Baseline Test (SAT)",
+    time: new Date().toISOString(),
+    meta: "Score: 1420/1600",
   },
   {
-    id: 3,
-    student_name: "Amit Singh",
-    test_name: "Reading Comprehension",
-    course_name: "SAT English",
-    total_score: 78,
-    created_at: "2024-02-18T09:45:00Z",
+    id: "pr-today-1",
+    type: "pr-test",
+    title: "Practice Completed",
+    description: "Priya Patel finished Geometry Practice Set 3 (SAT)",
+    time: new Date().toISOString(),
+    meta: "Correct: 9/10",
   },
   {
-    id: 4,
-    student_name: "Sneha Gupta",
-    test_name: "Grammar & Usage",
-    course_name: "SAT English",
-    total_score: 45,
-    created_at: "2024-02-17T16:20:00Z",
+    id: "fl-today-2",
+    type: "fl-test",
+    title: "FLT Completed",
+    description: "Amit Singh finished Reading Baseline Test (SAT)",
+    time: new Date().toISOString(),
+    meta: "Score: 1380/1600",
   },
   {
-    id: 5,
-    student_name: "Vikram Malhotra",
-    test_name: "Trigonometry Basics",
-    course_name: "ACT Math",
-    total_score: 88,
-    created_at: "2024-02-16T11:00:00Z",
+    id: "pr-today-2",
+    type: "pr-test",
+    title: "Practice Completed",
+    description: "Sneha Gupta finished Vocabulary Practice 1 (SAT)",
+    time: new Date().toISOString(),
+    meta: "Correct: 10/10",
   },
 ];
 
-const DUMMY_PRACTICE = [
+const DUMMY_PREV_ACTIVITIES = [
   {
-    id: 101,
-    student_name: "Rohan Das",
-    test_name: "Practice Set 1 - Algebra",
-    course_name: "SAT Math",
-    total_score: 70,
-    created_at: "2024-02-21T09:00:00Z",
+    id: "fl-prev-1",
+    type: "fl-test",
+    title: "FLT Completed",
+    description: "Kayum finished Testing Purpose (SAT)",
+    time: "Jul 15, 5:32 PM",
+    meta: "Score: 400/1600",
   },
   {
-    id: 102,
-    student_name: "Kavya Reddy",
-    test_name: "Practice Set 3 - Vocabulary",
-    course_name: "SAT English",
-    total_score: 65,
-    created_at: "2024-02-20T15:30:00Z",
+    id: "fl-prev-2",
+    type: "fl-test",
+    title: "FLT Completed",
+    description: "Kayum finished Testing Purpose 2 (SAT)",
+    time: "Jul 15, 11:24 AM",
+    meta: "Score: 400/1600",
   },
   {
-    id: 103,
-    student_name: "Arjun Verma",
-    test_name: "Quick Practice - Geometry",
-    course_name: "SAT Math",
-    total_score: 55,
-    created_at: "2024-02-19T11:20:00Z",
+    id: "fl-prev-3",
+    type: "fl-test",
+    title: "FLT Completed",
+    description: "Kayum finished Test 001 (SAT)",
+    time: "Jul 14, 5:05 PM",
+    meta: "Score: 400/1600",
   },
   {
-    id: 104,
-    student_name: "Meera Nair",
-    test_name: "Practice Test - Reading 1",
-    course_name: "SAT English",
-    total_score: 80,
-    created_at: "2024-02-18T13:45:00Z",
+    id: "pr-prev-1",
+    type: "pr-test",
+    title: "Practice Completed",
+    description: "Rohan Das finished Math Drills - Mixed (SAT)",
+    time: "Jul 14, 2:15 PM",
+    meta: "Correct: 8/10",
   },
   {
-    id: 105,
-    student_name: "Siddharth Jain",
-    test_name: "Math Drills - Mixed",
-    course_name: "ACT Math",
-    total_score: 95,
-    created_at: "2024-02-17T10:10:00Z",
+    id: "pr-prev-2",
+    type: "pr-test",
+    title: "Practice Completed",
+    description: "Kavya Reddy finished Reading Comprehension 2 (SAT)",
+    time: "Jul 14, 10:00 AM",
+    meta: "Correct: 7/10",
   },
 ];
+
+// Helper for calculating relative time
+function timeAgo(dateString) {
+  if (!dateString) return "-";
+  const now = new Date();
+  const date = new Date(dateString);
+  const seconds = Math.floor((now - date) / 1000);
+  
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatActivityTime(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "-";
+  
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  }) + ", " + date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+}
+
+// Sparkline data generator based on value and today's count
+const generateSparklineData = (value, todayCount) => {
+  if (value === 0) return [0, 0, 0, 0, 0];
+  const todayVal = todayCount || 0;
+  const historicalTotal = value - todayVal;
+  const p1 = Math.round(historicalTotal * 0.2);
+  const p2 = Math.round(historicalTotal * 0.5);
+  const p3 = Math.round(historicalTotal * 0.8);
+  const p4 = historicalTotal;
+  const p5 = value;
+  return [p1, p2, p3, p4, p5];
+};
+
+// Lightweight premium visual sparkline area chart
+function Sparkline({ data, width = 80, height = 30, color = "#F59403" }) {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min;
+  
+  const points = data.map((val, index) => {
+    const x = (index / (data.length - 1)) * width;
+    const y = height - ((val - min) / range) * (height - 6) - 3;
+    return { x, y };
+  });
+
+  const pathD = `M ${points.map(p => `${p.x} ${p.y}`).join(" L ")}`;
+  const areaD = `${pathD} L ${width} ${height} L 0 ${height} Z`;
+  const gradId = `sparkline-grad-${Math.random().toString(36).substr(2, 9)}`;
+
+  return (
+    <svg width={width} height={height} className="overflow-visible" style={{ display: "block" }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#${gradId})`} />
+      <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="3" fill={color} />
+    </svg>
+  );
+}
 
 function StatCard({
   title,
@@ -151,11 +241,13 @@ function StatCard({
   apiKey,
   routeName,
   gradientClass,
+  trendType = "up",
 }) {
   const router = useRouter();
   const { id } = useParams();
 
   const handleViewAll = () => {
+    if (value === 0) return;
     const params = new URLSearchParams();
     params.append("category", apiKey);
     if (selectedFilter === "custom" && customStartDate && customEndDate) {
@@ -167,28 +259,87 @@ function StatCard({
     router.push(`/admin/${id}/${routeName}?${params.toString()}`);
   };
 
+  const isMuted = value === 0;
+
   return (
     <div
       onClick={handleViewAll}
-      className="relative bg-white rounded-lg p-3 sm:p-4 md:p-5 lg:p-6 border-2 border-gray-50 shadow-md hover:shadow-lg overflow-hidden group cursor-pointer transition-all"
+      className={`relative bg-white rounded-xl p-4 md:p-5 border transition-all duration-300 ${
+        isMuted
+          ? "border-gray-100 opacity-60 bg-gray-50/50 cursor-default"
+          : "border-gray-100 shadow-sm hover:shadow-md cursor-pointer hover:-translate-y-0.5 hover:border-gray-200"
+      }`}
     >
-      <div
-        className={`absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r ${gradientClass}`}
-      />
-      <div className="flex justify-between items-start mb-2 sm:mb-3 md:mb-4 gap-2">
-        <p className="text-xs sm:text-sm font-medium text-gray-500 leading-tight">
+      {!isMuted && (
+        <div
+          className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientClass}`}
+        />
+      )}
+
+      <div className="flex justify-between items-start mb-2 gap-2">
+        <p className={`text-xs font-semibold uppercase tracking-wider ${isMuted ? "text-gray-400" : "text-gray-500"}`}>
           {title}
         </p>
-        <button className="text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent whitespace-nowrap flex-shrink-0">
-          View all →
-        </button>
+        {!isMuted && (
+          <span className="text-xs text-orange-500 font-medium hover:underline flex items-center gap-0.5">
+            View all <span className="text-[10px]">→</span>
+          </span>
+        )}
       </div>
-      <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
-        {value}
+
+      <div className="flex items-end justify-between mt-3">
+        <div>
+          <div className={`text-3xl font-extrabold tracking-tight ${isMuted ? "text-gray-400" : "text-gray-900"}`}>
+            {value}
+          </div>
+        </div>
+
+        <div className="flex-shrink-0">
+          {trendType === "up" ? (
+            <span className="  text-emerald-600 text-lg font-extrabold">
+              ↑
+            </span>
+          ) : (
+            <span className="text-red-600 text-lg font-extrabold">
+              ↓
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
+const getActivityIcon = (type, isHighlighted) => {
+  if (isHighlighted) {
+    return (
+      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/20 ring-4 ring-white">
+        <QuestionMarkCircleIcon className="w-4 h-4" />
+      </div>
+    );
+  }
+  
+  switch (type) {
+    case "fl-test":
+      return (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20 ring-4 ring-white">
+          <BookOpenNodeIcon className="w-4 h-4" />
+        </div>
+      );
+    case "pr-test":
+      return (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 ring-4 ring-white">
+          <CheckCircleNodeIcon className="w-4 h-4" />
+        </div>
+      );
+    default:
+      return (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-purple-500/20 ring-4 ring-white">
+          <PlusCircleNodeIcon className="w-4 h-4" />
+        </div>
+      );
+  }
+};
 
 export default function Dashboard() {
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -220,6 +371,18 @@ export default function Dashboard() {
   }, []);
 
   const [notificationCounts, setNotificationCounts] = useState({});
+  const [todayCounts, setTodayCounts] = useState({});
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+  const [activityDayTab, setActivityDayTab] = useState("today"); // "today" or "prev_day"
+
+  const displayActivities = useMemo(() => {
+    if (activityDayTab === "today") {
+      return DUMMY_TODAY_ACTIVITIES;
+    } else {
+      return DUMMY_PREV_ACTIVITIES;
+    }
+  }, [activityDayTab]);
   const [courseChartData, setCourseChartData] = useState([]);
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
@@ -239,30 +402,40 @@ export default function Dashboard() {
       key: "CONCERN",
       route: "concerns",
       gradient: "from-orange-500 to-amber-400",
+      color: "#F59403",
+      trendType: "up",
     },
     {
       display: "Doubts",
       key: "DOUBT",
       route: "doubts",
       gradient: "from-blue-500 to-cyan-400",
+      color: "#3B82F6",
+      trendType: "up",
     },
     {
       display: "Meetings",
       key: "MEETING",
       route: "meetings",
       gradient: "from-emerald-500 to-teal-400",
+      color: "#10B981",
+      trendType: "down",
     },
     {
       display: "Issues",
       key: "ISSUE",
       route: "issues",
       gradient: "from-rose-500 to-pink-400",
+      color: "#F43F5E",
+      trendType: "up",
     },
     {
       display: "Suggestions",
       key: "SUGGESTION",
       route: "suggestions",
       gradient: "from-indigo-500 to-purple-400",
+      color: "#6366F1",
+      trendType: "down",
     },
   ];
   const [tests, setTests] = useState([]);
@@ -307,7 +480,6 @@ export default function Dashboard() {
       .get(endpoint, {
         params: {
           course_id: selectedCourse,
-
           limit: 10,
           ...finalDateParams,
         },
@@ -319,6 +491,11 @@ export default function Dashboard() {
         } else {
           setPracticeTests(res.data);
         }
+      })
+      .catch((err) => {
+        console.error("Recent submissions fetch error:", err);
+        if (activeTab === "1") setFullLengthTests([]);
+        else setPracticeTests([]);
       })
       .finally(() => setLoadingSubmissions(false));
   }, [activeTab, selectedCourse, selectedStudent, finalDateParams]);
@@ -345,40 +522,45 @@ export default function Dashboard() {
   }, [selectedCourse, selectedStudent]);
 
   useEffect(() => {
-    axios.get(GET_Courses).then((res) => {
-      setCourses(res.data);
-      setSelectedCourse(res.data[0]?.id.toString());
-    });
+    axios
+      .get(GET_Courses)
+      .then((res) => {
+        setCourses(res.data);
+        setSelectedCourse(res.data[0]?.id.toString());
+      })
+      .catch((err) => console.error("Courses fetch error:", err));
 
-    axios.get(GET_Students, { withCredentials: true }).then((res) => {
-      const studentList = res.data || [];
-      const allOption = { id: "", name: "All Students" };
-      const updatedList = [allOption, ...studentList];
+    axios
+      .get(GET_Students, { withCredentials: true })
+      .then((res) => {
+        const studentList = res.data || [];
+        const allOption = { id: "", name: "All Students" };
+        const updatedList = [allOption, ...studentList];
 
-      setStudents(updatedList);
-      // Set the first student as default if available
-      if (studentList.length > 0) {
-        setSelectedStudent(studentList[0].id.toString());
-      } else {
-        setSelectedStudent(""); // fallback to "All Students" (empty string ID)
-      }
-    });
+        setStudents(updatedList);
+        if (studentList.length > 0) {
+          setSelectedStudent(studentList[0].id.toString());
+        } else {
+          setSelectedStudent("");
+        }
+      })
+      .catch((err) => console.error("Students fetch error:", err));
 
-    getStudentCountByCourse().then(({ data }) => {
-      const formatted = data.map((item) => ({
-        name: item.course_name,
-        value: item.student_count,
-      }));
-      setCourseChartData(formatted);
-    });
+    getStudentCountByCourse()
+      .then(({ data }) => {
+        const formatted = data.map((item) => ({
+          name: item.course_name,
+          value: item.student_count,
+        }));
+        setCourseChartData(formatted);
+      })
+      .catch((err) => console.error("Student count fetch error:", err));
   }, []);
 
   useEffect(() => {
     const fetchUnreadNotifications = async () => {
       try {
         let params = {};
-        let res;
-
         if (selectedFilter === "custom") {
           if (customStartDate && customEndDate) {
             params = {
@@ -394,12 +576,19 @@ export default function Dashboard() {
           };
         }
 
-        res = await axios.get(`${BASE_URL}/api/notification/unread/`, {
-          params,
-          withCredentials: true,
-        });
+        const [res, todayRes] = await Promise.all([
+          axios.get(`${BASE_URL}/api/notification/unread/`, {
+            params,
+            withCredentials: true,
+          }),
+          axios.get(`${BASE_URL}/api/notification/unread/`, {
+            params: { filter: "today" },
+            withCredentials: true,
+          }).catch(() => ({ data: {} })),
+        ]);
 
         setNotificationCounts(res.data);
+        setTodayCounts(todayRes.data);
       } catch (err) {
         console.error("Unread notification fetch error:", err);
         setNotificationCounts({});
@@ -408,6 +597,78 @@ export default function Dashboard() {
 
     fetchUnreadNotifications();
   }, [selectedFilter, customStartDate, customEndDate]);
+
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      setLoadingActivity(true);
+      try {
+        const [doubtsRes, flRes, prRes] = await Promise.all([
+          getDoubtsList({ page: 1 }).catch(() => ({ data: { results: [], count: 0 } })),
+          axios.get(`${BASE_URL}/api/result/recent/full-length/`, { withCredentials: true }).catch(() => ({ data: [] })),
+          axios.get(`${BASE_URL}/api/result/recent/practice/`, { withCredentials: true }).catch(() => ({ data: [] })),
+        ]);
+
+        let combined = [];
+
+        // 1. Full Length Tests
+        if (Array.isArray(flRes.data)) {
+          flRes.data.forEach((t) => {
+            combined.push({
+              id: `fl-${t.id}`,
+              type: "fl-test",
+              title: `FLT Completed`,
+              description: `${t.student_name || "Student"} finished ${t.test_name || "Test"} (${t.course_name || "SAT"})`,
+              time: t.created_at,
+              meta: `Score: ${t.total_score ?? "400"}/1600`,
+            });
+          });
+        }
+
+        // 2. Practice Tests
+        if (Array.isArray(prRes.data)) {
+          prRes.data.forEach((t) => {
+            combined.push({
+              id: `pr-${t.id}`,
+              type: "pr-test",
+              title: `Practice Completed`,
+              description: `${t.student_name || "Student"} finished ${t.test_name || "Practice Test"} (${t.course_name || "SAT"})`,
+              time: t.created_at,
+              meta: `Correct: ${t.correct_answers ?? "2"}`,
+            });
+          });
+        }
+
+        // Sort student submissions by time descending
+        combined.sort((a, b) => {
+          if (!a.time) return 1;
+          if (!b.time) return -1;
+          return dayjs(b.time).valueOf() - dayjs(a.time).valueOf();
+        });
+
+        // 3. Prepend Pending Doubts summary card if unread doubts exist
+        const pendingDoubtsCount = doubtsRes.data?.count ?? 0;
+        if (pendingDoubtsCount > 0) {
+          combined.unshift({
+            id: "pending-doubts-summary",
+            type: "doubt",
+            title: "Pending Doubts",
+            description: `There are ${pendingDoubtsCount} unresolved doubts awaiting tutor response.`,
+            time: new Date().toISOString(), // Shows "Just now"
+            status: "RAISED",
+            meta: "Action Required",
+          });
+        }
+
+        setRecentActivity(combined.slice(0, 10));
+      } catch (err) {
+        console.error("Error compiling activity feed:", err);
+      } finally {
+        setLoadingActivity(false);
+      }
+    };
+
+    fetchRecentActivity();
+  }, []);
 
   useEffect(() => {
     if (
@@ -469,6 +730,11 @@ export default function Dashboard() {
         setBarPercentData(
           formatted.map((item) => ({ name: item.name, value: item.score })),
         );
+      })
+      .catch((err) => {
+        console.error("Course wise time fetch error:", err);
+        setTimeSpentData([]);
+        setBarPercentData([]);
       });
   }, [selectedCourse, selectedStudent, finalDateParams, selectedTest]);
 
@@ -515,7 +781,7 @@ export default function Dashboard() {
                 setShowDatePicker(!showDatePicker);
                 setSelectedFilter("custom");
               }}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${
+              className={`px-4 py-1 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${
                 selectedFilter === "custom"
                   ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
                   : "text-[#805830] hover:bg-gray-100"
@@ -603,21 +869,23 @@ export default function Dashboard() {
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-6">
-            {SECTIONS.map(({ display, key, route, gradient }) => (
-              <StatCard
-                key={display}
-                title={display}
-                apiKey={key}
-                routeName={route}
-                value={notificationCounts[key]?.unread_count ?? 0}
-                selectedFilter={selectedFilter}
-                customStartDate={customStartDate}
-                customEndDate={customEndDate}
-                gradientClass={gradient}
-              />
-            ))}
+            {SECTIONS.map(
+              ({ display, key, route, gradient, trendType }) => (
+                <StatCard
+                  key={display}
+                  title={display}
+                  apiKey={key}
+                  routeName={route}
+                  value={notificationCounts[key]?.unread_count ?? 0}
+                  selectedFilter={selectedFilter}
+                  customStartDate={customStartDate}
+                  customEndDate={customEndDate}
+                  gradientClass={gradient}
+                  trendType={trendType}
+                />
+              )
+            )}
           </div>
-
           {/* Question Count Table */}
           <div className="bg-white shadow-md rounded-xl mb-6">
             <div className="p-5 border-b border-white bg-gradient-to-r from-[#2E2725] to-[#805830] rounded-t-xl">
@@ -630,69 +898,90 @@ export default function Dashboard() {
               <table className="min-w-full text-sm border-collapse">
                 <thead className="bg-gray-50 border-b-2 border-gray-400">
                   <tr>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                    <th className="px-4 py-1 text-left font-semibold text-[#2E2725] border-r border-gray-300">
                       Course
                     </th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                    <th className="px-4 py-1 text-left font-semibold text-[#2E2725] border-r border-gray-300">
                       Subject
                     </th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                    <th className="px-4 py-1 text-left font-semibold text-[#2E2725] border-r border-gray-300">
                       Total
                     </th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                    <th className="px-4 py-1 text-left font-semibold text-[#2E2725] border-r border-gray-300">
                       Active
                     </th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                    <th className="px-4 py-1 text-left font-semibold text-[#2E2725] border-r border-gray-300">
                       Inactive
                     </th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725] border-r border-gray-300">
+                    <th className="px-4 py-1 text-left font-semibold text-[#2E2725] border-r border-gray-300">
                       Practice
                     </th>
-                    <th className="px-5 py-4 text-left font-semibold text-[#2E2725]">
+                    <th className="px-4 py-1 text-left font-semibold text-[#2E2725] border-r border-gray-300">
                       Full Length
+                    </th>
+                    <th className="px-4 py-1 text-left font-semibold text-[#2E2725]">
+                      Health Check (Active vs Inactive Ratio)
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {questionCounts.length > 0 ? (
-                    questionCounts.map((item, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-gray-400 hover:bg-[#FFD36A]/10 transition-colors"
-                      >
-                        <td className="px-5 py-4 font-medium text-[#2E2725] border-r border-gray-300">
-                          {item.course}
-                        </td>
-                        <td className="px-5 py-4 text-[#805830] border-r border-gray-300">
-                          {item.subject}
-                        </td>
-                        <td className="px-5 py-4 border-r border-gray-300">
-                          <span className="px-2.5 py-1 bg-[#0071BC]/10 text-[#0071BC] rounded-full font-semibold text-xs">
-                            {item.total_questions}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 border-r border-gray-300">
-                          <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-full font-semibold text-xs">
-                            {item.active_questions}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="px-2.5 py-1 bg-red-100 text-red-600 rounded-full font-semibold text-xs">
-                            {item.inactive_questions}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-[#805830] border-r border-gray-300">
-                          {item.total_self_practice_questions}
-                        </td>
-                        <td className="px-5 py-4 text-[#805830]">
-                          {item.total_full_length_questions}
-                        </td>
-                      </tr>
-                    ))
+                    questionCounts.map((item, i) => {
+                      const total = item.total_questions || 1;
+                      const activePercent = ((item.active_questions || 0) / total) * 100;
+                      const inactivePercent = ((item.inactive_questions || 0) / total) * 100;
+                      
+                      return (
+                        <tr
+                          key={i}
+                          className="border-b border-gray-400 hover:bg-[#FFD36A]/10 transition-colors"
+                        >
+                          <td className="px-4 py-1 font-medium text-[#2E2725] border-r border-gray-300">
+                            {item.course}
+                          </td>
+                          <td className="px-4 py-1 text-[#805830] border-r border-gray-300">
+                            {item.subject}
+                          </td>
+                          <td className="px-4 py-1 border-r border-gray-300">
+                            <span className="px-2.5 py-1 bg-[#0071BC]/10 text-[#0071BC] rounded-full font-semibold text-xs">
+                              {item.total_questions}
+                            </span>
+                          </td>
+                          <td className="px-4 py-1 border-r border-gray-300">
+                            <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-full font-semibold text-xs">
+                              {item.active_questions}
+                            </span>
+                          </td>
+                          <td className="px-4 py-1 border-r border-gray-300">
+                            <span className="px-2.5 py-1 bg-red-100 text-red-600 rounded-full font-semibold text-xs">
+                              {item.inactive_questions}
+                            </span>
+                          </td>
+                          <td className="px-4 py-1 text-[#805830] border-r border-gray-300">
+                            {item.total_self_practice_questions}
+                          </td>
+                          <td className="px-4 py-1 text-[#805830] border-r border-gray-300">
+                            {item.total_full_length_questions}
+                          </td>
+                          <td className="px-4 py-1">
+                            <div className="flex flex-col gap-1 w-full min-w-[180px] max-w-[240px]">
+                              <div className="flex justify-between text-[11px] font-semibold">
+                                <span className="text-emerald-600">{activePercent.toFixed(1)}% active</span>
+                                <span className="text-rose-500">{inactivePercent.toFixed(1)}% inactive</span>
+                              </div>
+                              <div className="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden flex items-center">
+                                <div style={{ width: `${activePercent}%` }} className="bg-emerald-500 h-full transition-all duration-500" />
+                                <div style={{ width: `${inactivePercent}%` }} className="bg-rose-400 h-full transition-all duration-500" />
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td
-                        colSpan="7"
+                        colSpan="8"
                         className="text-center py-8 text-gray-400"
                       >
                         <div className="flex flex-col items-center gap-2">
@@ -704,235 +993,192 @@ export default function Dashboard() {
                   )}
                 </tbody>
               </table>
-              <div className="px-5 py-3 bg-gray-50 text-sm text-[#805830">
+              <div className="px-5 py-3 bg-gray-50 text-sm text-[#805830]">
                 Showing {questionCounts.length} records
               </div>
             </div>
           </div>
-
-          {/* Student Count Chart */}
-          <div className="bg-white shadow-md rounded-xl p-5 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#2E2725]">
-                Student Count by Course
-              </h3>
-            </div>
-            <div className="overflow-x-auto overflow-y-hidden">
-              <div
-                style={{
-                  minWidth:
-                    courseChartData.length > 3
-                      ? `${courseChartData.length * 100}px`
-                      : "100%",
-                }}
-                className="md:min-w-full"
-              >
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart
-                    data={courseChartData}
-                    barSize={40}
-                    margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis
-                      dataKey="name"
-                      interval={0}
-                      angle={-15}
-                      textAnchor="end"
-                      tick={{
-                        fill: "#000000",
-                        fontSize: 13,
-                        dy: 2,
-                        fontWeight: "bold",
-                      }}
-                      height={60}
-                    />
-                    <YAxis tick={{ fill: "#000000", fontSize: 12 }} />
-                    <Tooltip cursor={{ fill: "transparent" }} />
-                    <Bar dataKey="value" fill="#F59403" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+          <div >
+            {/* Student Count Chart */}
+            <div className="lg:col-span-2 bg-white shadow-md rounded-xl p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-[#2E2725]">
+                  Student Count by Course
+                </h3>
+              </div>
+              <div className="overflow-x-auto overflow-y-hidden">
+                <div
+                  style={{
+                    minWidth:
+                      courseChartData.length > 3
+                        ? `${courseChartData.length * 100}px`
+                        : "100%",
+                  }}
+                  className="md:min-w-full"
+                >
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart
+                      data={courseChartData}
+                      barSize={40}
+                      margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis
+                        dataKey="name"
+                        interval={0}
+                        angle={-15}
+                        textAnchor="end"
+                        tick={{
+                          fill: "#000000",
+                          fontSize: 13,
+                          dy: 2,
+                          fontWeight: "bold",
+                        }}
+                        height={60}
+                      />
+                      <YAxis tick={{ fill: "#000000", fontSize: 12 }} />
+                      <Tooltip cursor={{ fill: "transparent" }} />
+                      <Bar dataKey="value" fill="#F59403" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
+
+            <div className="bg-white shadow-md border border-gray-100/80 rounded-xl p-5 flex flex-col h-full min-h-[500px] mt-6 transition-all duration-300">
+              {/* Header Bar with Today / Prev Day Tabs */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-5 border-b border-gray-100 gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/20">
+                    <ActivityFeedCalendarIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base lg:text-lg font-bold text-[#2E2725]">
+                      Activity Feed
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Today vs Prev Day Tabs */}
+                <div className="flex items-center bg-gray-100/90 p-1 rounded-xl gap-1">
+                  <button
+                    onClick={() => setActivityDayTab("today")}
+                    className={`px-4 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                      activityDayTab === "today"
+                        ? "bg-[#F59403] text-white shadow-xs"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    onClick={() => setActivityDayTab("prev_day")}
+                    className={`px-4 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                      activityDayTab === "prev_day"
+                        ? "bg-[#F59403] text-white shadow-xs"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    Prev Day
+                  </button>
+                </div>
+              </div>
+
+              {/* Content Body */}
+              {loadingActivity ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-12">
+                  <div className="w-9 h-9 border-3 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-400 mt-3 font-medium">Fetching recent activities...</span>
+                </div>
+              ) : displayActivities.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-12 text-gray-400 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                  <NoDataClockIcon className="w-10 h-10 text-gray-300 mb-2" />
+                  <span className="text-sm font-semibold text-gray-600">No activity found</span>
+                  <span className="text-xs text-gray-400 mt-1">There are no activities for this day yet.</span>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto max-h-[580px] pr-2 relative dashboard-activity-scroll">
+                  <div className="space-y-3 relative">
+                    {displayActivities.map((activity, index) => {
+                      const isDoubtPending = activity.type === "doubt";
+                      const isLast = index === displayActivities.length - 1;
+
+                      return (
+                        <div key={activity.id} className="relative flex gap-3.5 group items-center">
+                          {/* Timeline Node */}
+                          <div className="flex flex-col items-center flex-shrink-0 relative">
+                            <div className="z-10">{getActivityIcon(activity.type, isDoubtPending)}</div>
+                            {!isLast && (
+                              <div className="w-0.5 bg-gradient-to-b from-gray-200 via-gray-200 to-gray-100 flex-1 my-1 hidden sm:block"></div>
+                            )}
+                          </div>
+
+                          {/* Activity Card - Single Responsive Line */}
+                          <div className="flex-1">
+                            {isDoubtPending ? (
+                              <div className="bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-white border border-amber-200/70 rounded-md px-4 py-2.5 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                <div className="flex flex-wrap items-center gap-2 text-xs">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300/60 whitespace-nowrap">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                    {activity.title}
+                                  </span>
+                                  <span className="text-xs font-medium text-gray-800">
+                                    {activity.description}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#F59403] text-white shadow-xs whitespace-nowrap">
+                                    ⚡ {activity.meta}
+                                  </span>
+                                </div>
+                                <span className="text-[11px] text-amber-700 font-medium whitespace-nowrap bg-white/80 border border-amber-200 px-2 py-0.5 rounded-full shadow-2xs self-end sm:self-center">
+                                  Just now
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="bg-white hover:bg-slate-50/80 border border hover:border-orange-200/80 rounded-md px-4 py-2.5 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                <div className="flex flex-wrap items-center gap-2.5 text-xs">
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide whitespace-nowrap ${
+                                      activity.type === "fl-test"
+                                        ? "bg-blue-50 text-blue-700 border border-blue-200/60"
+                                        : "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                                    }`}
+                                  >
+                                    {activity.type === "fl-test" ? "Full Length Test" : "Practice Test"}
+                                  </span>
+
+                                  <span className="font-bold text-gray-900">
+                                    {activity.description || activity.title}
+                                  </span>
+
+                                  {activity.type === "fl-test" ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-blue-50/80 text-blue-700 border border-blue-200/70 whitespace-nowrap">
+                                      <BookMiniIcon className="w-3.5 h-3.5 text-blue-500" />
+                                      {activity.meta}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-50/80 text-emerald-700 border border-emerald-200/70 whitespace-nowrap">
+                                      <CheckMiniIcon className="w-3.5 h-3.5 text-emerald-500" />
+                                      {activity.meta}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap flex items-center gap-1 self-end sm:self-center">
+                                  <ClockMiniIcon className="w-3.5 h-3.5 text-gray-400" />
+                                  {activity.time?.includes("Jul") ? activity.time : formatActivityTime(activity.time)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            
           </div>
-
-          {/* Recent Test Submissions */}
-          {/* <div className="bg-white shadow-md rounded-xl p-5 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <Tabs
-                defaultActiveKey="1"
-                activeKey={activeTab}
-                onChange={(key) => setActiveTab(key)}
-                items={[
-                  {
-                    key: "1",
-                    label: (
-                      <span className="text-lg font-bold">
-                        Recent Full Length Tests
-                      </span>
-                    ),
-                  },
-                  {
-                    key: "2",
-                    label: (
-                      <span className="text-lg font-bold">
-                        Recent Practice Tests
-                      </span>
-                    ),
-                  },
-                ]}
-                className="w-full"
-              />
-            </div>
-            <div className="overflow-x-auto">
-              <Table
-                dataSource={activeTab === "1" ? fullLengthTests : practiceTests}
-                columns={[
-                  {
-                    title: "Student Name",
-                    dataIndex: "student_name",
-                    key: "student_name",
-                    render: (text) => (
-                      <span className="font-medium text-[#2E2725]">
-                        {text || "N/A"}
-                      </span>
-                    ),
-                  },
-                  {
-                    title: "Test Name",
-                    dataIndex: "test_name",
-                    key: "test_name",
-                    render: (text) => (
-                      <span className="text-[#805830]">{text || "N/A"}</span>
-                    ),
-                  },
-                  {
-                    title: "Course Name",
-                    dataIndex: "course_name",
-                    key: "course_name",
-                    render: (text) => (
-                      <span className="text-gray-600 font-medium">
-                        {text || "N/A"}
-                      </span>
-                    ),
-                  },
-                  {
-                    title: "Score",
-                    dataIndex: "total_score",
-                    key: "total_score",
-                    render: (score) => (
-                      <Tag
-                        color={score >= 500 ? "green" : "red"} // SAT-friendly threshold
-                        className="rounded-full px-3"
-                      >
-                        {score ?? "N/A"}
-                      </Tag>
-                    ),
-                  },
-                  {
-                    title: "Date",
-                    dataIndex: "created_at",
-                    key: "created_at",
-                    render: (date) => (
-                      <span className="text-gray-500">
-                        {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
-                      </span>
-                    ),
-                  },
-                ]}
-                loading={loadingSubmissions}
-                pagination={false}
-                rowKey={(record) => record.id}
-                className="dashboard-table"
-              /> 
-            </div>
-          </div>*/}
-
-          {/* <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 ">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-lg font-bold text-[#2E2725]">Topic-wise Performance</h3>
-            </div>
-
-            <Row gutter={[24, 24]} className="flex">
-              <Col xs={24} md={12}>
-                <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 border border-blue-100 rounded-md p-3 h-full flex flex-col">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="text-lg font-semibold text-blue-600">English</h4>
-                  </div>
-
-                  {loadingKeyStrengths ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  ) : englishTopics.length === 0 ? (
-                    <div className="text-center py-6 text-gray-400 flex-1 flex flex-col items-center justify-center">
-                      <NoDataIcon />
-                      <p className="text-sm">No data available</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {englishTopics.map((item, i) => (
-                        <div key={i}>
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-600">{item.topic}</span>
-                            <span className={`text-sm font-semibold ${item.score >= 50 ? 'text-emerald-500' : 'text-red-500'}`}>
-                              {item.score}%
-                            </span>
-                          </div>
-                          <Progress
-                            percent={item.score}
-                            strokeColor="#0071BC"
-                            trailColor="#e5e7eb"
-                            showInfo={false}
-                            strokeWidth={8}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <div className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 border border-orange-100 rounded-md p-3 h-full flex flex-col">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="text-lg font-semibold text-orange-500">Math</h4>
-                  </div>
-
-                  {loadingKeyStrengths ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  ) : mathTopics.length === 0 ? (
-                    <div className="text-center py-6 text-gray-400 flex-1 flex flex-col items-center justify-center">
-                      <NoDataIcon />
-                      <p className="text-sm">No data available</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {mathTopics.map((item, i) => (
-                        <div key={i}>
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-600">{item.topic}</span>
-                            <span className="text-sm font-semibold text-[#805830]">
-                              {item.score}%
-                            </span>
-                          </div>
-                          <Progress
-                            percent={item.score}
-                            strokeColor="#F59403"
-                            trailColor="#e5e7eb"
-                            showInfo={false}
-                            strokeWidth={8}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Col>
-            </Row>
-          </div>  */}
         </>
       )}
     </div>

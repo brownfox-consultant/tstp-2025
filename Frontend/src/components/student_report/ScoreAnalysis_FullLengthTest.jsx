@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
   ComposedChart,
-  Bar,
   Area,
   Line,
   XAxis,
@@ -13,8 +12,43 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceLine,
+  ReferenceDot,
 } from "recharts";
 import { BASE_URL } from "@/app/constants/apiConstants";
+import SkeletonChart from "@/components/common/SkeletonChart";
+import EmptyState from "@/components/common/EmptyState";
+
+
+const EndLabel = (props) => {
+  const { x, y, stroke, value, index, dataLength, name, offsetY = 0 } = props;
+  if (index !== dataLength - 1) return null;
+
+  return (
+    <g>
+      {/* Bullet point matching the line color */}
+      <circle
+        cx={x + 18}
+        cy={y + offsetY}
+        r={3}
+        fill={stroke}
+      />
+      {/* Label Text */}
+      <text
+        x={x + 26}
+        y={y + 4 + offsetY}
+        fill={stroke}
+        fontSize={10}
+        fontWeight="bold"
+        textAnchor="start"
+      >
+        {name}: {value}
+      </text>
+    </g>
+  );
+};
+
+
 
 export default function ScoreAnalysis_FullLengthTest({
   student_id,
@@ -22,6 +56,7 @@ export default function ScoreAnalysis_FullLengthTest({
   courseName = "Course",
 }) {
   const [chartData, setChartData] = useState([]);
+  const [targetScore, setTargetScore] = useState(1400);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startIndex, setStartIndex] = useState(0);
@@ -132,6 +167,26 @@ export default function ScoreAnalysis_FullLengthTest({
   const canGoRight = startIndex + visibleCount < chartData.length;
   const needsPagination = chartData.length > visibleCount;
 
+  // Calculate offsets for end labels
+  const lastPoint = displayData[displayData.length - 1];
+  const lastMath = lastPoint?.Math;
+  const lastEnglish = lastPoint?.English;
+
+  let mathLabelOffset = 0;
+  let englishLabelOffset = 0;
+  if (typeof lastMath === "number" && typeof lastEnglish === "number") {
+    const diff = lastMath - lastEnglish;
+    if (Math.abs(diff) < 50) {
+      if (diff >= 0) {
+        mathLabelOffset = -12;
+        englishLabelOffset = 12;
+      } else {
+        englishLabelOffset = -12;
+        mathLabelOffset = 12;
+      }
+    }
+  }
+
   const handlePrev = () => {
     if (canGoLeft) {
       setStartIndex(prev => Math.max(0, prev - visibleCount));
@@ -145,25 +200,25 @@ export default function ScoreAnalysis_FullLengthTest({
   };
 
 
-  /* ================= EMPTY STATE ================= */
-  if (loading) return null;
+  /* ================= LOADING & EMPTY STATES ================= */
+  if (loading) {
+    return <SkeletonChart height="400px" className="my-6" />;
+  }
+
   if (!chartData || chartData.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 p-12 text-center shadow-sm">
-        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
-          <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-        </div>
-        <h3 className="text-xl font-bold text-gray-700 mb-2">No Full-Length Test Data Available</h3>
-        <p className="text-gray-500 max-w-md leading-relaxed">
-          You haven't taken any Full-Length tests for this course yet. Complete your first test to see your score analysis!
-        </p>
-      </div>
+      <EmptyState
+        title="No Full-Length Test Data Available"
+        description="You haven't taken any Full-Length tests for this course yet. Complete your first test to see your score analysis!"
+        actionText="Take Practice Test"
+        onAction={() => window.location.href = "#"}
+        className="my-6"
+      />
     );
   }
 
   if (!summary) return null;
+
 
   /* ================= RENDER ================= */
   return (
@@ -179,6 +234,34 @@ export default function ScoreAnalysis_FullLengthTest({
             <h3 className="lg:text-xl text-base font-bold text-gray-800">
               Score Analysis & Progression - {courseName}
             </h3>
+          </div>
+
+          {/* Interactive Target Score Controller */}
+          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 px-3 py-1.5 rounded-xl shadow-sm">
+            <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+              Target Score:
+            </span>
+            <input
+              type="number"
+              min="400"
+              max="1600"
+              step="10"
+              value={targetScore}
+              onChange={(e) => {
+                const val = Math.max(400, Math.min(1600, Number(e.target.value)));
+                setTargetScore(val);
+              }}
+              className="w-16 px-2 py-0.5 text-sm font-black text-center text-blue-600 bg-white border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            />
+            <input
+              type="range"
+              min="400"
+              max="1600"
+              step="20"
+              value={targetScore}
+              onChange={(e) => setTargetScore(Number(e.target.value))}
+              className="w-24 md:w-32 h-1.5 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+            />
           </div>
         </div>
 
@@ -200,7 +283,7 @@ export default function ScoreAnalysis_FullLengthTest({
           {/* Combined Chart */}
           <div className={`h-[400px] w-full flex justify-center ${hideButtons ? 'px-2' : 'px-12'}`}>
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={displayData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <ComposedChart data={displayData} margin={{ top: 30, right: 115, bottom: 20, left: 20 }}>
                 <defs>
                   <linearGradient id="colorOverallMixed" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
@@ -229,22 +312,57 @@ export default function ScoreAnalysis_FullLengthTest({
                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
                    }}
                 />
-                <Legend verticalAlign="top" height={36} iconType="circle" />
                 
-                {/* Math and English as Bars */}
-                <Bar 
-                  dataKey="Math" 
-                  barSize={20} 
-                  fill="#818cf8" 
-                  radius={[4, 4, 0, 0]} 
-                  name="Math Score"
+                {/* Horizontal reference line for Target Score */}
+                <ReferenceLine
+                  y={targetScore}
+                  stroke="#ef4444"
+                  strokeDasharray="4 4"
+                  strokeWidth={2}
+                  label={{
+                    value: `Target: ${targetScore}`,
+                    position: "insideTopLeft",
+                    fill: "#ef4444",
+                    fontSize: 11,
+                    fontWeight: "bold",
+                    dy: 4
+                  }}
                 />
-                <Bar 
-                  dataKey="English" 
-                  barSize={20} 
-                  fill="#fbbf24" 
-                  radius={[4, 4, 0, 0]} 
+
+                {/* Math and English as Lines */}
+                <Line
+                  type="monotone"
+                  dataKey="Math"
+                  stroke="#818cf8"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "#818cf8", strokeWidth: 0 }}
+                  activeDot={{ r: 6 }}
+                  name="Math Score"
+                  label={
+                    <EndLabel
+                      dataLength={displayData.length}
+                      name="Math"
+                      stroke="#818cf8"
+                      offsetY={mathLabelOffset}
+                    />
+                  }
+                />
+                <Line
+                  type="monotone"
+                  dataKey="English"
+                  stroke="#fbbf24"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "#fbbf24", strokeWidth: 0 }}
+                  activeDot={{ r: 6 }}
                   name="English Score"
+                  label={
+                    <EndLabel
+                      dataLength={displayData.length}
+                      name="English"
+                      stroke="#fbbf24"
+                      offsetY={englishLabelOffset}
+                    />
+                  }
                 />
 
                 {/* Overall Score as Area/Line (Combined) */}
@@ -257,6 +375,14 @@ export default function ScoreAnalysis_FullLengthTest({
                   dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
                   activeDot={{ r: 6 }}
                   name="Overall Score"
+                  label={
+                    <EndLabel
+                      dataLength={displayData.length}
+                      name="Overall"
+                      stroke="#10b981"
+                      offsetY={0}
+                    />
+                  }
                 />
               </ComposedChart>
             </ResponsiveContainer>

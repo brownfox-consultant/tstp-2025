@@ -12,21 +12,34 @@ import { formatTimeToString } from "@/utils/utils";
 import { ClockCircleOutlined } from "@ant-design/icons";
 import { insideAuthInstance } from "@/lib/AxiosInstance";
 
+import useNetworkStatus from "@/utils/useNetworkStatus";
+
 export function TestTimer({ expiryTimestamp }) {
   const dispatch = useDispatch();
 
   const showTime = useSelector((state) => state.test.showTime);
   const testState = useSelector((state) => state.test);
+  const isOnline = useNetworkStatus();
 
   const {
     totalSeconds,
     seconds,
     minutes,
     isRunning,
+    pause,
+    resume,
   } = useTimer({
     expiryTimestamp,
     onExpire: () => dispatch(setTimeAsUp()),
   });
+
+  useEffect(() => {
+    if (!isOnline) {
+      pause();
+    } else if (isOnline && !isRunning) {
+      resume();
+    }
+  }, [isOnline]);
 
   const remainingRef = useRef(totalSeconds);
 

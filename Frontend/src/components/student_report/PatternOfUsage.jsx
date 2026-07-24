@@ -155,8 +155,8 @@ export default function PatternOfUsage({
     <div className="w-full">
 
       {/* CHART CONTAINER */}
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="bg-white rounded-2xl shadow p-8 border relative">
+      <div className="">
+        <div className="bg-white rounded-lg shadow p-8 border relative">
 
           {/* Left Arrow */}
           {canGoLeft && (
