@@ -310,7 +310,7 @@ function TestList() {
       ) : (
         <>
           <Input
-            placeholder="Search test..."
+            placeholder="Search Test Name"
             prefix={<SearchOutlined className="text-gray-400 text-lg mr-2" />}
             onChange={handleSearchChange}
             className="h-12 max-w-[450px] text-base rounded-xl border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm transition-all duration-300"

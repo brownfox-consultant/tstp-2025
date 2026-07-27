@@ -7,6 +7,7 @@ import {
   OrderedListOutlined,
   ThunderboltOutlined,
   CheckCircleOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { Form, Input, Select, Spin, Button } from "antd";
 import { useForm } from "antd/es/form/Form";
@@ -114,9 +115,9 @@ function CreateTest({ setTestDetails }) {
           </div>
           <button
             onClick={() => router.back()}
-            className="w-fit px-4 py-2 flex items-center justify-center gap-2 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium shadow-sm transition-all text-sm"
+            className="h-10 px-5 flex items-center justify-center gap-2 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium shadow-sm transition-all duration-300 hover:shadow-md"
           >
-            ← Back
+            <ArrowLeftOutlined className="text-sm" /> Back
           </button>
         </div>
 

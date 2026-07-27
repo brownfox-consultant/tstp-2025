@@ -76,25 +76,25 @@ function StudentsTestTable({ testReady, testDetails = {} }) {
     YET_TO_START: {
       label: "Yet To Start",
       color: "default",
-      icon: <MinusCircleFilled className="text-gray-400" />,
+      icon: <MinusCircleFilled className="text-gray-400 text-[12px]" />,
       bgClass: "bg-gray-50 text-gray-600 border-gray-200",
     },
     COMPLETED: {
       label: "Completed",
       color: "success",
-      icon: <CheckCircleFilled className="text-green-500" />,
+      icon: <CheckCircleFilled className="text-green-500 text-[12px]" />,
       bgClass: "bg-green-50 text-green-700 border-green-200",
     },
     // IN_PROGRESS: {
     //   label: "In Progress",
     //   color: "processing",
-    //   icon: <ClockCircleFilled className="text-blue-500" />,
+    //   icon: <ClockCircleFilled className="text-blue-500 text-[10px]" />,
     //   bgClass: "bg-blue-50 text-blue-700 border-blue-200"
     // },
     EXPIRED: {
       label: "Expired",
       color: "error",
-      icon: <ExclamationCircleFilled className="text-red-500" />,
+      icon: <ExclamationCircleFilled className="text-red-500 text-[12px]" />,
       bgClass: "bg-red-50 text-red-700 border-red-200",
     },
   };
@@ -120,7 +120,7 @@ function StudentsTestTable({ testReady, testDetails = {} }) {
         const config = statusConfig[text] || statusConfig.YET_TO_START;
         return (
           <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${config.bgClass}`}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${config.bgClass}`}
           >
             {config.icon}
             {config.label}
@@ -189,7 +189,7 @@ function StudentsTestTable({ testReady, testDetails = {} }) {
               <button
                 onClick={() => handleDelete(record.test_submission_id)}
                 disabled={actionLoadingId === record.test_submission_id}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-medium transition-all duration-300 disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-1 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-medium transition-all duration-300 disabled:opacity-50 text-xs"
               >
                 <DeleteOutlined />
                 Delete
@@ -217,7 +217,7 @@ function StudentsTestTable({ testReady, testDetails = {} }) {
   return (
     <div className="space-y-4">
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden [&_.ant-table-row:hover>td]:!bg-transparent">
         <Table
           title={() => (
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-2">
@@ -304,6 +304,10 @@ function StudentsTestTable({ testReady, testDetails = {} }) {
           )}
           columns={columns}
           loading={tableLoading}
+          rowClassName={(record, index) =>
+            `text-sm bg-white hover:bg-[#FFD36A]/10 transition-colors group`
+          }
+          className="[&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-2 [&_.ant-table-thead>tr>th]:!py-2"
           pagination={{
             showSizeChanger: false,
             onShowSizeChange: false,
