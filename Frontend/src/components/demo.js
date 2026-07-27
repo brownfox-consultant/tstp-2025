@@ -68,91 +68,7 @@ const DropdownIndicator = (props) => {
 
 
 
-const DUMMY_TODAY_ACTIVITIES = [
-  {
-    id: "doubt-today-1",
-    type: "doubt",
-    title: "Pending Doubts",
-    description: "There are 112 unresolved doubts awaiting tutor response.",
-    time: new Date().toISOString(),
-    meta: "Action Required",
-  },
-  {
-    id: "fl-today-1",
-    type: "fl-test",
-    title: "FLT Completed",
-    description: "Rahul Sharma finished Algebra Baseline Test (SAT)",
-    time: new Date().toISOString(),
-    meta: "Score: 1420/1600",
-  },
-  {
-    id: "pr-today-1",
-    type: "pr-test",
-    title: "Practice Completed",
-    description: "Priya Patel finished Geometry Practice Set 3 (SAT)",
-    time: new Date().toISOString(),
-    meta: "Correct: 9/10",
-  },
-  {
-    id: "fl-today-2",
-    type: "fl-test",
-    title: "FLT Completed",
-    description: "Amit Singh finished Reading Baseline Test (SAT)",
-    time: new Date().toISOString(),
-    meta: "Score: 1380/1600",
-  },
-  {
-    id: "pr-today-2",
-    type: "pr-test",
-    title: "Practice Completed",
-    description: "Sneha Gupta finished Vocabulary Practice 1 (SAT)",
-    time: new Date().toISOString(),
-    meta: "Correct: 10/10",
-  },
-];
 
-const DUMMY_PREV_ACTIVITIES = [
-  {
-    id: "fl-prev-1",
-    type: "fl-test",
-    title: "FLT Completed",
-    description: "Kayum finished Testing Purpose (SAT)",
-    time: "Jul 15, 5:32 PM",
-    meta: "Score: 400/1600",
-  },
-  {
-    id: "fl-prev-2",
-    type: "fl-test",
-    title: "FLT Completed",
-    description: "Kayum finished Testing Purpose 2 (SAT)",
-    time: "Jul 15, 11:24 AM",
-    meta: "Score: 400/1600",
-  },
-  {
-    id: "fl-prev-3",
-    type: "fl-test",
-    title: "FLT Completed",
-    description: "Kayum finished Test 001 (SAT)",
-    time: "Jul 14, 5:05 PM",
-    meta: "Score: 400/1600",
-  },
-  {
-    id: "pr-prev-1",
-    type: "pr-test",
-    title: "Practice Completed",
-    description: "Rohan Das finished Math Drills - Mixed (SAT)",
-    time: "Jul 14, 2:15 PM",
-    meta: "Correct: 8/10",
-  },
-  {
-    id: "pr-prev-2",
-    type: "pr-test",
-    title: "Practice Completed",
-    description: "Kavya Reddy finished Reading Comprehension 2 (SAT)",
-    time: "Jul 14, 10:00 AM",
-    meta: "Correct: 7/10",
-  },
-];
 
 // Helper for calculating relative time
 function timeAgo(dateString) {
@@ -321,24 +237,54 @@ const getActivityIcon = (type, isHighlighted) => {
   
   switch (type) {
     case "fl-test":
-      return (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20 ring-4 ring-white">
-          <BookOpenNodeIcon className="w-4 h-4" />
-        </div>
-      );
+        return (
+            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                <BookOpenNodeIcon className="w-4 h-4"/>
+            </div>
+        );
+
     case "pr-test":
-      return (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 ring-4 ring-white">
-          <CheckCircleNodeIcon className="w-4 h-4" />
-        </div>
-      );
+        return (
+            <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center">
+                <CheckCircleNodeIcon className="w-4 h-4"/>
+            </div>
+        );
+
+    case "issue":
+        return (
+            <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center">
+                <IssueIcon className="w-4 h-4"/>
+            </div>
+        );
+
+    case "meeting":
+        return (
+            <div className="w-8 h-8 rounded-full bg-cyan-500 text-white flex items-center justify-center">
+                <MeetingIcon className="w-4 h-4"/>
+            </div>
+        );
+
+    case "concern":
+        return (
+            <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center">
+                <ConcernIcon className="w-4 h-4"/>
+            </div>
+        );
+
+    case "suggestion":
+        return (
+            <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center">
+                <SuggestionIcon className="w-4 h-4"/>
+            </div>
+        );
+
     default:
-      return (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-purple-500/20 ring-4 ring-white">
-          <PlusCircleNodeIcon className="w-4 h-4" />
-        </div>
-      );
-  }
+        return (
+            <div className="w-8 h-8 rounded-full bg-gray-500 text-white flex items-center justify-center">
+                <PlusCircleNodeIcon className="w-4 h-4"/>
+            </div>
+        );
+}
 };
 
 export default function Dashboard() {
@@ -353,6 +299,35 @@ export default function Dashboard() {
   const [practiceTests, setPracticeTests] = useState([]);
 
   const datePickerRef = React.useRef(null);
+
+  const activityConfig = {
+  "fl-test": {
+    label: "Full Length Test",
+    badge: "bg-blue-50 text-blue-700 border border-blue-200",
+  },
+  "pr-test": {
+    label: "Practice Test",
+    badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  },
+  issue: {
+    label: "Issue",
+    badge: "bg-red-50 text-red-700 border border-red-200",
+  },
+  concern: {
+    label: "Concern",
+    badge: "bg-amber-50 text-amber-700 border border-amber-200",
+  },
+  suggestion: {
+    label: "Suggestion",
+    badge: "bg-purple-50 text-purple-700 border border-purple-200",
+  },
+  meeting: {
+    label: "Meeting",
+    badge: "bg-cyan-50 text-cyan-700 border border-cyan-200",
+  },
+};
+
+
 
   // Click outside handler
   useEffect(() => {
@@ -372,17 +347,18 @@ export default function Dashboard() {
 
   const [notificationCounts, setNotificationCounts] = useState({});
   const [todayCounts, setTodayCounts] = useState({});
-  const [recentActivity, setRecentActivity] = useState([]);
+const [activityFeed, setActivityFeed] = useState({
+  today: [],
+  previous_day: [],
+});
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [activityDayTab, setActivityDayTab] = useState("today"); // "today" or "prev_day"
 
   const displayActivities = useMemo(() => {
-    if (activityDayTab === "today") {
-      return DUMMY_TODAY_ACTIVITIES;
-    } else {
-      return DUMMY_PREV_ACTIVITIES;
-    }
-  }, [activityDayTab]);
+  return activityDayTab === "today"
+    ? activityFeed.today
+    : activityFeed.previous_day;
+}, [activityDayTab, activityFeed]);
   const [courseChartData, setCourseChartData] = useState([]);
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
@@ -396,6 +372,12 @@ export default function Dashboard() {
   const [mathTopics, setMathTopics] = useState([]);
   const [loadingKeyStrengths, setLoadingKeyStrengths] = useState(false);
   const [questionCounts, setQuestionCounts] = useState([]);
+  const statusColor = {
+    success: "bg-green-50 text-green-700 border-green-200",
+    warning: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    error: "bg-red-50 text-red-700 border-red-200",
+    info: "bg-blue-50 text-blue-700 border-blue-200",
+};
   const SECTIONS = [
     {
       display: "Concerns",
@@ -598,77 +580,36 @@ export default function Dashboard() {
     fetchUnreadNotifications();
   }, [selectedFilter, customStartDate, customEndDate]);
 
-  useEffect(() => {
-    const fetchRecentActivity = async () => {
-      setLoadingActivity(true);
-      try {
-        const [doubtsRes, flRes, prRes] = await Promise.all([
-          getDoubtsList({ page: 1 }).catch(() => ({ data: { results: [], count: 0 } })),
-          axios.get(`${BASE_URL}/api/result/recent/full-length/`, { withCredentials: true }).catch(() => ({ data: [] })),
-          axios.get(`${BASE_URL}/api/result/recent/practice/`, { withCredentials: true }).catch(() => ({ data: [] })),
-        ]);
+ useEffect(() => {
+  const fetchActivityFeed = async () => {
+    setLoadingActivity(true);
 
-        let combined = [];
-
-        // 1. Full Length Tests
-        if (Array.isArray(flRes.data)) {
-          flRes.data.forEach((t) => {
-            combined.push({
-              id: `fl-${t.id}`,
-              type: "fl-test",
-              title: `FLT Completed`,
-              description: `${t.student_name || "Student"} finished ${t.test_name || "Test"} (${t.course_name || "SAT"})`,
-              time: t.created_at,
-              meta: `Score: ${t.total_score ?? "400"}/1600`,
-            });
-          });
+    try {
+      const { data } = await axios.get(
+        `${BASE_URL}/api/doubt/activity-feed/`,
+        {
+          withCredentials: true,
         }
+      );
 
-        // 2. Practice Tests
-        if (Array.isArray(prRes.data)) {
-          prRes.data.forEach((t) => {
-            combined.push({
-              id: `pr-${t.id}`,
-              type: "pr-test",
-              title: `Practice Completed`,
-              description: `${t.student_name || "Student"} finished ${t.test_name || "Practice Test"} (${t.course_name || "SAT"})`,
-              time: t.created_at,
-              meta: `Correct: ${t.correct_answers ?? "2"}`,
-            });
-          });
-        }
+      setActivityFeed({
+        today: data.today || [],
+        previous_day: data.previous_day || [],
+      });
+    } catch (err) {
+      console.error("Activity Feed Error:", err);
 
-        // Sort student submissions by time descending
-        combined.sort((a, b) => {
-          if (!a.time) return 1;
-          if (!b.time) return -1;
-          return dayjs(b.time).valueOf() - dayjs(a.time).valueOf();
-        });
+      setActivityFeed({
+        today: [],
+        previous_day: [],
+      });
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
 
-        // 3. Prepend Pending Doubts summary card if unread doubts exist
-        const pendingDoubtsCount = doubtsRes.data?.count ?? 0;
-        if (pendingDoubtsCount > 0) {
-          combined.unshift({
-            id: "pending-doubts-summary",
-            type: "doubt",
-            title: "Pending Doubts",
-            description: `There are ${pendingDoubtsCount} unresolved doubts awaiting tutor response.`,
-            time: new Date().toISOString(), // Shows "Just now"
-            status: "RAISED",
-            meta: "Action Required",
-          });
-        }
-
-        setRecentActivity(combined.slice(0, 10));
-      } catch (err) {
-        console.error("Error compiling activity feed:", err);
-      } finally {
-        setLoadingActivity(false);
-      }
-    };
-
-    fetchRecentActivity();
-  }, []);
+  fetchActivityFeed();
+}, []);
 
   useEffect(() => {
     if (
@@ -1103,6 +1044,11 @@ export default function Dashboard() {
                       const isDoubtPending = activity.type === "doubt";
                       const isLast = index === displayActivities.length - 1;
 
+                      const config = activityConfig[activity.type] || {
+    label: activity.title,
+    badge: "bg-gray-50 text-gray-700 border border-gray-200",
+};
+
                       return (
                         <div key={activity.id} className="relative flex gap-3.5 group items-center">
                           {/* Timeline Node */}
@@ -1130,37 +1076,29 @@ export default function Dashboard() {
                                   </span>
                                 </div>
                                 <span className="text-[11px] text-amber-700 font-medium whitespace-nowrap bg-white/80 border border-amber-200 px-2 py-0.5 rounded-full shadow-2xs self-end sm:self-center">
-                                  Just now
+                                 {formatActivityTime(activity.time)}
                                 </span>
                               </div>
                             ) : (
                               <div className="bg-white hover:bg-slate-50/80 border border hover:border-orange-200/80 rounded-md px-4 py-2.5 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                                 <div className="flex flex-wrap items-center gap-2.5 text-xs">
-                                  <span
-                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide whitespace-nowrap ${
-                                      activity.type === "fl-test"
-                                        ? "bg-blue-50 text-blue-700 border border-blue-200/60"
-                                        : "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                                    }`}
-                                  >
-                                    {activity.type === "fl-test" ? "Full Length Test" : "Practice Test"}
-                                  </span>
+                                 <span
+  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide whitespace-nowrap ${config.badge}`}
+>
+  {config.label}
+</span>
 
                                   <span className="font-bold text-gray-900">
                                     {activity.description || activity.title}
                                   </span>
 
-                                  {activity.type === "fl-test" ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-blue-50/80 text-blue-700 border border-blue-200/70 whitespace-nowrap">
-                                      <BookMiniIcon className="w-3.5 h-3.5 text-blue-500" />
-                                      {activity.meta}
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-50/80 text-emerald-700 border border-emerald-200/70 whitespace-nowrap">
-                                      <CheckMiniIcon className="w-3.5 h-3.5 text-emerald-500" />
-                                      {activity.meta}
-                                    </span>
-                                  )}
+                                 <span
+    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold border ${
+        statusColor[activity.status] || "bg-gray-50 text-gray-700 border-gray-200"
+    }`}
+>
+    {activity.meta}
+</span>
                                 </div>
 
                                 <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap flex items-center gap-1 self-end sm:self-center">

@@ -68,7 +68,30 @@ from django.db.models.functions import TruncMonth
 from system_manager.models import FacultyTimeSlot
 from .serializers import FacultyTimeSlotSerializer, CreateFacultyTimeSlotSerializer
 from .filters import FacultyTimeSlotFilter
+from datetime import timedelta
+from django.utils import timezone
 
+from test_manager.models import TestSubmission, PracticeTestResult
+from system_manager.models import (
+    Doubt,
+    Issue,
+    Concern,
+    Meeting,
+    Suggestion
+)
+from test_manager.models import (
+    Section,
+    QuestionAnswer,
+    
+)
+from course_manager.models import (
+    Course,
+    Subject,
+    CourseSubjects,
+    Topic,
+    SubTopic,
+    CombinedScore
+)
 
 
 
@@ -76,6 +99,318 @@ class DoubtViewSet(viewsets.ModelViewSet):
     queryset = Doubt.objects.all()
     serializer_class = DoubtListSerializer
     logger = logging.getLogger('Doubts')
+
+
+    def calculate_flt_score(self, test_submission):
+        """
+        Calculate Full Length Test total score using the same
+        CombinedScore logic as ResultViewSet.get_details().
+        """
+
+        if not hasattr(test_submission, "result"):
+            return 0
+
+        result = test_submission.result
+        test = test_submission.test
+
+        total_score = 0
+
+        sections = (
+            Section.objects
+            .filter(test=test)
+            .select_related(
+                "course_subject",
+                "course_subject__subject",
+            )
+            .order_by("order")
+        )
+
+        # Group sections by subject
+        subjects_map = {}
+
+        for section in sections:
+            subject_id = section.course_subject.id
+
+            if subject_id not in subjects_map:
+                subjects_map[subject_id] = {
+                    "course_subject": section.course_subject,
+                    "sections": []
+                }
+
+            subjects_map[subject_id]["sections"].append(section)
+
+        # Calculate subject scores
+        for _, subject_info in subjects_map.items():
+
+            course_subject = subject_info["course_subject"]
+
+            section_1_correct = 0
+            section_2_correct = 0
+
+            for section in subject_info["sections"]:
+
+                for sub_section in section.sub_sections:
+
+                    correct_count = QuestionAnswer.objects.filter(
+                        result=result,
+                        course_subject=course_subject,
+                        section_id=sub_section["id"],
+                        is_correct=True,
+                    ).count()
+
+                    if sub_section["id"] == 1:
+                        section_1_correct = correct_count
+                    else:
+                        section_2_correct = correct_count
+
+            score_record = CombinedScore.objects.filter(
+                subject_name=course_subject.subject.name,
+                section1_correct=section_1_correct,
+                section2_correct=section_2_correct,
+            ).first()
+
+            if score_record:
+                total_score += score_record.total_score
+
+        return total_score
+
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="activity-feed"
+)
+    def activity_feed(self, request):
+
+        today = timezone.localdate()
+        previous_day = today - timedelta(days=1)
+
+        today_start = timezone.make_aware(
+            timezone.datetime.combine(today, timezone.datetime.min.time())
+        )
+
+        previous_start = timezone.make_aware(
+            timezone.datetime.combine(previous_day, timezone.datetime.min.time())
+        )
+
+        previous_end = today_start
+
+        def build_activity(day_start, day_end=None):
+
+            activities = []
+
+            # --------------------------
+            # Pending Doubts
+            # --------------------------
+
+            pending_doubts = Doubt.objects.filter(
+                status=Doubt.RAISED
+            ).count()
+
+            if day_end is None and pending_doubts:
+                activities.append({
+                    "id": "pending-doubts",
+                    "type": "doubt",
+                    "title": "Pending Doubts",
+                    "description": f"{pending_doubts} doubts are waiting for faculty response.",
+                    "meta": f"{pending_doubts} Pending",
+                    "status": "warning",
+                    "icon": "question-circle",
+                    "color": "#faad14",
+                    "time": timezone.now(),
+                })
+
+            # --------------------------
+            # Full Length Tests
+            # --------------------------
+
+            fl_queryset = TestSubmission.objects.filter(
+                status=TestSubmission.COMPLETED,
+                completion_date__gte=day_start
+            )
+
+            if day_end:
+                fl_queryset = fl_queryset.filter(
+                    completion_date__lt=day_end
+                )
+
+            for obj in fl_queryset.select_related("student", "test"):
+                score = self.calculate_flt_score(obj)
+
+                activities.append({
+                    "id": obj.id,
+                    "type": "fl-test",
+                    "title": "Full Length Test Completed",
+                    "description": f"{obj.student.name} completed '{obj.test.name}'.",
+                    "meta": f"Score: {score}",
+                    "status": "success",
+                    "icon": "file-done",
+                    "color": "#52c41a",
+                    "time": obj.completion_date,
+                })
+
+            # --------------------------
+            # Practice Tests
+            # --------------------------
+
+            
+
+            practice_queryset = PracticeTestResult.objects.filter(
+                created_at__gte=day_start
+            )
+
+            if day_end:
+                practice_queryset = practice_queryset.filter(
+                    created_at__lt=day_end
+                )
+
+            practice_queryset = practice_queryset.select_related(
+                "practice_test",
+                "practice_test__student",
+                "practice_test__course_subject",
+                "practice_test__course_subject__subject",
+            )
+
+            for obj in practice_queryset:
+
+                student_name = obj.practice_test.student.name
+                subject_name = obj.practice_test.course_subject.subject.name
+
+                activities.append({
+                    "id": f"practice-{obj.id}",
+                    "type": "pr-test",
+                    "title": "Practice Test Completed",
+                    "description": (
+                        f"{student_name} completed {subject_name} Practice Test."
+                    ),
+                    "meta": f"Correct Answers: {obj.correct_answer_count}",
+                    "status": "success",
+                    "icon": "read",
+                    "color": "#1890ff",
+                    "time": obj.created_at,
+                })
+
+                
+
+            # --------------------------
+            # Issues
+            # --------------------------
+
+            issue_queryset = Issue.objects.filter(
+                created_at__gte=day_start
+            )
+
+            if day_end:
+                issue_queryset = issue_queryset.filter(
+                    created_at__lt=day_end
+                )
+
+            for obj in issue_queryset.select_related("student"):
+
+                activities.append({
+                    "id": f"issue-{obj.id}",
+                    "type": "issue",
+                    "title": "Issue Raised",
+                    "description": f"{obj.student.name} submitted a support issue.",
+                    "meta": obj.status.replace("_", " ").title(),
+                    "status": "error",
+                    "icon": "warning",
+                    "color": "#ff4d4f",
+                    "time": obj.created_at,
+                })
+
+            # --------------------------
+            # Concerns
+            # --------------------------
+
+            concern_queryset = Concern.objects.filter(
+                created_at__gte=day_start
+            )
+
+            if day_end:
+                concern_queryset = concern_queryset.filter(
+                    created_at__lt=day_end
+                )
+
+            for obj in concern_queryset.select_related("parent"):
+
+                activities.append({
+                    "id": f"concern-{obj.id}",
+                    "type": "concern",
+                    "title": "Concern Submitted",
+                    "description": f"{obj.parent.name} submitted a concern.",
+                    "meta": obj.status.replace("_", " ").title(),
+                    "status": "warning",
+                    "icon": "exclamation-circle",
+                    "color": "#faad14",
+                    "time": obj.created_at,
+                })
+
+            # --------------------------
+            # Suggestions
+            # --------------------------
+
+            suggestion_queryset = Suggestion.objects.filter(
+                created_at__gte=day_start
+            )
+
+            if day_end:
+                suggestion_queryset = suggestion_queryset.filter(
+                    created_at__lt=day_end
+                )
+
+            for obj in suggestion_queryset.select_related("created_by"):
+
+                activities.append({
+                    "id": f"suggestion-{obj.id}",
+                    "type": "suggestion",
+                    "title": "Suggestion Submitted",
+                    "description": f"{obj.created_by.name} submitted a suggestion.",
+                    "meta": obj.status.replace("_", " ").title(),
+                    "status": "info",
+                    "icon": "bulb",
+                    "color": "#722ed1",
+                    "time": obj.created_at,
+                })
+
+            # --------------------------
+            # Meetings
+            # --------------------------
+
+            meeting_queryset = Meeting.objects.filter(
+                created_at__gte=day_start
+            )
+
+            if day_end:
+                meeting_queryset = meeting_queryset.filter(
+                    created_at__lt=day_end
+                )
+
+            for obj in meeting_queryset.select_related("requested_by"):
+
+                activities.append({
+                    "id": f"meeting-{obj.id}",
+                    "type": "meeting",
+                    "title": "Meeting Requested",
+                    "description": f"{obj.requested_by.name} requested a meeting.",
+                    "meta": obj.status.replace("_", " ").title(),
+                    "status": "info",
+                    "icon": "calendar",
+                    "color": "#13c2c2",
+                    "time": obj.created_at,
+                })
+
+            activities.sort(
+                key=lambda x: x["time"],
+                reverse=True
+            )
+
+            return activities
+
+        return Response({
+            "today": build_activity(today_start),
+            "previous_day": build_activity(previous_start, previous_end)
+        })
 
     @action(
         detail=False,
