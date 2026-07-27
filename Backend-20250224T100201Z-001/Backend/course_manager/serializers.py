@@ -293,31 +293,28 @@ class QuestionListSerializer(serializers.ModelSerializer):
         log = obj.logs.filter(action="EDIT").order_by("-timestamp").first()
         return log.timestamp if log else None
 
-    # -------- Time taken (unchanged) --------
     def get_time_taken(self, obj):
-        test_submission_id = self.context.get('test_submission_id')
-        practice_test_result_id = self.context.get('practice_test_result_id')
+        test_submission_id = self.context.get("test_submission_id")
+        practice_test_result_id = self.context.get("practice_test_result_id")
 
         if test_submission_id:
             from test_manager.models import QuestionAnswer
+
             ans = QuestionAnswer.objects.filter(
                 question=obj,
-                result__test_submission__id=test_submission_id
+                result__test_submission_id=test_submission_id,
             ).first()
-            if ans:
-                return (
-                    (ans.first_time_taken or 0) +
-                    (ans.second_time_taken or 0) +
-                    (ans.third_time_taken or 0)
-                )
-            return 0
+
+            return ans.time_taken if ans else 0
 
         if practice_test_result_id:
             from test_manager.models import PracticeQuestionAnswer
+
             ans = PracticeQuestionAnswer.objects.filter(
                 question=obj,
-                practice_test_result_id=practice_test_result_id
+                practice_test_result_id=practice_test_result_id,
             ).first()
+
             return ans.time_taken if ans else 0
 
         return 0
