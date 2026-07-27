@@ -1005,7 +1005,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
                 Test-Taking Pattern Insights
               </h2>
               <span className="ml-auto text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
-                Powered by AI
+                Powered by TSTP
               </span>
             </div>
             {renderPatternInsights()}

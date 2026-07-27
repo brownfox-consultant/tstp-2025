@@ -364,30 +364,15 @@ function ReportTable({ sectionData, testSubmissionId }) {
       hidden: test_type === "PRACTICE_TEST",
     },
     {
-      title: "Total Time",
-      key: "total_time",
-      align: "center",
-      render: (_, rowData) => {
-        const totalSeconds =
-          (rowData.first_time_taken || 0) +
-          (rowData.second_time_taken || 0) +
-          (rowData.third_time_taken || 0);
-
-        return rowData.times_visited ? timeInMMSS(totalSeconds) : "-";
-      },
-      sorter: (a, b) => {
-        const aTotal =
-          (a.first_time_taken || 0) +
-          (a.second_time_taken || 0) +
-          (a.third_time_taken || 0);
-        const bTotal =
-          (b.first_time_taken || 0) +
-          (b.second_time_taken || 0) +
-          (b.third_time_taken || 0);
-
-        return aTotal - bTotal;
-      },
-    },
+  title: "Total Time",
+  dataIndex: "total_time",
+  key: "total_time",
+  align: "center",
+  render: (value, rowData) => {
+    return rowData.times_visited ? timeInMMSS(value || 0) : "-";
+  },
+  sorter: (a, b) => (a.total_time || 0) - (b.total_time || 0),
+},
 
     {
   title: "Selection History",
