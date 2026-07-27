@@ -14,7 +14,7 @@ import {
   ReloadOutlined,
   CloseOutlined,
 } from "@ant-design/icons";
-import { Button, Input, Popconfirm, Space, Table, Tag, Select } from "antd";
+import { Button, Input, Popconfirm, Space, Table, Tag, Select, Tooltip } from "antd";
 import dayjs from "dayjs";
 import DOMPurify from "dompurify";
 import { usePathname, useRouter } from "next/navigation";
@@ -149,7 +149,7 @@ function AdminTestList() {
 
   useEffect(() => {
     setTableLoading(true);
-    getTestsList({ page: current, search: searchText || globalSearch, size: pageSize, ...params })
+    getTestsList({ page: current, search: searchText || globalSearch, page_size: pageSize, ...params })
       .then((res) => {
         setTestsData(res.data.results);
         setCurrent(res.data.current_page);
@@ -172,12 +172,12 @@ function AdminTestList() {
   // Format type badge styling
   const formatTypeBadge = (type) => {
     const config = {
-      LINEAR: { color: "bg-green-100 text-green-700 border-green-200", label: "Linear" },
-      DYNAMIC: { color: "bg-purple-100 text-purple-700 border-purple-200", label: "Dynamic" },
+      LINEAR: { color: "bg-green-50 text-green-700", label: "Linear" },
+      DYNAMIC: { color: "bg-blue-50 text-blue-700", label: "Dynamic" },
     };
-    const style = config[type] || { color: "bg-gray-100 text-gray-600 border-gray-200", label: type };
+    const style = config[type] || { color: "bg-gray-50 text-gray-700", label: type };
     return (
-      <span className={`flex items-center justify-center px-2.5 py-1 rounded-md text-xs font-medium border  w-[70px] ${style.color}`}>
+      <span className={`flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium w-max ${style.color}`}>
         {style.label}
       </span>
     );
@@ -193,7 +193,7 @@ function AdminTestList() {
       }),
       render: (text) => (
         <div>
-          <span className="font-medium text-gray-700">{text}</span>
+          <span className="font-medium text   -gray-800">{text}</span>
         </div>
       ),
     },
@@ -206,7 +206,7 @@ function AdminTestList() {
         return (
           <button
             onClick={() => router.push(`${pathname}/edit/${record.id}`)}
-            className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-all bg-transparent"
+            className="text-gray-900 font-bold group-hover:underline group-hover:text-blue-600 transition-all bg-transparent text-left"
           >
             {(searchedColumn === "name" && searchText) || globalSearch ? (
               <Highlighter
@@ -231,8 +231,9 @@ function AdminTestList() {
       key: "created_at",
       title: "Created On",
       dataIndex: "created_at",
+      sorter: (a, b) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),
       render: (date) => (
-        <div className="flex items-center gap-2 text-gray-600">
+        <div className="flex items-center gap-2 text-gray-400 text-[13.5px]">
           {dayjs(date).format("MMM D, YYYY h:mm A")}
         </div>
       ),
@@ -243,37 +244,41 @@ function AdminTestList() {
       align: "start",
       render: (_, record) => {
         return (
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(`${pathname}/edit/${record.id}`);
-              }}
-              className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-all border border-blue-200"
-            >
-              <EditTwoTone twoToneColor="#1677ff" />
-            </button>
-            <Popconfirm
-              placement="leftTop"
-              title="Delete the test"
-              description="Are you sure to delete this test?"
-              onConfirm={(e) => {
-                e.stopPropagation();
-                deleteConfirm(record.id);
-              }}
-              okText="Yes"
-              cancelText="No"
-              okButtonProps={{
-                loading: confirmLoading,
-              }}
-            >
+          <div className="flex items-center">
+            <Tooltip title="Edit Test" placement="top">
               <button 
-                onClick={(e) => e.stopPropagation()}
-                className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all border border-red-200 "
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`${pathname}/edit/${record.id}`);
+                }}
+                className="bg-transparent border border-transparent hover:border-blue-200 hover:bg-blue-50 text-blue-600 p-2 rounded-full flex items-center justify-center transition-all cursor-pointer"
               >
-                <DeleteTwoTone twoToneColor="#eb2f96" />
+                <EditTwoTone twoToneColor="#1677ff" />
               </button>
-            </Popconfirm>
+            </Tooltip>
+            <Tooltip title="Delete Test" placement="top">
+              <Popconfirm
+                placement="leftTop"
+                title="Delete the test"
+                description="Are you sure to delete this test?"
+                onConfirm={(e) => {
+                  e.stopPropagation();
+                  deleteConfirm(record.id);
+                }}
+                okText="Yes"
+                cancelText="No"
+                okButtonProps={{
+                  loading: confirmLoading,
+                }}
+              >
+                <button 
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-transparent border border-transparent hover:border-red-200 hover:bg-red-50 text-red-600 p-2 rounded-full flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <DeleteTwoTone twoToneColor="#eb2f96" />
+                </button>
+              </Popconfirm>
+            </Tooltip>
           </div>
         );
       },
@@ -290,7 +295,7 @@ function AdminTestList() {
       }),
       render: (text) => (
         <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-700">{text}</span>
+          <span className="text-gray-500">{text}</span>
         </div>
       ),
     },
@@ -303,7 +308,7 @@ function AdminTestList() {
         return (
           <button
             onClick={() => router.push(`${pathname}/edit/${record.id}`)}
-            className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-all bg-transparent"
+            className="text-gray-900 font-bold group-hover:underline group-hover:text-blue-600 transition-all bg-transparent text-left"
           >
             {(searchedColumn === "name" && searchText) || globalSearch ? (
               <Highlighter
@@ -328,9 +333,10 @@ function AdminTestList() {
       key: "created_at",
       title: "Created On",
       dataIndex: "created_at",
+      sorter: (a, b) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),
       render: (date) => (
-        <div className="flex items-center gap-2 text-gray-600">
-          <CalendarOutlined className="text-gray-400" />
+        <div className="flex items-center gap-2 text-gray-400 text-[13.5px]">
+          <CalendarOutlined className="text-gray-300" />
           {dayjs(date).format("MMM D, YYYY h:mm A")}
         </div>
       ),
@@ -343,8 +349,54 @@ function AdminTestList() {
     mentor: facultyCols,
   };
 
+  const paginationConfig = {
+    current: current || 1,
+    total: total,
+    pageSize: pageSize,
+    showSizeChanger: true,
+    pageSizeOptions: ["10", "25", "50", "100"],
+    locale: { items_per_page: "" },
+    position: ["bottomRight"],
+    onChange: (page, pageSize) => {
+      setCurrent(page);
+      setPageSize(pageSize);
+    },
+    showTotal: (total, range) => {
+      let inputValue = "";
+      const maxPages = totalPages;
+
+      const handleGoToPage = () => {
+        const page = Number(inputValue);
+        if (page >= 1 && page <= maxPages) {
+          setCurrent(page);
+        }
+      };
+
+      return (
+        <div className="flex items-center gap-2">
+          <span>
+            Showing {range[0]}–{range[1]} of {total}
+          </span>
+          <span>| Go to page:</span>
+          <Input
+            type="number"
+            min={1}
+            max={maxPages}
+            size="small"
+            style={{ width: 70 }}
+            onChange={(e) => (inputValue = e.target.value)}
+            onPressEnter={handleGoToPage}
+          />
+          <Button type="primary" size="small" onClick={handleGoToPage}>
+            Go
+          </Button>
+        </div>
+      );
+    },
+  };
+
   return (
-    <div className="min-h-screen">
+    <div className="">
       <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="flex flex-row gap-4 mb-4 justify-between">
@@ -376,7 +428,7 @@ function AdminTestList() {
                 <SearchOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search tests..."
+                  placeholder="Search Test Name"
                   value={globalSearch}
                   onChange={(e) => {
                     setGlobalSearch(e.target.value);
@@ -390,7 +442,7 @@ function AdminTestList() {
                       setGlobalSearch("");
                       setCurrent(1);
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent"
                   >
                     <CloseOutlined />
                   </button>
@@ -463,13 +515,12 @@ function AdminTestList() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden [&_.ant-table-row:hover>td]:!bg-transparent">
           <Table
             loading={tableLoading}
             size="small"
-            className="[&_.ant-table-tbody>tr>td]:!py-2 [&_.ant-table-thead>tr>th]:!py-2 border-t border-gray-200"
             rowClassName={(record, index) =>
-              `text-sm bg-white hover:bg-gray-50 transition-colors cursor-pointer group`
+              `text-sm bg-white hover:bg-[#FFD36A]/10 transition-colors cursor-pointer group`
             }
             onRow={(record) => {
               return {
@@ -482,30 +533,31 @@ function AdminTestList() {
             columns={colsMap[role]}
             onChange={handleTableChange}
             rowKey={(record) => record.id}
-            pagination={{
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `Total ${total} tests`,
-              pageSizeOptions: ["10", "20", "50", "100"],
-              locale: { items_per_page: "" },
-              pageSize: pageSize,
-              total: total,
-              current: current,
-              onChange: (page, pageSize) => {
-                setCurrent(page);
-                setPageSize(pageSize);
-              },
-              onShowSizeChange: (current, size) => {
-                setPageSize(size);
-                setCurrent(1);
-              },
+            pagination={paginationConfig}
+            className="[&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-1.5 [&_.ant-table-thead>tr>th]:!py-2"
+            locale={{
+              emptyText: (
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                  <SearchOutlined className="text-4xl text-gray-300 mb-4" />
+                  <h3 className="text-[18px] font-semibold text-[#1a202c] mb-2">No tests found</h3>
+                  <p className="text-gray-500 text-[16px] mb-6">Try another search or</p>
+                  {role === "admin" && (
+                    <button
+                      onClick={() => router.push(`${pathname}/create`)}
+                      className="bg-[#F59403] hover:bg-orange-600 text-white px-5 py-2.5 rounded-lg font-medium flex items-center justify-center mx-auto transition-colors"
+                    >
+                      <PlusOutlined className="mr-2" />
+                      Create Test
+                    </button>
+                  )}
+                </div>
+              ),
             }}
-            margin={"10px"}
             scroll={{ x: "max-content" }}
           />
           <style jsx global>{`
             .ant-pagination {
-              padding: 12px 18px !important;
+              padding-inline: 16px !important;
             }
           `}</style>
         </div>

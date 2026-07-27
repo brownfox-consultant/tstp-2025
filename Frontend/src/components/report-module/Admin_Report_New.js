@@ -7,6 +7,7 @@ import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
 import StudentActivityLog from "./StudentActivityLog";
 import { Spin } from "antd";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import { 
   CalendarIcon, 
   UserProfileIcon, 
@@ -784,10 +785,10 @@ console.log(
   return (
     <div className="report-container">
       {/* <button
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+        className="h-10 px-5 flex items-center justify-center gap-2 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium shadow-sm transition-all duration-300 hover:shadow-md mb-4"
         onClick={() => router.back()}
       >
-        ← Back
+        <ArrowLeftOutlined className="text-sm" /> Back
       </button> */}
 
       {/* <LeftOutlined
