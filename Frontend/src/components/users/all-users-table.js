@@ -537,16 +537,38 @@ const submitBulkUpload = async () => {
         dataIndex: "role_label",
         sorter: (a, b) => a.role_label.localeCompare(b.role_label),
         key: "role_label",
-        render: (text) => (
-          <div className=" flex gap-2 items-center">
-            {" "}
-            <div className="w-8 h-8 flex items-center justify-center font-bold text-lg text-primary-color bg-primary-light-color rounded-full">
-              {text[0]}
+        render: (text) => {
+          if (!text) return null;
+          const lower = text.toLowerCase();
+          let bgColor = "bg-gray-100";
+          let textColor = "text-gray-800";
+          let borderColor = "border-gray-200";
+
+          if (lower.includes("parent")) {
+            bgColor = "bg-blue-50";
+            textColor = "text-blue-700";
+            borderColor = "border-blue-200";
+          } else if (lower.includes("student")) {
+            bgColor = "bg-emerald-50";
+            textColor = "text-emerald-700";
+            borderColor = "border-emerald-200";
+          } else if (lower.includes("admin")) {
+            bgColor = "bg-purple-50";
+            textColor = "text-purple-700";
+            borderColor = "border-purple-200";
+          } else if (lower.includes("faculty")) {
+            bgColor = "bg-orange-50";
+            textColor = "text-orange-700";
+            borderColor = "border-orange-200";
+          }
+
+          return (
+            <div className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold border ${bgColor} ${textColor} ${borderColor}`}>
+              {text}
             </div>
-            <div className=" font-semibold">{text}</div>
-          </div>
-        ),
-        width: 200,
+          );
+        },
+        width: 120,
       },
       {
         title: (
@@ -665,17 +687,17 @@ const submitBulkUpload = async () => {
         align: "center",
         width: 150,
         render: (text, record) => {
+          const isActive = record.is_active;
+          const bgColor = isActive ? "bg-emerald-50" : "bg-red-50";
+          const textColor = isActive ? "text-emerald-700" : "text-red-700";
+          const borderColor = isActive ? "border-emerald-200" : "border-red-200";
+          const label = isActive ? "Active" : "Inactive";
+
           return (
-            <div>
-              {record.is_active ? (
-                <Tag bordered={false} color="green">
-                  Active
-                </Tag>
-              ) : (
-                <Tag bordered={false} color="red">
-                  Inactive
-                </Tag>
-              )}
+            <div className="flex justify-center">
+              <div className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold border ${bgColor} ${textColor} ${borderColor}`}>
+                {label}
+              </div>
             </div>
           );
         },
@@ -1057,9 +1079,7 @@ const submitBulkUpload = async () => {
         size="small"
         pagination={paginationConfig}
         onChange={handleTableChange}
-        rowClassName={(record, index) =>
-          index % 2 === 0 ? "even-row" : "odd-row"
-        }
+        rowClassName="hover:bg-gray-50 transition-colors"
         className="tablestyles mt-4 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
       />
       {showResultModal && (

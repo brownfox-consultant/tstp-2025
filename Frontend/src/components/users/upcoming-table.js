@@ -347,9 +347,7 @@ function UpcomingTable({ tabKey, api }) {
         rowKey={(record) => record.id}
         pagination={paginationConfig}
         onChange={handleTableChange}
-        rowClassName={(record, index) =>
-          index % 2 === 0 ? "even-row" : "odd-row"
-        }
+        rowClassName="hover:bg-gray-50 transition-colors"
         size="small"
         className="tablestyles mt-4 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
         //scroll={{ x: "max-content", y: 550 }}
