@@ -202,12 +202,20 @@ class DoubtViewSet(viewsets.ModelViewSet):
             # --------------------------
             # Pending Doubts
             # --------------------------
+            pending_queryset = Doubt.objects.filter(
+                status=Doubt.RAISED,
+                created_at__gte=day_start,
+            )
 
-            pending_doubts = Doubt.objects.filter(
-                status=Doubt.RAISED
-            ).count()
+            if day_end:
+                pending_queryset = pending_queryset.filter(
+                    created_at__lt=day_end
+                )
 
-            if day_end is None and pending_doubts:
+            pending_doubts = pending_queryset.count()
+            latest_pending_doubt = pending_queryset.order_by("-created_at").first()
+
+            if pending_doubts:
                 activities.append({
                     "id": "pending-doubts",
                     "type": "doubt",
@@ -217,7 +225,7 @@ class DoubtViewSet(viewsets.ModelViewSet):
                     "status": "warning",
                     "icon": "question-circle",
                     "color": "#faad14",
-                    "time": timezone.now(),
+                    "time": latest_pending_doubt.created_at,
                 })
 
             # --------------------------
