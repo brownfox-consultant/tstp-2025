@@ -511,32 +511,37 @@ class TestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Normalize
         selected_options = selected_options or []
         striked_options = striked_options or []
 
-        # Determine action automatically
+        # Ignore strike history completely
+        if action_type == "STRIKE":
+            return Response(
+                {"detail": "Strike history ignored"},
+                status=status.HTTP_200_OK,
+            )
+
+        # Determine action
         if not selected_options:
             action_type = "SKIPPED"
+        else:
+            action_type = "SELECT"
 
-        # Previous history
+        # Last SELECT/SKIPPED history
         last = (
             SelectionHistory.objects.filter(
                 test_submission=test_submission,
                 question=question,
             )
+            .exclude(action_type="STRIKE")
             .order_by("-timestamp")
             .first()
         )
 
-        # -------------------------------
-        # Don't save duplicate history
-        # -------------------------------
+        # Don't save duplicate SELECT/SKIPPED
         if last:
-
             if (
                 last.selected_options == selected_options
-                and last.striked_options == striked_options
                 and last.action_type == action_type
             ):
                 return Response(
@@ -549,7 +554,7 @@ class TestViewSet(viewsets.ModelViewSet):
             question=question,
             test_submission=test_submission,
             selected_options=selected_options,
-            striked_options=striked_options,
+            striked_options=[],  # Always empty
             action_type=action_type,
         )
 
