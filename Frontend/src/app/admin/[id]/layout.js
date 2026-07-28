@@ -32,11 +32,12 @@ import {
   CloseOutlined,
   BarChartOutlined,
   UnorderedListOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 
 const { Content } = Layout;
 
-const AdminMenuItems = [
+const flatItems = [
   {
     key: "dashboard",
     icon: <DashboardOutlined />,
@@ -47,26 +48,10 @@ const AdminMenuItems = [
     icon: <BarChartOutlined />,
     label: "Students Report",
   },
-  { key: "users", icon: <UserOutlined />, label: "Users" },
   {
-    key: "courses",
-    icon: <AppstoreOutlined />,
-    label: "Courses",
-  },
-  {
-    key: "tutorials",
-    icon: <FolderOpenOutlined />,
-    label: "Tutorials",
-  },
-  {
-    key: "questions",
-    icon: <QuestionOutlined />,
-    label: "Questions",
-  },
-  {
-    key: "suggestions",
-    icon: <FileUnknownOutlined />,
-    label: "Suggestions",
+    key: "users",
+    icon: <UserOutlined />,
+    label: "Users",
   },
   {
     key: "tests",
@@ -74,44 +59,168 @@ const AdminMenuItems = [
     label: "Full Length Tests",
   },
   {
-  key: "mentoring",
-  icon: <LinkOutlined />,
-  label: "Mentoring",
-  external: true,
-  url: "https://cadence-scheduler.vercel.app/",
-},
-  {
     key: "test-list",
     icon: <UnorderedListOutlined />,
     label: "Test List",
   },
+];
+
+// Grouped submenu items
+const AdminMenuGroups = [
+
   {
-    key: "doubts",
-    icon: <SwapOutlined />,
-    label: "Doubts",
+    groupKey: "content",
+    icon: <AppstoreOutlined />,
+    label: "Content",
+    children: [
+      { key: "courses", icon: <AppstoreOutlined />, label: "Courses" },
+      { key: "tutorials", icon: <FolderOpenOutlined />, label: "Tutorials" },
+      { key: "questions", icon: <QuestionOutlined />, label: "Questions" },
+      { key: "suggestions", icon: <FileUnknownOutlined />, label: "Suggestions" },
+    ],
   },
   {
-    key: "issues",
-    icon: <HistoryOutlined />,
-    label: "Issues",
-  },
-  {
-    key: "concerns",
+    groupKey: "support",
     icon: <CommentOutlined />,
-    label: "Concerns",
-  },
-  {
-    key: "meetings",
-    icon: <ClockCircleOutlined />,
-    label: "Meetings",
-  },
-  {
-    key: "feedbacks",
-    icon: <SyncOutlined />,
-    label: "Feedbacks",
+    label: "Support",
+    children: [
+      { key: "doubts", icon: <SwapOutlined />, label: "Doubts" },
+      { key: "issues", icon: <HistoryOutlined />, label: "Issues" },
+      { key: "concerns", icon: <CommentOutlined />, label: "Concerns" },
+      { key: "meetings", icon: <ClockCircleOutlined />, label: "Meetings" },
+      { key: "feedbacks", icon: <SyncOutlined />, label: "Feedbacks" },
+      {
+        key: "mentoring",
+        icon: <LinkOutlined />,
+        label: "Mentoring",
+        external: true,
+        url: "https://cadence-scheduler.vercel.app/",
+      },
+    ],
   },
 ];
 
+// Helper: which group does a tab belong to?
+function getActiveGroup(tab) {
+  for (const group of AdminMenuGroups) {
+    if (group.children.some((c) => c.key === tab)) return group.groupKey;
+  }
+  return null;
+}
+
+// ─── SubMenu Group Component ───────────────────────────────────────────────
+function SubMenuGroup({ group, tab, collapsed, isMobile, onItemClick }) {
+  const isGroupActive = group.children.some((c) => c.key === tab);
+  const [open, setOpen] = useState(isGroupActive);
+
+  // Auto-expand if a child is active on mount / tab change
+  useEffect(() => {
+    if (isGroupActive) setOpen(true);
+  }, [isGroupActive]);
+
+  const toggleOpen = (e) => {
+    e.stopPropagation();
+    setOpen((prev) => !prev);
+  };
+
+  // Collapsed mode: show only icon with tooltip
+  if (collapsed && !isMobile) {
+    return (
+      <Tooltip title={group.label} placement="right" mouseEnterDelay={0.1}>
+        <div
+          className={`
+            flex items-center justify-center h-11 mb-1 rounded-lg cursor-pointer
+            transition-all duration-200 ease-in-out
+            ${isGroupActive ? "bg-primary-light-color text-primary-color" : "text-gray-700 hover:bg-gray-100"}
+          `}
+          onClick={toggleOpen}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleOpen(e); } }}
+        >
+          <span className="flex items-center justify-center w-12 h-12 text-lg">
+            {group.icon}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <div className="mb-1">
+      {/* Group Header */}
+      <div
+        onClick={toggleOpen}
+        className={`
+          flex items-center h-11 rounded-lg cursor-pointer
+          transition-all duration-200 ease-in-out select-none
+          ${isGroupActive ? "bg-primary-light-color text-primary-color" : "text-gray-700 hover:bg-gray-100"}
+        `}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleOpen(e); } }}
+      >
+        <span className="flex items-center justify-center flex-shrink-0 w-12 h-12 text-lg">
+          {group.icon}
+        </span>
+        <span className="flex-1 text-sm font-medium whitespace-nowrap overflow-hidden opacity-100 transition-all duration-300">
+          {group.label}
+        </span>
+        {/* Chevron */}
+        <span
+          className="mr-3 text-xs text-gray-400 transition-transform duration-200"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+        >
+          <RightOutlined />
+        </span>
+      </div>
+
+      {/* Children — accordion expand/collapse */}
+      <div
+        style={{
+          maxHeight: open ? `${group.children.length * 52}px` : "0px",
+          overflow: "hidden",
+          transition: "max-height 0.25s ease-in-out",
+        }}
+      >
+        {group.children.map((item) => {
+          const isActive = tab === item.key;
+          return (
+            <div
+              key={item.key}
+              onClick={() => onItemClick(item)}
+              className={`
+                flex items-center h-10 mb-0.5 rounded-lg cursor-pointer ml-2
+                transition-all duration-200 ease-in-out
+                ${isActive
+                  ? "bg-primary-light-color text-primary-color"
+                  : "text-gray-600 hover:bg-gray-100"}
+              `}
+              role="menuitem"
+              tabIndex={0}
+              aria-current={isActive ? "page" : undefined}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onItemClick(item);
+                }
+              }}
+            >
+              <span className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-base">
+                {item.icon}
+              </span>
+              <span className="flex-1 text-sm font-medium whitespace-nowrap overflow-hidden">
+                {item.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Layout ────────────────────────────────────────────────────────────
 function DashboardLayout({ children }) {
   const pathname = usePathname();
   const tab = pathname.split("/")[3];
@@ -127,7 +236,7 @@ function DashboardLayout({ children }) {
   const [logoutLoading, setLogoutLoading] = useState(false);
   const router = useRouter();
   const [csrfToken, setCsrfToken] = useState(undefined);
-  
+
   // Ref to track if logout is in progress to prevent duplicate logout calls
   const isLoggingOut = React.useRef(false);
 
@@ -141,7 +250,7 @@ function DashboardLayout({ children }) {
     // Prevent duplicate logout calls
     if (isLoggingOut.current) return;
     isLoggingOut.current = true;
-    
+
     setLogoutLoading(true);
     try {
       await logoutService(csrfToken);
@@ -166,29 +275,25 @@ function DashboardLayout({ children }) {
     }
   }, [isMobile, mobileMenuOpen, collapsed]);
 
-  const handleMenuClick = useCallback((item) => {
-  if (item.external) {
-    window.open(item.url, "_blank", "noopener,noreferrer");
+  const handleMenuClick = useCallback(
+    (item) => {
+      if (item.external) {
+        window.open(item.url, "_blank", "noopener,noreferrer");
+        if (isMobile) setMobileMenuOpen(false);
+        return;
+      }
 
-    if (isMobile) {
-      setMobileMenuOpen(false);
-    }
-
-    return;
-  }
-
-  router.push(`/admin/${id}/${item.key}`);
-
-  if (isMobile) {
-    setMobileMenuOpen(false);
-  }
-}, [router, id, isMobile]);
+      router.push(`/admin/${id}/${item.key}`);
+      if (isMobile) setMobileMenuOpen(false);
+    },
+    [router, id, isMobile]
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Skip if already logging out
       if (isLoggingOut.current) return;
-      
+
       const storedName = window.localStorage.getItem("name");
       if (storedName == null) {
         handleLogout();
@@ -221,7 +326,7 @@ function DashboardLayout({ children }) {
         className={`
           fixed top-0 left-0 h-screen bg-white border-r border-gray-200 z-50
           flex flex-col transition-all duration-300 ease-in-out
-          ${isMobile ? (mobileMenuOpen ? 'translate-x-0' : '-translate-x-full') : ''}
+          ${isMobile ? (mobileMenuOpen ? "translate-x-0" : "-translate-x-full") : ""}
         `}
         style={{ width: isMobile ? 240 : sidebarWidth }}
       >
@@ -236,12 +341,16 @@ function DashboardLayout({ children }) {
               transition-all duration-300 ease-in-out
               focus:outline-none focus:ring-2 focus:ring-primary-color focus:ring-opacity-50
             `}
-            style={{ 
+            style={{
               right: -16,
             }}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuUnfoldOutlined style={{ transform: 'rotate(180deg)' }} />}
+            {collapsed ? (
+              <MenuUnfoldOutlined />
+            ) : (
+              <MenuUnfoldOutlined style={{ transform: "rotate(180deg)" }} />
+            )}
           </button>
         )}
 
@@ -263,17 +372,19 @@ function DashboardLayout({ children }) {
         )}
 
         {/* Logo Section */}
-        <div className={`
+        <div
+          className={`
           flex items-center h-16 px-4
           transition-all duration-300 ease-in-out
-        `}>
+        `}
+        >
           {collapsed && !isMobile ? (
             <Image
               alt="TSTP Logo"
               src={justlogo}
               className="transition-opacity duration-200"
               priority
-              style={{ width: 40, height: 'auto' }}
+              style={{ width: 40, height: "auto" }}
             />
           ) : (
             <Image
@@ -281,52 +392,49 @@ function DashboardLayout({ children }) {
               src={logo}
               className="transition-opacity duration-200"
               priority
-              style={{ width: 200, height: 'auto' }}
+              style={{ width: 200, height: "auto" }}
             />
           )}
         </div>
 
-        {/* Menu Section */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 ">
-          {AdminMenuItems.map((item) => {
+        {/* Menu Section — no overflow, no scrollbar */}
+        <nav className="flex-1 overflow-hidden px-2 py-1">
+          {/* Flat: Dashboard */}
+          {flatItems.map((item) => {
             const isActive = tab === item.key;
             const menuItemContent = (
               <div
                 key={item.key}
-               onClick={() => handleMenuClick(item)}
+                onClick={() => handleMenuClick(item)}
                 className={`
                   flex items-center h-11 mb-1 rounded-lg cursor-pointer
                   transition-all duration-200 ease-in-out
-                  ${isActive 
-                    ? 'bg-primary-light-color text-primary-color' 
-                    : 'text-gray-700 hover:bg-gray-100'
+                  ${isActive
+                    ? "bg-primary-light-color text-primary-color"
+                    : "text-gray-700 hover:bg-gray-100"
                   }
                 `}
                 role="menuitem"
                 tabIndex={0}
-                aria-current={isActive ? 'page' : undefined}
+                aria-current={isActive ? "page" : undefined}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     handleMenuClick(item);
                   }
                 }}
               >
-                <span className={`
-                  flex items-center justify-center flex-shrink-0
-                  w-12 h-12 text-lg
-                `}>
+                <span className="flex items-center justify-center flex-shrink-0 w-12 h-12 text-lg">
                   {item.icon}
                 </span>
-       
-                <span className={`
+
+                <span
+                  className={`
                   flex-1 text-sm font-medium whitespace-nowrap overflow-hidden
                   transition-all duration-300 ease-in-out
-                  ${collapsed && !isMobile 
-                    ? 'w-0 opacity-0 ml-0' 
-                    : 'opacity-100'
-                  }
-                `}>
+                  ${collapsed && !isMobile ? "w-0 opacity-0 ml-0" : "opacity-100"}
+                `}
+                >
                   {item.label}
                 </span>
               </div>
@@ -347,6 +455,18 @@ function DashboardLayout({ children }) {
 
             return menuItemContent;
           })}
+
+          {/* Grouped submenu items */}
+          {AdminMenuGroups.map((group) => (
+            <SubMenuGroup
+              key={group.groupKey}
+              group={group}
+              tab={tab}
+              collapsed={collapsed}
+              isMobile={isMobile}
+              onItemClick={handleMenuClick}
+            />
+          ))}
         </nav>
 
         <div className="mt-auto border-t border-gray-200 p-2">
@@ -364,7 +484,7 @@ function DashboardLayout({ children }) {
                   tabIndex={0}
                   aria-label="View Profile"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       handleProfileClick();
                     }
@@ -386,7 +506,7 @@ function DashboardLayout({ children }) {
                   tabIndex={0}
                   aria-label="Logout"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       handleLogout();
                     }
@@ -408,7 +528,7 @@ function DashboardLayout({ children }) {
               tabIndex={0}
               aria-label="View profile"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   handleProfileClick();
                 }
@@ -418,16 +538,14 @@ function DashboardLayout({ children }) {
               <div className="flex-shrink-0">
                 <UserProfileIcon />
               </div>
-              
+
               <div className="flex-1 min-w-0 overflow-hidden">
                 <div className="text-sm font-medium text-gray-900 truncate">
                   {name}
                 </div>
-                <div className="text-xs text-gray-500 truncate">
-                  {email}
-                </div>
+                <div className="text-xs text-gray-500 truncate">{email}</div>
               </div>
-              
+
               <div
                 onClick={(e) => {
                   e.stopPropagation();
@@ -442,7 +560,7 @@ function DashboardLayout({ children }) {
                 tabIndex={0}
                 aria-label="Logout"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     e.stopPropagation();
                     handleLogout();
@@ -470,7 +588,7 @@ function DashboardLayout({ children }) {
         className="transition-all duration-300 ease-in-out"
         style={{
           marginLeft: isMobile ? 0 : sidebarWidth,
-          minHeight: '100vh',
+          minHeight: "100vh",
         }}
       >
         <Content
