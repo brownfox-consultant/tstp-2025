@@ -135,35 +135,35 @@ def send_test_completion_email(test_submission_id):
         if not admin_emails:
             return
 
-        subject = f"Test Completed - {submission.test.name}"
+        subject = f"{student.name} Completed Test - {submission.test.name}"
 
-        body = f"""
-        Student has completed the test.
+        context = {
+            "student_name": student.name,
+            "student_email": student.email,
+            "test_name": submission.test.name,
+            "completed_on": completed_on.strftime("%d-%m-%Y %I:%M %p"),
+            "total_score": data["total_score"],
+            "math_score": data["math_score"],
+            "english_score": data["english_score"],
+            "percentage": data["percentage"],
+        }
 
-        Student Name : {student.name}
-        Student Email: {student.email}
+        html_content = render_to_string(
+            "emails/test_completion.html",
+            context
+        )
 
-        Test Name    : {submission.test.name}
-        Completed On : {completed_on:%d-%m-%Y %I:%M %p}
-
-        ==============================
-                SCORE SUMMARY
-        ==============================
-
-        Total Score     : {data['total_score']} / 1600
-        Math Score      : {data['math_score']}
-        English Score   : {data['english_score']}
-        Percentage      : {data['percentage']}%
-        """
+        text_content = strip_tags(html_content)
 
         msg = EmailMultiAlternatives(
             subject=subject,
-            body=body,
+            body=text_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=admin_emails,
             bcc=["vijayaluguvelli@gmail.com"],
         )
 
+        msg.attach_alternative(html_content, "text/html")
         msg.send()
 
     except Exception as e:

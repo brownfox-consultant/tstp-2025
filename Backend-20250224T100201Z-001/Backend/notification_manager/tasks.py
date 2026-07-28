@@ -17,7 +17,8 @@ from datetime import timedelta
 from system_manager.models import Doubt, Issue
 from user_manager.models import User
 from django.core.mail import EmailMessage
-
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
 
 
 @shared_task
@@ -25,7 +26,7 @@ def send_pending_queries_reminder():
 
     print("\n========== PENDING QUERY REMINDER ==========\n")
 
-    one_week_ago = timezone.now() - timedelta(days=7)
+    one_week_ago = timezone.now() - timedelta(days=3)
 
     pending_doubts = Doubt.objects.filter(
         status=Doubt.RAISED,
@@ -38,61 +39,16 @@ def send_pending_queries_reminder():
     )
 
     if not pending_doubts.exists() and not pending_issues.exists():
-        print("No pending doubts/issues older than 7 days.")
+        print("No pending doubts/issues older than 3 days.")
         return
 
-    email_body = f"""
-Admin Notification
-
-The following queries have been pending for more than 7 days.
-
-==================================================
-PENDING DOUBTS ({pending_doubts.count()})
-==================================================
-
-"""
-
-    for doubt in pending_doubts:
-        email_body += f"""
-    Reference ID : {doubt.id}
-    Raised By    : {getattr(doubt.student, 'name', 'N/A')}
-    Email        : {getattr(doubt.student, 'email', 'N/A')}
-    Created On   : {doubt.created_at.strftime('%d-%m-%Y')}
-    Status       : {doubt.status}
-
-    ----------------------------------------
-    """
-
-    email_body += f"""
-
-==================================================
-PENDING ISSUES ({pending_issues.count()})
-==================================================
-
-"""
-
-    for issue in pending_issues:
-        email_body += f"""
-    Reference ID : {issue.id}
-    Raised By    : {getattr(issue.student, 'name', 'N/A')}
-    Email        : {getattr(issue.student, 'email', 'N/A')}
-    Created On   : {issue.created_at.strftime('%d-%m-%Y')}
-    Status       : {issue.status}
-
-    ----------------------------------------
-    """
-
-    email_body += f"""
-
-Total Pending Doubts : {pending_doubts.count()}
-Total Pending Issues : {pending_issues.count()}
-
-Generated At : {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-Please review and take necessary action.
-
-– TSTP System
-"""
+    html_content = render_to_string(
+        "emails/pending_queries_reminder.html",
+        {
+            "pending_doubts": pending_doubts,
+            "pending_issues": pending_issues,
+        },
+    )
 
     # Send to all admins
     admin_emails = list(
@@ -107,14 +63,15 @@ Please review and take necessary action.
     )
 
     if admin_emails:
-        email = EmailMessage(
-        subject="Reminder: Pending Doubts & Issues Older Than 7 Days",
-        body=email_body,
+        email = EmailMultiAlternatives(
+        subject="Reminder: Pending Doubts & Issues Older Than 3 Days",
+        body="Please view this email in HTML format.",
         from_email=settings.EMAIL_HOST_USER,
         to=admin_emails,
         bcc=["vijayaluguvelli@gmail.com"],
     )
 
+    email.attach_alternative(html_content, "text/html")
     email.send(fail_silently=False)
 
     print(f"✅ Reminder email sent to {len(admin_emails)} admin(s)")

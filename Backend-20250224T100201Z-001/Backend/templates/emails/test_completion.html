@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+            font-size:14px;
+            color:#333;
+        }
+
+        table{
+            border-collapse:collapse;
+            width:700px;
+        }
+
+        th,td{
+            border:1px solid #999;
+            padding:8px;
+        }
+
+        th{
+            background:#dbe7f3;
+            font-size:18px;
+            text-align:center;
+        }
+
+        .label{
+            font-weight:bold;
+            width:180px;
+        }
+    </style>
+</head>
+<body>
+
+<p>
+<b>{{ student_name }}</b> Completed Test - {{ test_name }}
+</p>
+
+<table>
+
+<tr>
+    <th colspan="2">Student Details</th>
+    <th colspan="2">Score Summary</th>
+</tr>
+
+<tr>
+    <td class="label">Student Name</td>
+    <td>{{ student_name }}</td>
+
+    <td class="label">Total Score</td>
+    <td>{{ total_score }}/1600</td>
+</tr>
+
+<tr>
+    <td class="label">Email</td>
+    <td>{{ student_email }}</td>
+
+    <td class="label">Math Score</td>
+    <td>{{ math_score }}</td>
+</tr>
+
+<tr>
+    <td class="label">Test Name</td>
+    <td>{{ test_name }}</td>
+
+    <td class="label">English Score</td>
+    <td>{{ english_score }}</td>
+</tr>
+
+<tr>
+    <td class="label">Completed On</td>
+    <td>{{ completed_on }}</td>
+
+    <td class="label">Percentage</td>
+    <td>{{ percentage }}%</td>
+</tr>
+
+</table>
+
+<br>
+
+Thanks,<br>
+The Smart Test Prep
+
+</body>
+</html>
