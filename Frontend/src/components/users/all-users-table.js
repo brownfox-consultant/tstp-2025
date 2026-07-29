@@ -6,6 +6,7 @@ import {
   SearchOutlined,
   UploadOutlined,
   ExclamationCircleFilled,
+  MoreOutlined,
 } from "@ant-design/icons";
 import {
   Table,
@@ -536,6 +537,10 @@ const submitBulkUpload = async () => {
         ),
         dataIndex: "role_label",
         sorter: (a, b) => a.role_label.localeCompare(b.role_label),
+        filters: filterItems
+          .filter(item => item.label !== "All")
+          .map(item => ({ text: item.label, value: item.label })),
+        onFilter: (value, record) => record.role_label === value,
         key: "role_label",
         render: (text) => {
           if (!text) return null;
@@ -579,7 +584,24 @@ const submitBulkUpload = async () => {
         dataIndex: "name",
         sorter: (a, b) => a.name.localeCompare(b.name),
         key: "name",
-        render: (title) => <>{title}</>,
+        render: (title, record) => {
+          const nameContent = <span className="font-semibold text-gray-900 hover:text-blue-600 hover:underline transition-all">{title}</span>;
+          return record.role_name === "student" ? (
+            <EditStudentUserModal
+              updated={updated}
+              setUpdated={setUpdated}
+              recordData={record}
+              customTrigger={nameContent}
+            />
+          ) : (
+            <EditUserModal
+              updated={updated}
+              setUpdated={setUpdated}
+              recordData={record}
+              customTrigger={nameContent}
+            />
+          );
+        },
         width: 140,
       },
 
@@ -600,7 +622,7 @@ const submitBulkUpload = async () => {
         sorter: (a, b) => a.role_label.localeCompare(b.role_label),
         key: "x",
         //...getColumnSearchProps("email"),
-        render: (text) => <>{text}</>,
+        render: (text) => <span className="text-gray-400">{text}</span>,
         width: 200,
       },
       {
@@ -620,7 +642,7 @@ const submitBulkUpload = async () => {
         sorter: (a, b) => a.role_label.localeCompare(b.role_label),
         key: "phone_number",
         //...getColumnSearchProps("phone_number"),
-        render: (text) => formatPhoneNumberDisplay(text),
+        render: (text) => <span className="text-gray-400">{formatPhoneNumberDisplay(text)}</span>,
         width: 150,
       },
 
@@ -632,6 +654,11 @@ const submitBulkUpload = async () => {
           </div>
         ),
         key: "course",
+        filters: courseOptions.map((course) => ({ text: course.name, value: course.name })),
+        onFilter: (value, record) => {
+          const courses = record.course_details?.map((c) => c.course.name) || [];
+          return courses.includes(value);
+        },
         sorter: (a, b) => {
           const aCourses =
             a.course_details?.map((c) => c.course.name).join(", ") || "";
@@ -643,7 +670,7 @@ const submitBulkUpload = async () => {
           const courses = record.course_details
             ?.map((c) => c.course.name)
             .join(", ");
-          return <>{courses || <span className="text-gray-400">N/A</span>}</>;
+          return <span className="text-gray-500 font-medium">{courses || <span className="text-gray-400 font-normal">N/A</span>}</span>;
         },
         width: 150,
       },
@@ -677,15 +704,20 @@ const submitBulkUpload = async () => {
 
       {
         title: (
-          <div className="flex items-center">
+          <div className="flex items-center justify-start pr-4">
             <span>Status</span>
           </div>
         ),
         dataIndex: "is_active",
         sorter: (a, b) => Number(a.is_active) - Number(b.is_active),
+        filters: [
+          { text: "Active", value: true },
+          { text: "Inactive", value: false },
+        ],
+        onFilter: (value, record) => record.is_active === value,
         key: "is_active",
         align: "center",
-        width: 150,
+        width: 120,
         render: (text, record) => {
           const isActive = record.is_active;
           const bgColor = isActive ? "bg-emerald-50" : "bg-red-50";
@@ -694,7 +726,7 @@ const submitBulkUpload = async () => {
           const label = isActive ? "Active" : "Inactive";
 
           return (
-            <div className="flex justify-center">
+            <div className="flex justify-start pr-4">
               <div className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold border ${bgColor} ${textColor} ${borderColor}`}>
                 {label}
               </div>
@@ -782,22 +814,81 @@ const submitBulkUpload = async () => {
         title: "Actions",
         key: "val",
         align: "start",
-        width: 300,
         render: (_, record) => {
+          const menuItems = [];
+
+          if (record.role_name === "student") {
+            menuItems.push({
+              key: "results",
+              label: "Results",
+              onClick: () => {
+                set_student_id(record.id);
+                setStudentName(record.name);
+                setShowResultModal(true);
+              },
+            });
+            menuItems.push({
+              key: "assign_test",
+              label: "Assign Test",
+              onClick: () => {
+                set_student_id(record.id);
+                setStudentName(record.name);
+                setShowAssignTestModal(true);
+              },
+            });
+          }
+
+          menuItems.push({
+            key: "reset_password",
+            label: "Reset Password Link",
+            onClick: async () => {
+              try {
+                const response = await axios.post(
+                  `${BASE_URL}/api/user/generate-reset-link/`,
+                  { user_id: record.id },
+                  {
+                    withCredentials: true,
+                    headers: {
+                      "X-CSRFToken": localStorage.getItem("csrfToken"),
+                    },
+                  }
+                );
+                notification.success({
+                  message: "Reset Link Sent",
+                  description: `Password reset link has been sent to ${record.email}`,
+                  placement: "topRight",
+                });
+                navigator.clipboard.writeText(response.data.reset_link);
+              } catch (error) {
+                console.log(error?.response);
+                message.error(
+                  error?.response?.data?.detail || "Failed to generate reset link"
+                );
+              }
+            },
+          });
+
+          if (record.is_active) {
+            menuItems.push({
+              key: "deactivate",
+              label: <span className="text-red-500">Deactivate</span>,
+              onClick: () => handleStatusChange(record.id, false),
+            });
+            menuItems.push({
+              key: "delete",
+              label: <span className="text-red-500">Delete</span>,
+              onClick: () => showDeleteConfirm(record),
+            });
+          } else {
+            menuItems.push({
+              key: "activate",
+              label: <span className="text-green-600">Activate</span>,
+              onClick: () => handleStatusChange(record.id, true),
+            });
+          }
+
           return (
             <div className="flex items-center gap-2">
-              {/* ✅ LOGIN AS (ADMIN ONLY) */}
-              {/* {adminEmail === "admin@thesmarttestprep.com" && (
-                <Button
-                  size="small"
-                  type="default"
-                  onClick={() => handleLoginAsUser(record)}
-                >
-                  Login As
-                </Button>
-              )} */}
-
-              {/* Existing Edit */}
               {record.role_name == "student" ? (
                 <EditStudentUserModal
                   updated={updated}
@@ -812,107 +903,9 @@ const submitBulkUpload = async () => {
                 />
               )}
 
-              {/* Results */}
-              {record.role_name === "student" && (
-                <Button
-                  type="default"
-                  size="small"
-                  onClick={() => {
-                    set_student_id(record.id);
-                    setStudentName(record.name);
-                    setShowResultModal(true);
-                  }}
-                >
-                  Results
-                </Button>
-              )}
-              {record.role_name === "student" && (
-  <Button
-    size="small"
-    type="default"
-    onClick={() => {
-      set_student_id(record.id);
-      setStudentName(record.name);
-      setShowAssignTestModal(true);
-    }}
-  >
-    Assign Test
-  </Button>
-)}
-
-<Button
-  size="small"
-  danger
-  type="primary"
-  onClick={async () => {
-  try {
-    const response = await axios.post(
-      `${BASE_URL}/api/user/generate-reset-link/`,
-      {
-        user_id: record.id,
-      },
-      {
-        withCredentials: true,
-        headers: {
-          "X-CSRFToken": localStorage.getItem("csrfToken"),
-        },
-      }
-    );
-
-    
-    notification.success({
-  message: "Reset Link Sent",
-  description: `Password reset link has been sent to ${record.email}`,
-  placement: "topRight",
-});
-
-    navigator.clipboard.writeText(response.data.reset_link);
-  } catch (error) {
-    console.log(error?.response);
-
-    message.error(
-      error?.response?.data?.detail ||
-      "Failed to generate reset link"
-    );
-  }
-}}
->
-  Reset Password Link
-</Button>
-
-
-              {/* Activate / Deactivate */}
-              {record.is_active ? (
-                <Button
-                  size="small"
-                  danger
-                  loading={statusLoadingMap[record.id]}
-                  onClick={() => handleStatusChange(record.id, false)}
-                >
-                  Deactivate
-                </Button>
-              ) : (
-                <Button
-                  size="small"
-                  type="primary"
-                  className="bg-green-600 hover:bg-green-500"
-                  loading={statusLoadingMap[record.id]}
-                  onClick={() => handleStatusChange(record.id, true)}
-                >
-                  Activate
-                </Button>
-              )}
-
-              {/* Delete */}
-              {record.is_active && (
-                <Button
-                  size="small"
-                  type="text"
-                  danger
-                  icon={<DeleteTwoTone twoToneColor="#eb2f96" />}
-                  onClick={() => showDeleteConfirm(record)}
-                />
-              )}
+              <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
+                <Button type="text" icon={<MoreOutlined className="text-lg text-gray-600 hover:text-gray-900" />} size="small" />
+              </Dropdown>
             </div>
           );
         },
@@ -1016,7 +1009,7 @@ const submitBulkUpload = async () => {
 >
   Bulk Register
 </Button>
-            <Dropdown
+            {/* <Dropdown
               trigger={["click"]}
               open={isDropdownVisible}
               onOpenChange={(open) => {
@@ -1037,7 +1030,7 @@ const submitBulkUpload = async () => {
               >
                 Filter
               </Button>
-            </Dropdown>
+            </Dropdown> */}
           </div>
         )}
       </div>
@@ -1075,12 +1068,12 @@ const submitBulkUpload = async () => {
               />
             ), */
         }}
-        scroll={{ x: "max-content" }}
+        // scroll={{ x: "max-content" }}
         size="small"
         pagination={paginationConfig}
         onChange={handleTableChange}
-        rowClassName="hover:bg-gray-50 transition-colors"
-        className="tablestyles mt-4 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
+        rowClassName="hover:bg-gray-100 transition-colors"
+        className="tablestyles mt-4 [&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
       />
       {showResultModal && (
         <Modal

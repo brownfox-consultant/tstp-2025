@@ -95,6 +95,9 @@ function UpcomingTable({ tabKey, api }) {
     });
   };
 
+  const uniqueCourses = Array.from(new Set(studentsData.flatMap(s => s.course_details?.map(c => c.course?.name)).filter(Boolean)));
+  const uniqueSubTypes = Array.from(new Set(studentsData.flatMap(s => s.course_details?.map(c => c.subscription_type)).filter(Boolean)));
+
   const cols = [
     {
       title: (
@@ -104,17 +107,20 @@ function UpcomingTable({ tabKey, api }) {
       ),
       dataIndex: "course_details",
       key: "course",
+      filters: uniqueCourses.map(name => ({ text: name, value: name })),
+      onFilter: (value, record) => {
+        const courses = record.course_details?.map((c) => c.course?.name) || [];
+        return courses.includes(value);
+      },
       render: (_, record) => {
         return (
-          <>
+          <span className="text-gray-500 font-medium">
             {record.course_details.length
               ? record.course_details
-                .map(({ course }) => {
-                  return course.name;
-                })
-                .join(", ")
-              : "-"}
-          </>
+                  .map(({ course }) => course.name)
+                  .join(", ")
+              : <span className="text-gray-400 font-normal">-</span>}
+          </span>
         );
       },
       width: 200,
@@ -128,7 +134,14 @@ function UpcomingTable({ tabKey, api }) {
       dataIndex: "name",
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       key: "name",
-      render: (text) => <>{text}</>,
+      render: (text, record) => (
+        <span
+          className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 hover:underline transition-all"
+          onClick={() => router.push(`/admin/${id}/users/all/edit/${record.id}`)}
+        >
+          {text}
+        </span>
+      ),
       width: 150,
     },
     {
@@ -140,7 +153,7 @@ function UpcomingTable({ tabKey, api }) {
       dataIndex: "email",
       sorter: (a, b) => (a.email || "").localeCompare(b.email || ""),
       key: "email",
-      render: (text) => <>{text}</>,
+      render: (text) => <span className="text-gray-400">{text}</span>,
       width: 150,
     },
     {
@@ -152,7 +165,7 @@ function UpcomingTable({ tabKey, api }) {
       dataIndex: "phone_number",
       sorter: (a, b) => (a.phone_number || "").localeCompare(b.phone_number || ""),
       key: "phone_number",
-      render: (text) => <>{text}</>,
+      render: (text) => <span className="text-gray-400">{text}</span>,
       width: 200,
     },
     // {
@@ -170,8 +183,13 @@ function UpcomingTable({ tabKey, api }) {
       key: "subscription_type",
       dataIndex: "course_details",
       width: 150,
+      filters: uniqueSubTypes.map(name => ({ text: name, value: name })),
+      onFilter: (value, record) => {
+        const types = record.course_details?.map((c) => c.subscription_type) || [];
+        return types.includes(value);
+      },
       render: (courseArray, record) => {
-        return <>{courseArray[0].subscription_type}</>;
+        return <span className="text-gray-500">{courseArray[0].subscription_type}</span>;
       },
     },
     {
@@ -184,7 +202,7 @@ function UpcomingTable({ tabKey, api }) {
       dataIndex: "course_details",
       width: 120,
       render: (courseArray, record) => {
-        return <>{courseArray[0].subscription_end_date}</>;
+        return <span className="text-gray-400">{courseArray[0].subscription_end_date}</span>;
       },
       width: 150,
     },
@@ -347,9 +365,9 @@ function UpcomingTable({ tabKey, api }) {
         rowKey={(record) => record.id}
         pagination={paginationConfig}
         onChange={handleTableChange}
-        rowClassName="hover:bg-gray-50 transition-colors"
+        rowClassName="hover:bg-gray-100 transition-colors"
         size="small"
-        className="tablestyles mt-4 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
+        className="tablestyles mt-4 [&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
         //scroll={{ x: "max-content", y: 550 }}
         /* pagination={{
           position: "topRight",

@@ -6,7 +6,7 @@ import { editUser, getRoles, getUsersByRole } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
 import { useCountryCode } from "@/hooks/useCountryCode";
 
-function EditUserModal({ recordData, updated, setUpdated }) {
+function EditUserModal({ recordData, updated, setUpdated, customTrigger }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [form] = useForm();
@@ -155,7 +155,13 @@ function EditUserModal({ recordData, updated, setUpdated }) {
           padding: 0 !important;
         }
       `}</style>
-      <EditOutlined onClick={showModal} className="mr-2" />
+      {customTrigger ? (
+        <span onClick={showModal} className="cursor-pointer">
+          {customTrigger}
+        </span>
+      ) : (
+        <EditOutlined onClick={showModal} className="mr-2 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors duration-300" />
+      )}
       <Modal
         width={480}
         title={<div className=" text-2xl font-semibold">Edit User</div>}

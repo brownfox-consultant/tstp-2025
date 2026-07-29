@@ -53,6 +53,9 @@ const flatItems = [
     icon: <UserOutlined />,
     label: "Users",
   },
+  { key: "courses", icon: <AppstoreOutlined />, label: "Courses" },
+  { key: "questions", icon: <QuestionOutlined />, label: "Questions" },
+
   {
     key: "tests",
     icon: <FontSizeOutlined />,
@@ -68,22 +71,14 @@ const flatItems = [
 // Grouped submenu items
 const AdminMenuGroups = [
 
-  {
-    groupKey: "content",
-    icon: <AppstoreOutlined />,
-    label: "Content",
-    children: [
-      { key: "courses", icon: <AppstoreOutlined />, label: "Courses" },
-      { key: "tutorials", icon: <FolderOpenOutlined />, label: "Tutorials" },
-      { key: "questions", icon: <QuestionOutlined />, label: "Questions" },
-      { key: "suggestions", icon: <FileUnknownOutlined />, label: "Suggestions" },
-    ],
-  },
+
   {
     groupKey: "support",
     icon: <CommentOutlined />,
     label: "Support",
     children: [
+      { key: "suggestions", icon: <FileUnknownOutlined />, label: "Suggestions" },
+      { key: "tutorials", icon: <FolderOpenOutlined />, label: "Tutorials" },
       { key: "doubts", icon: <SwapOutlined />, label: "Doubts" },
       { key: "issues", icon: <HistoryOutlined />, label: "Issues" },
       { key: "concerns", icon: <CommentOutlined />, label: "Concerns" },
@@ -398,7 +393,7 @@ function DashboardLayout({ children }) {
         </div>
 
         {/* Menu Section — no overflow, no scrollbar */}
-        <nav className="flex-1 overflow-hidden px-2 py-1">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1">
           {/* Flat: Dashboard */}
           {flatItems.map((item) => {
             const isActive = tab === item.key;
