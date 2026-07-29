@@ -264,7 +264,10 @@ console.log("sectionName", sectionName);
         return;
       }
       
-      flow.push({
+      const last = flow[flow.length - 1];
+
+if (!last || last.sr_no !== action.sr_no) {
+    flow.push({
         sr_no: action.sr_no,
         question_id: action.question_id,
         action_type: action.action_type,
@@ -273,7 +276,8 @@ console.log("sectionName", sectionName);
         is_skipped: action.is_skipped,
         marked: action.marked,
         timestamp: action.timestamp
-      });
+    });
+}
       
       lastSrNo = action.sr_no;
       lastActionType = action.action_type;
