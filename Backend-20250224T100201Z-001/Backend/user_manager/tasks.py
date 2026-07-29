@@ -23,7 +23,7 @@ logger = logging.getLogger("subscription_tasks")
 def check_and_update_subscriptions():
     """
     Runs daily via Celery Beat.
-    - Sends reminder 3 days before expiry
+    - Sends reminder 5 days before expiry
     - Expires PAID subscriptions
     - Sends email + in-app notification
     """
@@ -33,7 +33,7 @@ def check_and_update_subscriptions():
     print("=" * 80)
 
     today = timezone.now().date()
-    reminder_date = today + timedelta(days=3)
+    reminder_date = today + timedelta(days=5)
     reminder_admin_summary = []
     expired_admin_summary = []
 
