@@ -732,7 +732,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
     <div className="relative">
       {/* Back Button */}
       <button
-        className="absolute top-2 right-6 inline-flex items-center gap-2 px-5 py-3 bg-white/90 backdrop-blur-lg border border-gray-100 rounded-full text-sm font-semibold text-gray-800 cursor-pointer transition-all duration-300 shadow-sm hover:bg-primary-color hover:text-white hover:-translate-x-1 hover:shadow-lg hover:shadow-orange-200 z-10"
+        className="absolute top-[-3.5rem] right-6 inline-flex items-center gap-2 px-5 py-3 bg-white/90 backdrop-blur-lg border border-gray-100 rounded-lg  shadow-sm z-10"
         onClick={() => {
           if (onClose) {
             onClose();
@@ -778,20 +778,24 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
           </div>
 
           {/* Total Score Card */}
-          <div className="rounded-xl overflow-hidden bg-gradient-to-br bg-sky-400 text-white shadow-lg p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wide opacity-90">
+          <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
                 Total Score
               </span>
-              <span className="text-xs font-bold">{totalPercent}%</span>
+              <span className="text-md font-bold text-gray-800">{totalPercent}%</span>
             </div>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-4xl font-black">{totalScore}</span>
-              <span className="text-md font-medium opacity-70">OUT OF {totalMaxScore}</span>
+            <div className=" mb-2">
+              <span className={`text-4xl font-black ${totalScore > 1200 ? 'text-green-500' : totalScore >= 800 ? 'text-orange-500' : 'text-red-500'}`}>
+                {totalScore}
+              </span>
+              <span className="text-[14px] text-black font-bold uppercase ml-1">
+                OUT OF {totalMaxScore}
+              </span>
             </div>
-            <div className="w-full h-2 bg-white/30 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-white/70 rounded-full transition-all duration-500"
+                className={`h-full rounded-full transition-all duration-500 ${totalScore > 1200 ? 'bg-gradient-to-r from-green-400 to-green-500' : totalScore >= 800 ? 'bg-gradient-to-r from-orange-400 to-orange-500' : 'bg-gradient-to-r from-red-400 to-red-500'}`}
                 style={{ width: `${totalPercent}%` }}
               />
             </div>
@@ -800,6 +804,10 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
           {/* Subject Score Cards */}
           {resultData?.subjects?.map((subject, idx) => {
             const percent = Math.round((subject.subject_score / subject.subject_max_score) * 100);
+            const subScore = subject.subject_score || 0;
+            const scoreColor = subScore >= 600 ? 'text-green-500' : subScore >= 400 ? 'text-orange-500' : 'text-red-500';
+            const progressBg = subScore >= 600 ? 'from-green-400 to-green-500' : subScore >= 400 ? 'from-orange-400 to-orange-500' : 'from-red-400 to-red-500';
+
             return (
               <div key={idx} className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-2 mb-3">
@@ -811,13 +819,18 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
                   </span>
                   <span className="text-md font-bold">{percent}%</span>
                 </div>
-                <div className="flex items-baseline justify-between mb-2">
-                  <span className="text-3xl font-black">{subject.subject_score}</span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase">
+                <div className="mb-2">
+                  <span className={`text-3xl font-black ${scoreColor}`}>{subScore}</span>
+                  <span className="text-[14px] text-black font-bold uppercase ml-1">
                     Out of {subject.subject_max_score}
                   </span>
                 </div>
-                <Progress percent={percent} showInfo={false} strokeWidth={6} size="small" />
+                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full bg-gradient-to-r ${progressBg} rounded-full transition-all duration-500`}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
               </div>
             );
           })}

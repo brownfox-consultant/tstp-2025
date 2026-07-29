@@ -94,6 +94,14 @@ export default function FreeUserPage() {
         </div>
       </div>
 
+      {/* Free User Info Notice */}
+      <div className="mb-4 bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-start gap-3 shadow-sm">
+        <span className="text-xl">ℹ️</span>
+        <p className="text-orange-800 font-medium text-sm pt-0.5">
+          As a Free User, your access is limited to the Full Length Test module (maximum of 2 tests allowed).
+        </p>
+      </div>
+
       {/* User Info Banner */}
       <div className="mb-4 bg-gradient-to-r from-orange-500 to-amber-400 rounded-lg p-6 shadow-lg">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

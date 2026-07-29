@@ -331,16 +331,12 @@ body.fullscreen-mode footer {
     font-weight: normal;
   }
 
-  .ant-table-tbody > tr:nth-child(even) {
-    background-color: #f7f7f7;
-  }
-
-  .ant-table-tbody > tr:nth-child(odd) {
-    background-color: #ffffff;
-  }
-
   .ant-table-tbody > tr > td {
     padding: 9px;
+  }
+
+  .ant-table-tbody > tr:hover > td {
+    background-color: #e5e7eb !important;
   }
 
   .footer-container {

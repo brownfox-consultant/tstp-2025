@@ -849,13 +849,13 @@ console.log(
             </div>
           </div>
 
-          {/* 2. Total Score Card - Blue Background */}
-          <div className="rounded-xl overflow-hidden bg-gradient-to-br bg-sky-400 text-white shadow-lg p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wide opacity-90">
+          {/* 2. Total Score Card - White Background */}
+          <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
                 Total Score
               </span>
-              <span className="text-xs font-bold">
+              <span className="text-md font-bold text-gray-800">
                 {(() => {
                   const total = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0);
                   const max = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_max_score || 0), 0);
@@ -865,17 +865,31 @@ console.log(
             </div>
 
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-4xl font-black">
-                {resultData?.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0)}
-              </span>
-              <span className="text-md font-medium opacity-70">
-                OUT OF {resultData?.subjects?.reduce((acc, s) => acc + (s.subject_max_score || 0), 0)}
-              </span>
+              {(() => {
+                const totalScore = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0) || 0;
+                const maxScore = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_max_score || 0), 0) || 0;
+                const colorClass = totalScore > 1200 ? 'text-green-500' : totalScore >= 800 ? 'text-orange-500' : 'text-red-500';
+                return (
+                  <div>
+                    <span className={`text-4xl font-black ${colorClass}`}>
+                      {totalScore}
+                    </span>
+                    <span className="text-[14px] text-black font-bold uppercase ml-1">
+                      OUT OF {maxScore}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
-            <div className="w-full h-2 bg-white/30 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-white/70 rounded-full transition-all duration-500"
+                className={`h-full rounded-full transition-all duration-500 ${
+                  (() => {
+                    const total = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0) || 0;
+                    return total > 1200 ? 'bg-gradient-to-r from-green-400 to-green-500' : total >= 800 ? 'bg-gradient-to-r from-orange-400 to-orange-500' : 'bg-gradient-to-r from-red-400 to-red-500';
+                  })()
+                }`}
                 style={{
                   width: `${(() => {
                     const total = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0);
@@ -890,6 +904,9 @@ console.log(
           {/* 3. Subject Score Cards */}
           {resultData?.subjects?.map((subject, idx) => {
             const percent = Math.round((subject.subject_score / subject.subject_max_score) * 100);
+            const subScore = subject.subject_score || 0;
+            const scoreColor = subScore >= 600 ? 'text-green-500' : subScore >= 400 ? 'text-orange-500' : 'text-red-500';
+            const progressBg = subScore >= 600 ? 'from-green-400 to-green-500' : subScore >= 400 ? 'from-orange-400 to-orange-500' : 'from-red-400 to-red-500';
 
             return (
               <div key={idx} className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -911,11 +928,11 @@ console.log(
                 </div>
 
                 {/* Score Row */}
-                <div className="flex items-baseline justify-between mb-2">
-                  <span className="text-3xl font-black">
-                    {subject.subject_score}
+                <div className="mb-2">
+                  <span className={`text-3xl font-black ${scoreColor}`}>
+                    {subScore} 
                   </span>
-                  <span className="text-[10px] text-gray-400 font-medium uppercase">
+                  <span className="text-[14px] text-black font-bold uppercase ml-1">
                     Out of {subject.subject_max_score}
                   </span>
                 </div>
@@ -923,7 +940,7 @@ console.log(
                 {/* Progress Bar */}
                 <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-500"
+                    className={`h-full bg-gradient-to-r ${progressBg} rounded-full transition-all duration-500`}
                     style={{ width: `${percent}%` }}
                   />
                 </div>

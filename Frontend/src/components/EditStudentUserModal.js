@@ -213,7 +213,7 @@ const PhoneInput = ({
   );
 };
 
-function EditStudentUserModal({ recordData, updated, setUpdated }) {
+function EditStudentUserModal({ recordData, updated, setUpdated, customTrigger }) {
   const [form] = useForm();
   const [isModalOpen, setIsModalOpen] = useState();
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
@@ -379,10 +379,16 @@ function EditStudentUserModal({ recordData, updated, setUpdated }) {
 
   return (
     <>
-      <EditOutlined
-        onClick={showModal}
-        className="mr-2 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors duration-300"
-      />
+      {customTrigger ? (
+        <span onClick={showModal} className="cursor-pointer">
+          {customTrigger}
+        </span>
+      ) : (
+        <EditOutlined
+          onClick={showModal}
+          className="mr-2 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors duration-300"
+        />
+      )}
 
       <Modal
         title={
