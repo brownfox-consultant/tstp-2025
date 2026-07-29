@@ -249,6 +249,15 @@ class TestViewSet(viewsets.ModelViewSet):
             total_questions_in_section=total_questions,
             device_info=device_info
         )
+        latest = TestNavigationHistory.objects.last()
+
+        print(
+            latest.action_type,
+            latest.current_question_index,
+            latest.from_question_id,
+            latest.to_question_id,
+            latest.time_spent_on_previous_question
+        )
         
         # Analyze and update pattern summary
         self._analyze_pattern(test_submission)
@@ -287,6 +296,7 @@ class TestViewSet(viewsets.ModelViewSet):
         visited_questions = set()
         
         for nav in navigations:
+            
             # Count navigation types
             if nav.action_type == 'NEXT':
                 sequential_count += 1
@@ -427,6 +437,7 @@ class TestViewSet(viewsets.ModelViewSet):
         # Prepare navigation timeline
         timeline = []
         for nav in navigations:
+            
             timeline.append({
                 "timestamp": nav.timestamp.isoformat(),
                 "action": nav.action_type,
@@ -2301,7 +2312,21 @@ class TestViewSet(viewsets.ModelViewSet):
             striked_list = striked_options
         
         # Navigation tracking data
-        navigation_action = request.data.get('navigation_action', 'NEXT')
+        # Navigation tracking data
+        current_question_index = request.data.get('current_question_index', 0)
+
+        last_nav = TestNavigationHistory.objects.filter(
+            test_submission_id=test_submission_id
+        ).order_by('-timestamp').first()
+
+        if last_nav is None or last_nav.current_question_index is None:
+            navigation_action = 'NEXT'
+        elif current_question_index == last_nav.current_question_index + 1:
+            navigation_action = 'NEXT'
+        elif current_question_index == last_nav.current_question_index - 1:
+            navigation_action = 'PREVIOUS'
+        else:
+            navigation_action = 'JUMP'
         from_question_id = request.data.get('from_question_id')
         to_question_id = request.data.get('to_question_id', question_id)
         from_section_id = request.data.get('from_section_id', section_id)
@@ -2400,7 +2425,17 @@ class TestViewSet(viewsets.ModelViewSet):
 
             
 
-            
+            print("=" * 80)
+            print("FROM:", from_question_id)
+            print("TO:", to_question_id)
+            print("CURRENT INDEX:", current_question_index)
+
+            if last_nav:
+                print("LAST INDEX:", last_nav.current_question_index)
+                print("LAST ACTION:", last_nav.action_type)
+
+            print("ACTION:", navigation_action)
+            print("=" * 80)
 
             # ✅ TRACK NAVIGATION PATTERN
             self._track_navigation_internal(
@@ -2411,6 +2446,7 @@ class TestViewSet(viewsets.ModelViewSet):
                 to_question_id=to_question_id or question_id,
                 from_section_id=from_section_id or section_id,
                 to_section_id=to_section_id or section_id,
+                course_subject_id=course_subject,
                 time_spent=time_spent_on_question or time_taken,
                 current_question_index=current_question_index,
                 total_questions=total_questions,
@@ -2451,6 +2487,7 @@ class TestViewSet(viewsets.ModelViewSet):
     def _track_navigation_internal(self, test_submission_id, student, action_type, 
                                 from_question_id=None, to_question_id=None,
                                 from_section_id=None, to_section_id=None,
+                                course_subject_id=None,
                                 time_spent=0, current_question_index=0, 
                                 total_questions=0, device_info=None):
         """
@@ -2474,11 +2511,22 @@ class TestViewSet(viewsets.ModelViewSet):
             to_question_id=to_question_id,
             from_section_id=from_section_id,
             to_section_id=to_section_id,
+            course_subject_id=course_subject_id,
             time_spent_on_previous_question=time_spent,
             current_section_id=to_section_id or from_section_id,
             current_question_index=current_question_index,
             total_questions_in_section=total_questions,
             device_info=device_info or {}
+        )
+
+        latest = TestNavigationHistory.objects.last()
+
+        print(
+            latest.action_type,
+            latest.current_question_index,
+            latest.from_question_id,
+            latest.to_question_id,
+            latest.time_spent_on_previous_question
         )
         
         # Analyze and update pattern summary (only if enough data)
@@ -2558,30 +2606,46 @@ class TestViewSet(viewsets.ModelViewSet):
         prev_question = None
         visited_questions = set()
         
+        previous_index = None
+
         for nav in navigations:
-            # Count navigation types
-            if nav.action_type == 'NEXT':
-                sequential_count += 1
-            elif nav.action_type == 'PREVIOUS':
-                back_and_forth_count += 1
-            elif nav.action_type == 'JUMP':
-                jump_count += 1
-            elif nav.action_type == 'SECTION_SKIP':
-                sections_skipped += 1
-            elif nav.action_type == 'REVIEW':
-                reviews += 1
-            
-            # Track revisits
+
+            print(
+                            nav.current_question_index,
+                            previous_index,
+                            nav.action_type
+                        )
+            current_index = nav.current_question_index
+
+            if previous_index is not None:
+
+                if nav.action_type == "NEXT":
+                    sequential_count += 1
+
+                elif nav.action_type == "PREVIOUS":
+                    back_and_forth_count += 1
+
+                elif nav.action_type == "JUMP":
+                    jump_count += 1
+
+            previous_index = current_index
+
+            # revisit calculation
             if nav.to_question_id:
                 if nav.to_question_id in visited_questions:
                     total_revisits += 1
                     revisits_per_question[nav.to_question_id] += 1
                 else:
                     visited_questions.add(nav.to_question_id)
-            
-            # Track time
+
+            if nav.action_type == "SECTION_SKIP":
+                sections_skipped += 1
+
+            if nav.action_type == "REVIEW":
+                reviews += 1
+
             total_time_before_nav += nav.time_spent_on_previous_question
-            prev_question = nav.to_question_id
+            
         
         # Determine primary pattern
         total_nav = navigations.count()
@@ -4777,6 +4841,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                     # Fetch navigation history for this section
                     navigation_history_qs = TestNavigationHistory.objects.filter(
                         test_submission=test_submission,
+                        course_subject_id=subj_id,
                         current_section_id=sub_section['id']
                     ).order_by('timestamp').values(
                         'action_type', 'timestamp', 'from_question_id', 'to_question_id',
@@ -4978,23 +5043,22 @@ class ResultViewSet(viewsets.ModelViewSet):
         if total_navigations == 0:
             return None
         
-        # Calculate average time per question
-        avg_time = 0
-        total_time = 0
-        count_with_time = 0
         
-        for nav in navigations:
-            if nav.time_spent_on_previous_question > 0:
-                total_time += nav.time_spent_on_previous_question
-                count_with_time += 1
-        
-        avg_time = total_time / count_with_time if count_with_time > 0 else 0
         
         # Count unique questions visited
         visited_questions = set()
         for nav in navigations:
             if nav.to_question_id:
                 visited_questions.add(nav.to_question_id)
+
+        # Total time
+        total_time = result.time_taken or 0
+
+        # Average time
+        avg_time = (
+            total_time / len(visited_questions)
+            if visited_questions else 0
+        )
         
         # Count revisits
         question_visits = defaultdict(int)
@@ -5002,18 +5066,35 @@ class ResultViewSet(viewsets.ModelViewSet):
             if nav.to_question_id:
                 question_visits[nav.to_question_id] += 1
         
-        revisit_count = sum(1 for visits in question_visits.values() if visits > 1)
+        revisit_count = 0
+
+        for visits in question_visits.values():
+
+            if visits > 1:
+                revisit_count += visits - 1
         avg_visits_per_question = sum(question_visits.values()) / len(question_visits) if question_visits else 0
         
         # Check for patterns
         is_sequential = True
-        previous_question = None
+        previous_index = None
+        is_sequential = True
+
         for nav in navigations:
-            if nav.action_type == 'JUMP' or (previous_question and nav.to_question_id and 
-                                             nav.to_question_id != previous_question + 1):
-                is_sequential = False
-                break
-            previous_question = nav.to_question_id
+
+            current_index = nav.current_question_index
+
+            if previous_index is not None:
+
+                if current_index == previous_index + 1:
+                    pass
+
+                elif current_index == previous_index - 1:
+                    is_sequential = False
+
+                else:
+                    is_sequential = False
+
+            previous_index = current_index
         
         return {
             'total_navigations': total_navigations,
@@ -5021,6 +5102,7 @@ class ResultViewSet(viewsets.ModelViewSet):
             'total_revisits': revisit_count,
             'avg_visits_per_question': round(avg_visits_per_question, 2),
             'avg_time_per_question': round(avg_time, 2),
+            'total_time_spent': round(total_time, 2),  
             'is_sequential': is_sequential,
             'has_jumps': any(nav.action_type == 'JUMP' for nav in navigations),
             'has_back_and_forth': any(nav.action_type == 'PREVIOUS' for nav in navigations),
@@ -5028,13 +5110,9 @@ class ResultViewSet(viewsets.ModelViewSet):
         }
 
     def _get_question_navigation_actions(self, navigation_history, question_id, question_index):
-        """
-        Get navigation actions related to a specific question
-        """
         actions = []
         for nav in navigation_history:
-            # Check if this navigation involves the question
-            if nav.get('from_question_id') == question_id or nav.get('to_question_id') == question_id:
+            if nav.get('from_question_id') == question_id:      # was: `or nav.get('to_question_id') == question_id`
                 actions.append({
                     'action_type': nav.get('action_type'),
                     'timestamp': nav.get('timestamp').isoformat() if nav.get('timestamp') else None,

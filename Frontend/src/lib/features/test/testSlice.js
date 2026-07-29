@@ -191,12 +191,32 @@ export const saveAndMove = createAsyncThunk(
     };
 
     const examPayload = {
-      ...payload,
-      test_submission_id: testSubmissionId,
-      course_subject: courseSubject,
-      section_id: sectionId,
-    };
+  ...payload,
 
+  test_submission_id: testSubmissionId,
+  course_subject: courseSubject,
+  section_id: sectionId,
+
+  current_question_index: currentQuestionIndex,
+
+  from_question_id: questionId,
+
+  to_question_id:
+    operation === "NEXT"
+      ? questions[currentQuestionIndex + 1]?.id
+      : operation === "PREVIOUS"
+      ? questions[currentQuestionIndex - 1]?.id
+      : questionId,
+
+  from_section_id: sectionId,
+  to_section_id: sectionId,
+
+  total_questions: questions.length,
+
+  time_spent_on_question: currentTime - lastRecordedTime,
+};
+
+  console.log(examPayload);
     const response = await insideAuthInstance.post(
       `${isPractice ? "practice" : "test"}/${testId}/take-test/`,
       isPractice ? payload : examPayload

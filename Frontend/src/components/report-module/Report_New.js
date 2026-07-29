@@ -254,6 +254,10 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
     // Build sequence string - clean version with unique transitions
     const sequenceString = flow.map(f => `Q${f.sr_no}`).join(' → ');
 
+    
+
+
+
     // ✅ Get color for question status
     const getQuestionColor = (item) => {
       if (item.is_correct && !item.is_skipped) return 'bg-green-500 text-white border-green-600';
@@ -483,6 +487,27 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
 
     const config = pattern?.primary_pattern ? patternConfig[pattern.primary_pattern] : patternConfig['MIXED'];
 
+    const getTotalRevisits = () => {
+  let totalRevisits = 0;
+
+  resultData?.subjects?.forEach(subject => {
+    subject.sections?.forEach(section => {
+      const flow = buildNavigationFlow(subject.name, section.name);
+
+      const visitCounts = {};
+
+      flow.forEach(item => {
+        visitCounts[item.sr_no] = (visitCounts[item.sr_no] || 0) + 1;
+      });
+
+      // Count questions that were revisited in this section
+      totalRevisits += Object.values(visitCounts).filter(v => v > 1).length;
+    });
+  });
+
+  return totalRevisits;
+};
+
     return (
       <div className="space-y-6">
         {/* Pattern Summary Card - Hero Card */}
@@ -571,7 +596,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
                 <TargetIcon size={20} className="text-purple-500" />
               </div>
-              <span className="text-2xl font-bold text-gray-800">{pattern?.total_revisits || 0}</span>
+              <span className="text-2xl font-bold text-gray-800">{getTotalRevisits()}</span>
             </div>
             <p className="text-xs text-gray-400 mt-1.5 font-medium">Total Revisits</p>
           </div>
@@ -618,7 +643,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-400">Total Time Spent</p>
                 <p className="text-lg font-bold text-gray-800">
-                  {Math.floor((behavior.total_navigations * (behavior.avg_time_per_question || 0)) / 60)}m {Math.round((behavior.total_navigations * (behavior.avg_time_per_question || 0)) % 60)}s
+             {Math.floor((behavior.total_time_spent || 0) / 60)}m {Math.round((behavior.total_time_spent || 0) % 60)}s
                 </p>
               </div>
             </div>

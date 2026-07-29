@@ -722,6 +722,8 @@ class TestNavigationHistory(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE)
     test_submission = models.ForeignKey(TestSubmission, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE, null=True, blank=True)
+    # ADD THIS
+    course_subject_id = models.IntegerField(null=True, blank=True)
     
     # Navigation details
     action_type = models.CharField(max_length=20, choices=ACTION_CHOICES)
@@ -747,6 +749,7 @@ class TestNavigationHistory(models.Model):
         indexes = [
             models.Index(fields=['student', 'test_submission']),
             models.Index(fields=['test_submission', 'action_type']),
+            models.Index(fields=['test_submission', 'course_subject_id', 'current_section_id']),  # ADD THIS
         ]
     
     def __str__(self):
