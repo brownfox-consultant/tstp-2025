@@ -32,6 +32,7 @@ from rest_framework.permissions import (
     IsAuthenticated,
     IsAdminUser
 )
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 # ==========================
@@ -4736,8 +4737,33 @@ class ResultViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated], url_path='details')
     def get_details(self, request, *args, **kwargs):
-        test_submission_id = request.GET.get('test_submission_id')
-        test_submission = get_object_or_404(TestSubmission, id=test_submission_id)
+        test_submission_id = request.GET.get("test_submission_id")
+        user = request.user
+        
+        # Admin / Mentor / Faculty can access all students' results
+        if user.role.name in ["admin", "mentor", "faculty"]:
+            test_submission = get_object_or_404(
+                TestSubmission,
+                id=test_submission_id
+            )
+
+        # Students can access only their own results
+        else:
+            test_submission = get_object_or_404(
+                TestSubmission,
+                id=test_submission_id
+            )
+
+            if test_submission.student.id != user.id:
+                return Response(
+                    {"detail": "You are not authorized to access this test result."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+
+
+
+
         test = test_submission.test
         student = test_submission.student
         result = test_submission.result
