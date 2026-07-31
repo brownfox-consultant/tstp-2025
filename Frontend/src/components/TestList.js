@@ -60,9 +60,7 @@ function TestList() {
       .then((res) => {
         let results = res.data.results;
 
-        if (subscriptionType === "FREE") {
-          results = results.slice(0, 2);
-        }
+
 
         const sortedResults = results.map((test, index) => ({
           ...test,
@@ -71,15 +69,9 @@ function TestList() {
 
         setTestsData(sortedResults);
 
-        if (subscriptionType === "FREE") {
-          setCurrent(1);
-          setTotal(results.length);
-          setTotalPages(1);
-        } else {
-          setCurrent(res.data.current_page);
-          setTotal(res.data.count);
-          setTotalPages(res.data.total_pages);
-        }
+        setCurrent(res.data.current_page);
+        setTotal(res.data.count);
+        setTotalPages(res.data.total_pages);
 
         window.sessionStorage.removeItem("course_subject_index");
         window.sessionStorage.removeItem("section_index");
@@ -88,12 +80,12 @@ function TestList() {
       })
 
       .finally(() => setTableLoading(false));
-  }, [current, sortParams, debouncedSearchTerm]);
+  }, [current, sortParams, debouncedSearchTerm, subscriptionType]);
 
 
   useEffect(() => {
     console.log("Fetching test list");
-}, [current, sortParams, debouncedSearchTerm]);
+}, [current, sortParams, debouncedSearchTerm, subscriptionType]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;

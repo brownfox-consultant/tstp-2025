@@ -868,20 +868,20 @@ console.log(
               </span>
             </div>
 
-            <div className="flex items-baseline gap-2 mb-2">
+            <div className="mb-2">
               {(() => {
                 const totalScore = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_score || 0), 0) || 0;
                 const maxScore = resultData?.subjects?.reduce((acc, s) => acc + (s.subject_max_score || 0), 0) || 0;
                 const colorClass = totalScore > 1200 ? 'text-green-500' : totalScore >= 800 ? 'text-orange-500' : 'text-red-500';
                 return (
-                  <div>
+                  <>
                     <span className={`text-4xl font-black ${colorClass}`}>
                       {totalScore}
                     </span>
                     <span className="text-[14px] text-black font-bold uppercase ml-1">
                       OUT OF {maxScore}
                     </span>
-                  </div>
+                  </>
                 );
               })()}
             </div>
@@ -934,7 +934,7 @@ console.log(
                 {/* Score Row */}
                 <div className="mb-2">
                   <span className={`text-3xl font-black ${scoreColor}`}>
-                    {subScore} 
+                    {subScore}
                   </span>
                   <span className="text-[14px] text-black font-bold uppercase ml-1">
                     Out of {subject.subject_max_score}
