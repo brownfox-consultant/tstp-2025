@@ -1,7 +1,9 @@
 "use client";
 
-import { getDoubtsList } from "@/app/services/authService";
-import { Table, Input, Pagination } from "antd";
+import { getDoubtsList,deleteDoubt } from "@/app/services/authService";
+import { Table, Input, Pagination, 
+  Popconfirm,
+  message } from "antd";
 import dayjs from "dayjs";
 import React, { useEffect, useState, useRef } from "react";
 import ViewDoubtModal from "./ViewDoubtModal";
@@ -12,7 +14,7 @@ import timezone from "dayjs/plugin/timezone";
 import { getSubjectTopics } from "@/app/services/authService";
 import EditQuestionForm from "./EditQuestionForm";
 import { Button, Modal } from "antd";
-import { EditOutlined, CloseOutlined } from "@ant-design/icons";
+import { EditOutlined, CloseOutlined, DeleteOutlined } from "@ant-design/icons";
 import EditQuestionModal from "./EditQuestionModal";
 
 dayjs.extend(utc);
@@ -51,6 +53,16 @@ const pathParts = usePathname().split("/");
     .replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+
+const handleDelete = async (id) => {
+  try {
+    await deleteDoubt(id);
+    message.success("Doubt deleted successfully.");
+    setUpdated(!updated);
+  } catch (err) {
+    message.error("Failed to delete doubt.");
+  }
+};
 
   useEffect(() => {
     console.log("Sort Params", sortParams);
@@ -176,13 +188,13 @@ const pathParts = usePathname().split("/");
     {
   key: "action",
   title: "Action",
-  width: 150,
+  width: 220,
   align: "center",
   render: (_, record) => {
-
     const isRaised = record.status === "RAISED";
+
     return (
-      <div className="flex justify-center">
+      <div className="flex justify-center gap-2">
         <ViewDoubtModal
           updated={updated}
           setUpdated={setUpdated}
@@ -190,6 +202,20 @@ const pathParts = usePathname().split("/");
           label={isRaised ? "Edit Details" : "View Details"}
           iconType={isRaised ? "edit" : "view"}
         />
+
+        <Popconfirm
+          title="Delete Doubt"
+          description="Are you sure you want to delete this doubt?"
+          okText="Yes"
+          cancelText="No"
+          onConfirm={() => handleDelete(record.id)}
+        >
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            size="small"
+          />
+        </Popconfirm>
       </div>
     );
   },
@@ -288,22 +314,35 @@ const pathParts = usePathname().split("/");
       <span className="text-gray-400">Not scheduled</span>
     ),
 },
-    {
-      key: "action",
-      title: "   ",
-      align: "center",
+   {
+  key: "action",
+  title: "Action",
+  align: "center",
+  render: (_, record) => (
+   <div className="flex justify-center gap-2">
+  <ViewDoubtModal
+    role="student"
+    updated={updated}
+    setUpdated={setUpdated}
+    data={record}
+  />
 
-      render: (id, record, index) => {
-        return (
-          <ViewDoubtModal
-            role="student"
-            updated={updated}
-            setUpdated={setUpdated}
-            data={record}
-          />
-        );
-      },
-    },
+  <Popconfirm
+    title="Delete Doubt"
+    description="Are you sure you want to delete this doubt?"
+    okText="Yes"
+    cancelText="No"
+    onConfirm={() => handleDelete(record.id)}
+  >
+    <Button
+      danger
+      icon={<DeleteOutlined />}
+      size="small"
+    />
+  </Popconfirm>
+</div>
+  ),
+}
   ];
 
   const facultyCols = [

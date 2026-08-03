@@ -65,8 +65,20 @@ class Command(BaseCommand):
         new_user_reset_password_notification_template = NotificationTemplate.objects.update_or_create(
             name='NEW_USER_RESET_PASSWORD_EMAIL',
             wildcards=new_user_reset_password_wildcard,
-            subject='STest - User Created Successfully',
-            description=f'Hi {NotificationTemplate.USER_NAME}, thank you for registering in STest. Click the link to reset your password: {NotificationTemplate.RESET_LINK}')
+            subject='The Smart Test Prep - User Created Successfully',
+            description=f"""
+        Hi {NotificationTemplate.USER_NAME},
+
+        Thank you for registering as a user on The Smart Test Prep application.
+
+        Click the link below to reset your password:
+
+        {NotificationTemplate.RESET_LINK}
+
+        Thanks,
+        The Smart Test Prep
+        """
+        )
 
         new_user_reset_password_channel = NotificationChannel.objects.update_or_create(
             channel_name=NotificationChannel.EMAIL, template_name='NEW_USER_RESET_PASSWORD_EMAIL',

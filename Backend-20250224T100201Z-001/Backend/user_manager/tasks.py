@@ -55,7 +55,7 @@ def check_and_update_subscriptions():
         print("Reminder Enrollment ID:", enrollment.id)
         print("Student:", enrollment.student.name, enrollment.student.id)
         print("Course:", enrollment.course.name)
-        print("Expiry:", enrollment.subscription_end_date)
+        print("Expiry:", enrollment.subscription_end_date.strftime("%d-%m-%Y"))
 
         cache_key = f"subscription_reminder_sent_{enrollment.id}"
         print("Cache Key:", cache_key)
@@ -71,7 +71,7 @@ def check_and_update_subscriptions():
             params={
                 "%USER_NAME%": enrollment.student.name,
                 "%COURSE_NAME%": enrollment.course.name,
-                "%EXPIRY_DATE%": enrollment.subscription_end_date,
+                "%EXPIRY_DATE%": enrollment.subscription_end_date.strftime("%d-%m-%Y"),
                 "%REFERENCE_ID%": enrollment.id,
             },
             user_id=enrollment.student.id
@@ -80,7 +80,7 @@ def check_and_update_subscriptions():
             "student": enrollment.student.name,
             "email": enrollment.student.email,
             "course": enrollment.course.name,
-            "expiry": enrollment.subscription_end_date,
+            "expiry": enrollment.subscription_end_date.strftime("%d-%m-%Y"),
         })
 
         print("Reminder task queued successfully.")
@@ -102,7 +102,7 @@ def check_and_update_subscriptions():
         print("Expired Enrollment ID:", enrollment.id)
         print("Student:", enrollment.student.name, enrollment.student.id)
         print("Course:", enrollment.course.name)
-        print("Expiry:", enrollment.subscription_end_date)
+        print("Expiry:", enrollment.subscription_end_date.strftime("%d-%m-%Y"))
 
         cache_key = f"subscription_expired_sent_{enrollment.id}"
         print("Cache Key:", cache_key)
@@ -123,7 +123,7 @@ def check_and_update_subscriptions():
             params={
                 "%USER_NAME%": enrollment.student.name,
                 "%COURSE_NAME%": enrollment.course.name,
-                "%EXPIRY_DATE%": enrollment.subscription_end_date,
+                "%EXPIRY_DATE%": enrollment.subscription_end_date.strftime("%d-%m-%Y"),
                 "%REFERENCE_ID%": enrollment.id,
             },
             user_id=enrollment.student.id
@@ -132,7 +132,7 @@ def check_and_update_subscriptions():
             "student": enrollment.student.name,
             "email": enrollment.student.email,
             "course": enrollment.course.name,
-            "expiry": enrollment.subscription_end_date,
+            "expiry": enrollment.subscription_end_date.strftime("%d-%m-%Y"),
         })
 
         print("Expired notification task queued successfully.")
@@ -142,13 +142,13 @@ def check_and_update_subscriptions():
     print("=" * 80)
     print("CHECK SUBSCRIPTIONS TASK FINISHED")
     print("=" * 80)
-    if reminder_admin_summary:
+    if len(reminder_admin_summary) > 2:
         send_subscription_summary_email.delay(
             reminder_admin_summary,
             "Reminder"
         )
 
-    if expired_admin_summary:
+    if len(expired_admin_summary) > 2:
         send_subscription_summary_email.delay(
             expired_admin_summary,
             "Expired"

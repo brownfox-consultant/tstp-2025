@@ -1214,3 +1214,26 @@ export const patchSetTimeSlot = (id, payload) => {
     })
     .catch(handleAPIError);
 };
+
+
+export const deleteDoubt = (id) => {
+  return axios
+    .delete(`${DOUBT_BASE}${id}/`, {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      },
+    })
+    .catch(handleAPIError);
+};
+
+export const deleteIssue = (id) => {
+  return axios
+    .delete(`${ISSUES_BASE_URL}${id}/`, {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      },
+    })
+    .catch(handleAPIError);
+};

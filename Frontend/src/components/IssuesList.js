@@ -1,7 +1,9 @@
 "use client";
 
-import { getIssuesList } from "@/app/services/authService";
-import { Table, Pagination, Input } from "antd";
+import { getIssuesList,deleteIssue } from "@/app/services/authService";
+import { Table, Pagination, Input,Button,
+  Popconfirm,
+  message, } from "antd";
 import React, { useEffect, useState, useRef } from "react";
 import DoubtStatusTag from "./DoubtStatusTag";
 import dayjs from "dayjs";
@@ -10,6 +12,7 @@ import ViewIssueModal from "./ViewIssueModal";
 // ✅ Import plugins
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { DeleteOutlined } from "@ant-design/icons";
 
 // ✅ Extend dayjs with plugins
 dayjs.extend(utc);
@@ -27,6 +30,15 @@ function IssuesList({ updated, setUpdated }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const debounceTimeoutRef = useRef(null);
+  const handleDelete = async (id) => {
+  try {
+    await deleteIssue(id);
+    message.success("Issue deleted successfully.");
+    setUpdated(!updated);
+  } catch (err) {
+    message.error("Failed to delete issue.");
+  }
+};
   const formatDateTime = (text) => 
     text ? dayjs.utc(text).tz("Asia/Kolkata").format("MMM D, YYYY h:mm A") : "-";
 
@@ -78,9 +90,29 @@ function IssuesList({ updated, setUpdated }) {
       key: "action",
       title: "Action",
       align: "center",
-      render: (id, record, index) => (
-        <ViewIssueModal updated={updated} setUpdated={setUpdated} data={record} />
-      ),
+      render: (_, record) => (
+  <div className="flex justify-center gap-2">
+    <ViewIssueModal
+      updated={updated}
+      setUpdated={setUpdated}
+      data={record}
+    />
+
+    <Popconfirm
+      title="Delete Issue"
+      description="Are you sure you want to delete this issue?"
+      okText="Yes"
+      cancelText="No"
+      onConfirm={() => handleDelete(record.id)}
+    >
+      <Button
+        danger
+        size="small"
+        icon={<DeleteOutlined />}
+      />
+    </Popconfirm>
+  </div>
+),
     },
   ];
   
@@ -140,14 +172,30 @@ function IssuesList({ updated, setUpdated }) {
     title: "Action",
     width: 100,
     align: "center",
-    render: (id, record, index) => (
-      <ViewIssueModal
-        role="student"
-        updated={updated}
-        setUpdated={setUpdated}
-        data={record}
+   render: (_, record) => (
+  <div className="flex justify-center gap-2">
+    <ViewIssueModal
+      role="student"
+      updated={updated}
+      setUpdated={setUpdated}
+      data={record}
+    />
+
+    <Popconfirm
+      title="Delete Issue"
+      description="Are you sure you want to delete this issue?"
+      okText="Yes"
+      cancelText="No"
+      onConfirm={() => handleDelete(record.id)}
+    >
+      <Button
+        danger
+        size="small"
+        icon={<DeleteOutlined />}
       />
-    ),
+    </Popconfirm>
+  </div>
+),
   },
 ];
 

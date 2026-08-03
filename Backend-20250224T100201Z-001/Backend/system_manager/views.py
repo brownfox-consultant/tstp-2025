@@ -101,6 +101,21 @@ class DoubtViewSet(viewsets.ModelViewSet):
     logger = logging.getLogger('Doubts')
 
 
+    @permission_classes([IsAuthenticated])
+    def destroy(self, request, *args, **kwargs):
+        doubt = self.get_object()
+        user = request.user
+
+        # Admin and student can delete any doubt
+        if user.role.name == "admin" or user.role.name == "student":
+            doubt.delete()
+            return Response(
+                {"detail": "Doubt deleted successfully."},
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+       
+
     def calculate_flt_score(self, test_submission):
         """
         Calculate Full Length Test total score using the same
@@ -837,6 +852,20 @@ class IssueViewSet(viewsets.ModelViewSet):
     queryset = Issue.objects.all()
     logger = logging.getLogger('Issues')
 
+
+    @permission_classes([IsAuthenticated])
+    def destroy(self, request, *args, **kwargs):
+        issue = self.get_object()
+        user = request.user
+
+        if user.role.name == "admin" or user.role.name == "student":
+            issue.delete()
+            return Response(
+                {"detail": "Issue deleted successfully."},
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+       
     @permission_classes([IsStudent])
     def create(self, request):
         data = request.data

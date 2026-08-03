@@ -1,86 +1,234 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <style>
-        body{
+        body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size:14px;
-            color:#333;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.5;
         }
 
-        table{
-            border-collapse:collapse;
-            width:700px;
+        table {
+            border-collapse: collapse;
+            width: 700px;
+            margin-bottom: 20px;
         }
 
-        th,td{
-            border:1px solid #999;
-            padding:8px;
+        th,
+        td {
+            border: 1px solid #999;
+            padding: 8px 10px;
+            text-align: center;
         }
 
-        th{
-            background:#dbe7f3;
-            font-size:18px;
-            text-align:center;
+        th {
+            background: #dbe7f3;
+            font-size: 17px;
+            font-weight: bold;
         }
 
-        .label{
-            font-weight:bold;
-            width:180px;
+        .label {
+            text-align: left;
+            font-weight: bold;
+            width: 180px;
+        }
+
+        .value {
+            text-align: left;
+        }
+
+        .score {
+            font-weight: bold;
+        }
+
+        .up {
+            color: #008000;
+            font-weight: bold;
+        }
+
+        .down {
+            color: #d60000;
+            font-weight: bold;
+        }
+
+        .same {
+            color: #555;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 25px;
         }
     </style>
 </head>
+
 <body>
 
-<p>
-<b>{{ student_name }}</b> Completed Test - {{ test_name }}
-</p>
+    <p>
+        This is to inform you that
+        <strong>{{ student_name }}</strong>
+        has successfully completed
+        <strong>{{ test_name }}</strong>.
+    </p>
+
+    <table>
+
+        <tr>
+            <th colspan="2">Student Details</th>
+            <th colspan="2">Current Test Summary</th>
+        </tr>
+
+        <tr>
+            <td class="label">Student Name</td>
+            <td class="value">{{ student_name }}</td>
+
+            <td class="label">Total Score</td>
+            <td class="score">{{ total_score }}/1600</td>
+        </tr>
+
+        <tr>
+            <td class="label">Email</td>
+            <td class="value">{{ student_email }}</td>
+
+            <td class="label">Math Score</td>
+            <td class="score">{{ math_score }}</td>
+        </tr>
+
+        <tr>
+            <td class="label">Test Name</td>
+            <td class="value">{{ test_name }}</td>
+
+            <td class="label">English Score</td>
+            <td class="score">{{ english_score }}</td>
+        </tr>
+
+        <tr>
+            <td class="label">Completed On</td>
+            <td class="value">{{ completed_on }}</td>
+
+            <td class="label">Percentage</td>
+            <td class="score">{{ percentage }}%</td>
+        </tr>
+
+        <tr>
+            <td class="label"></td>
+            <td></td>
+
+            <td class="label">Performance</td>
+
+            <td>
+
+                {% if latest_change == None %}
+
+                    <span class="same">
+                        First Test
+                    </span>
+
+                {% elif latest_change == 0 %}
+
+                    <span class="same">
+                        No Change
+                    </span>
+
+                {% elif latest_improved %}
+
+                    <span class="up">
+                        ▲ Improved (+{{ latest_change }}%)
+                    </span>
+
+                {% else %}
+
+                    <span class="down">
+                        ▼ Declined (-{{ latest_change }}%)
+                    </span>
+
+                {% endif %}
+
+            </td>
+        </tr>
+
+    </table>
+
+   {% if comparison_data %}
 
 <table>
 
-<tr>
-    <th colspan="2">Student Details</th>
-    <th colspan="2">Score Summary</th>
-</tr>
+    <tr>
+        <th colspan="7">
+            Previous 3 Test Comparison
+        </th>
+    </tr>
 
-<tr>
-    <td class="label">Student Name</td>
-    <td>{{ student_name }}</td>
+    <tr>
+        <th>Test Name</th>
+        <th>Date</th>
+        <th>Total Score</th>
+        <th>Math</th>
+        <th>English</th>
+        <th>Percentage</th>
+        <th>Comparison</th>
+    </tr>
 
-    <td class="label">Total Score</td>
-    <td>{{ total_score }}/1600</td>
-</tr>
+    {% for test in comparison_data %}
 
-<tr>
-    <td class="label">Email</td>
-    <td>{{ student_email }}</td>
+    <tr>
 
-    <td class="label">Math Score</td>
-    <td>{{ math_score }}</td>
-</tr>
+        <td>{{ test.test_name }}</td>
 
-<tr>
-    <td class="label">Test Name</td>
-    <td>{{ test_name }}</td>
+        <td>{{ test.date }}</td>
 
-    <td class="label">English Score</td>
-    <td>{{ english_score }}</td>
-</tr>
+        <td><strong>{{ test.total_score }}/1600</strong></td>
 
-<tr>
-    <td class="label">Completed On</td>
-    <td>{{ completed_on }}</td>
+        <td>{{ test.math_score }}</td>
 
-    <td class="label">Percentage</td>
-    <td>{{ percentage }}%</td>
-</tr>
+        <td>{{ test.english_score }}</td>
+
+        <td><strong>{{ test.percentage }}%</strong></td>
+
+       <td>
+
+    {% if test.difference == None %}
+
+        <span class="same">
+            -
+        </span>
+
+    {% elif test.difference == 0 %}
+
+        <span class="same">
+            No Change
+        </span>
+
+    {% elif test.is_improved %}
+
+        <span class="up">
+            ▲ Improved by {{ test.difference }}%
+        </span>
+
+    {% else %}
+
+        <span class="down">
+            ▼ Dropped by {{ test.difference }}%
+        </span>
+
+    {% endif %}
+
+</td>
+
+    </tr>
+
+    {% endfor %}
 
 </table>
 
-<br>
-
-Thanks,<br>
-The Smart Test Prep
+{% endif %}
+    <div class="footer">
+        Regards,<br>
+        <strong>The Smart Test Prep Team</strong>
+    </div>
 
 </body>
+
 </html>
