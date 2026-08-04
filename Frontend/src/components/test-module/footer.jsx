@@ -50,6 +50,8 @@ const sectionId = useSelector(
 );
 
 useEffect(() => {
+  if (testType === "practice") return;
+
   if (!questions.length) return;
   if (!questions[currentQuestionIndex]) return;
 
@@ -63,6 +65,7 @@ useEffect(() => {
     })
   );
 }, [
+  testType,
   currentQuestionIndex,
   questions,
   courseSubject,
@@ -97,7 +100,11 @@ useEffect(() => {
 
   async function handleFinish() {
     if (testType == "practice") {
-      // console.log("practice");
+        if (testType === "practice") {
+    
+    router.replace(`/student/${id}/test/practice/${testId}/result`);
+    return;
+  }
     } else {
       if (!isTimeUp) {
         Modal.warning({

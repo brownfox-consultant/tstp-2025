@@ -46,18 +46,28 @@ function ExitExamModal({ openModal, setOpenModal }) {
     ).unwrap();
 
     // Exit the test
-    await insideAuthInstance.post(
-      `/test/${testId}/exit-test/`,
-      {
-        test_submission_id: testSubmissionId,
-      }
-    );
+    if (testType === "practice") {
+  await insideAuthInstance.post(
+    `/practice/${testId}/exit-test/`
+  );
 
-    if (testType !== "practice") {
-      setShowFeedback(true);
-    } else {
-      handleFeedbackClose();
-    }
+  router.replace(
+    `/student/${id}/test/practice/${testId}/result`
+  );
+
+  return;
+}
+
+// Full Test
+await insideAuthInstance.post(
+  `/test/${testId}/exit-test/`,
+  {
+    test_submission_id: testSubmissionId,
+  }
+);
+
+setShowFeedback(true);
+
   } catch (error) {
     console.error("Exit Test Error:", error);
     Modal.error({

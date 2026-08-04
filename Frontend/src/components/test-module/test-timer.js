@@ -54,6 +54,7 @@ export function TestTimer({ expiryTimestamp }) {
   }, [isRunning, dispatch]);
 
   useEffect(() => {
+     if (testState.testType === "practice") return;
     if (!isRunning) return;
 
     console.log("Time Sync Started");
@@ -109,6 +110,7 @@ export function TestTimer({ expiryTimestamp }) {
   ]);
 
   useEffect(() => {
+    if (testState.testType === "practice") return;
     const saveTime = () => {
       const totalDuration =
   testState.sectionOrderItems?.[

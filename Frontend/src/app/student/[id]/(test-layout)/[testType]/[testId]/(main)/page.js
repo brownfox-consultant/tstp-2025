@@ -80,39 +80,44 @@ function Page() {
   hasRestored.current = true;
 
   const restoreTest = async () => {
-    if (userId && String(userId) !== String(id)) {
-      router.replace(`/student/${userId}/dashboard`);
-      return;
-    }
+  if (userId && String(userId) !== String(id)) {
+    router.replace(`/student/${userId}/dashboard`);
+    return;
+  }
 
-    const username = window.sessionStorage.getItem("name");
+  if (testType === "practice") {
+    setIsRestoring(false);
+    return;
+  }
 
-    try {
-      const test_submission_id =
-        window.sessionStorage.getItem("test_submission_id");
+  const username = window.sessionStorage.getItem("name");
+  const test_submission_id =
+    window.sessionStorage.getItem("test_submission_id");
 
-      if (!test_submission_id) {
-        throw new Error("No submission ID");
-      }
+  if (!test_submission_id) {
+    setIsRestoring(false);
+    return;
+  }
 
-      await dispatch(
-        testInProgress({
-          testId,
-          test_submission_id,
-          username,
-        })
-      ).unwrap();
+  try {
+    await dispatch(
+      testInProgress({
+        testId,
+        test_submission_id,
+        username,
+      })
+    ).unwrap();
 
-      await dispatch(
-        getQuestionForSection({
-          testId,
-          test_submission_id,
-        })
-      ).unwrap();
-    } finally {
-      setIsRestoring(false);
-    }
-  };
+    await dispatch(
+      getQuestionForSection({
+        testId,
+        test_submission_id,
+      })
+    ).unwrap();
+  } finally {
+    setIsRestoring(false);
+  }
+};
 
   restoreTest();
 }, []);
@@ -121,7 +126,6 @@ function Page() {
   if (!isTimeUp) return;
 
   const finishSection = async () => {
-    // 1. Save last answer
     await dispatch(
       saveAndMove({
         operation: "TIMEUP",
@@ -129,16 +133,25 @@ function Page() {
       })
     ).unwrap();
 
-    // 2. Skip section AFTER save
-    await dispatch(
-      sectionComplete({
-        via: "TIMEUP",
-      })
-    ).unwrap();
+   if (testType === "practice") {
+  
+
+  router.replace(
+    `/student/${id}/test/practice/${testId}/result`
+  );
+
+  return;
+}
+
+await dispatch(
+  sectionComplete({
+    via: "TIMEUP",
+  })
+).unwrap();
   };
 
   finishSection();
-}, [isTimeUp]);
+}, [isTimeUp, testType]);
 
   return (
     <Suspense fallback={<Loading />}>
@@ -164,22 +177,22 @@ function Page() {
                   // console.log("DEBUG → isTestCompleted:", isTestCompleted);
                   // console.log("DEBUG → isSectionCompleted:", isSectionCompleted);
                   // console.log("DEBUG → testSubmissionId:", testSubmissionId);
-                  return testSubmissionId && (
-                    <TestFeedbackModal
-                      modalOpen={isTestCompleted && isSectionCompleted}
-                      test_submission_id={testSubmissionId}
-                      onClose={() => {
-                        exitFullScreen();
-                        if (testType === "practice") {
-                          router.replace(`/student/${id}/test/practice/${testId}/result`);
-                        } else {
-                          router.replace(
-                            `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
-                          );
-                        }
-                      }}
-                    />
-                  );
+                  return (
+  testType !== "practice" &&
+  testSubmissionId && (
+    <TestFeedbackModal
+      modalOpen={isTestCompleted && isSectionCompleted}
+      test_submission_id={testSubmissionId}
+      onClose={() => {
+        exitFullScreen();
+
+        router.replace(
+          `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
+        );
+      }}
+    />
+  )
+);
                 })()}
               </>
             )}

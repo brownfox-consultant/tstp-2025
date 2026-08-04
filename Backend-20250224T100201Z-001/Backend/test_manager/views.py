@@ -7748,7 +7748,55 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         }
 
         return JsonResponse(section_data)
+    @action(
+    detail=True,
+    methods=["POST"],
+    permission_classes=[IsAuthenticated],
+    url_path="exit-test",
+)
+    def exit_test(self, request, pk=None):
+        try:
+            practice_test = PracticeTest.objects.get(
+                id=pk,
+                student=request.user
+            )
 
+            practice_result = PracticeTestResult.objects.filter(
+                practice_test=practice_test
+            ).first()
+
+            if not practice_result:
+                return Response(
+                    {"detail": "Practice test result not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Optional: store exit time
+            practice_test.updated_at = timezone.now()
+            practice_test.save(update_fields=["updated_at"])
+
+            return Response(
+                {
+                    "message": "Practice test exited successfully.",
+                    "practice_test_id": practice_test.id,
+                    "time_taken": practice_result.time_taken,
+                    "correct_answer_count": practice_result.correct_answer_count,
+                    "incorrect_answer_count": practice_result.incorrect_answer_count,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except PracticeTest.DoesNotExist:
+            return Response(
+                {"detail": "Practice test not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 class TestFeedbackViewSet(viewsets.ModelViewSet):
     queryset = TestFeedback.objects.all()
