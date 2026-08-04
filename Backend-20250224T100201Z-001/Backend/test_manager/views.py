@@ -7597,7 +7597,7 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             else:
                 is_correct = evaluate_expression(question.options, answer_data)
         else:
-            correct_options = [index for index, option in enumerate(question.options) if option['is_correct']]
+            correct_options = [index for index, option in enumerate(question.options) if option.get('is_correct', False)]
             if not is_skipped:
                 is_correct = set(answer_data) == set(correct_options)
 
