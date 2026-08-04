@@ -46,7 +46,7 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
         params: {
           is_active: true,
           test_type: "FULL_LENGTH_TEST",
-          description: descSearch,
+          question_text: descSearch,
         },
       })
         .then((res) => {

@@ -7631,11 +7631,27 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAdminOrMentorOrFacultyOrStudentOrParent],
         url_path='results')
     def get_practice_test_results(self, request, pk=None):
-        practice_test_result = PracticeTestResult.objects.filter(practice_test_id=pk).first()
+        user = request.user
 
-        if not practice_test_result:
-            return Response({"error": "Results not found for the specified practice test."},
-                            status=status.HTTP_404_NOT_FOUND)
+        # Students can only access their own practice tests
+        
+        if user.role.name == 'student':
+            practice_test = get_object_or_404(
+                PracticeTest,
+                id=pk,
+                student=user
+            )
+        else:
+            # Admin/Mentor/Faculty/Parent (add extra restrictions if needed)
+            practice_test = get_object_or_404(
+                PracticeTest,
+                id=pk
+            )
+
+        practice_test_result = get_object_or_404(
+            PracticeTestResult,
+            practice_test=practice_test
+        )
 
         practice_test = practice_test_result.practice_test
         section_answer_correct_marks = practice_test.course_subject.correct_answer_marks
