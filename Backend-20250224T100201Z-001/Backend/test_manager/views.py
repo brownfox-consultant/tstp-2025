@@ -2380,11 +2380,16 @@ class TestViewSet(viewsets.ModelViewSet):
                 is_correct = correct_answers_lower == user_answers_lower
             elif question.question_type == Question.GRIDIN:
                 if answer_data and len(answer_data) > 0:
-                    answer_value = answer_data[0]
-                    if question.question_subtype in [Question.GRIDIN_SINGLE_ANSWER, Question.GRIDIN_MULTI_ANSWER]:
-                        is_correct = Question.compare_answers(answer_value, question.options)
-                    else:
-                        is_correct = evaluate_expression(question.options, answer_value)
+                    answer_value = str(answer_data[0]).strip()
+
+                    answer_data = [answer_value]
+
+                    correct_answers = [
+                        str(x).strip().lower()
+                        for x in question.options
+                    ]
+
+                    is_correct = answer_value.lower() in correct_answers
                 else:
                     is_correct = False
             else:
@@ -7591,11 +7596,19 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             user_answers_lower = [ans.lower() for ans in answer_data]
             is_correct = correct_answers_lower == user_answers_lower
         elif question.question_type == Question.GRIDIN:
-            answer_data = answer_data[0]
-            if question.question_subtype in [Question.GRIDIN_SINGLE_ANSWER, Question.GRIDIN_MULTI_ANSWER]:
-                is_correct = Question.compare_answers(answer_data, question.options)
-            else:
-                is_correct = evaluate_expression(question.options, answer_data)
+            # Save as free text
+            answer_value = str(answer_data[0]).strip() if answer_data else ""
+
+            # Save back as list because update_question_answer expects a list
+            answer_data = [answer_value]
+
+            # Compare as text (case-insensitive)
+            correct_answers = [
+                str(ans).strip().lower()
+                for ans in question.options
+            ]
+
+            is_correct = answer_value.lower() in correct_answers
         else:
             correct_options = [index for index, option in enumerate(question.options) if option.get('is_correct', False)]
             if not is_skipped:

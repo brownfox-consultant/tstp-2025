@@ -302,6 +302,13 @@ console.log(
       );
       
       const allSections = getAllSections();
+      const subject = resultData?.subjects?.find(
+  s => s.name === selectedFlowSection?.subject
+);
+
+const section = subject?.sections?.find(
+  s => s.name === selectedFlowSection?.section
+);
   
       if (flow.length === 0) {
         return (
@@ -392,11 +399,20 @@ console.log(
               <div className="text-xl font-bold text-orange-500">{revisits}</div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-400">Total Time</div>
-              <div className="text-xl font-bold text-gray-800">
-                {flow.reduce((sum, f) => sum + f.time_spent, 0)}s
-              </div>
-            </div>
+  <div className="text-xs text-gray-400">Total Time</div>
+  <div className="text-xl font-bold text-gray-800">
+  {(() => {
+    const totalSeconds =
+      (section?.section_correct_time_taken || 0) +
+      (section?.section_incorrect_time_taken || 0);
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${minutes}m ${seconds}s`;
+  })()}
+</div>
+</div>
             <div className="text-center">
               <div className="text-xs text-gray-400">Avg Time/Step</div>
               <div className="text-xl font-bold text-gray-800">
