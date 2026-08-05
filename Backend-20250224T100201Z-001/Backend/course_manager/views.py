@@ -158,7 +158,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         # Get choices from Question model
         difficulty_list = [
             choice[0] for choice in Question.DIFFICULTY_CHOICES
-            if choice[0] in ['EASY', 'MODERATE', 'HARD']
+            
         ]
         question_type_list = [choice[0] for choice in Question.QUESTION_TYPE]
         test_type_list = [choice[0] for choice in Question.TEST_TYPE_CHOICES]
