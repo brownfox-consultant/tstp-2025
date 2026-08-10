@@ -145,23 +145,23 @@ function TestList() {
       width: 130,
       sorter: { multiple: 2 },
     },
-    {
-      title: (
-        <div className="flex items-center justify-center">
-          <span>Assigned date</span>
-        </div>
-      ),
-      key: "assigned_date",
-      dataIndex: "assigned_date",
-      align: "center",
-      render: (text) => {
-        let date = new Date(text);
-        return dayjs(date).format("MMM D, YYYY h:mm A");
-      },
-      sorter: true,
-      width: 200,
-      sorter: { multiple: 3 },
-    },
+    // {
+    //   title: (
+    //     <div className="flex items-center justify-center">
+    //       <span>Assigned date</span>
+    //     </div>
+    //   ),
+    //   key: "assigned_date",
+    //   dataIndex: "assigned_date",
+    //   align: "center",
+    //   render: (text) => {
+    //     let date = new Date(text);
+    //     return dayjs(date).format("MMM D, YYYY h:mm A");
+    //   },
+    //   sorter: true,
+    //   width: 200,
+    //   sorter: { multiple: 3 },
+    // },
     {
       title: (
         <div className="flex items-center justify-center">
