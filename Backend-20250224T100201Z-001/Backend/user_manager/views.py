@@ -806,8 +806,20 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         elif user.role.name == 'admin':
             role = request.query_params.get('role', None)
+
             if role:
-                users = User.filter_users_by_role(role_id=role)
+                # Support multiple roles: ?role=2,5
+                role_ids = [
+                    int(role_id.strip())
+                    for role_id in role.split(",")
+                    if role_id.strip().isdigit()
+                ]
+
+                if role_ids:
+                    users = User.objects.filter(role_id__in=role_ids)
+                else:
+                    users = User.objects.none()
+
             else:
                 users = User.filter_users_excluding_role(
                     role_id=Role.get_role_using_name('admin').id

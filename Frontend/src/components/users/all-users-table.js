@@ -269,21 +269,36 @@ const submitBulkUpload = async () => {
     user_type: "user_type",
   };
 
-  const handleTableChange = (pagination, filters, sorter) => {
-    let order = "";
-    if (sorter && sorter.field) {
-      const field = FIELD_MAP[sorter.field] || sorter.field;
-      order = sorter.order === "ascend" ? field : `-${field}`;
-    }
-    setOrdering(order);
+ const handleTableChange = (pagination, filters, sorter) => {
+  let order = "";
 
-    fetchUsers({
-      role: filterKey,
-      page: pagination.current,
-      search: searchText,
-      ordering: order,
-    });
-  };
+  if (sorter && sorter.field) {
+    const field = FIELD_MAP[sorter.field] || sorter.field;
+    order = sorter.order === "ascend" ? field : `-${field}`;
+  }
+
+  // Get ALL selected role IDs
+  const selectedRoles = filters?.role_label || [];
+
+  console.log("Selected Role IDs:", selectedRoles);
+
+  // Convert [2, 5] -> "2,5"
+  const roleParam = selectedRoles.join(",");
+
+  console.log("Role API Param:", roleParam);
+
+  setFilterKey(roleParam);
+  setOrdering(order);
+  setCurrent(pagination.current);
+
+  fetchUsers({
+    role: roleParam,
+    page: pagination.current,
+    search: searchText,
+    ordering: order,
+    page_size: pageSize,
+  });
+};
 
   useEffect(() => {
     fetchUsers({
@@ -323,15 +338,11 @@ const submitBulkUpload = async () => {
     }
   };
 
-  const dropDownOnClick = ({ key }) => {
-    setFilterKey(key);
-    console.log("key", key, filterKey);
-
-    getUsersByRole({ role: key }).then((res) => {
-      setDataList(res.data.results);
-    });
-    setMenuKey([key.toString()]);
-  };
+ const dropDownOnClick = ({ key }) => {
+  setFilterKey(key);
+  setCurrent(1);
+  setMenuKey([key.toString()]);
+};
 
   // const handleSearch = (selectedKeys, confirm, dataIndex) => {
   //   confirm();
@@ -538,9 +549,11 @@ const submitBulkUpload = async () => {
         dataIndex: "role_label",
         sorter: (a, b) => a.role_label.localeCompare(b.role_label),
         filters: filterItems
-          .filter(item => item.label !== "All")
-          .map(item => ({ text: item.label, value: item.label })),
-        onFilter: (value, record) => record.role_label === value,
+  .filter(item => item.label !== "All")
+  .map(item => ({
+    text: item.label,
+    value: item.key,
+  })),
         key: "role_label",
         render: (text) => {
           if (!text) return null;
