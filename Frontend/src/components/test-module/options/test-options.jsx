@@ -31,7 +31,16 @@ function TestOptions({
   return (
     <div className="question-options grid grid-cols-1 h-full">
       {options.map((option, index) => {
-        const isSelected = !!selected_options[index];
+        const isSelected = Array.isArray(selected_options)
+  ? selected_options.includes(index)
+  : !!selected_options[index];
+  console.log({
+  questionId,
+  selected_options,
+  index,
+  isArray: Array.isArray(selected_options),
+  isSelected,
+});
 
         return (
           <div key={index} className="flex flex-row items-start gap-2 my-2">

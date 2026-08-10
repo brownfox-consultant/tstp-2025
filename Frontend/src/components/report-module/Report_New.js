@@ -177,39 +177,18 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
     // Sort by timestamp
     allActions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    // ✅ DEDUPLICATE: Only add when question changes or action type changes
-    let lastSrNo = null;
-    let lastActionType = null;
-    
-    allActions.forEach(action => {
-      // Skip if same question and same action type (prevents duplicate NEXT actions on same question)
-      if (action.sr_no === lastSrNo && action.action_type === lastActionType) {
-        return;
-      }
-      
-      // Also skip if it's a SUBMIT action that doesn't change the question
-      if (action.action_type === 'SUBMIT' && action.sr_no === lastSrNo) {
-        return;
-      }
-      
-      const last = flow[flow.length - 1];
-
-if (!last || last.sr_no !== action.sr_no) {
-    flow.push({
-        sr_no: action.sr_no,
-        question_id: action.question_id,
-        action_type: action.action_type,
-        time_spent: action.time_spent || 0,
-        is_correct: action.is_correct,
-        is_skipped: action.is_skipped,
-        marked: action.marked,
-        timestamp: action.timestamp
-    });
-}
-      
-      lastSrNo = action.sr_no;
-      lastActionType = action.action_type;
-    });
+   allActions.forEach(action => {
+  flow.push({
+    sr_no: action.sr_no,
+    question_id: action.question_id,
+    action_type: action.action_type,
+    time_spent: action.time_spent || 0,
+    is_correct: action.is_correct,
+    is_skipped: action.is_skipped,
+    marked: action.marked,
+    timestamp: action.timestamp
+  });
+});
 
     return flow;
   };
@@ -230,6 +209,7 @@ if (!last || last.sr_no !== action.sr_no) {
     const section = subject?.sections?.find(
       s => s.name === selectedFlowSection?.section
     );
+    const questions = section?.questions_data || [];
 
     if (flow.length === 0) {
       return (
@@ -257,11 +237,10 @@ if (!last || last.sr_no !== action.sr_no) {
     });
 
     // Count revisits (questions that appear more than once)
-    const visitCounts = {};
-    flow.forEach(f => {
-      visitCounts[f.sr_no] = (visitCounts[f.sr_no] || 0) + 1;
-    });
-    const revisits = Object.values(visitCounts).filter(v => v > 1).length;
+    // Count revisits using backend times_visited
+const revisits = questions.reduce((total, q) => {
+  return total + Math.max(0, (q.times_visited || 1) - 1);
+}, 0);
 
     // Build sequence string - clean version with unique transitions
     const sequenceString = flow.map(f => `Q${f.sr_no}`).join(' → ');
@@ -513,16 +492,9 @@ if (!last || last.sr_no !== action.sr_no) {
 
   resultData?.subjects?.forEach(subject => {
     subject.sections?.forEach(section => {
-      const flow = buildNavigationFlow(subject.name, section.name);
-
-      const visitCounts = {};
-
-      flow.forEach(item => {
-        visitCounts[item.sr_no] = (visitCounts[item.sr_no] || 0) + 1;
+      section.questions_data?.forEach(question => {
+        totalRevisits += Math.max(0, (question.times_visited || 1) - 1);
       });
-
-      // Count questions that were revisited in this section
-      totalRevisits += Object.values(visitCounts).filter(v => v > 1).length;
     });
   });
 
@@ -623,7 +595,7 @@ if (!last || last.sr_no !== action.sr_no) {
           </div>
         </div>
 
-        {/* Detailed Behavior Stats */}
+         {/* Detailed Behavior Stats */}
         {behavior && (
           <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
@@ -632,7 +604,7 @@ if (!last || last.sr_no !== action.sr_no) {
               </div>
               <h4 className="text-sm font-semibold text-gray-700">Detailed Behavior Analysis</h4>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-400">Unique Questions</p>
                 <p className="text-lg font-bold text-gray-800">{behavior.unique_questions_visited || 0}</p>
@@ -651,16 +623,6 @@ if (!last || last.sr_no !== action.sr_no) {
                   {pattern?.time_management_score || 0}%
                 </p>
               </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-400">Marked for Review</p>
-                <p className="text-lg font-bold text-gray-800">{pattern?.questions_marked_for_review || 0}</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-400">Sections Skipped</p>
-                <p className="text-lg font-bold text-gray-800">{pattern?.sections_skipped || 0}</p>
-              </div>
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-400">Total Time Spent</p>
                 <p className="text-lg font-bold text-gray-800">
@@ -668,8 +630,12 @@ if (!last || last.sr_no !== action.sr_no) {
                 </p>
               </div>
             </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
+              
+              
+            </div>
           </div>
-        )}
+        )} 
 
         {/* ⭐ NAVIGATION FLOW TIMELINE */}
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">

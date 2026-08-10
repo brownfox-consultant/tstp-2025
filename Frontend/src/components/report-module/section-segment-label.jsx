@@ -79,6 +79,12 @@ const SectionSegmentLabel = ({ data }) => {
     maintainAspectRatio: false,
   };
 
+  const idleTime = Math.max(
+  0,
+  (time_on_section || 0) -
+    ((section_correct_time_taken || 0) + (section_incorrect_time_taken || 0))
+);
+
   return (
     <div className="bg-white rounded-xl p-5 shadow-md border">
       {/* Header */}
@@ -176,6 +182,16 @@ const SectionSegmentLabel = ({ data }) => {
               </div>
               <span className="font-bold text-red-600">{timeInMMSS(section_incorrect_time_taken)}</span>
             </div>
+
+             <div className="flex items-center justify-between text-sm">
+    <div className="flex items-center gap-2 text-gray-500">
+      <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+      <span>Idle Time</span>
+    </div>
+    <span className="font-bold text-yellow-600">
+      {timeInMMSS(idleTime)}
+    </span>
+  </div>
           </div>
         </div>
       </div>

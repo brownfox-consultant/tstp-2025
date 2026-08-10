@@ -147,6 +147,10 @@ class PracticeTestListSerializer(serializers.ModelSerializer):
         source='result.time_taken',
         read_only=True
     )
+    status = serializers.CharField(
+        source="result.status",
+        read_only=True
+    )
 
     student = serializers.CharField(source='student.name', read_only=True)
     course = serializers.CharField(source='course_subject.course.name', read_only=True)
@@ -172,6 +176,7 @@ class PracticeTestListSerializer(serializers.ModelSerializer):
             'skipped_count',
             'performance',
             'time_taken',
+            'status',
         ]
 
     def get_test_name(self, obj):

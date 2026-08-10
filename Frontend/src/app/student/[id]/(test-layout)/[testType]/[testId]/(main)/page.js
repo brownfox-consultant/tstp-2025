@@ -3,7 +3,7 @@
 import Question from "@/components/test-module/question";
 import ReviewComponent from "@/components/test-module/review-component";
 import TimeupModal from "@/components/test-module/timeup-modal";
-import { saveAndMove, testInProgress,sectionComplete, getQuestionForSection, fetchMultipleQuestionDetails, setTestDetails, setAnswerMap, setCurrentQuestionIndex } from "@/lib/features/test/testSlice";
+import { saveAndMove, testInProgress,sectionComplete, getQuestionForSection, fetchMultipleQuestionDetails, setTestDetails, setAnswerMap, setCurrentQuestionIndex,practiceTestInProgress } from "@/lib/features/test/testSlice";
 import { useGlobalContext } from "@/context/store";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
@@ -16,6 +16,7 @@ import TestFooter from "@/components/test-module/footer";
 import TestHeader from "@/components/test-module/header";
 import NetworkOfflineModal from "@/components/test-module/network-offline-modal";
 import { useRef } from "react";
+import { insideAuthInstance } from "@/lib/AxiosInstance";
 
 function Page() {
   const router = useRouter();
@@ -86,9 +87,57 @@ function Page() {
   }
 
   if (testType === "practice") {
+  const practiceTestId = window.sessionStorage.getItem("practice_test_id");
+
+  if (!practiceTestId) {
     setIsRestoring(false);
     return;
   }
+
+  try {
+    const response = await dispatch(
+      practiceTestInProgress({
+        practiceTestId,
+      })
+    ).unwrap();
+
+    console.log("========== PRACTICE RESTORE ==========");
+console.log("API Response");
+console.log(response.data);
+
+console.log("Question IDs");
+console.log(response.data.question_ids);
+
+console.log("Answer Map");
+console.log(response.data.answer_map);
+console.log("======================================");
+
+    // Restore question details
+    await dispatch(
+      fetchMultipleQuestionDetails(response.data.question_ids)
+    ).unwrap();
+
+    // Restore Redux state
+    console.log("Redux Before Restore");
+console.log(response.data.answer_map);
+
+dispatch(setAnswerMap(response.data.answer_map));
+console.log("After setAnswerMap");
+console.log(response.data.answer_map);
+
+console.log("Redux Restore Finished");
+    dispatch(
+      setCurrentQuestionIndex(response.data.current_question_index)
+    );
+
+  } catch (err) {
+    console.error("Practice restore failed:", err);
+  } finally {
+    setIsRestoring(false);
+  }
+
+  return;
+}
 
   const username = window.sessionStorage.getItem("name");
   const test_submission_id =
@@ -134,11 +183,19 @@ function Page() {
     ).unwrap();
 
    if (testType === "practice") {
-  
+  try {
+    await insideAuthInstance.post(
+      `/practice/${testId}/complete-test/`
+    );
 
-  router.replace(
-    `/student/${id}/test/practice/${testId}/result`
-  );
+    exitFullScreen();
+
+    router.replace(
+      `/student/${id}/test/practice/${testId}/result`
+    );
+  } catch (err) {
+    console.error("Complete practice test failed:", err);
+  }
 
   return;
 }

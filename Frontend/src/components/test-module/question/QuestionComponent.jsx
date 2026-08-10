@@ -37,6 +37,12 @@ function QuestionComponent() {
   const { question_type, question_subtype } = question;
   const answerObject =
   useSelector((state) => state.test?.answerMap[question.id]) || null;
+  useEffect(() => {
+  console.log("----------- QUESTION -----------");
+  console.log("Question ID:", question?.id);
+  console.log("Answer Object:", answerObject);
+  console.log("-------------------------------");
+}, [question?.id, answerObject]);
 
   // Prevent back navigation effectively — persists across refreshes
   useEffect(() => {
@@ -61,6 +67,8 @@ function QuestionComponent() {
   }, [testType]);
 
 useEffect(() => {
+  console.log("QUESTION:", question?.id);
+console.log("answerObject:", answerObject);
   if (question?.id && !answerObject) {
     dispatch(createAnswerObject(question.id));
   }

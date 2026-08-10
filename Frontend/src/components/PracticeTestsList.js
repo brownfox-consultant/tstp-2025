@@ -27,12 +27,16 @@ function PracticeTestsList() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const debounceTimeoutRef = useRef(null);
   const [pageSize, setPageSize] = useState(10);
+  
 
 
   const role = pathname.split("/")[1];
 
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const inProgressTest = data?.find(
+  (item) => item.status === "IN_PROGRESS"
+);
 
   // Highlight function to highlight search term
   const highlightText = (text, search) => {
@@ -175,48 +179,72 @@ function PracticeTestsList() {
       align: "center",
       sorter: false,
       width: 140,
-      render: (_, record) => (
-  <div className="flex justify-center gap-3 text-xs font-medium">
-    <div className="flex flex-col items-center">
-      <span className="text-gray-400 mb-1">Total</span>
-      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded w-10 text-center">
-        {record.total_questions ?? "-"}
-      </span>
-    </div>
+    render: (_, record) => {
+  if (record.status === "IN_PROGRESS") {
+    return (
+      <Tag color="processing">
+        Test In Progress
+      </Tag>
+    );
+  }
 
-    <div className="flex flex-col items-center">
-      <span className="text-green-500 mb-1">Correct</span>
-      <span className="bg-green-50 text-green-700 px-2 py-1 rounded w-10 text-center">
-        {record.correct_count ?? "-"}
-      </span>
-    </div>
+  return (
+    <div className="flex justify-center gap-3 text-xs font-medium">
+      <div className="flex flex-col items-center">
+        <span className="text-gray-400 mb-1">Total</span>
+        <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded w-10 text-center">
+          {record.total_questions ?? "-"}
+        </span>
+      </div>
 
-    <div className="flex flex-col items-center">
-      <span className="text-red-500 mb-1">Incorrect</span>
-      <span className="bg-red-50 text-red-700 px-2 py-1 rounded w-10 text-center">
-        {record.incorrect_count ?? "-"}
-      </span>
-    </div>
+      <div className="flex flex-col items-center">
+        <span className="text-green-500 mb-1">Correct</span>
+        <span className="bg-green-50 text-green-700 px-2 py-1 rounded w-10 text-center">
+          {record.correct_count ?? "-"}
+        </span>
+      </div>
 
-    <div className="flex flex-col items-center">
-      <span className="text-yellow-500 mb-1">Skipped</span>
-      <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded w-10 text-center">
-        {record.skipped_count ?? "-"}
-      </span>
+      <div className="flex flex-col items-center">
+        <span className="text-red-500 mb-1">Incorrect</span>
+        <span className="bg-red-50 text-red-700 px-2 py-1 rounded w-10 text-center">
+          {record.incorrect_count ?? "-"}
+        </span>
+      </div>
+
+      <div className="flex flex-col items-center">
+        <span className="text-yellow-500 mb-1">Skipped</span>
+        <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded w-10 text-center">
+          {record.skipped_count ?? "-"}
+        </span>
+      </div>
     </div>
-  </div>
-)
+  );
+}
 
     },
     {
-      key: "time_taken",
-      title: "Duration",
-      dataIndex: "time_taken",
-      align: "center",
-      render: (_, record) => <span className="text-gray-600 font-mono">{convertSecondsToTime(record.time_taken)}</span>,
-      width: 80,
-      sorter: false,
-    },
+  key: "time_taken",
+  title: "Duration",
+  dataIndex: "time_taken",
+  align: "center",
+  width: 80,
+  sorter: false,
+  render: (_, record) => {
+    if (record.status === "IN_PROGRESS") {
+      return (
+        <span className="text-gray-400">
+          -
+        </span>
+      );
+    }
+
+    return (
+      <span className="text-gray-600 font-mono">
+        {convertSecondsToTime(record.time_taken)}
+      </span>
+    );
+  },
+},
     {
       key: "action",
       title: "Action",
@@ -225,27 +253,47 @@ function PracticeTestsList() {
       fixed: 'right',
       width: 50,
       render: (_, record) => {
-        const { id } = record;
-        const userId = pathname.split("/")[2];
+  const { id, status } = record;
+  const userId = pathname.split("/")[2];
 
-        return (
-          <Tooltip title="View Detailed Report">
-            <Button
-              type="text"
-              shape="circle"
-              icon={<EyeOutlined />}
-              className="hover:bg-blue-50 flex items-center justify-center mx-auto"
-              onClick={() => {
-                if (role == "student") {
-                  router.push(`/${role}/${userId}/test/practice/${id}/result`);
-                } else {
-                  router.push(`/${role}/${userId}/practice/${id}/result`);
-                }
-              }}
-            />
-          </Tooltip>
-        );
-      }
+  if (status === "IN_PROGRESS") {
+    return (
+      <Button
+        type="primary"
+        size="small"
+        onClick={() =>
+          router.push(
+            `/${role}/${userId}/practice/${id}/info`
+          )
+        }
+      >
+        Continue
+      </Button>
+    );
+  }
+
+  return (
+    <Tooltip title="View Detailed Report">
+      <Button
+        type="text"
+        shape="circle"
+        icon={<EyeOutlined />}
+        className="hover:bg-blue-50 flex items-center justify-center mx-auto"
+        onClick={() => {
+          if (role === "student") {
+            router.push(
+              `/${role}/${userId}/test/practice/${id}/result`
+            );
+          } else {
+            router.push(
+              `/${role}/${userId}/practice/${id}/result`
+            );
+          }
+        }}
+      />
+    </Tooltip>
+  );
+}
     },
   ];
 
@@ -331,14 +379,30 @@ function PracticeTestsList() {
 
               {(role === "student") && (
                 <Button
-                  type="primary"
-                  onClick={() => setCreateTest(true)}
-                  icon={<PlusOutlined />}
-                  size="large"
-                  className="rounded-md shadow-md border-0 h-10 px-6 font-semibold flex items-center" 
-                >
-                  Create New Practice
-                </Button>
+  type="primary"
+  icon={
+    inProgressTest ? (
+      <UnorderedListOutlined />
+    ) : (
+      <PlusOutlined />
+    )
+  }
+  onClick={() => {
+    const userId = pathname.split("/")[2];
+
+    if (inProgressTest) {
+      router.push(
+        `/${role}/${userId}/practice/${inProgressTest.id}/info`
+      );
+    } else {
+      setCreateTest(true);
+    }
+  }}
+>
+  {inProgressTest
+    ? "Continue Practice"
+    : "Create New Practice"}
+</Button>
               )}
             </div>
           </div>

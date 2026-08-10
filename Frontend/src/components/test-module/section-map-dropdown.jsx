@@ -31,11 +31,16 @@ function SectionMapDropdown({ onChangeQuestion }) {
     const { selected_options, gridinAnswer } = answerMap[question.id] || {};
 
     let isAnswered = false;
-    if (question.question_type === "MCQ") {
-  const hasSelected = Object.values(selected_options || {}).some(
-    (val) => val === 1
-  );
-  isAnswered = hasSelected;
+    
+
+if (question.question_type === "MCQ") {
+  if (Array.isArray(selected_options)) {
+    isAnswered = selected_options.length > 0;
+  } else {
+    isAnswered = Object.values(selected_options || {}).some(
+      (v) => v === 1
+    );
+  }
 } else {
   isAnswered = Boolean(gridinAnswer);
 }
@@ -48,7 +53,7 @@ function SectionMapDropdown({ onChangeQuestion }) {
   });
 
   function handleQuestionItemClick(index) {
-    onChangeQuestion("", index);
+    onChangeQuestion("JUMP", index);
     setDropdownVisible(false);
   }
 

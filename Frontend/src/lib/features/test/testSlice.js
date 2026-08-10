@@ -78,6 +78,20 @@ export const testInProgress = createAsyncThunk(
   }
 );
 
+export const practiceTestInProgress = createAsyncThunk(
+  "test/practiceTestInProgress",
+  async ({ practiceTestId }) => {
+    const response = await insideAuthInstance.get(
+      `/practice/${practiceTestId}/test-progress/`
+    );
+
+    return {
+      data: response.data,
+      practiceTestId,
+    };
+  }
+);
+
 export const getQuestionForSection = createAsyncThunk(
   "test/getQuestionForSection",
   async ({ testId, test_submission_id }, thunkAPI) => {
@@ -147,24 +161,46 @@ export const saveAndMove = createAsyncThunk(
       sectionId,
       courseSubject,
       testType,
+      timeLeft,
     } = testState;
-
+    
     const questionId = questions[currentQuestionIndex].id;
     const question_type = questions[currentQuestionIndex].question_type;
     const isPractice = testType === "practice";
 
     const currentTime = Math.floor(Date.now() / 1000);
+    console.log(
+  "API CALL",
+  operation,
+  questionId,
+  currentQuestionIndex
+);
+    console.log("================================");
+console.log("SAVE & MOVE");
+console.log("Question:", questionId);
+console.log("Redux Answer:");
+console.log(answerMap[questionId]);
+console.log("Selected Options:");
+console.log(answerMap[questionId]?.selected_options);
+console.log("================================");
+    const selectedOptions =
+  answerMap[questionId]?.selected_options || [];
 
-    const selectedOptionIndices = Object.keys(
-      answerMap[questionId].selected_options
-    )
-      .filter((key) => answerMap[questionId].selected_options[key] === 1)
+const selectedOptionIndices = Array.isArray(selectedOptions)
+  ? selectedOptions.map((index) => Number(index))
+  : Object.keys(selectedOptions)
+      .filter((key) => selectedOptions[key] === 1)
       .map((key) => parseInt(key, 10));
+      console.log("Selected Option Indices");
+console.log(selectedOptionIndices);
 
-    const strikedOptionIndices = Object.keys(
-      answerMap[questionId].striked_options
-    )
-      .filter((key) => answerMap[questionId].striked_options[key] === 1)
+    const strikedOptions =
+  answerMap[questionId]?.striked_options || [];
+
+const strikedOptionIndices = Array.isArray(strikedOptions)
+  ? strikedOptions.map((index) => Number(index))
+  : Object.keys(strikedOptions)
+      .filter((key) => strikedOptions[key] === 1)
       .map((key) => parseInt(key, 10));
 
     const gridAnswer = (
@@ -172,27 +208,36 @@ export const saveAndMove = createAsyncThunk(
     ).trim();
 
     const payload = {
-      answer: {
-        [questionId]:
-          question_type === "GRIDIN"
-            ? [gridAnswer]
-            : selectedOptionIndices,
-      },
-      striked_options: {
-        [questionId]: strikedOptionIndices,
-      },
-      is_marked_for_review:
-        answerMap[questionId].is_marked_for_review,
-      is_skipped:
-        question_type === "GRIDIN"
-          ? gridAnswer === ""
-          : selectedOptionIndices.length === 0,
-      time_taken: currentTime - lastRecordedTime,
-    };
+  answer: {
+    [questionId]:
+      question_type === "GRIDIN"
+        ? [gridAnswer]
+        : selectedOptionIndices,
+  },
+  striked_options: {
+    [questionId]: strikedOptionIndices,
+  },
+  navigation_action: operation,
+  is_marked_for_review:
+    answerMap[questionId].is_marked_for_review,
+
+  is_skipped:
+    question_type === "GRIDIN"
+      ? gridAnswer === ""
+      : selectedOptionIndices.length === 0,
+
+  time_taken: currentTime - lastRecordedTime,
+};
+
+if (isPractice) {
+  payload.current_question_index = currentQuestionIndex;
+  payload.remaining_time = timeLeft;
+
+};
 
     const examPayload = {
   ...payload,
-
+  navigation_action: operation,
   test_submission_id: testSubmissionId,
   course_subject: courseSubject,
   section_id: sectionId,
@@ -343,6 +388,12 @@ const testSlice = createSlice({
   state.isSectionCompleted = false;
 },
     createAnswerObject: (state, action) => {
+
+      console.log("===== createAnswerObject =====");
+  console.log("Question:", action.payload);
+  console.log("Already Exists:", state.answerMap[action.payload]);
+  console.log("==============================");
+
     if (!state.answerMap[action.payload]) {
       state.answerMap[action.payload] = {
         is_marked_for_review: false,
@@ -415,6 +466,9 @@ const testSlice = createSlice({
       ] = 0;
     },
     selectOption: (state, action) => {
+      console.log("===== SELECT OPTION =====");
+  console.log("Question:", action.payload.questionId);
+  console.log("Before:", state.answerMap[action.payload.questionId]);
       const { questionId, optionIndex, questionType } = action.payload;
       const currentTime = new Date().toISOString();
       if (action.payload.questionType == "MULTI_CHOICE") {
@@ -426,6 +480,7 @@ const testSlice = createSlice({
           [action.payload.optionIndex]: 1,
         };
       }
+
       state.answerMap[action.payload.questionId].striked_options[
         action.payload.optionIndex
       ] = 0;
@@ -439,8 +494,16 @@ const testSlice = createSlice({
     timestamp: currentTime,
       });
       
+        console.log("After:", state.answerMap[action.payload.questionId]);
+  console.log("========================");
+
     },
+    
+
     unselectOption: (state, action) => {
+      console.log("===== UNSELECT OPTION =====");
+console.log("Question:", action.payload.questionId);
+console.log("Before:", state.answerMap[action.payload.questionId]);
       const { questionId, optionIndex, questionType } = action.payload;
       const currentTime = new Date().toISOString();
       
@@ -451,11 +514,16 @@ const testSlice = createSlice({
       } else {
         state.answerMap[action.payload.questionId].selected_options = {};
       }
+      if (!state.answerMap[questionId].selectionHistory) {
+    state.answerMap[questionId].selectionHistory = [];
+}
       state.answerMap[questionId].selectionHistory.push({
     action: "unselect",
     option: optionIndex,
     timestamp: currentTime,
   });
+  console.log("After:", state.answerMap[action.payload.questionId]);
+console.log("==========================");
     },
     saveValue: (state, action) => {
       if (state.answerMap[action.payload.questionId]) {
@@ -480,8 +548,14 @@ const testSlice = createSlice({
       state.isSectionCompleted = true;
     },
     setAnswerMap: (state, action) => {
-      state.answerMap = action.payload;
-    },
+    state.answerMap = action.payload;
+
+    Object.values(state.answerMap).forEach(answer => {
+        if (!answer.selectionHistory) {
+            answer.selectionHistory = [];
+        }
+    });
+},
     setCurrentQuestionIndex: (state, action) => {
       state.currentQuestionIndex = action.payload;
     },
@@ -510,7 +584,7 @@ const testSlice = createSlice({
       }
       break;
 
-    case "PREV":
+    case "PREVIOUS":
       if (state.currentQuestionIndex > 0) {
         state.currentQuestionIndex--;
       }
@@ -674,6 +748,44 @@ state.currentArraySectionIndex =
         state.isTimer = true;
         // state.timeLeft = 10;
       })
+
+
+      .addCase(practiceTestInProgress.fulfilled, (state, action) => {
+  const { data, practiceTestId } = action.payload;
+
+  console.log("===== RESTORE ANSWER MAP =====");
+Object.entries(data.answer_map).forEach(([qid, answer]) => {
+  console.log(
+    "Question:",
+    qid,
+    "selected_options:",
+    answer.selected_options,
+    "type:",
+    typeof answer.selected_options,
+    "isArray:",
+    Array.isArray(answer.selected_options)
+  );
+});
+console.log("==============================");
+
+  state.testType = "practice";
+  state.testId = Number(practiceTestId);
+
+  state.questions = [];
+
+  state.currentQuestionIndex = data.current_question_index;
+  state.answerMap = data.answer_map;
+
+  state.timeLeft = data.remaining_time;
+  state.isTimer = true;
+
+  state.isTimeUp = false;
+  state.isSectionCompleted = false;
+  state.isTestCompleted = false;
+
+  state.status = "idle";
+})
+
       .addCase(testInProgress.rejected, (state, action) => {
         state.status = "error";
         state.error = action.error.message || "Faced some issue";

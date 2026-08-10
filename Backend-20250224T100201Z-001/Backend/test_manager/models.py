@@ -299,7 +299,7 @@ class Result(models.Model):
 
 
     def update_question_answer_and_stats(self, test, course_subject, section_id, question, answer_data,
-                                         time_taken, correct_answer, is_skipped, is_marked_for_review):
+                                         time_taken, correct_answer, is_skipped, is_marked_for_review,navigation_action=None,):
         # Create or update the QuestionAnswer entry
         question_answer, created = QuestionAnswer.objects.get_or_create(
             result=self,
@@ -333,9 +333,12 @@ class Result(models.Model):
 
             question_answer.is_correct = correct_answer
             question_answer.is_skipped = is_skipped
-            question_answer.time_taken += time_taken
+            if navigation_action in ["NEXT", "PREVIOUS"]:
+                question_answer.time_taken += time_taken
             question_answer.selected_options = answer_data if not is_skipped else []
-            question_answer.times_visited += 1
+            print("navigation_action",navigation_action)    
+            if navigation_action in ["NEXT", "PREVIOUS"]:
+                question_answer.times_visited += 1
             question_answer.is_marked_for_review = is_marked_for_review
             question_answer.save()
 
@@ -493,6 +496,21 @@ class PracticeTestResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     detailed_view = models.JSONField(default=dict)  # Retain for migration
 
+     # ADD THESE ↓↓↓
+    current_question_index = models.IntegerField(default=0)
+    remaining_time = models.IntegerField(default=0)
+
+    STATUS_CHOICES = (
+        ("IN_PROGRESS", "In Progress"),
+        ("COMPLETED", "Completed"),
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="IN_PROGRESS"
+    )
+
     def update_detailed_view(self, question_id, answer_data, time_taken, correct_answer, is_skipped,
                              is_marked_for_review):
         # Check if 'answers' key exists
@@ -586,7 +604,7 @@ class PracticeTestResult(models.Model):
     
     def update_question_answer(
     self, question, answer_data, time_taken, correct_answer, is_skipped,
-    is_marked_for_review, striked_data=None
+    is_marked_for_review, striked_data=None, navigation_action=None,
 ):
         striked_data = striked_data or []
 
@@ -612,8 +630,11 @@ class PracticeTestResult(models.Model):
         if not created:
             if question_answer.first_time_taken == 0:
                 question_answer.first_time_taken = time_taken
-            question_answer.times_visited += 1
-            question_answer.time_taken += time_taken
+
+            if navigation_action in ["NEXT", "PREVIOUS"]:
+                question_answer.times_visited += 1
+            if navigation_action in ["NEXT", "PREVIOUS"]:
+                question_answer.time_taken += time_taken
             question_answer.selected_options = answer_data if not is_skipped else []
             question_answer.striked_options = striked_data
             question_answer.is_correct = correct_answer

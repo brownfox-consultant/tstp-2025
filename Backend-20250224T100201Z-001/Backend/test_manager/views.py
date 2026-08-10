@@ -207,14 +207,7 @@ class TestViewSet(viewsets.ModelViewSet):
         test = Test.get_test_by_id(test_id=pk)
         test_submission_id = request.data.get('test_submission_id')
         action_type = request.data.get('action_type')  # NEXT, PREVIOUS, JUMP, SECTION_SKIP, REVIEW
-        from_question_id = request.data.get('from_question_id')
-        to_question_id = request.data.get('to_question_id')
-        from_section_id = request.data.get('from_section_id')
-        to_section_id = request.data.get('to_section_id')
-        time_spent = request.data.get('time_spent', 0)
-        current_question_index = request.data.get('current_question_index', 0)
-        total_questions = request.data.get('total_questions', 0)
-        device_info = request.data.get('device_info', {})
+        
         
         # Validate
         if not test_submission_id or not action_type:
@@ -226,8 +219,7 @@ class TestViewSet(viewsets.ModelViewSet):
         try:
             test_submission = TestSubmission.objects.get(id=test_submission_id)
             question = None
-            if to_question_id:
-                question = Question.objects.get(id=to_question_id)
+            
         except (TestSubmission.DoesNotExist, Question.DoesNotExist):
             return Response(
                 {"detail": "Invalid submission or question ID."},
@@ -240,15 +232,7 @@ class TestViewSet(viewsets.ModelViewSet):
             test_submission=test_submission,
             question=question,
             action_type=action_type,
-            from_question_id=from_question_id,
-            to_question_id=to_question_id,
-            from_section_id=from_section_id,
-            to_section_id=to_section_id,
-            time_spent_on_previous_question=time_spent,
-            current_section_id=to_section_id or from_section_id,
-            current_question_index=current_question_index,
-            total_questions_in_section=total_questions,
-            device_info=device_info
+            
         )
         latest = TestNavigationHistory.objects.last()
 
@@ -2314,30 +2298,20 @@ class TestViewSet(viewsets.ModelViewSet):
         
         # Navigation tracking data
         # Navigation tracking data
-        current_question_index = request.data.get('current_question_index', 0)
 
-        last_nav = TestNavigationHistory.objects.filter(
-            test_submission_id=test_submission_id
-        ).order_by('-timestamp').first()
-
-        if last_nav is None or last_nav.current_question_index is None:
-            navigation_action = 'NEXT'
-        elif current_question_index == last_nav.current_question_index + 1:
-            navigation_action = 'NEXT'
-        elif current_question_index == last_nav.current_question_index - 1:
-            navigation_action = 'PREVIOUS'
-        else:
-            navigation_action = 'JUMP'
         from_question_id = request.data.get('from_question_id')
         to_question_id = request.data.get('to_question_id', question_id)
+
         from_section_id = request.data.get('from_section_id', section_id)
         to_section_id = request.data.get('to_section_id', section_id)
+
         current_question_index = request.data.get('current_question_index', 0)
         total_questions = request.data.get('total_questions', 0)
         time_spent_on_question = request.data.get('time_spent_on_question', time_taken)
         device_info = request.data.get('device_info', {})
-        
-        # ✅ Validate required fields
+
+        navigation_action = request.data.get("navigation_action", "NEXT")
+
         if not course_subject:
             return get_error_response(message='course_subject is required.')
         
@@ -2417,7 +2391,8 @@ class TestViewSet(viewsets.ModelViewSet):
                 time_taken=time_taken,
                 correct_answer=is_correct,
                 is_skipped=is_skipped,
-                is_marked_for_review=is_marked_for_review
+                is_marked_for_review=is_marked_for_review,
+                navigation_action=navigation_action,
             )
             existing_submission.current_course_subject_id = course_subject
             existing_submission.current_section_id = section_id
@@ -2436,9 +2411,7 @@ class TestViewSet(viewsets.ModelViewSet):
             print("TO:", to_question_id)
             print("CURRENT INDEX:", current_question_index)
 
-            if last_nav:
-                print("LAST INDEX:", last_nav.current_question_index)
-                print("LAST ACTION:", last_nav.action_type)
+           
 
             print("ACTION:", navigation_action)
             print("=" * 80)
@@ -2631,7 +2604,10 @@ class TestViewSet(viewsets.ModelViewSet):
                 elif nav.action_type == "PREVIOUS":
                     back_and_forth_count += 1
 
-                elif nav.action_type == "JUMP":
+                elif (
+                    nav.action_type == "JUMP"
+                    and nav.from_section_id == nav.to_section_id
+                ):
                     jump_count += 1
 
             previous_index = current_index
@@ -5077,10 +5053,12 @@ class ResultViewSet(viewsets.ModelViewSet):
         
         
         # Count unique questions visited
-        visited_questions = set()
-        for nav in navigations:
-            if nav.to_question_id:
-                visited_questions.add(nav.to_question_id)
+        # Count unique questions visited from QuestionAnswer
+        visited_questions = set(
+            QuestionAnswer.objects.filter(
+                result=result
+            ).values_list("question_id", flat=True)
+        )
 
         # Total time
         total_time = result.time_taken or 0
@@ -7252,6 +7230,7 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         random.shuffle(question_ids)
 
         no_of_questions = int(request.data.get('no_of_questions', 0))
+        timer = int(request.data.get("timer", 0))
         if no_of_questions > 0:
             question_ids = question_ids[:no_of_questions]
 
@@ -7283,6 +7262,9 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             correct_answer_count=0,
             incorrect_answer_count=0,
             time_taken=0,
+            current_question_index=0,
+            remaining_time=timer * 60,
+            status="IN_PROGRESS",
             detailed_view={}
         )
 
@@ -7314,6 +7296,8 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "practice_test_id": practice_test.id,
+                "practice_test_result_id": practice_test_result.id,
+                "remaining_time": practice_test_result.remaining_time,
                 "question_ids": question_ids
             },
             status=status.HTTP_201_CREATED
@@ -7581,9 +7565,25 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         is_skipped = request.data.get('is_skipped', False)
         time_taken = request.data.get('time_taken', 0)
         is_marked_for_review = request.data.get('is_marked_for_review', False)
+        current_question_index = request.data.get(
+            "current_question_index",
+            0
+        )
+
+        remaining_time = request.data.get(
+            "remaining_time",
+            0
+        )
+        navigation_action = request.data.get("navigation_action", "NEXT")
 
         # Extract question id + answer data
         question_id, answer_data = list(answer_dict.items())[0]
+        print("\n========== TAKE TEST ==========")
+        print("Question ID:", question_id)
+        print("Selected Answer:", answer_data)
+        print("Current Question:", current_question_index)
+        print("Remaining Time:", remaining_time)
+        print("Status Before:", result.status if 'result' in locals() else "NEW")
         question = Question.objects.get(id=question_id)
         striked_data = striked_dict.get(str(question_id), [])
 
@@ -7617,7 +7617,15 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         # Fetch or create result
         result, _ = PracticeTestResult.objects.get_or_create(
             practice_test=practice_test,
-            defaults={'correct_answer_count': 0, 'incorrect_answer_count': 0, 'time_taken': 0, 'detailed_view': {}}
+            defaults={
+                'correct_answer_count': 0,
+                'incorrect_answer_count': 0,
+                'time_taken': 0,
+                'current_question_index': 0,
+                'remaining_time': 0,
+                'status': 'IN_PROGRESS',
+                'detailed_view': {}
+            }
         )
 
         # Update question-level answer with strike info
@@ -7629,6 +7637,29 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             is_skipped=is_skipped,
             is_marked_for_review=is_marked_for_review,
             striked_data=striked_data,  # 👈 pass here
+            navigation_action=navigation_action,
+        )
+        qa = PracticeQuestionAnswer.objects.get(
+            practice_test_result=result,
+            question=question,
+        )
+
+        print("Saved Answer:", qa.selected_options)
+        print("Marked Review:", qa.is_marked_for_review)
+        print("Skipped:", qa.is_skipped)
+        print("Time Taken:", qa.time_taken)
+        print("==============================\n")
+
+        result.current_question_index = current_question_index
+        result.remaining_time = remaining_time
+        result.status = "IN_PROGRESS"
+
+        result.save(
+            update_fields=[
+                "current_question_index",
+                "remaining_time",
+                "status",
+            ]
         )
 
         response = {
@@ -7638,6 +7669,182 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
         }
 
         return Response(data=response, status=status.HTTP_200_OK)
+
+
+    @action(
+    detail=True,
+    methods=["POST"],
+    permission_classes=[IsAuthenticated],
+    url_path="complete-test",
+)
+    def complete_test(self, request, pk=None):
+        try:
+            practice_test = PracticeTest.objects.get(
+                id=pk,
+                student=request.user
+            )
+
+            result = PracticeTestResult.objects.get(
+                practice_test=practice_test
+            )
+
+            result.status = "COMPLETED"
+            result.save(update_fields=["status"])
+
+            return Response(
+                {
+                    "message": "Practice test completed successfully.",
+                    "practice_test_id": practice_test.id,
+                    "practice_test_result_id": result.id,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except PracticeTest.DoesNotExist:
+            return Response(
+                {"detail": "Practice test not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except PracticeTestResult.DoesNotExist:
+            return Response(
+                {"detail": "Practice test result not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    @action(
+    detail=True,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="test-progress",
+)
+    def test_progress(self, request, pk=None):
+
+        try:
+            practice_test = PracticeTest.objects.get(
+                id=pk,
+                student=request.user
+            )
+
+            result = PracticeTestResult.objects.get(
+                practice_test=practice_test
+            )
+
+            question_answers = PracticeQuestionAnswer.objects.filter(
+                practice_test_result=result
+            ).order_by("order")
+
+            print("\n========== TEST PROGRESS ==========")
+            print("Practice Test:", practice_test.id)
+            print("Current Question:", result.current_question_index)
+            print("Remaining Time:", result.remaining_time)
+            print("Status:", result.status)
+            print("Total Questions:", question_answers.count())
+
+            question_ids = []
+            answer_map = {}
+
+            for qa in question_answers:
+
+                question_ids.append(qa.question_id)
+
+                answer_map[str(qa.question_id)] = {
+                    "selected_options": qa.selected_options,
+                    "striked_options": qa.striked_options,
+                    "is_marked_for_review": qa.is_marked_for_review,
+                    "is_skipped": qa.is_skipped,
+                    "time_taken": qa.time_taken,
+                    "times_visited": qa.times_visited,
+                    "first_time_taken": qa.first_time_taken,
+                }
+                print(
+                    f"""
+                Question: {qa.question_id}
+                Selected: {qa.selected_options}
+                Strike: {qa.striked_options}
+                Review: {qa.is_marked_for_review}
+                Skipped: {qa.is_skipped}
+                Time: {qa.time_taken}
+                Visited: {qa.times_visited}
+                """
+                )
+
+            print("Question IDs:", question_ids)
+            print("Answer Map:", answer_map)
+            print("========== END TEST PROGRESS ==========\n")
+
+            return Response(
+                {
+                    "practice_test_id": practice_test.id,
+                    "practice_test_result_id": result.id,
+                    "status": result.status,
+                    "current_question_index": result.current_question_index,
+                    "remaining_time": result.remaining_time,
+                    "question_ids": question_ids,
+                    "answer_map": answer_map,
+                    "correct_answer_count": result.correct_answer_count,
+                    "incorrect_answer_count": result.incorrect_answer_count,
+                    "time_taken": result.time_taken,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except PracticeTest.DoesNotExist:
+            return Response(
+                {"detail": "Practice test not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except PracticeTestResult.DoesNotExist:
+            return Response(
+                {"detail": "Practice test result not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+
+    @action(
+    detail=True,
+    methods=["POST"],
+    permission_classes=[IsAuthenticated],
+    url_path="sync-time",
+)
+    def sync_time(self, request, pk=None):
+        try:
+            practice_test = PracticeTest.objects.get(
+                id=pk,
+                student=request.user
+            )
+
+            result = PracticeTestResult.objects.get(
+                practice_test=practice_test
+            )
+
+            remaining_time = request.data.get("remaining_time")
+
+            if remaining_time is not None:
+                result.remaining_time = remaining_time
+                result.save(update_fields=["remaining_time"])
+
+            return Response(
+                {
+                    "message": "Time synced successfully.",
+                    "remaining_time": result.remaining_time,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except PracticeTest.DoesNotExist:
+            return Response(
+                {"detail": "Practice test not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except PracticeTestResult.DoesNotExist:
+            return Response(
+                {"detail": "Practice test result not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
 
     @action(detail=True, methods=['GET'],
@@ -7800,14 +8007,17 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
+            practice_result.status = "COMPLETED"
+            practice_result.save(update_fields=["status"])
             # Optional: store exit time
             practice_test.updated_at = timezone.now()
             practice_test.save(update_fields=["updated_at"])
 
             return Response(
                 {
-                    "message": "Practice test exited successfully.",
+                    "message": "Practice test completed successfully.",
                     "practice_test_id": practice_test.id,
+                    "status": practice_result.status,
                     "time_taken": practice_result.time_taken,
                     "correct_answer_count": practice_result.correct_answer_count,
                     "incorrect_answer_count": practice_result.incorrect_answer_count,

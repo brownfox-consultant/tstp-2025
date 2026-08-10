@@ -15,6 +15,7 @@ import Report from "@/components/report-module";
 import ReportNew from "../report-module/Report_New";
 import TestFeedbackModal from "@/components/test-module/test-feedback-modal";
 import { Modal } from "antd";
+import { insideAuthInstance } from "@/lib/AxiosInstance";
 
 
 function TestFooter() {
@@ -101,10 +102,26 @@ useEffect(() => {
   async function handleFinish() {
     if (testType == "practice") {
         if (testType === "practice") {
-    
-    router.replace(`/student/${id}/test/practice/${testId}/result`);
-    return;
+  try {
+    await insideAuthInstance.post(
+      `/practice/${testId}/complete-test/`
+    );
+
+    exitFullScreen();
+
+    router.replace(
+      `/student/${id}/test/practice/${testId}/result`
+    );
+  } catch (err) {
+    console.error(err);
+    Modal.error({
+      title: "Unable to complete practice test",
+      content: "Please try again.",
+    });
   }
+
+  return;
+}
     } else {
       if (!isTimeUp) {
         Modal.warning({
@@ -159,7 +176,7 @@ useEffect(() => {
 
 
   useHotkeys("alt+b", () => {
-    if (currentQuestionIndex != 0) handleClick("PREV");
+    if (currentQuestionIndex != 0) handleClick("PREVIOUS");
   });
 
   useHotkeys("alt+n", () => {
@@ -189,7 +206,7 @@ useEffect(() => {
                 disabled={
                   isReviewPage ? isReviewPage : currentQuestionIndex == 0
                 }
-                onClick={() => handleClick("PREV")}
+                onClick={() => handleClick("PREVIOUS")}
                 className="mx-1"
                 shape="round-md"
                 type="primary"

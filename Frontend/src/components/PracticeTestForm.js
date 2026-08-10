@@ -173,31 +173,71 @@ function PracticeTestForm() {
       course_subject_id: values.course_subject,
       no_of_questions: noOfQuestions,
       question_mode: values.question_mode,
+      timer: values.timer,   // Minutes
     };
 
     startPractice(payload)
-      .then(({ data }) => {
-        const { practice_test_id } = data;
+  .then(({ data }) => {
+
+    const {
+      practice_test_id,
+      practice_test_result_id,
+      remaining_time,
+    } = data;
+
+    // Save for refresh / continue
+    window.sessionStorage.setItem(
+      "practice_test_id",
+      practice_test_id
+    );
+
+    window.sessionStorage.setItem(
+      "practice_test_result_id",
+      practice_test_result_id
+    );
+
+    window.sessionStorage.setItem(
+      "practice_remaining_time",
+      remaining_time
+    );
         if (data.question_ids.length > 0) {
           dispatch(resetTestSlice());
           dispatch(fetchMultipleQuestionDetails(data.question_ids));
           dispatch(
-            setTestDetails({
-              testId: practice_test_id,
-              time: timerInSeconds, // ✅ store converted time
-              testType: "practice",
-            })
-          );
-          window.sessionStorage.setItem("testId", practice_test_id);
-          router.push(`/student/${id}/practice/${practice_test_id}/info`);
+  setTestDetails({
+    testId: practice_test_id,
+    time: timerInSeconds,
+    testType: "practice",
+  })
+);
+
+// Save timer too
+window.sessionStorage.setItem(
+  "timer",
+  JSON.stringify(timerInSeconds)
+);
+
+window.sessionStorage.setItem(
+  "testId",
+  practice_test_id
+);
+
+router.push(`/student/${id}/practice/${practice_test_id}/info`);
           goFullScreen();
         } else {
           notification.info({
             message: "No questions for practice for given criteria",
           });
         }
-        window.sessionStorage.setItem("timer", JSON.stringify(timerInSeconds));
-        window.sessionStorage.setItem("timeTaken", 0);
+        window.sessionStorage.setItem(
+  "timer",
+  JSON.stringify(remaining_time)
+);
+
+window.sessionStorage.setItem(
+  "timeTaken",
+  0
+);
       })
       .finally(() => setPracticeLoading(false));
   };

@@ -110,6 +110,32 @@ export function TestTimer({ expiryTimestamp }) {
   ]);
 
   useEffect(() => {
+  if (testState.testType !== "practice") return;
+  if (!isRunning) return;
+
+  const interval = setInterval(async () => {
+    try {
+      await insideAuthInstance.post(
+        `/practice/${testState.testId}/sync-time/`,
+        {
+          remaining_time: remainingRef.current,
+        }
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, [
+  isRunning,
+  testState.testId,
+  testState.testType,
+]);
+
+
+
+  useEffect(() => {
     if (testState.testType === "practice") return;
     const saveTime = () => {
       const totalDuration =
@@ -151,6 +177,37 @@ export function TestTimer({ expiryTimestamp }) {
     testState.sectionId,
     testState.sectionDuration,
   ]);
+
+  useEffect(() => {
+  if (testState.testType !== "practice") return;
+
+  const savePracticeTime = () => {
+    navigator.sendBeacon(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/practice/${testState.testId}/sync-time/`,
+      new Blob(
+        [
+          JSON.stringify({
+            remaining_time: remainingRef.current,
+          }),
+        ],
+        {
+          type: "application/json",
+        }
+      )
+    );
+  };
+
+  window.addEventListener("beforeunload", savePracticeTime);
+  window.addEventListener("pagehide", savePracticeTime);
+
+  return () => {
+    window.removeEventListener("beforeunload", savePracticeTime);
+    window.removeEventListener("pagehide", savePracticeTime);
+  };
+}, [
+  testState.testId,
+  testState.testType,
+]);
 
   return (
     <div className="flex flex-row items-center justify-center gap-2">

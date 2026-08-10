@@ -33,29 +33,45 @@ function ReviewComponent() {
   const sectionId = useSelector((state) => state.test.sectionId);
   const lastRecordedTime = useSelector((state) => state.test.lastRecordedTime);
   const dispatch = useDispatch();
+  console.log("===== REVIEW ANSWER MAP =====");
+console.log(answerMap);
   const questionItems = questions.map((question) => {
-    const { is_marked_for_review } = answerMap[question.id] || false;
-    const { selected_options, gridinAnswer } = answerMap[question.id] || {};
-    let isAnswered = false;
-    if (question.question_type === "MCQ") {
-  const hasSelected = Object.values(selected_options || {}).some(
-    (val) => val === 1
-  );
-  isAnswered = hasSelected;
-} else {
-  isAnswered = Boolean(gridinAnswer);
-}
 
-    return {
-      id: question.id,
-      isAnswered,
-      is_marked_for_review,
-    };
-  });
+  const {
+    is_marked_for_review,
+    selected_options,
+    gridinAnswer,
+  } = answerMap[question.id] || {};
+
+  console.log("========== REVIEW ==========");
+  console.log("Question:", question.id);
+  console.log("selected_options:", selected_options);
+  console.log("isArray:", Array.isArray(selected_options));
+  console.log("answer:", answerMap[question.id]);
+
+     let isAnswered = false;
+
+  if (question.question_type === "MCQ") {
+    isAnswered = Array.isArray(selected_options)
+      ? selected_options.length > 0
+      : Object.values(selected_options || {}).some((v) => v === 1);
+  } else {
+    isAnswered = Boolean(gridinAnswer);
+  }
+
+  console.log("isAnswered:", isAnswered);
+  console.log("==========================");
+
+  return {
+    id: question.id,
+    isAnswered,
+    is_marked_for_review,
+  };
+});
   function handleQuestionItemClick(toIndex) {
     dispatch(
       saveAndMove({
-        operation: "GOTO",
+        operation: "JUMP",
         questionIndex: toIndex,
       })
     );
