@@ -257,28 +257,42 @@ function AdminTestList() {
               </button>
             </Tooltip>
             <Tooltip title="Delete Test" placement="top">
-              <Popconfirm
-                placement="leftTop"
-                title="Delete the test"
-                description="Are you sure to delete this test?"
-                onConfirm={(e) => {
-                  e.stopPropagation();
-                  deleteConfirm(record.id);
-                }}
-                okText="Yes"
-                cancelText="No"
-                okButtonProps={{
-                  loading: confirmLoading,
-                }}
-              >
-                <button 
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-transparent border border-transparent hover:border-red-200 hover:bg-red-50 text-red-600 p-2 rounded-full flex items-center justify-center transition-all cursor-pointer"
-                >
-                  <DeleteTwoTone twoToneColor="#eb2f96" />
-                </button>
-              </Popconfirm>
-            </Tooltip>
+  <div
+    onClick={(e) => {
+      e.stopPropagation();
+    }}
+    onMouseDown={(e) => {
+      e.stopPropagation();
+    }}
+  >
+    <Popconfirm
+      placement="leftTop"
+      title="Delete the test"
+      description="Are you sure to delete this test?"
+      onConfirm={() => {
+        deleteConfirm(record.id);
+      }}
+      onCancel={() => {
+        // Just close popup
+        // Do nothing else
+      }}
+      okText="Yes"
+      cancelText="No"
+      okButtonProps={{
+        loading: confirmLoading,
+      }}
+    >
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className="bg-transparent border border-transparent hover:border-red-200 hover:bg-red-50 text-red-600 p-2 rounded-full flex items-center justify-center transition-all cursor-pointer"
+      >
+        <DeleteTwoTone twoToneColor="#eb2f96" />
+      </button>
+    </Popconfirm>
+  </div>
+</Tooltip>
           </div>
         );
       },
