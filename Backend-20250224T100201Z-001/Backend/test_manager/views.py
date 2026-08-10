@@ -2354,16 +2354,29 @@ class TestViewSet(viewsets.ModelViewSet):
                 is_correct = correct_answers_lower == user_answers_lower
             elif question.question_type == Question.GRIDIN:
                 if answer_data and len(answer_data) > 0:
-                    answer_value = str(answer_data[0]).strip()
 
+                    answer_value = str(answer_data[0]).strip()
                     answer_data = [answer_value]
 
+                    from fractions import Fraction
+
+                    def normalize_gridin(value):
+                        value = str(value).strip().lower()
+
+                        try:
+                            return Fraction(value)
+                        except (ValueError, ZeroDivisionError):
+                            return value
+
+                    student_answer = normalize_gridin(answer_value)
+
                     correct_answers = [
-                        str(x).strip().lower()
-                        for x in question.options
+                        normalize_gridin(option)
+                        for option in question.options
                     ]
 
-                    is_correct = answer_value.lower() in correct_answers
+                    is_correct = student_answer in correct_answers
+
                 else:
                     is_correct = False
             else:
@@ -7602,13 +7615,25 @@ class PracticeTestViewSet(viewsets.ModelViewSet):
             # Save back as list because update_question_answer expects a list
             answer_data = [answer_value]
 
-            # Compare as text (case-insensitive)
+            # Compare GRIDIN answers mathematically
+            from fractions import Fraction
+
+            def normalize_gridin(value):
+                value = str(value).strip().lower()
+
+                try:
+                    return Fraction(value)
+                except (ValueError, ZeroDivisionError):
+                    return value
+
+            student_answer = normalize_gridin(answer_value)
+
             correct_answers = [
-                str(ans).strip().lower()
+                normalize_gridin(ans)
                 for ans in question.options
             ]
 
-            is_correct = answer_value.lower() in correct_answers
+            is_correct = student_answer in correct_answers
         else:
             correct_options = [index for index, option in enumerate(question.options) if option.get('is_correct', False)]
             if not is_skipped:
