@@ -71,7 +71,7 @@ console.log(answerMap);
   function handleQuestionItemClick(toIndex) {
     dispatch(
       saveAndMove({
-        operation: "JUMP",
+        operation: "Review_Time",
         questionIndex: toIndex,
       })
     );

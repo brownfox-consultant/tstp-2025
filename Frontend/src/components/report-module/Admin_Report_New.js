@@ -247,9 +247,19 @@ console.log("sectionName", sectionName);
     });
 
     // Sort by timestamp
-    allActions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    // Sort by timestamp
+allActions.sort(
+  (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+);
 
-   allActions.forEach(action => {
+// Remove TIMEUP and Review_Time from Navigation Timeline
+const timelineActions = allActions.filter(
+  action =>
+    action.action_type !== 'TIMEUP' &&
+    action.action_type !== 'Review_Time'
+);
+
+timelineActions.forEach(action => {
   flow.push({
     sr_no: action.sr_no,
     question_id: action.question_id,

@@ -333,11 +333,11 @@ class Result(models.Model):
 
             question_answer.is_correct = correct_answer
             question_answer.is_skipped = is_skipped
-            if navigation_action in ["NEXT", "PREVIOUS"]:
+            if navigation_action in ["NEXT", "PREVIOUS","JUMP"]:
                 question_answer.time_taken += time_taken
             question_answer.selected_options = answer_data if not is_skipped else []
             print("navigation_action",navigation_action)    
-            if navigation_action in ["NEXT", "PREVIOUS"]:
+            if navigation_action in ["NEXT", "PREVIOUS","JUMP"]:
                 question_answer.times_visited += 1
             question_answer.is_marked_for_review = is_marked_for_review
             question_answer.save()
@@ -631,9 +631,9 @@ class PracticeTestResult(models.Model):
             if question_answer.first_time_taken == 0:
                 question_answer.first_time_taken = time_taken
 
-            if navigation_action in ["NEXT", "PREVIOUS"]:
+            if navigation_action in ["NEXT", "PREVIOUS","JUMP"]:
                 question_answer.times_visited += 1
-            if navigation_action in ["NEXT", "PREVIOUS"]:
+            if navigation_action in ["NEXT", "PREVIOUS","JUMP"]:
                 question_answer.time_taken += time_taken
             question_answer.selected_options = answer_data if not is_skipped else []
             question_answer.striked_options = striked_data
