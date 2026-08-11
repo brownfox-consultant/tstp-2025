@@ -12,6 +12,7 @@ import {
   Modal,
   Tooltip,
   Pagination,
+  Skeleton,
 } from "antd";
 import {
   EyeOutlined,
@@ -32,7 +33,7 @@ import { BASE_URL, GET_Students } from "@/app/constants/apiConstants";
 import dayjs from "dayjs";
 import Admin_Report_New from "@/components/report-module/Admin_Report_New";
 import PracticeTestReport from "@/components/report-module/PracticeTestReport_admin_user";
-
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 const { RangePicker } = DatePicker;
 
@@ -129,70 +130,70 @@ const TestListPage = () => {
     );
   };
 
-const FullLengthScoreCard = ({ record }) => {
-  return (
-    <div className="w-[270px] rounded-lg overflow-hidden bg-white shadow-md border border-gray-200">
-      {/* Header */}
-      <div className="bg-sky-500 text-white px-3 py-2">
-        <div className="flex justify-between items-center">
-          <span className="text-[11px] font-semibold uppercase">
-            Total Score
-          </span>
-          <span className="text-xs font-semibold">
-            {record.percentage}%
-          </span>
+  const FullLengthScoreCard = ({ record }) => {
+    return (
+      <div className="w-[270px] rounded-lg overflow-hidden bg-white shadow-md border border-gray-200">
+        {/* Header */}
+        <div className="bg-sky-500 text-white px-3 py-2">
+          <div className="flex justify-between items-center">
+            <span className="text-[11px] font-semibold uppercase">
+              Total Score
+            </span>
+            <span className="text-xs font-semibold">
+              {record.percentage}%
+            </span>
+          </div>
+
+          <div className="mt-2 flex items-end gap-1">
+            <span className="text-3xl font-bold">
+              {record.total_score}
+            </span>
+            <span className="text-[11px] mb-1 opacity-90">
+              / {record.total_marks}
+            </span>
+          </div>
+
+          <div className="mt-2 h-1.5 rounded-full bg-white/30 overflow-hidden">
+            <div
+              className="h-full bg-white rounded-full"
+              style={{ width: `${record.percentage}%` }}
+            />
+          </div>
         </div>
 
-        <div className="mt-2 flex items-end gap-1">
-          <span className="text-3xl font-bold">
-            {record.total_score}
-          </span>
-          <span className="text-[11px] mb-1 opacity-90">
-            / {record.total_marks}
-          </span>
-        </div>
+        {/* Section Scores */}
+        <div className="grid grid-cols-2 divide-x">
+          <div className="p-3 text-center">
+            <div className="text-[11px] uppercase text-gray-500">
+              English
+            </div>
 
-        <div className="mt-2 h-1.5 rounded-full bg-white/30 overflow-hidden">
-          <div
-            className="h-full bg-white rounded-full"
-            style={{ width: `${record.percentage}%` }}
-          />
+            <div className="text-xl font-bold text-gray-800">
+              {record.english_score}
+            </div>
+
+            <div className="text-[10px] text-gray-400">
+              / 800
+            </div>
+          </div>
+
+          <div className="p-3 text-center">
+            <div className="text-[11px] uppercase text-gray-500">
+              Math
+            </div>
+
+            <div className="text-xl font-bold text-gray-800">
+              {record.math_score}
+            </div>
+
+            <div className="text-[10px] text-gray-400">
+              / 800
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Section Scores */}
-      <div className="grid grid-cols-2 divide-x">
-        <div className="p-3 text-center">
-          <div className="text-[11px] uppercase text-gray-500">
-            English
-          </div>
-
-          <div className="text-xl font-bold text-gray-800">
-            {record.english_score}
-          </div>
-
-          <div className="text-[10px] text-gray-400">
-            / 800
-          </div>
-        </div>
-
-        <div className="p-3 text-center">
-          <div className="text-[11px] uppercase text-gray-500">
-            Math
-          </div>
-
-          <div className="text-xl font-bold text-gray-800">
-            {record.math_score}
-          </div>
-
-          <div className="text-[10px] text-gray-400">
-            / 800
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
 
   // ==================== DATA FETCHING STATE ====================
@@ -205,6 +206,10 @@ const FullLengthScoreCard = ({ record }) => {
   const [activeTabKey, setActiveTabKey] = useState("fullLength"); //   
   const [expandedFullLengthKeys, setExpandedFullLengthKeys] = useState([]);
   const [expandedPracticeKeys, setExpandedPracticeKeys] = useState([]);
+  const [flPage, setFlPage] = useState(1);
+  const [flPageSize, setFlPageSize] = useState(10);
+  const [prPage, setPrPage] = useState(1);
+  const [prPageSize, setPrPageSize] = useState(10);
   const [timelinePage, setTimelinePage] = useState(1);
   const [timelinePageSize, setTimelinePageSize] = useState(5);
   const [expandedTimelineKeys, setExpandedTimelineKeys] = useState([]);
@@ -217,6 +222,13 @@ const FullLengthScoreCard = ({ record }) => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [submissionId, setSubmissionId] = useState(null);
   const [testType, setTestType] = useState(null);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const actionParam = searchParams.get("action");
+  const submissionIdParam = searchParams.get("submissionId");
+  const testTypeParam = searchParams.get("testType");
 
   // ==================== FETCH DATA ====================
   useEffect(() => {
@@ -236,27 +248,21 @@ const FullLengthScoreCard = ({ record }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch Full Length Tests
-      const fullRes = await axios.get(
-        `${BASE_URL}/api/result/recent/full-length/?limit=100`,
-        { withCredentials: true }
-      );
-      const fullData = fullRes.data || [];
-      setInitialFullLengthData(fullData);
+      // Fetch both APIs concurrently for better performance
+      const [fullRes, pracRes] = await Promise.all([
+        axios.get(`${BASE_URL}/api/result/recent/full-length/?limit=100`, { withCredentials: true }),
+        axios.get(`${BASE_URL}/api/result/recent/practice/?limit=100`, { withCredentials: true })
+      ]);
 
-      // Fetch Practice Tests
-      const pracRes = await axios.get(
-        `${BASE_URL}/api/result/recent/practice/?limit=100`,
-        { withCredentials: true }
-      );
-      const pracData = pracRes.data || [];
-      setInitialPracticeData(pracData);
+      setInitialFullLengthData(fullRes.data || []);
+      setInitialPracticeData(pracRes.data || []);
     } catch (error) {
       console.error("Failed to fetch test list:", error);
     } finally {
       setLoading(false);
     }
   };
+
 
   // ==================== COMPUTED TRENDS ====================
   const fullLengthDataWithTrends = useMemo(() => {
@@ -267,7 +273,7 @@ const FullLengthScoreCard = ({ record }) => {
       if (!groups[key]) groups[key] = [];
       groups[key].push(item);
     });
-    
+
     Object.keys(groups).forEach(key => {
       // Sort ascending (chronological) to calculate trends
       groups[key].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -299,7 +305,7 @@ const FullLengthScoreCard = ({ record }) => {
       if (!groups[key]) groups[key] = [];
       groups[key].push(item);
     });
-    
+
     Object.keys(groups).forEach(key => {
       // Sort ascending (chronological) to calculate trends
       groups[key].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -344,8 +350,8 @@ const FullLengthScoreCard = ({ record }) => {
 
       if (dateRange && dateRange[0] && dateRange[1]) {
         const itemDate = new Date(
-  item.completion_date || item.created_at
-);
+          item.completion_date || item.created_at
+        );
         const startDate = dateRange[0].startOf("day").toDate();
         const endDate = dateRange[1].endOf("day").toDate();
         matchesDate = itemDate >= startDate && itemDate <= endDate;
@@ -370,13 +376,13 @@ const FullLengthScoreCard = ({ record }) => {
   const displayedFullLength = useMemo(() => {
     let data = filteredFullLengthData;
     if (selectedStudentObj) {
-      data = data.filter(item => 
+      data = data.filter(item =>
         item.student_name === selectedStudentObj.name || item.student_id?.toString() === selectedStudentObj.id?.toString()
       );
     }
     if (localSearchQuery) {
       const q = localSearchQuery.toLowerCase();
-      data = data.filter(item => 
+      data = data.filter(item =>
         (item.test_name || "").toLowerCase().includes(q) ||
         (item.student_name || "").toLowerCase().includes(q) ||
         (item.course_name || "").toLowerCase().includes(q)
@@ -388,13 +394,13 @@ const FullLengthScoreCard = ({ record }) => {
   const displayedPractice = useMemo(() => {
     let data = filteredPracticeData;
     if (selectedStudentObj) {
-      data = data.filter(item => 
+      data = data.filter(item =>
         item.student_name === selectedStudentObj.name || item.student_id?.toString() === selectedStudentObj.id?.toString()
       );
     }
     if (localSearchQuery) {
       const q = localSearchQuery.toLowerCase();
-      data = data.filter(item => 
+      data = data.filter(item =>
         (item.test_name || "").toLowerCase().includes(q) ||
         (item.student_name || "").toLowerCase().includes(q) ||
         (item.course_name || "").toLowerCase().includes(q)
@@ -406,12 +412,12 @@ const FullLengthScoreCard = ({ record }) => {
   // Combined timeline data for single student timeline view
   const combinedTimelineData = useMemo(() => {
     if (!selectedStudentObj) return [];
-    
-    const flFiltered = fullLengthDataWithTrends.filter(item => 
+
+    const flFiltered = fullLengthDataWithTrends.filter(item =>
       item.student_name === selectedStudentObj.name || item.student_id?.toString() === selectedStudentObj.id?.toString()
     ).map(item => ({ ...item, timelineType: "fullLength" }));
 
-    const prFiltered = practiceDataWithTrends.filter(item => 
+    const prFiltered = practiceDataWithTrends.filter(item =>
       item.student_name === selectedStudentObj.name || item.student_id?.toString() === selectedStudentObj.id?.toString()
     ).map(item => ({ ...item, timelineType: "practice" }));
 
@@ -424,7 +430,7 @@ const FullLengthScoreCard = ({ record }) => {
     let data = combinedTimelineData;
     if (localSearchQuery) {
       const q = localSearchQuery.toLowerCase();
-      data = data.filter(item => 
+      data = data.filter(item =>
         (item.test_name || "").toLowerCase().includes(q) ||
         (item.course_name || "").toLowerCase().includes(q)
       );
@@ -441,11 +447,11 @@ const FullLengthScoreCard = ({ record }) => {
         </span>
       );
     }
-    
+
     let colorClass = "";
     let scorePercent = 0;
     const isFL = type === "fullLength" || record.timelineType === "fullLength";
-    
+
     if (isFL) {
       const totalMarks = record.total_marks || 1600;
       scorePercent = (score / totalMarks) * 100;
@@ -453,7 +459,7 @@ const FullLengthScoreCard = ({ record }) => {
       const totalQuestions = record.total_questions || 10;
       scorePercent = (score / totalQuestions) * 100;
     }
-    
+
     if (scorePercent >= 80) {
       colorClass = "text-emerald-700";
     } else if (scorePercent >= 50) {
@@ -461,13 +467,13 @@ const FullLengthScoreCard = ({ record }) => {
     } else {
       colorClass = "text-rose-700";
     }
-    
+
     const tooltipContent = (!isFL) ? (
       <ResultSummary summary={record} />
     ) : (
       <FullLengthScoreCard record={record} />
     );
-    
+
     return (
       <Tooltip
         title={tooltipContent}
@@ -496,7 +502,7 @@ const FullLengthScoreCard = ({ record }) => {
         </span>
       );
     }
-    
+
     if (trend.type === "up") {
       return (
         <span
@@ -508,7 +514,7 @@ const FullLengthScoreCard = ({ record }) => {
         </span>
       );
     }
-    
+
     if (trend.type === "down") {
       return (
         <span
@@ -520,7 +526,7 @@ const FullLengthScoreCard = ({ record }) => {
         </span>
       );
     }
-    
+
     return (
       <span
         onClick={(e) => e.stopPropagation()}
@@ -533,20 +539,28 @@ const FullLengthScoreCard = ({ record }) => {
 
   // ==================== HANDLERS ====================
   const handleViewResult = (record, type) => {
+    let subId = "";
+    let tType = "";
     if (type === "practice" || record.timelineType === "practice") {
-      setSubmissionId(record.test_submission_id || record.id);
-      setTestType("practice");
+      subId = record.test_submission_id || record.id;
+      tType = "practice";
     } else {
-      setSubmissionId(record.id);
-      setTestType("fullLength");
+      subId = record.id;
+      tType = "fullLength";
     }
-    setShowResultModal(true);
+    const updatedSearchParams = new URLSearchParams(searchParams);
+    updatedSearchParams.set("action", "viewResult");
+    updatedSearchParams.set("submissionId", subId);
+    updatedSearchParams.set("testType", tType);
+    router.push(`${pathname}?${updatedSearchParams.toString()}`);
   };
 
   const handleCloseModal = () => {
-    setShowResultModal(false);
-    setSubmissionId(null);
-    setTestType(null);
+    const updatedSearchParams = new URLSearchParams(searchParams);
+    updatedSearchParams.delete("action");
+    updatedSearchParams.delete("submissionId");
+    updatedSearchParams.delete("testType");
+    router.push(`${pathname}?${updatedSearchParams.toString()}`);
   };
 
   const handleReset = () => {
@@ -568,40 +582,40 @@ const FullLengthScoreCard = ({ record }) => {
 
   // ==================== TABLE COLUMNS ====================
   const getTableColumns = (type) => [
-   ...(type === "fullLength"
-  ? [
-      {
-        title: "Completion Date",
-        dataIndex: "completion_date",
-        key: "completion_date",
-        sorter: (a, b) =>
-          new Date(a.completion_date || a.created_at) -
-          new Date(b.completion_date || b.created_at),
-        render: (_, record) => {
-          const date = record.completion_date || record.created_at;
+    ...(type === "fullLength"
+      ? [
+        {
+          title: "Completion Date",
+          dataIndex: "completion_date",
+          key: "completion_date",
+          sorter: (a, b) =>
+            new Date(a.completion_date || a.created_at) -
+            new Date(b.completion_date || b.created_at),
+          render: (_, record) => {
+            const date = record.completion_date || record.created_at;
 
-          return (
-             <span className="text-gray-500 font-medium">
+            return (
+              <span className="text-gray-500 font-medium">
+                {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
+              </span>
+            );
+          },
+        },
+      ]
+      : [
+        {
+          title: "Date",
+          dataIndex: "created_at",
+          key: "created_at",
+          sorter: (a, b) =>
+            new Date(a.created_at) - new Date(b.created_at),
+          render: (date) => (
+            <span className="text-gray-500 font-medium">
               {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
             </span>
-          );
+          ),
         },
-      },
-    ]
-  : [
-      {
-        title: "Date",
-        dataIndex: "created_at",
-        key: "created_at",
-        sorter: (a, b) =>
-          new Date(a.created_at) - new Date(b.created_at),
-        render: (date) => (
-          <span className="text-gray-500 font-medium">
-            {date ? dayjs(date).format("MMM D, YYYY h:mm A") : "-"}
-          </span>
-        ),
-      },
-    ]),
+      ]),
     {
       title: "Test Name",
       dataIndex: "test_name",
@@ -667,13 +681,46 @@ const FullLengthScoreCard = ({ record }) => {
     },
   ];
 
-  
+
+
+  if (actionParam === "viewResult" && submissionIdParam) {
+    return (
+      <div className="pb-10 animate-fadeIn">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-[#2E2725] m-0 flex items-center gap-2">
+            Test Report
+          </h1>
+          <Button
+            onClick={handleCloseModal}
+            className="flex items-center gap-2 rounded-lg font-medium shadow-sm hover:shadow-md transition-all border-gray-200 hover:border-gray-300"
+            size="large"
+          >
+            ← Back to Test List
+          </Button>
+        </div>
+
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[70vh]">
+          {testTypeParam === "practice" ? (
+            <PracticeTestReport
+              practiceTestId={submissionIdParam}
+              onClose={handleCloseModal}
+            />
+          ) : (
+            <Admin_Report_New
+              testSubmissionId={submissionIdParam}
+              onClose={handleCloseModal}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-10">
       {/* Page Title */}
       <h1 className="text-2xl font-bold text-[#2E2725] mb-2 flex items-center gap-2">
-     
+
         Test List
       </h1>
 
@@ -717,7 +764,7 @@ const FullLengthScoreCard = ({ record }) => {
             className="h-10 text-sm rounded-lg"
             prefix={<SearchOutlined className="text-gray-400 mr-1" />}
           />
-          
+
           <RangePicker
             className="h-10 w-64 rounded-lg"
             value={dateRange}
@@ -771,58 +818,77 @@ const FullLengthScoreCard = ({ record }) => {
             </Button>
           </div>
         )}
-          {/* Modern Segmented Pill Switcher Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100">
-            <div className="inline-flex items-center bg-gray-100/90 p-1 rounded-xl gap-1">
-              <button
-                onClick={() => setActiveTabKey("fullLength")}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${
-                  activeTabKey === "fullLength"
-                    ? "bg-[#f59e0b] text-white shadow-xs"
-                    : "text-gray-600 hover:text-gray-900"
+        {/* Modern Segmented Pill Switcher Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100">
+          <div className="inline-flex items-center bg-gray-100/90 p-1 rounded-xl gap-1">
+            <button
+              onClick={() => setActiveTabKey("fullLength")}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${activeTabKey === "fullLength"
+                  ? "bg-[#f59e0b] text-white shadow-xs"
+                  : "text-gray-600 hover:text-gray-900"
                 }`}
-              >
-                <span>Full Length Test</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                    activeTabKey === "fullLength"
-                      ? "bg-white/25 text-white"
-                      : "bg-gray-200 text-gray-700"
+            >
+              <span>Full Length Test</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTabKey === "fullLength"
+                    ? "bg-white/25 text-white"
+                    : "bg-gray-200 text-gray-700"
                   }`}
-                >
-                  {displayedFullLength.length}
-                </span>
-              </button>
+              >
+                {displayedFullLength.length}
+              </span>
+            </button>
 
-              <button
-                onClick={() => setActiveTabKey("practice")}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${
-                  activeTabKey === "practice"
-                    ? "bg-[#f59e0b] text-white shadow-xs"
-                    : "text-gray-600 hover:text-gray-900"
+            <button
+              onClick={() => setActiveTabKey("practice")}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${activeTabKey === "practice"
+                  ? "bg-[#f59e0b] text-white shadow-xs"
+                  : "text-gray-600 hover:text-gray-900"
                 }`}
-              >
-                <span>Practice Test</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                    activeTabKey === "practice"
-                      ? "bg-white/25 text-white"
-                      : "bg-gray-200 text-gray-700"
+            >
+              <span>Practice Test</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTabKey === "practice"
+                    ? "bg-white/25 text-white"
+                    : "bg-gray-200 text-gray-700"
                   }`}
-                >
-                  {displayedPractice.length}
-                </span>
-              </button>
-            </div>
+              >
+                {displayedPractice.length}
+              </span>
+            </button>
           </div>
+        </div>
 
-          {/* Render Table based on Segmented Switcher selection */}
-          {activeTabKey === "fullLength" ? (
+        {/* Render Table based on Segmented Switcher selection */}
+        {activeTabKey === "fullLength" ? (
+          loading && displayedFullLength.length === 0 ? (
+            <div className="bg-white rounded-xl p-4 mt-4 border border-gray-100 shadow-sm animate-pulse">
+              {/* Header Skeleton */}
+              <div className="flex gap-4 border-b border-gray-100 pb-4 mb-5">
+                <Skeleton.Button active size="small" style={{ width: 100 }} />
+                <Skeleton.Button active size="small" style={{ width: 160 }} />
+                <Skeleton.Button active size="small" style={{ width: 220 }} />
+                <Skeleton.Button active size="small" style={{ width: 120 }} />
+                <Skeleton.Button active size="small" style={{ width: 120 }} />
+                <Skeleton.Button active size="small" style={{ width: 80 }} />
+              </div>
+              {/* Rows Skeleton */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex gap-4 mb-6 items-center">
+                  <Skeleton.Button active size="small" style={{ width: 90, borderRadius: 16 }} />
+                  <Skeleton.Input active size="small" style={{ width: 140 }} />
+                  <Skeleton.Input active size="small" style={{ width: 200 }} />
+                  <Skeleton.Input active size="small" style={{ width: 120 }} />
+                  <Skeleton.Input active size="small" style={{ width: 120 }} />
+                  <Skeleton.Button active size="small" style={{ width: 70, borderRadius: 16 }} />
+                </div>
+              ))}
+            </div>
+          ) : (
             <Table
               size="small"
               columns={getTableColumns("fullLength")}
               dataSource={displayedFullLength}
-              loading={loading}
               expandable={{
                 showExpandColumn: false,
                 expandedRowRender: (record) => (
@@ -873,25 +939,81 @@ const FullLengthScoreCard = ({ record }) => {
                 }
               })}
               pagination={{
+                current: flPage,
+                pageSize: flPageSize,
+                onChange: (page, size) => {
+                  setFlPage(page);
+                  setFlPageSize(size);
+                },
                 position: ["topRight", "bottomRight"],
-                defaultPageSize: 10,
                 showSizeChanger: true,
-                showQuickJumper: true,
                 pageSizeOptions: ["10", "25", "50", "100"],
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} items`,
+                showTotal: (total, range) => {
+                  let inputValue = "";
+                  const totalPages = Math.ceil(total / flPageSize);
+                  const handleGoToPage = () => {
+                    const page = Number(inputValue);
+                    if (page >= 1 && page <= totalPages) {
+                      setFlPage(page);
+                    }
+                  };
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span>
+                        Showing {range[0]}–{range[1]} of {total}
+                      </span>
+                      <span>| Go to page:</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={totalPages}
+                        size="small"
+                        style={{ width: 70 }}
+                        onChange={(e) => (inputValue = e.target.value)}
+                        onPressEnter={handleGoToPage}
+                      />
+                      <Button type="primary" size="small" onClick={handleGoToPage}>
+                        Go
+                      </Button>
+                    </div>
+                  );
+                },
               }}
               bordered
               rowClassName={() => "group cursor-pointer hover:bg-slate-50/50 transition-colors"}
               className="shadow-sm rounded-lg overflow-hidden mt-0 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5 [&_.ant-table-pagination-top]:!my-1.5 [&_.ant-table-pagination-top]:!mt-0"
               rowKey={(record) => record.id || record.test_submission_id}
             />
+          )
+        ) : (
+          loading && displayedPractice.length === 0 ? (
+            <div className="bg-white rounded-xl p-4 mt-4 border border-gray-100 shadow-sm animate-pulse">
+              {/* Header Skeleton */}
+              <div className="flex gap-4 border-b border-gray-100 pb-4 mb-5">
+                <Skeleton.Button active size="small" style={{ width: 100 }} />
+                <Skeleton.Button active size="small" style={{ width: 160 }} />
+                <Skeleton.Button active size="small" style={{ width: 220 }} />
+                <Skeleton.Button active size="small" style={{ width: 120 }} />
+                <Skeleton.Button active size="small" style={{ width: 120 }} />
+                <Skeleton.Button active size="small" style={{ width: 80 }} />
+              </div>
+              {/* Rows Skeleton */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex gap-4 mb-6 items-center">
+                  <Skeleton.Button active size="small" style={{ width: 90, borderRadius: 16 }} />
+                  <Skeleton.Input active size="small" style={{ width: 140 }} />
+                  <Skeleton.Input active size="small" style={{ width: 200 }} />
+                  <Skeleton.Input active size="small" style={{ width: 120 }} />
+                  <Skeleton.Input active size="small" style={{ width: 120 }} />
+                  <Skeleton.Button active size="small" style={{ width: 70, borderRadius: 16 }} />
+                </div>
+              ))}
+            </div>
           ) : (
             <Table
               size="small"
               columns={getTableColumns("practice")}
               dataSource={displayedPractice}
-              loading={loading}
               expandable={{
                 showExpandColumn: false,
                 expandedRowRender: (record) => (
@@ -942,44 +1064,54 @@ const FullLengthScoreCard = ({ record }) => {
                 }
               })}
               pagination={{
+                current: prPage,
+                pageSize: prPageSize,
+                onChange: (page, size) => {
+                  setPrPage(page);
+                  setPrPageSize(size);
+                },
                 position: ["topRight", "bottomRight"],
-                defaultPageSize: 10,
                 showSizeChanger: true,
-                showQuickJumper: true,
                 pageSizeOptions: ["10", "25", "50", "100"],
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} items`,
+                showTotal: (total, range) => {
+                  let inputValue = "";
+                  const totalPages = Math.ceil(total / prPageSize);
+                  const handleGoToPage = () => {
+                    const page = Number(inputValue);
+                    if (page >= 1 && page <= totalPages) {
+                      setPrPage(page);
+                    }
+                  };
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span>
+                        Showing {range[0]}–{range[1]} of {total}
+                      </span>
+                      <span>| Go to page:</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={totalPages}
+                        size="small"
+                        style={{ width: 70 }}
+                        onChange={(e) => (inputValue = e.target.value)}
+                        onPressEnter={handleGoToPage}
+                      />
+                      <Button type="primary" size="small" onClick={handleGoToPage}>
+                        Go
+                      </Button>
+                    </div>
+                  );
+                },
               }}
               bordered
               rowClassName={() => "group cursor-pointer hover:bg-slate-50/50 transition-colors"}
               className="shadow-sm rounded-lg overflow-hidden mt-0 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5 [&_.ant-table-pagination-top]:!my-1.5 [&_.ant-table-pagination-top]:!mt-0"
               rowKey={(record) => record.id || record.test_submission_id}
             />
-          )}
-        </div>
-
-      {/* Test Result Modal */}
-      <Modal
-        open={showResultModal}
-        onCancel={handleCloseModal}
-        footer={null}
-        width="100%"
-        style={{ top: 30 }}
-        destroyOnClose
-        title="Test Report"
-      >
-        {testType === "practice" ? (
-          <PracticeTestReport
-            practiceTestId={submissionId}
-            onClose={handleCloseModal}
-          />
-        ) : (
-          <Admin_Report_New
-            testSubmissionId={submissionId}
-            onClose={handleCloseModal}
-          />
+          )
         )}
-      </Modal>
+      </div>
     </div>
   );
 };

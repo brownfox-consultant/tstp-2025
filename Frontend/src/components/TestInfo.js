@@ -15,48 +15,7 @@ function TestInfo({ currentSubjectIndex, currentSectionIndex }) {
   const currentSection = useSelector(
     (state) => state.test.currentArraySectionIndex
   );
-  const { goFullScreen } = useFullScreen();
-  useEffect(() => {
-  const handleKeyDown = (e) => {
-    if (
-      e.key === "F5" ||
-      (e.ctrlKey && e.key.toLowerCase() === "r")
-    ) {
-      e.preventDefault();
-      return false;
-    }
-  };
-
-  const handleContextMenu = (e) => {
-    e.preventDefault();
-  };
-
-  const handleFullscreenChange = () => {
-    if (!document.fullscreenElement) {
-      Modal.warning({
-        title: "Fullscreen Required",
-        content: "Please return to fullscreen mode.",
-        onOk: () => goFullScreen(),
-      });
-    }
-  };
-
-  document.addEventListener("keydown", handleKeyDown);
-  document.addEventListener("contextmenu", handleContextMenu);
-  document.addEventListener(
-    "fullscreenchange",
-    handleFullscreenChange
-  );
-
-  return () => {
-    document.removeEventListener("keydown", handleKeyDown);
-    document.removeEventListener("contextmenu", handleContextMenu);
-    document.removeEventListener(
-      "fullscreenchange",
-      handleFullscreenChange
-    );
-  };
-}, []);
+  // Presentational component
   return (
     <div className="my-10 space-y-3">
       <p className="text-2xl font-semibold border-b">

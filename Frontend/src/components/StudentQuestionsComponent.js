@@ -49,7 +49,18 @@ const [total, setTotal] = useState(0);
   const [topics, setTopics] = useState([]);
 
 
-  const difficultiesList = ["EASY", "MEDIUM", "HARD"];
+  const [difficultiesList, setDifficultiesList] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get(`${BASE_URL}/api/course/constants/`, {
+        withCredentials: true,
+      })
+      .then((res) => {
+        setDifficultiesList(res.data.difficultyList || []);
+      })
+      .catch(console.error);
+  }, []);
 
 
   useEffect(() => {

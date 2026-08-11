@@ -1,12 +1,12 @@
 import { getSubjectQuestions } from "@/app/services/authService";
-import { Card, Col, Empty, Row } from "antd";
+import { Card, Col, Empty, Row, Spin } from "antd";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import TableComponent from "./TableComponent";
 import EmptyTableComponent from "./EmptyTableComponent";
-import { 
-  ClockCircleOutlined, 
-  FileTextOutlined, 
+import {
+  ClockCircleOutlined,
+  FileTextOutlined,
   BookOutlined,
   CheckCircleFilled,
   ExclamationCircleFilled,
@@ -22,6 +22,7 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [current, setCurrent] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
   const [total, setTotal] = useState(0);
   const [topics, setTopics] = useState([]);
   const [descSearch, setDescSearch] = useState("");
@@ -40,6 +41,20 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
     if (selectedSection !== "none") {
       setLoading(true);
 
+      let temp = [];
+      let subject = subjects.find(
+        (sub) => sub.course_subject === selectedSection.course_subject_id
+      );
+      if (subject) {
+        subject.sections.forEach((section) => {
+          if (section.id !== selectedSection.section_id) {
+            section.questions.forEach((questionId) =>
+              temp.push(Number(questionId))
+            );
+          }
+        });
+      }
+
       getSubjectQuestions({
         courseSubId: selectedSection.course_subject_id,
         page: current,
@@ -47,34 +62,21 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
           is_active: true,
           test_type: "FULL_LENGTH_TEST",
           question_text: descSearch,
+          page_size: pageSize,
+          ...(temp.length > 0 && { exclude_ids: temp.join(',') })
         },
       })
         .then((res) => {
-          let temp = [];
-
           const { results, count, current_page } = res.data;
-          let subject = subjects.find(
-            (subject) =>
-              subject.course_subject === selectedSection.course_subject_id
-          );
-          subject.sections.forEach((section) => {
-            if (section.id !== selectedSection.section_id) {
-              section.questions.forEach((questionId) =>
-                temp.push(Number(questionId))
-              );
-            }
-          });
 
-          setDataSource(
-            results.questions.filter(({ id }) => !temp.includes(id))
-          );
+          setDataSource(results.questions);
           setTopics(results.topics);
           setCurrent(current_page);
           setTotal(count);
         })
         .finally(() => setLoading(false));
     }
-  }, [selectedSection, current, descSearch]);
+  }, [selectedSection, current, pageSize, descSearch]);
 
   // ✅ UseEffect to handle test readiness logic safely
   useEffect(() => {
@@ -168,8 +170,8 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
         }}
         className={`
           relative cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 bg-white
-          ${isComplete 
-            ? 'border-green-300 hover:border-green-400 hover:shadow-lg hover:shadow-green-100' 
+          ${isComplete
+            ? 'border-green-300 hover:border-green-400 hover:shadow-lg hover:shadow-green-100'
             : 'border-gray-200 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-100'
           }
         `}
@@ -229,7 +231,14 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
     );
   };
 
-  return format_type === "DYNAMIC" ? (
+  return (
+    <>
+      {loading && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm">
+          <Spin size="large" />
+        </div>
+      )}
+      {format_type === "DYNAMIC" ? (
     <Empty description="Questions will be added dynamically for subjects and sections." />
   ) : (
     <div className={selectedSection === "none" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-6"}>
@@ -248,12 +257,12 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
                 key={subject_id}
                 className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 overflow-hidden"
               >
-                <SubjectHeader 
-                  subjectName={subject_name} 
-                  sections={sections} 
+                <SubjectHeader
+                  subjectName={subject_name}
+                  sections={sections}
                   colorIndex={index}
                 />
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sections
                     .sort((a, b) => a.order - b.order)
@@ -291,7 +300,7 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
                   <p className="text-white/80 text-sm">{selectedSection.subject_name}</p>
                 </div>
               </div>
-              
+
               <div className="bg-white/20 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm border border-white/10">
                 <FileTextOutlined />
                 <span>{selectedRowKeys.length} / {selectedSection.no_of_questions}</span>
@@ -316,6 +325,9 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
               descSearch={descSearch}
               setDescSearch={setDescSearch}
               setDataSource={setDataSource}
+              current={current}
+              pageSize={pageSize}
+              setPageSize={setPageSize}
             />
           ) : (
             <TableComponent
@@ -334,11 +346,16 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
               descSearch={descSearch}
               setDescSearch={setDescSearch}
               setDataSource={setDataSource}
+              current={current}
+              pageSize={pageSize}
+              setPageSize={setPageSize}
             />
           )}
         </div>
       )}
     </div>
+      )}
+    </>
   );
 }
 

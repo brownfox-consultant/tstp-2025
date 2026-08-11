@@ -31,6 +31,7 @@ class CourseFilter(filters.FilterSet):
         ).distinct()
 
 class QuestionFilter(filters.FilterSet):
+    exclude_ids = IntegerListFilter(field_name='id', exclude=True)
     question_text = filters.CharFilter(method='filter_question_text')
     srno = filters.NumberFilter(field_name='srno')
     option_text = filters.CharFilter(method='filter_option_text')

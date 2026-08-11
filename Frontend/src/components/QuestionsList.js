@@ -12,7 +12,7 @@ import {
 import { Button, Col, Row, Table, Input, Space, Popconfirm, Popover, Tag, Badge, Tooltip, Modal } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import { softDeactivateQuestion } from "@/app/services/authService";
-import { CloseOutlined} from '@ant-design/icons'
+import { CloseOutlined } from '@ant-design/icons'
 
 import Highlighter from "react-highlight-words";
 import {
@@ -20,6 +20,7 @@ import {
   deleteQuestion,
   getSubjectQuestions,
   getSubjectTopics,
+  getQuestionDetails,
 } from "@/app/services/authService";
 import ViewSuggestionModal from "./ViewSuggestionModal";
 import EditQuestionForm from "./EditQuestionForm";
@@ -70,12 +71,37 @@ function QuestionsList({
   });
   const searchInput = useRef(null);
 
-  // Edit Modal State
+  // URL State Management for Edit/View
+  const actionParam = searchParams.get("action");
+  const questionIdParam = searchParams.get("questionId");
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editQuestionData, setEditQuestionData] = useState(null);
   const [topicOptions, setTopicOptions] = useState([]);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewQuestionData, setViewQuestionData] = useState(null);
+
+  // Fetch topics and question data on reload if in edit/view mode
+  useEffect(() => {
+    if (questionIdParam && (actionParam === "edit" || actionParam === "view")) {
+      const courseSubjectId = searchParams.get("course_subject_id");
+      if (courseSubjectId && topicOptions.length === 0) {
+        getSubjectTopics(courseSubjectId).then(res => {
+          setTopicOptions(res.data.map(opt => ({ ...opt, label: opt.name, value: opt.name })));
+        });
+      }
+
+      if (actionParam === "edit" && !editQuestionData) {
+        getQuestionDetails(questionIdParam).then(res => {
+          setEditQuestionData(res.data);
+        }).catch(err => console.error("Error fetching question", err));
+      } else if (actionParam === "view" && !viewQuestionData) {
+        getQuestionDetails(questionIdParam).then(res => {
+          setViewQuestionData(res.data);
+        }).catch(err => console.error("Error fetching question", err));
+      }
+    }
+  }, [actionParam, questionIdParam]);
 
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
@@ -473,32 +499,34 @@ function QuestionsList({
       render: (record) => {
         return (
 
-          
+
 
           <Space>
-      <EyeOutlined
-  className="text-blue-500 cursor-pointer"
-  onClick={async () => {
-    // Fetch topics if needed
-    const courseSubjectId =
-      record.course_subject || searchParams.get("course_subject_id");
+            <EyeOutlined
+              className="text-blue-500 cursor-pointer"
+              onClick={async () => {
+                // Fetch topics if needed
+                const courseSubjectId =
+                  record.course_subject || searchParams.get("course_subject_id");
 
-    let topicOptions = [];
-    if (courseSubjectId) {
-      const res = await getSubjectTopics(courseSubjectId);
-      topicOptions = res.data.map(opt => ({
-        ...opt,
-        label: opt.name,
-        value: opt.name,
-      }));
-    }
+                let updatedTopicOptions = [...topicOptions];
+                if (courseSubjectId && topicOptions.length === 0) {
+                  const res = await getSubjectTopics(courseSubjectId);
+                  updatedTopicOptions = res.data.map(opt => ({
+                    ...opt,
+                    label: opt.name,
+                    value: opt.name,
+                  }));
+                  setTopicOptions(updatedTopicOptions);
+                }
 
-    // Set view data and open view modal
-    setViewQuestionData(record);
-    setTopicOptions(topicOptions);
-    setIsViewModalOpen(true);
-  }}
-/>
+                // Set view data and update URL
+                setViewQuestionData(record);
+                updatedSearchParams.set("action", "view");
+                updatedSearchParams.set("questionId", record.id);
+                router.push(`${pathname}?${updatedSearchParams.toString()}`);
+              }}
+            />
             <Popover
               content={
                 role == "admin"
@@ -515,13 +543,15 @@ function QuestionsList({
                   if (role != "admin" && record.has_suggestion) {
                   } else {
                     const courseSubjectId = record.course_subject || searchParams.get("course_subject_id");
-                    if (courseSubjectId) {
+                    if (courseSubjectId && topicOptions.length === 0) {
                       getSubjectTopics(courseSubjectId).then(res => {
                         setTopicOptions(res.data.map(opt => ({ ...opt, label: opt.name, value: opt.name })));
                       });
                     }
                     setEditQuestionData(record);
-                    setIsEditModalOpen(true);
+                    updatedSearchParams.set("action", "edit");
+                    updatedSearchParams.set("questionId", record.id);
+                    router.push(`${pathname}?${updatedSearchParams.toString()}`);
                   }
                 }}
               />
@@ -583,13 +613,14 @@ function QuestionsList({
         option_text: filters.option_text || "",
         question_text: filters.question_text || searchText || "",
         srno: filters.srno || "",
-         has_explanation: filters.has_explanation || "",   // <-- ADD THIS
+        has_explanation: filters.has_explanation || "",   // <-- ADD THIS
         is_active:
           filters.is_active && filters.is_active.length > 0
             ? (filters.is_active[0] === true || filters.is_active[0] === "true"
               ? "true"
               : "false")
             : "",
+        page_size: Number(searchParams.get("page_size")) || 10,
       };
 
       // console.log(
@@ -601,7 +632,7 @@ function QuestionsList({
       // );
       getSubjectQuestions({
         courseSubId: Number(searchParams.get("course_subject_id")),
-        page: Number(searchParams.get("page")),
+        page: Number(searchParams.get("page")) || 1,
         question_text: searchText,
         params: paramsPayload,
       })
@@ -625,7 +656,7 @@ function QuestionsList({
   ]);
 
   // Helper to update URL with filters and page
-  const updateURL = (page = 1, filtersObj = {}, query = searchText) => {
+  const updateURL = (page = 1, filtersObj = {}, query = searchText, pageSize = Number(searchParams.get("page_size")) || 10) => {
     const newParams = new URLSearchParams(searchParams.toString());
 
     // Set filters
@@ -653,6 +684,7 @@ function QuestionsList({
 
     // Set page
     newParams.set("page", page);
+    newParams.set("page_size", pageSize);
 
     router.replace(`${pathname}?${newParams.toString()}`);
   };
@@ -660,44 +692,44 @@ function QuestionsList({
 
   const handleTableChange = (pagination, tableFilters) => {
 
-  const currentFilters = {
-    difficulty: searchParams.get("difficulty")?.split(",") || [],
-    question_type: searchParams.get("question_type")?.split(",") || [],
-    test_type: searchParams.get("test_type")?.split(",") || [],
-    topic: searchParams.get("topic")?.split(",") || [],
-    sub_topic: searchParams.get("sub_topic")?.split(",") || [],
-    question_subtype: searchParams.get("question_subtype")?.split(",") || [],
-    has_explanation: searchParams.get("has_explanation") || "",
-    is_active: searchParams.get("is_active")
-      ? [searchParams.get("is_active") === "true"]
-      : [],
-  };
+    const currentFilters = {
+      difficulty: searchParams.get("difficulty")?.split(",") || [],
+      question_type: searchParams.get("question_type")?.split(",") || [],
+      test_type: searchParams.get("test_type")?.split(",") || [],
+      topic: searchParams.get("topic")?.split(",") || [],
+      sub_topic: searchParams.get("sub_topic")?.split(",") || [],
+      question_subtype: searchParams.get("question_subtype")?.split(",") || [],
+      has_explanation: searchParams.get("has_explanation") || "",
+      is_active: searchParams.get("is_active")
+        ? [searchParams.get("is_active") === "true"]
+        : [],
+    };
 
-  const mergedFilters = { ...currentFilters };
+    const mergedFilters = { ...currentFilters };
 
-  Object.keys(tableFilters).forEach((key) => {
-    if (tableFilters[key]) {
+    Object.keys(tableFilters).forEach((key) => {
       mergedFilters[key] = tableFilters[key];
-    }
-  });
+    });
 
-  updateURL(pagination.current, mergedFilters, searchText);
-};
+    updateURL(pagination.current, mergedFilters, searchText, pagination.pageSize);
+  };
 
 
   const paginationConfig = {
     current: Number(searchParams.get("page")) || 1,
     total: total,
-    pageSize: 15,
-    showSizeChanger: false,
+    pageSize: Number(searchParams.get("page_size")) || 10,
+    showSizeChanger: true,
+    pageSizeOptions: ['15', '25', '50', '100'],
 
-    // Position top-left and bottom-right
-    position: ["topLeft", "bottomRight"],
+    // Position bottom-right
+    position: ["bottomRight"],
 
     // Custom pagination footer (shared for both)
     showTotal: (total, range) => {
       let inputValue = "";
-      const totalPages = Math.ceil(total / 15);
+      const currentPageSize = Number(searchParams.get("page_size")) || 15;
+      const totalPages = Math.ceil(total / currentPageSize);
 
       const handleGoToPage = () => {
         const page = Number(inputValue);
@@ -732,6 +764,97 @@ function QuestionsList({
 
 
 
+  const handleBackToList = () => {
+    updatedSearchParams.delete("action");
+    updatedSearchParams.delete("questionId");
+    router.push(`${pathname}?${updatedSearchParams.toString()}`);
+    setEditQuestionData(null);
+    setViewQuestionData(null);
+    setUpdated(prev => !prev);
+  };
+
+  if (actionParam === "edit") {
+    return (
+      <div className="bg-white rounded-lg p-6 shadow-sm min-h-screen">
+        <div className="mb-4">
+          <Button onClick={handleBackToList} type="default">
+            ← Back to Questions
+          </Button>
+        </div>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+            <EditOutlined className="text-[#F59405] text-xl" />
+          </div>
+          <div>
+            <h2 className="text-black text-xl font-bold m-0">Edit Question</h2>
+            <p className="text-gray-500 text-sm m-0">
+              {editQuestionData?.topic && `Topic: ${editQuestionData.topic}`}
+            </p>
+          </div>
+        </div>
+        <div className="p-4 bg-gray-50">
+          {editQuestionData ? (
+            <EditQuestionForm
+              key={editQuestionData.id}
+              initialValues={editQuestionData}
+              action="edit"
+              topicOptionsParam={topicOptions}
+              subTopicOptionsParam={
+                topicOptions.find((t) => t.name === editQuestionData.topic)?.subtopics || []
+              }
+              courseSubId={editQuestionData.course_subject || editQuestionData.course_subject_id}
+              role={role}
+              updated={updated}
+              setUpdated={setUpdated}
+              hideButtons={false}
+              closeModal={handleBackToList}
+            />
+          ) : (
+            <div className="text-center py-10">Loading question data...</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (actionParam === "view") {
+    return (
+      <div className="bg-white rounded-lg p-6 shadow-sm min-h-screen">
+        <div className="mb-4">
+          <Button onClick={handleBackToList} type="default">
+            ← Back to Questions
+          </Button>
+        </div>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+            <EyeOutlined className="text-[#007FBC] text-xl" />
+          </div>
+          <div>
+            <h2 className="text-black text-xl font-bold m-0">View Question</h2>
+            <p className="text-gray-500 text-sm m-0">
+              {viewQuestionData?.topic && `Topic: ${viewQuestionData.topic}`}
+            </p>
+          </div>
+        </div>
+        <div className="p-4 bg-gray-50">
+          {viewQuestionData ? (
+            <ViewQuestionForm
+              key={viewQuestionData.id}
+              initialValues={viewQuestionData}
+              topicOptionsParam={topicOptions}
+              subTopicOptionsParam={
+                topicOptions.find((t) => t.name === viewQuestionData.topic)?.subtopics || []
+              }
+              closeModal={handleBackToList}
+            />
+          ) : (
+            <div className="text-center py-10">Loading question data...</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <Table
@@ -765,137 +888,7 @@ function QuestionsList({
         }}
       />
 
-      {/* Edit Question Modal - Modern UI */}
-      <Modal
-        open={isEditModalOpen}
-        onCancel={() => {
-          setIsEditModalOpen(false);
-          setEditQuestionData(null);
-          setUpdated((prev) => !prev);
-        }}
-        width={1300}
-        centered
-        footer={null}
-        closable={false}
-        className="edit-question-modal"
-        styles={{
-          body: { padding: 0 },
-          content: { borderRadius: '16px', overflow: 'hidden' }
-        }}
-      >
-        {/* Header */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
-                <EditOutlined className="text-[#F59405] text-xl" />
-              </div>
-              <div>
-                <h2 className="text-black text-xl font-bold m-0">Edit Question</h2>
-                <p className="text-gray-500 text-sm m-0">
-                  {editQuestionData?.topic && `Topic: ${editQuestionData.topic}`}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setIsEditModalOpen(false);
-                setEditQuestionData(null);
-                setUpdated((prev) => !prev);
-              }}
-              className="w-8 h-8 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 cursor-pointer border-0 bg-transparent rounded-md"
-            >
-              <span className="text-gray-500 text-lg"><CloseOutlined /></span>
-            </button>
-          </div>
-        </div>
 
-        {/* Form Content */}
-        <div className="p-4 max-h-[70vh] overflow-y-auto bg-gray-50">
-          {editQuestionData && (
-            <EditQuestionForm
-              key={editQuestionData.id}
-              initialValues={editQuestionData}
-              action="edit"
-              topicOptionsParam={topicOptions}
-              subTopicOptionsParam={
-                topicOptions.find((t) => t.name === editQuestionData.topic)?.subtopics || []
-              }
-              courseSubId={editQuestionData.course_subject || editQuestionData.course_subject_id}
-              role={role}
-              updated={updated}
-              setUpdated={setUpdated}
-              hideButtons={false}
-              closeModal={() => {
-                setIsEditModalOpen(false);
-                setEditQuestionData(null);
-                setUpdated((prev) => !prev);
-              }}
-            />
-          )}
-        </div>
-      </Modal>
-      {/* View Question Modal */}
-<Modal
-  open={isViewModalOpen}
-  onCancel={() => {
-    setIsViewModalOpen(false);
-    setViewQuestionData(null);
-  }}
-  width={1300}
-  centered
-  footer={null}
-  closable={false}
-  className="view-question-modal"
-  styles={{
-    body: { padding: 0 },
-    content: { borderRadius: '16px', overflow: 'hidden' }
-  }}
->
-  {/* Header */}
-  <div className="mb-2">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-          <EyeOutlined className="text-[#007FBC] text-xl" />
-        </div>
-        <div>
-          <h2 className="text-black text-xl font-bold m-0">View Question</h2>
-          <p className="text-gray-500 text-sm m-0">
-            {viewQuestionData?.topic && `Topic: ${viewQuestionData.topic}`}
-          </p>
-        </div>
-      </div>
-      <button
-        onClick={() => {
-          setIsViewModalOpen(false);
-          setViewQuestionData(null);
-        }}
-        className="w-8 h-8 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 cursor-pointer border-0 bg-transparent rounded-md"
-      >
-        <span className="text-gray-500 text-lg"><CloseOutlined /></span>
-      </button>
-    </div>
-  </div>
-
-  {/* Form Content */}
-  <div className="p-4 max-h-[70vh] overflow-y-auto bg-gray-50">
-    {viewQuestionData && (
-      <ViewQuestionForm
-        key={viewQuestionData.id}
-        initialValues={viewQuestionData}
-        topicOptionsParam={topicOptions}
-        subTopicOptionsParam={
-          topicOptions.find((t) => t.name === viewQuestionData.topic)?.subtopics || []
-        }
-        closeModal={() => {
-          setIsViewModalOpen(false);
-          setViewQuestionData(null);
-        }}
-      />
-    )}
-  </div>
-</Modal>
     </>
   );
 }

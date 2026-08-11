@@ -50,6 +50,16 @@ const customSelectStyles = {
     borderRadius: '6px',
     backgroundColor: 'white',
   }),
+  valueContainer: (base) => ({
+    ...base,
+    maxHeight: '150px',
+    overflowY: 'auto',
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
+    '&::-webkit-scrollbar': {
+      display: 'none',
+    },
+  }),
   option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected 
@@ -87,6 +97,7 @@ const customSelectStyles = {
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
     zIndex: 9999,
   }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
 };
 
 function PracticeTestForm() {
@@ -415,7 +426,9 @@ useEffect(() => {
                           getOptionValue={(e) => e.name}
                           placeholder="Select Course"
                           components={{ DropdownIndicator }}
+                          
                           styles={customSelectStyles}
+                          menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                           isClearable
                         />
                       </div>
@@ -434,7 +447,9 @@ useEffect(() => {
                           options={subjectOptions}
                           placeholder="Select Subject"
                           components={{ DropdownIndicator }}
+                          
                           styles={customSelectStyles}
+                          menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                           isClearable
                         />
                       </div>
@@ -494,7 +509,9 @@ useEffect(() => {
                         ]}
                         placeholder="Select topics..."
                         components={{ DropdownIndicator }}
+                          
                         styles={customSelectStyles}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                         isClearable
                       />
                     </div>
@@ -542,7 +559,9 @@ useEffect(() => {
                           ]}
                           placeholder="Choose sub-topics..."
                           components={{ DropdownIndicator }}
+                          
                           styles={customSelectStyles}
+                          menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                           isClearable
                         />
                       </div>
@@ -587,7 +606,9 @@ useEffect(() => {
                           ]}
                           placeholder="Choose difficulty..."
                           components={{ DropdownIndicator }}
+                          
                           styles={customSelectStyles}
+                          menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                           isClearable
                         />
                       </div>

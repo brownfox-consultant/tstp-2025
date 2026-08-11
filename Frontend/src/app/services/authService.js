@@ -82,8 +82,8 @@ export const updateUser = (userId, data) => {
       withCredentials: true,
       headers: {
         "ngrok-skip-browser-warning": "69420",
-         "X-CSRFToken": window.localStorage.getItem("csrfToken"),
-        
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+
       },
     })
     .catch(handleAPIError);
@@ -137,7 +137,7 @@ export const logoutService = (csrfToken) => {
           "X-CSRFToken": window.localStorage.getItem("csrfToken"),
         },
       }
-      
+
     )
     .catch(handleAPIError);
 };
@@ -192,11 +192,10 @@ export const getSubjectQuestions = ({
   page = 1,
   description = null,
   params,
-  page_size = 15,
 }) => {
   return axios
     .get(`${GET_SUBJECT_ENTITIES}/${courseSubId}/questions/`, {
-      params: { page: page, description, size: page_size, ...params },
+      params: { page: page, description, ...params },
       withCredentials: true,
       headers: {
         "ngrok-skip-browser-warning": "69420",
@@ -295,10 +294,10 @@ export const deleteUser = (id) => {
     .catch(handleAPIError);
 };
 
-export const getRegisteredStudents = (page = 1,search = "") => {
+export const getRegisteredStudents = (page = 1, search = "") => {
   return axios
     .get(GET_REGISTERED_STUDENTS, {
-      params: { page: page ,search:search},
+      params: { page: page, search: search },
       withCredentials: true,
       headers: {
         "ngrok-skip-browser-warning": "69420",
@@ -318,10 +317,10 @@ export const approveStudent = (payload) => {
     .catch(handleAPIError);
 };
 
-export const getUpcomingOrFreeSubStudents = (page = 1,search = "") => {
+export const getUpcomingOrFreeSubStudents = (page = 1, search = "", pageSize = 10) => {
   return axios
     .get(UPCOMING_OR_FREE_SUBSCRIPTION, {
-      params: { page: page,search :search },
+      params: { page: page, search: search, page_size: pageSize },
       withCredentials: true,
       headers: {
         "ngrok-skip-browser-warning": "69420",
@@ -529,7 +528,7 @@ export const postOnSectionTimeUp = (testId, payload) => {
 };
 
 export const raiseDoubt = (payload) => {
-  console.log("payload",payload)
+  console.log("payload", payload)
   return axios
     .post(DOUBT_BASE, payload, {
       withCredentials: true,
@@ -637,8 +636,8 @@ export const searchCourses = async (query) => {
   return axios.get(`${BASE_URL}/api/course/`, {
     params: { search: query },
   }, {
-        withCredentials: true,
-      });
+    withCredentials: true,
+  });
 };
 
 export const getTestAssignedStudents = (id, page) => {
@@ -955,16 +954,16 @@ export const getNotificationList = () => {
     .catch(handleAPIError);
 };
 
-export const getStudentCountByCourse = () => { 
+export const getStudentCountByCourse = () => {
   return axios
-  .get(`${student_count_by_course_BASE_URL}`, {
-    withCredentials: true,
-    headers: {
-      "ngrok-skip-browser-warning": "69420",
-    },
-  })
-  .catch(handleAPIError);
-  
+    .get(`${student_count_by_course_BASE_URL}`, {
+      withCredentials: true,
+      headers: {
+        "ngrok-skip-browser-warning": "69420",
+      },
+    })
+    .catch(handleAPIError);
+
   // Adjust the endpoint as per your setup
 };
 
@@ -1054,11 +1053,12 @@ export const getPracticeQuestionCount = (payload) => {
   return axios.post(
     `${BASE_URL}/api/practice/practice-question-count/`,
     payload,
-    { withCredentials: true,
+    {
+      withCredentials: true,
       headers: {
         "X-CSRFToken": window.localStorage.getItem("csrfToken"),
       },
-     }
+    }
   );
 };
 
@@ -1111,7 +1111,7 @@ export async function deleteTestAssignment(test_submission_id) {
   return await axios.delete(`${BASE_URL}/api/test/delete-assignment`, {
     withCredentials: true,
     params: { test_submission_id },
-     headers: {
+    headers: {
       "X-CSRFToken": window.localStorage.getItem("csrfToken"),
       "Content-Type": "multipart/form-data",
       "ngrok-skip-browser-warning": "69420",

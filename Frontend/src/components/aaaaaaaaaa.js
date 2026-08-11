@@ -79,7 +79,7 @@ export default function Dashboard() {
     }
     return { date_range: selectedFilter };
   }, [selectedFilter, customStartDate, customEndDate]);
-  
+
 
   useEffect(() => {
     axios.get(GET_Courses).then((res) => {
@@ -100,44 +100,44 @@ export default function Dashboard() {
       }));
       setCourseChartData(formatted);
     });
-   
+
   }, []);
 
   useEffect(() => {
-  const fetchUnreadNotifications = async () => {
-    try {
-      let params = {};
-      let res;
+    const fetchUnreadNotifications = async () => {
+      try {
+        let params = {};
+        let res;
 
-      if (selectedFilter === "custom") {
-        if (customStartDate && customEndDate) {
-          params = {
-            start_date: customStartDate,
-            end_date: customEndDate,
-          };
+        if (selectedFilter === "custom") {
+          if (customStartDate && customEndDate) {
+            params = {
+              start_date: customStartDate,
+              end_date: customEndDate,
+            };
+          } else {
+            return; // 🔁 Don't run if both dates aren't selected
+          }
         } else {
-          return; // 🔁 Don't run if both dates aren't selected
+          params = {
+            filter: selectedFilter,
+          };
         }
-      } else {
-        params = {
-          filter: selectedFilter,
-        };
+
+        res = await axios.get(`${BASE_URL}/api/notification/unread/`, {
+          params,
+          withCredentials: true,
+        });
+
+        setNotificationCounts(res.data);
+      } catch (err) {
+        console.error("Unread notification fetch error:", err);
+        setNotificationCounts({});
       }
+    };
 
-      res = await axios.get(`${BASE_URL}/api/notification/unread/`, {
-        params,
-        withCredentials: true,
-      });
-
-      setNotificationCounts(res.data);
-    } catch (err) {
-      console.error("Unread notification fetch error:", err);
-      setNotificationCounts({});
-    }
-  };
-
-  fetchUnreadNotifications();
-}, [selectedFilter, customStartDate, customEndDate]);
+    fetchUnreadNotifications();
+  }, [selectedFilter, customStartDate, customEndDate]);
 
 
 
@@ -170,7 +170,7 @@ export default function Dashboard() {
     axios
       .get(`${BASE_URL}/api/test/course-wise-time/`, {
         params: {
-          ...finalDateParams,  
+          ...finalDateParams,
           student_id: scoreStudent, course_id: selectedCourse
         },
         withCredentials: true,
@@ -207,7 +207,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 grid gap-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           {["last_month", "last_week", "today"].map((val) => (
             <button
@@ -218,72 +218,70 @@ export default function Dashboard() {
                 setCustomStartDate("");
                 setCustomEndDate("");
               }}
-              className={`px-4 py-1 text-sm rounded-md ${
-                selectedFilter === val ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"
-              }`}
+              className={`px-4 py-1 text-sm rounded-md ${selectedFilter === val ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"
+                }`}
             >
               {val.replace("_", " ")}
             </button>
           ))}
         </div>
-       <div className="relative">
-  <button
-    onClick={() => {
-      setShowDatePicker(!showDatePicker);
-      setSelectedFilter("custom");
-    }}
-    className={`flex items-center gap-2 px-4 py-1 text-sm rounded-md ${
-      selectedFilter === "custom" ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"
-    }`}
-  >
-    📅 Custom date
-  </button>
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowDatePicker(!showDatePicker);
+              setSelectedFilter("custom");
+            }}
+            className={`flex items-center gap-2 px-4 py-1 text-sm rounded-md ${selectedFilter === "custom" ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"
+              }`}
+          >
+            📅 Custom date
+          </button>
 
-  {showDatePicker && (
-    <div className="absolute right-0 z-10 mt-2 w-72 bg-white border border-gray-200 shadow-xl rounded-md p-4 space-y-3">
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-gray-600 font-medium">Start Date</label>
-        <input
-          type="date"
-          value={customStartDate}
-          onChange={(e) => setCustomStartDate(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring focus:border-blue-300"
-        />
-      </div>
+          {showDatePicker && (
+            <div className="absolute right-0 z-10 mt-2 w-72 bg-white border border-gray-200 shadow-xl rounded-md p-4 space-y-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-gray-600 font-medium">Start Date</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring focus:border-blue-300"
+                />
+              </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-gray-600 font-medium">End Date</label>
-        <input
-          type="date"
-          value={customEndDate}
-          onChange={(e) => setCustomEndDate(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring focus:border-blue-300"
-        />
-      </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-gray-600 font-medium">End Date</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring focus:border-blue-300"
+                />
+              </div>
 
-      <div className="flex justify-between items-center pt-2">
-        <button
-          onClick={() => {
-            setCustomStartDate("");
-            setCustomEndDate("");
-            setShowDatePicker(false);
-            setSelectedFilter("last_month"); // or any default
-          }}
-          className="text-xs text-gray-500 hover:text-gray-700"
-        >
-          Clear
-        </button>
+              <div className="flex justify-between items-center pt-2">
+                <button
+                  onClick={() => {
+                    setCustomStartDate("");
+                    setCustomEndDate("");
+                    setShowDatePicker(false);
+                    setSelectedFilter("last_month"); // or any default
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Clear
+                </button>
 
-        <button
-          onClick={() => setShowDatePicker(false)}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Done
-        </button>
-      </div>
-    </div>
-  )}
-</div>
+                <button
+                  onClick={() => setShowDatePicker(false)}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
       </div>
 
@@ -307,7 +305,7 @@ export default function Dashboard() {
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip
-            cursor={{ fill: 'transparent' }}
+              cursor={{ fill: 'transparent' }}
             />
             <Bar dataKey="value" fill="#fbbf24" radius={[6, 6, 0, 0]} />
           </BarChart>
@@ -341,7 +339,7 @@ export default function Dashboard() {
             <XAxis dataKey="name" />
             <YAxis domain={[0, 100]} tickFormatter={(tick) => `${tick}`} />
             <Tooltip
-             cursor={{ fill: 'transparent' }} 
+              cursor={{ fill: 'transparent' }}
               formatter={(value) => `${value} `} />
             <Bar dataKey="value" fill="#fde68a" radius={[6, 6, 0, 0]} />
           </BarChart>

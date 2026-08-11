@@ -40,6 +40,9 @@ function TableComponent({
   descSearch,
   setDescSearch,
   setDataSource,
+  current,
+  pageSize = 15,
+  setPageSize,
 }) {
   const { no_of_questions } = sectionDetails;
 
@@ -299,11 +302,47 @@ function TableComponent({
   return role == "admin" ? (
     <Table
       pagination={{
-        showSizeChanger: false,
-        onShowSizeChange: false,
-        pageSize: 15,
+        current: current,
+        showSizeChanger: true,
+        pageSizeOptions: ['15', '25', '50', '100'],
+        onShowSizeChange: (current, size) => {
+          if (setPageSize) setPageSize(size);
+          setCurrent(1);
+        },
+        pageSize: pageSize,
         total: total,
         onChange: (page) => setCurrent(page),
+        position: ["topLeft", "bottomRight"],
+        showTotal: (total, range) => {
+          let inputValue = "";
+          const totalPages = Math.ceil(total / pageSize);
+          const handleGoToPage = () => {
+            const page = Number(inputValue);
+            if (page >= 1 && page <= totalPages) {
+              setCurrent(page);
+            }
+          };
+          return (
+            <div className="flex items-center gap-2">
+              <span>
+                Showing {range[0]}–{range[1]} of {total}
+              </span>
+              <span>| Go to page:</span>
+              <Input
+                type="number"
+                min={1}
+                max={totalPages}
+                size="small"
+                style={{ width: 70 }}
+                onChange={(e) => (inputValue = e.target.value)}
+                onPressEnter={handleGoToPage}
+              />
+              <Button type="primary" size="small" onClick={handleGoToPage}>
+                Go
+              </Button>
+            </div>
+          );
+        },
       }}
       rowKey={(record) => record.id}
       rowSelection={rowSelection}

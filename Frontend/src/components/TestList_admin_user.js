@@ -4,7 +4,7 @@ import { getTestsList } from "@/app/services/authService";
 import { useGlobalContext } from "@/context/store";
 import { resetTestSlice } from "@/lib/features/test/testSlice";
 import useFullScreen from "@/utils/useFullScreen";
-import { WarningOutlined } from "@ant-design/icons";
+import { WarningOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { Button, Popover, Table, Pagination, Input, Modal } from "antd";
 import dayjs from "dayjs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -34,7 +34,6 @@ function TestList_admin_user({ studentId }) {
   const { setTestRunning, setCollapsed } = useGlobalContext();
   const { isFullScreen, goFullScreen, exitFullScreen } = useFullScreen();
 
-  const [showResultModal, setShowResultModal] = useState(false);
   const [submissionId, setSubmissionId] = useState();
   const dispatch = useDispatch();
   const [pageSize, setPageSize] = useState(10);
@@ -42,6 +41,10 @@ function TestList_admin_user({ studentId }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const debounceTimeoutRef = useRef(null);
+
+  const actionParam = searchParams.get("action");
+  const subActionParam = searchParams.get("subAction");
+  const reportSubmissionIdParam = searchParams.get("reportSubmissionId");
 
   useEffect(() => {
     setTestRunning(false);
@@ -53,6 +56,7 @@ function TestList_admin_user({ studentId }) {
     setTableLoading(true);
     const params = {
       page: current,
+      page_size: pageSize,
     };
     if (studentId) {
       params.student_id = studentId;
@@ -85,7 +89,7 @@ function TestList_admin_user({ studentId }) {
         window.sessionStorage.removeItem("remaining_time");
       })
       .finally(() => setTableLoading(false));
-  }, [current, sortParams, debouncedSearchTerm, studentIdFromParam]);
+  }, [current, pageSize, sortParams, debouncedSearchTerm, studentIdFromParam]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -179,8 +183,10 @@ function TestList_admin_user({ studentId }) {
             <Button
               type="link"
               onClick={() => {
-                setSubmissionId(record.test_submission_id);
-                setShowResultModal(true);
+                const urlParams = new URLSearchParams(searchParams);
+                urlParams.set("subAction", "viewTestReportAdmin");
+                urlParams.set("reportSubmissionId", record.test_submission_id);
+                router.push(`${pathname}?${urlParams.toString()}`);
               }}
               style={{
                 display: "flex",
@@ -265,61 +271,103 @@ function TestList_admin_user({ studentId }) {
     setSortParams(sortObj);
   };
 
+  const handleCloseModal = () => {
+    const urlParams = new URLSearchParams(searchParams);
+    urlParams.delete("subAction");
+    urlParams.delete("reportSubmissionId");
+    router.push(`${pathname}?${urlParams.toString()}`);
+  };
+
+  if (subActionParam === "viewTestReportAdmin" && reportSubmissionIdParam) {
+    return (
+      <div className="animate-fadeIn">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-[#2E2725] m-0 flex items-center gap-2">
+            Test Report Details
+          </h2>
+          <Button
+            onClick={handleCloseModal}
+            className="flex items-center gap-2 rounded-lg font-medium shadow-sm hover:shadow-md transition-all border-gray-200 hover:border-gray-300"
+            size="middle"
+          >
+             <ArrowLeftOutlined className="text-sm" /> Back to Tests
+          </Button>
+        </div>
+
+        <div className="bg-white p-2 rounded-2xl">
+          <Admin_Report_New
+            testSubmissionId={reportSubmissionIdParam}
+            onClose={handleCloseModal}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const paginationConfig = {
+    current: current,
+    total: total,
+    pageSize: pageSize,
+    showSizeChanger: true,
+    pageSizeOptions: ['15', '25', '50', '100'],
+    position: ["bottomRight"],
+    onChange: (page, size) => {
+      setCurrent(page);
+      setPageSize(size);
+    },
+    showTotal: (total, range) => {
+      let inputValue = "";
+      const totalPages = Math.ceil(total / pageSize);
+      const handleGoToPage = () => {
+        const page = Number(inputValue);
+        if (page >= 1 && page <= totalPages) {
+          setCurrent(page);
+        }
+      };
+      return (
+        <div className="flex items-center gap-2">
+          <span>
+            Showing {range[0]}–{range[1]} of {total}
+          </span>
+          <span>| Go to page:</span>
+          <Input
+            type="number"
+            min={1}
+            max={totalPages}
+            size="small"
+            style={{ width: 70 }}
+            onChange={(e) => (inputValue = e.target.value)}
+            onPressEnter={handleGoToPage}
+          />
+          <Button type="primary" size="small" onClick={handleGoToPage}>
+            Go
+          </Button>
+        </div>
+      );
+    },
+  };
+
   return (
-    <div className="">
-      <Input
-        placeholder={`Search`}
-        onChange={handleSearchChange}
-        className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600 max-w-lg"
-      />
+    <div className="flex flex-col">
+      <div className="flex justify-between items-center mb-3">
+        <Input
+          placeholder="Search Full Length Test"
+          onChange={handleSearchChange}
+          className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600 max-w-sm"
+        />
+      </div>
 
       <Table
-        footer={() => (
-          <div className="footer-container">
-            <div className="flex justify-end mr-5">
-              Page {current} of {totalPages} (Total: {total} records)
-            </div>
-            <Pagination
-              className="size-changer"
-              current={current}
-              pageSize={pageSize}
-              total={total}
-              itemRender={itemRender}
-              onChange={(page) => {
-                setCurrent(page);
-              }}
-            />
-          </div>
-        )}
+        size="small"
         dataSource={testsData}
         loading={tableLoading}
         columns={columns}
         rowKey="key"
-        scroll={{ x: "max-content", y: 480 }}
-        pagination={false}
-        rowClassName={(record, index) =>
-          index % 2 === 0 ? "even-row" : "odd-row"
-        }
-        className="tablestyles mt-4"
+        scroll={{ x: "max-content" }}
+        pagination={paginationConfig}
+        className="[&_.ant-table-thead>tr>th]:!bg-gray-100 [&_.ant-table-thead>tr>th]:!text-gray-700 border border-gray-200 rounded-lg overflow-hidden"
         onChange={handleTableChange}
       />
-
-      {/* Modal for Result */}
-      {showResultModal && (
-        <Modal
-          open={showResultModal}
-          onCancel={() => setShowResultModal(false)}
-          footer={null}
-          width="100%"
-          style={{ top: 30 }}
-          destroyOnClose
-          title="Test Report"
-        >
-          <Admin_Report_New testSubmissionId={submissionId}
-            onClose={() => setShowResultModal(false)}
-          />
-        </Modal>
-      )}
     </div>
   );
 }

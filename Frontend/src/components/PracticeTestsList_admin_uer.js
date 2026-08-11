@@ -17,6 +17,7 @@ function PracticeTestsList({ studentId }) {
   const [data, setData] = useState();
   const [tableLoading, setTableLoading] = useState(false);
   const [current, setCurrent] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [practiceTestReport, setPracticeTestReport] = useState(false);
@@ -32,11 +33,16 @@ function PracticeTestsList({ studentId }) {
   const searchParams = useSearchParams();
   const studentIdFromParam = searchParams.get("student_id");
 
+  const actionParam = searchParams.get("action");
+  const subActionParam = searchParams.get("subAction");
+  const reportPracticeTestIdParam = searchParams.get("reportPracticeTestId");
+
   const role = pathname.split("/")[1];
   console.log("role", role);
   useEffect(() => {
     const params = {
       page: current,
+      page_size: pageSize,
     };
 
     if (studentId || studentIdFromParam) {
@@ -63,7 +69,7 @@ function PracticeTestsList({ studentId }) {
         setTotalPages(total_pages);
       })
       .finally(() => setTableLoading(false));
-  }, [current, sortParams, debouncedSearchTerm, studentId]);
+  }, [current, pageSize, sortParams, debouncedSearchTerm, studentId]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -80,6 +86,16 @@ function PracticeTestsList({ studentId }) {
   };
 
   const studentCols = [
+    {
+      key: "test_name",
+      title: "Test Name",
+      dataIndex: "test_name",
+      align: "center",
+      render: (text) => <span className="text-[#805830] font-semibold">{text || "N/A"}</span>,
+      width: 150,
+      sorter: true,
+      sorter: { multiple: 0 },
+    },
     {
       key: "course",
       title: "Course name",
@@ -153,8 +169,10 @@ function PracticeTestsList({ studentId }) {
           <Button
             type="link"
             onClick={() => {
-              setPracticeTestId(record.id);
-              setIsModalOpen(true);
+              const urlParams = new URLSearchParams(searchParams);
+              urlParams.set("subAction", "viewPracticeTestReportAdmin");
+              urlParams.set("reportPracticeTestId", record.id);
+              router.push(`${pathname}?${urlParams.toString()}`);
             }}
             style={{ display: "flex", alignItems: "center" }}
           >
@@ -189,11 +207,11 @@ function PracticeTestsList({ studentId }) {
     admin: facultyMentorCols,
   };
 
-  const itemRender = (_, type, originalElement) => {
-    if (type === "prev") return <a>Previous</a>;
-    if (type === "next") return <a>Next</a>;
-    return originalElement;
-  };
+  // const itemRender = (_, type, originalElement) => {
+  //   if (type === "prev") return <a>Previous</a>;
+  //   if (type === "next") return <a>Next</a>;
+  //   return originalElement;
+  // };
 
   const handleTableChange = (pagination, filters, sorter) => {
     let sortObj = {};
@@ -217,75 +235,132 @@ function PracticeTestsList({ studentId }) {
     setSortParams(sortObj);
   };
 
+  const handleCloseModal = () => {
+    const urlParams = new URLSearchParams(searchParams);
+    urlParams.delete("subAction");
+    urlParams.delete("reportPracticeTestId");
+    router.push(`${pathname}?${urlParams.toString()}`);
+  };
+
+  if (actionParam === "viewStudentResults" && subActionParam === "viewPracticeTestReportAdmin" && reportPracticeTestIdParam) {
+    return (
+      <div className="animate-fadeIn">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-[#2E2725] m-0 flex items-center gap-2">
+            Practice Test Report
+          </h2>
+          <Button
+            onClick={handleCloseModal}
+            className="flex items-center gap-2 rounded-lg font-medium shadow-sm hover:shadow-md transition-all border-gray-200 hover:border-gray-300"
+            size="middle"
+          >
+            ← Back to Tests
+          </Button>
+        </div>
+
+        <div className="bg-white p-2 rounded-2xl">
+          <PracticeTestReport
+            practiceTestId={reportPracticeTestIdParam}
+            onClose={handleCloseModal}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const paginationConfig = {
+    current: current,
+    total: total,
+    pageSize: pageSize,
+    showSizeChanger: true,
+    pageSizeOptions: ['10','25', '50', '100'],
+    position: ["bottomRight"],
+    onChange: (page, size) => {
+      setCurrent(page);
+      setPageSize(size);
+    },
+    showTotal: (total, range) => {
+      let inputValue = "";
+      const totalPages = Math.ceil(total / pageSize);
+      const handleGoToPage = () => {
+        const page = Number(inputValue);
+        if (page >= 1 && page <= totalPages) {
+          setCurrent(page);
+        }
+      };
+      return (
+        <div className="flex items-center gap-2">
+          <span>
+            Showing {range[0]}–{range[1]} of {total}
+          </span>
+          <span>| Go to page:</span>
+          <Input
+            type="number"
+            min={1}
+            max={totalPages}
+            size="small"
+            style={{ width: 70 }}
+            onChange={(e) => (inputValue = e.target.value)}
+            onPressEnter={handleGoToPage}
+          />
+          <Button type="primary" size="small" onClick={handleGoToPage}>
+            Go
+          </Button>
+        </div>
+      );
+    },
+  };
+
   return (
     <>
-      {practiceTestReport ? (
-        <PracticeTestReportComponent practice_test_id={practiceTestId} />
-      ) : createTest ? (
-        <PracticeTestForm />
+      <div className="flex flex-col md:flex-row justify-between items-center mb-3 gap-4">
+        {/* Search */}
+        <Input
+          placeholder="Search by course, subject..."
+          onChange={handleSearchChange}
+          className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600 max-w-sm"
+        />
+
+        {/* Create Test Button - Only show on Practice Tests tab */}
+        {role === "student" && !studentId && (
+          <Button
+            type="primary"
+            onClick={() => setCreateTest(true)}
+            className="h-10 px-6 font-semibold shadow-sm"
+          >
+            Create New Practice Test
+          </Button>
+        )}
+      </div>
+
+      {createTest ? (
+        <PracticeTestForm
+          setCreateTest={setCreateTest}
+          setData={setData}
+          setCurrent={setCurrent}
+        />
+      ) : practiceTestReport ? (
+        <PracticeTestReportComponent
+          setPracticeTestReport={setPracticeTestReport}
+          practiceTestId={practiceTestId}
+        />
       ) : (
         <>
-          <div className="flex justify-between items-center mb-4">
-            <Input
-              placeholder="Search"
-              onChange={handleSearchChange}
-              className="h-10 rounded-lg border-gray-300 hover:border-gray-400 focus:border-gray-600 max-w-lg"
-            />
-            {/* {role === "student" && (
-              <Button
-                type="primary"
-                onClick={() => {
-                  setCreateTest(true); // ✅ Start Practice Test
-                }}
-              >
-                Start Practice Test
-              </Button>
-            )} */}
-          </div>
-
           <Table
-            footer={() => (
-              <div className="footer-container">
-                <div className="flex justify-end">
-                  Page {current} of {totalPages} (Total: {total} records)
-                </div>
-                <Pagination
-                  className="size-changer"
-                  current={current}
-                  pageSize={10}
-                  total={total}
-                  itemRender={itemRender}
-                  onChange={(page) => setCurrent(page)}
-                  showSizeChanger={false}
-                />
-              </div>
-            )}
+            pagination={paginationConfig}
             loading={tableLoading}
             dataSource={data}
             columns={colsMap[role]}
-            pagination={false}
-            rowClassName={(record, index) =>
-              index % 2 === 0 ? "even-row" : "odd-row"
-            }
-            className="tablestyles mt-4"
-            scroll={{ x: "max-content", y: 550 }}
+            size="small"
+            // rowClassName={(record, index) =>
+            //   index % 2 === 0 ? "bg-white" : "bg-gray-50 hover:bg-gray-100 transition-colors"
+            // }
+            className="border border-gray-200 rounded-lg overflow-hidden"
+            scroll={{ x: "max-content" }}
             onChange={handleTableChange}
           />
         </>
       )}
-      <Modal
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        footer={null}
-        width="88%"
-        bodyStyle={{ maxHeight: "85vh", overflowY: "auto" }}
-        centered
-      >
-        <PracticeTestReport
-          practiceTestId={practiceTestId}
-          onClose={() => setIsModalOpen(false)}
-        />
-      </Modal>
     </>
   );
 }

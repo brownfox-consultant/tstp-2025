@@ -1002,7 +1002,7 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         # Apply pagination
         paginator = CustomPageNumberPagination()
-        paginator.page_size = 10
+        paginator.page_size = request.query_params.get("page_size", 10)
         paginated_users = paginator.paginate_queryset(qualified_students, request)
 
         serializer = UserSerializer(paginated_users, many=True)

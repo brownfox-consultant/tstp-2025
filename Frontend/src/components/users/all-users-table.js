@@ -20,7 +20,7 @@ import {
   Tabs,
   Modal,
   notification,
-  Upload, message,Select,
+  Upload, message, Select,
 } from "antd";
 import React, { useEffect, useState, useRef } from "react";
 import EditStudentUserModal from "../EditStudentUserModal";
@@ -29,7 +29,7 @@ import EditUserModal from "../EditUserModal";
 // import downArrowIcon from "../../../public/icons/down-arrow.svg";
 // import arrowUpCircle from "../../../public/icons/arrowupcircle.svg";
 // import arrowDownCircle from "../../../public/icons/arrowdowncircle.svg";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { deleteUser } from "@/app/services/authService";
 import axios from "axios";
 import { BASE_URL } from "@/app/constants/apiConstants";
@@ -71,78 +71,79 @@ function AllUsersTable({ tabKey, api }) {
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [menuKey, setMenuKey] = useState([""]);
-  const [showResultModal, setShowResultModal] = useState(false);
+  // showResultModal was replaced by page redirection
   const [student_id, set_student_id] = useState(null);
   const [statusLoadingMap, setStatusLoadingMap] = useState({});
   const [studentName, setStudentName] = useState("");
   const [ordering, setOrdering] = useState("");
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(15);
   const { setRole, setUserId, setUserName } = useGlobalContext();
   const adminEmail = localStorage.getItem("email");
   const [showAssignTestModal, setShowAssignTestModal] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
-const [selectedRole, setSelectedRole] = useState(null);
-const [selectedFile, setSelectedFile] = useState(null);
-const [bulkLoading, setBulkLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
 
   const searchInput = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   console.log(pathname);
 
-const submitBulkUpload = async () => {
-  if (!selectedRole) {
-    return message.error("Please select a role");
-  }
+  const submitBulkUpload = async () => {
+    if (!selectedRole) {
+      return message.error("Please select a role");
+    }
 
-  if (!selectedFile) {
-    return message.error("Please select an Excel file");
-  }
+    if (!selectedFile) {
+      return message.error("Please select an Excel file");
+    }
 
-  try {
-    setBulkLoading(true);
+    try {
+      setBulkLoading(true);
 
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    formData.append("role", selectedRole);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("role", selectedRole);
 
-    const response = await axios.post(
-      `${BASE_URL}/api/user/bulk-register/`,
-      formData,
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "multipart/form-data",
-          "X-CSRFToken": localStorage.getItem("csrfToken"),
-        },
-      }
-    );
+      const response = await axios.post(
+        `${BASE_URL}/api/user/bulk-register/`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+            "X-CSRFToken": localStorage.getItem("csrfToken"),
+          },
+        }
+      );
 
-    notification.success({
-      message: "Bulk Registration Completed",
-      description: (
-        <div>
-          <div>Created: {response.data.created_count}</div>
-          <div>Skipped: {response.data.skipped_count}</div>
-          <div>Errors: {response.data.error_count}</div>
-        </div>
-      ),
-    });
+      notification.success({
+        message: "Bulk Registration Completed",
+        description: (
+          <div>
+            <div>Created: {response.data.created_count}</div>
+            <div>Skipped: {response.data.skipped_count}</div>
+            <div>Errors: {response.data.error_count}</div>
+          </div>
+        ),
+      });
 
-    setBulkModalOpen(false);
-    setSelectedFile(null);
-    setSelectedRole(null);
-    setUpdated((prev) => !prev);
-  } catch (error) {
-    console.log(error);
-    message.error(
-      error?.response?.data?.error || "Bulk upload failed"
-    );
-  } finally {
-    setBulkLoading(false);
-  }
-};
+      setBulkModalOpen(false);
+      setSelectedFile(null);
+      setSelectedRole(null);
+      setUpdated((prev) => !prev);
+    } catch (error) {
+      console.log(error);
+      message.error(
+        error?.response?.data?.error || "Bulk upload failed"
+      );
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
 
 
@@ -233,7 +234,7 @@ const submitBulkUpload = async () => {
     page = 1,
     search = "",
     ordering = "",
-    page_size = 10,
+    page_size = 15,
   }) => {
     setLoading(true);
     try {
@@ -635,7 +636,7 @@ const submitBulkUpload = async () => {
         sorter: (a, b) => a.role_label.localeCompare(b.role_label),
         key: "x",
         //...getColumnSearchProps("email"),
-        render: (text) => <span className="text-gray-400">{text}</span>,
+        render: (text) => <span className="text-gray-700 font-medium">{text}</span>,
         width: 200,
       },
       {
@@ -655,7 +656,7 @@ const submitBulkUpload = async () => {
         sorter: (a, b) => a.role_label.localeCompare(b.role_label),
         key: "phone_number",
         //...getColumnSearchProps("phone_number"),
-        render: (text) => <span className="text-gray-400">{formatPhoneNumberDisplay(text)}</span>,
+        render: (text) => <span className="text-gray-700 font-medium">{formatPhoneNumberDisplay(text)}</span>,
         width: 150,
       },
 
@@ -683,7 +684,7 @@ const submitBulkUpload = async () => {
           const courses = record.course_details
             ?.map((c) => c.course.name)
             .join(", ");
-          return <span className="text-gray-500 font-medium">{courses || <span className="text-gray-400 font-normal">N/A</span>}</span>;
+          return <span className="text-gray-700 font-medium">{courses || <span className="text-gray-500 font-normal">N/A</span>}</span>;
         },
         width: 150,
       },
@@ -827,6 +828,7 @@ const submitBulkUpload = async () => {
         title: "Actions",
         key: "val",
         align: "start",
+        width: 100,
         render: (_, record) => {
           const menuItems = [];
 
@@ -835,9 +837,11 @@ const submitBulkUpload = async () => {
               key: "results",
               label: "Results",
               onClick: () => {
-                set_student_id(record.id);
-                setStudentName(record.name);
-                setShowResultModal(true);
+                const urlParams = new URLSearchParams(searchParams);
+                urlParams.set("action", "viewStudentResults");
+                urlParams.set("studentId", record.id);
+                urlParams.set("studentName", record.name);
+                router.push(`${pathname}?${urlParams.toString()}`);
               },
             });
             menuItems.push({
@@ -1005,23 +1009,23 @@ const submitBulkUpload = async () => {
               Add new user
             </Button>
             <Button
-  size="large"
-  icon={<UploadOutlined />}
-  onClick={exportToCSV}
-  className="h-10 px-4 rounded-lg"
->
-  Export
-</Button>
+              size="large"
+              icon={<UploadOutlined />}
+              onClick={exportToCSV}
+              className="h-10 px-4 rounded-lg"
+            >
+              Export
+            </Button>
 
-<Button
-  size="large"
-  type="primary"
-  icon={<UploadOutlined />}
-  className="h-10 px-4 bg-green-600 hover:bg-green-700 border-none rounded-lg"
-  onClick={() => setBulkModalOpen(true)}
->
-  Bulk Register
-</Button>
+            <Button
+              size="large"
+              type="primary"
+              icon={<UploadOutlined />}
+              className="h-10 px-4 bg-green-600 hover:bg-green-700 border-none rounded-lg"
+              onClick={() => setBulkModalOpen(true)}
+            >
+              Bulk Register
+            </Button>
             {/* <Dropdown
               trigger={["click"]}
               open={isDropdownVisible}
@@ -1088,108 +1092,79 @@ const submitBulkUpload = async () => {
         rowClassName="hover:bg-gray-100 transition-colors"
         className="tablestyles mt-4 [&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
       />
-      {showResultModal && (
-        <Modal
-          open={showResultModal}
-          onCancel={() => setShowResultModal(false)}
-          footer={null}
-          width="90%"
-          style={{ top: 30 }}
-          destroyOnClose
-          title={`Test Report - ${studentName}`}
-        >
-          <Tabs
-            defaultActiveKey="1"
-            items={[
-              {
-                key: "2",
-                label: "Full Length Tests",
-                children: <TestList_admin_user studentId={student_id} />,
-              },
-              {
-                key: "1",
-                label: "Practice Questions",
-                children: (
-                  <PracticeTestsList_admin_uer studentId={student_id} />
-                ),
-              },
-            ]}
-          />
-        </Modal>
-      )}
 
       {showAssignTestModal && (
-  <AssignTestModal
-    open={showAssignTestModal}
-    onClose={() => setShowAssignTestModal(false)}
-    studentId={student_id}
-  />
-)}
+        <AssignTestModal
+          open={showAssignTestModal}
+          onClose={() => setShowAssignTestModal(false)}
+          studentId={student_id}
+        />
+      )}
 
-<Modal
-  title="Bulk User Registration"
-  open={bulkModalOpen}
-  onCancel={() => {
-    setBulkModalOpen(false);
-    setSelectedFile(null);
-    setSelectedRole(null);
-  }}
-  onOk={submitBulkUpload}
-  okText="Upload"
-  confirmLoading={bulkLoading}
->
-  <div className="space-y-4">
-    <div>
-      <label className="font-medium block mb-2">
-        Select Role
-      </label>
-
-      <Select
-        style={{ width: "100%" }}
-        placeholder="Choose Role"
-        value={selectedRole}
-        onChange={setSelectedRole}
-        options={filterItems
-          .filter((r) => r.key !== "")
-          .map((r) => ({
-            value: r.key,
-            label: r.label,
-          }))}
-      />
-    </div>
-
-    <div className="mt-4">
-      <label className="font-medium block mb-2">
-        Upload Excel File
-      </label>
-
-      <Upload
-        accept=".xlsx,.xls"
-        maxCount={1}
-        beforeUpload={(file) => {
-          setSelectedFile(file);
-          return false;
+      <Modal
+        title="Bulk User Registration"
+        open={bulkModalOpen}
+        onCancel={() => {
+          setBulkModalOpen(false);
+          setSelectedFile(null);
+          setSelectedRole(null);
         }}
+        onOk={submitBulkUpload}
+        okText="Upload"
+        confirmLoading={bulkLoading}
       >
-        <Button icon={<UploadOutlined />}>
-          Select Excel File
-        </Button>
-      </Upload>
+        <div className="space-y-4">
+          <div>
+            <label className="font-medium block mb-2">
+              Select Role
+            </label>
 
-      {/* <div className="mt-2 text-gray-500 text-sm">
+            <Select
+              style={{ width: "100%" }}
+              placeholder="Choose Role"
+              value={selectedRole}
+              onChange={setSelectedRole}
+              options={filterItems
+                .filter((r) => r.key !== "")
+                .map((r) => ({
+                  value: r.key,
+                  label: r.label,
+                }))}
+            />
+          </div>
+
+          <div className="mt-4">
+            <label className="font-medium block mb-2">
+              Upload Excel File
+            </label>
+
+            <Upload
+              accept=".xlsx,.xls"
+              maxCount={1}
+              beforeUpload={(file) => {
+                setSelectedFile(file);
+                return false;
+              }}
+            >
+              <Button icon={<UploadOutlined />}>
+                Select Excel File
+              </Button>
+            </Upload>
+
+            {/* <div className="mt-2 text-gray-500 text-sm">
         Columns required:
         <br />
         <strong>name, email, phone_number</strong>
       </div> */}
-    </div>
+          </div>
 
-    <div className="mt-4 p-3 bg-gray-50 rounded">
-      <strong>Default Password:</strong> tstp1
-      <br />
-      <strong>Username:</strong> Email Address
-    </div>
-  </div>
-</Modal>
+          <div className="mt-4 p-3 bg-gray-50 rounded">
+            <strong>Default Password:</strong> tstp1
+            <br />
+            <strong>Username:</strong> Email Address
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

@@ -22,6 +22,7 @@ function UpcomingTable({ tabKey, api }) {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchText, setSearchText] = useState("");
+  const [pageSize, setPageSize] = useState(10);
 
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -44,7 +45,7 @@ function UpcomingTable({ tabKey, api }) {
 
   useEffect(() => {
     setLoading(true);
-    getUpcomingOrFreeSubStudents(current, searchText)
+    getUpcomingOrFreeSubStudents(current, searchText, pageSize)
       .then((res) => {
         const { results, count, current_page, total_pages } = res.data;
         setStudentsData(results);
@@ -53,7 +54,7 @@ function UpcomingTable({ tabKey, api }) {
         setTotalPages(total_pages);
       })
       .finally(() => setLoading(false));
-  }, [updated, current, searchText]);
+  }, [updated, current, searchText, pageSize]);
 
   // Updated delete handler to return promise
   const handleDelete = (id) => {
@@ -114,12 +115,12 @@ function UpcomingTable({ tabKey, api }) {
       },
       render: (_, record) => {
         return (
-          <span className="text-gray-500 font-medium">
+          <span className="text-gray-700 font-medium">
             {record.course_details.length
               ? record.course_details
                   .map(({ course }) => course.name)
                   .join(", ")
-              : <span className="text-gray-400 font-normal">-</span>}
+              : <span className="text-gray-500 font-normal">-</span>}
           </span>
         );
       },
@@ -153,7 +154,7 @@ function UpcomingTable({ tabKey, api }) {
       dataIndex: "email",
       sorter: (a, b) => (a.email || "").localeCompare(b.email || ""),
       key: "email",
-      render: (text) => <span className="text-gray-400">{text}</span>,
+      render: (text) => <span className="text-gray-700 font-medium">{text}</span>,
       width: 150,
     },
     {
@@ -165,7 +166,7 @@ function UpcomingTable({ tabKey, api }) {
       dataIndex: "phone_number",
       sorter: (a, b) => (a.phone_number || "").localeCompare(b.phone_number || ""),
       key: "phone_number",
-      render: (text) => <span className="text-gray-400">{text}</span>,
+      render: (text) => <span className="text-gray-700 font-medium">{text}</span>,
       width: 200,
     },
     // {
@@ -189,7 +190,7 @@ function UpcomingTable({ tabKey, api }) {
         return types.includes(value);
       },
       render: (courseArray, record) => {
-        return <span className="text-gray-500">{courseArray[0].subscription_type}</span>;
+        return <span className="text-gray-700 font-medium">{courseArray[0].subscription_type}</span>;
       },
     },
     {
@@ -202,7 +203,7 @@ function UpcomingTable({ tabKey, api }) {
       dataIndex: "course_details",
       width: 120,
       render: (courseArray, record) => {
-        return <span className="text-gray-400">{courseArray[0].subscription_end_date}</span>;
+        return <span className="text-gray-700 font-medium">{courseArray[0].subscription_end_date}</span>;
       },
       width: 150,
     },
@@ -289,8 +290,9 @@ function UpcomingTable({ tabKey, api }) {
   const paginationConfig = {
     current: current || 1,
     total: total,
-    pageSize: 10,
-    showSizeChanger: false,
+    pageSize: pageSize,
+    showSizeChanger: true,
+    pageSizeOptions: ["10", "25", "50", "100"],
     position: ["bottomRight"],
     showTotal: (total, range) => {
       let inputValue = "";
@@ -327,7 +329,12 @@ function UpcomingTable({ tabKey, api }) {
   };
 
   const handleTableChange = (pagination) => {
-    setCurrent(pagination.current);
+    if (pagination.pageSize !== pageSize) {
+      setPageSize(pagination.pageSize);
+      setCurrent(1);
+    } else {
+      setCurrent(pagination.current);
+    }
   };
   return (
     <>

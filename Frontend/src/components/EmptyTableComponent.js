@@ -36,6 +36,9 @@ function EmptyTableComponent({
   descSearch,
   setDescSearch,
   setDataSource,
+  current,
+  pageSize = 15,
+  setPageSize,
 }) {
   const { no_of_questions } = sectionDetails;
 
@@ -302,77 +305,54 @@ function EmptyTableComponent({
   return role == "admin" ? (
     <Table
       pagination={{
-        showSizeChanger: false,
-        onShowSizeChange: false,
-        pageSize: 15,
+        current: current,
+        showSizeChanger: true,
+        pageSizeOptions: ['15', '25', '50', '100'],
+        onShowSizeChange: (current, size) => {
+          if (setPageSize) setPageSize(size);
+          setCurrent(1);
+        },
+        pageSize: pageSize,
         total: total,
         onChange: (page) => setCurrent(page),
+        position: ["topLeft", "bottomRight"],
+        showTotal: (total, range) => {
+          let inputValue = "";
+          const totalPages = Math.ceil(total / pageSize);
+          const handleGoToPage = () => {
+            const page = Number(inputValue);
+            if (page >= 1 && page <= totalPages) {
+              setCurrent(page);
+            }
+          };
+          return (
+            <div className="flex items-center gap-2">
+              <span>
+                Showing {range[0]}–{range[1]} of {total}
+              </span>
+              <span>| Go to page:</span>
+              <Input
+                type="number"
+                min={1}
+                max={totalPages}
+                size="small"
+                style={{ width: 70 }}
+                onChange={(e) => (inputValue = e.target.value)}
+                onPressEnter={handleGoToPage}
+              />
+              <Button type="primary" size="small" onClick={handleGoToPage}>
+                Go
+              </Button>
+            </div>
+          );
+        },
       }}
       rowKey={(record) => record.id}
       rowSelection={rowSelection}
       dataSource={dataSource}
       columns={columns}
       hideSelectAll={false}
-      title={() => {
-        const isComplete = selectedRowKeys.length === no_of_questions;
-        const progress = Math.round((selectedRowKeys.length / no_of_questions) * 100);
-        
-        return (
-          <div className="-mx-4 -mt-4 mb-2">
-            {/* Gradient Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 rounded-t-lg">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                {/* Left: Back & Section Name */}
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      setDescSearch("");
-                      setDataSource([]);
-                      setSelectedSection("none");
-                    }}
-                    className="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
-                  >
-                    <ArrowLeftOutlined className="text-white" />
-                  </button>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">{sectionDetails.section_name}</h3>
-                    <p className="text-white/80 text-sm">{sectionDetails.subject_name}</p>
-                  </div>
-                </div>
 
-                {/* Right: Stats */}
-                <div className="flex items-center gap-3">
-                  <div className={`px-4 py-2 rounded-lg backdrop-blur-sm flex items-center gap-2 ${isComplete ? 'bg-green-500/30' : 'bg-white/20'}`}>
-                    <FileTextOutlined className="text-white" />
-                    <span className="text-white font-bold">{selectedRowKeys.length}</span>
-                    <span className="text-white/70">/ {no_of_questions}</span>
-                  </div>
-                  {isComplete && (
-                    <div className="px-3 py-2 rounded-lg bg-green-500 flex items-center gap-2">
-                      <CheckCircleOutlined className="text-white" />
-                      <span className="text-white text-sm font-medium">Complete</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs text-white/80 mb-1">
-                  <span>Selection Progress</span>
-                  <span className="font-medium">{progress}%</span>
-                </div>
-                <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${isComplete ? 'bg-green-400' : 'bg-white'}`}
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      }}
       footer={() => {
         const isComplete = selectedRowKeys.length === no_of_questions;
         const isExceeded = selectedRowKeys.length > no_of_questions;

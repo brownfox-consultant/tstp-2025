@@ -153,37 +153,8 @@ useEffect(() => {
   let d1 = new Date();
 
   useEffect(() => {
-    const checkFullscreen = () => {
-      if (!document.fullscreenElement) {
-        if (!fsModalInstance) {
-          fsModalInstance = Modal.warning({
-            title: "Fullscreen Required",
-            content: "You cannot exit fullscreen during the test.",
-            okText: "Return to Test",
-            keyboard: false,
-            maskClosable: false,
-            onOk: () => {
-              goFullScreen();
-              fsModalInstance = null;
-            },
-          });
-        }
-      } else {
-        if (fsModalInstance) {
-          fsModalInstance.destroy();
-          fsModalInstance = null;
-        }
-      }
-    };
-
-    // Check immediately on mount
-    checkFullscreen();
-
-    document.addEventListener("fullscreenchange", checkFullscreen);
-
-    return () => {
-      document.removeEventListener("fullscreenchange", checkFullscreen);
-    };
+    // Only check fullscreen if we want to enforce it later, but not on the begin page immediately.
+    // Fullscreen will be requested upon clicking 'Start'.
   }, []);
 
   useEffect(() => {
@@ -202,6 +173,12 @@ useEffect(() => {
 
  const handleStart = async (mode) => {
   console.log("handleStart called", mode);
+
+  // Trigger fullscreen immediately synchronously on user click gesture
+  if (mode !== "AUTO" && !isFullScreen) {
+    goFullScreen();
+  }
+
   const test_submission_id =
     window.sessionStorage.getItem("test_submission_id");
 
@@ -222,10 +199,6 @@ useEffect(() => {
     dispatch(setTestRunning(true));
 
     router.replace(`/student/${id}/test/${testId}/`);
-
-    if (mode !== "AUTO" && !isFullScreen) {
-      goFullScreen();
-    }
   } catch (errorMsg) {
     Modal.error({
       title: "Section Load Failed",

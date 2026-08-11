@@ -87,6 +87,7 @@ function QuestionReviewModal({
       <Modal
         width={data?.question_type === "MCQ" ? "80rem" : "64rem"}
         open={open}
+        style={{ top: 20 }}
         title={
           role === "student"
             ? `Reviewing Question ${currentIndex + 1}`

@@ -180,7 +180,7 @@ class PracticeTestListSerializer(serializers.ModelSerializer):
         ]
 
     def get_test_name(self, obj):
-        return f"PT-{obj.id}"
+        return f"Practice Test - {obj.id}"
 
 
 class EligibleStudentSerializer(serializers.ModelSerializer):
