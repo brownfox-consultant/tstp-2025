@@ -18,15 +18,20 @@ from user_manager.models import TempUser, User, StudentMetadata, Role
 
 @shared_task
 def send_notification(notification_name, params, user_id):
-
     print("=" * 60)
     print("Notification Name:", notification_name)
     print("User ID:", user_id)
     print("Params:", params)
     print("=" * 60)
 
-    notification = Notification.objects.get(name=notification_name)
-    channels = NotificationChannel.objects.filter(notification=notification)
+    notification = Notification.objects.get(
+        name=notification_name
+    )
+
+    channels = NotificationChannel.objects.filter(
+        notification=notification
+    )
+
     print("Notification:", notification.name)
     print("Category:", notification.category)
     print("Channels found:", channels.count())
@@ -43,49 +48,89 @@ def send_notification(notification_name, params, user_id):
 
     for channel in channels:
 
-        template = NotificationTemplate.objects.get(name=channel.template_name)
+        template = NotificationTemplate.objects.get(
+            name=channel.template_name
+        )
 
         formatted_subject = template.subject
         formatted_description = template.description
 
-        # Replace wildcards
+        # =====================================================
+        # REPLACE WILDCARDS
+        # =====================================================
+
         for key, value in params.items():
-            formatted_subject = formatted_subject.replace(key, str(value))
-            formatted_description = formatted_description.replace(key, str(value))
+
+            formatted_subject = formatted_subject.replace(
+                key,
+                str(value)
+            )
+
+            formatted_description = formatted_description.replace(
+                key,
+                str(value)
+            )
 
             if key == NotificationTemplate.REFERENCE_ID:
                 reference_id = value
 
+        # =====================================================
         # EMAIL CHANNEL
+        # =====================================================
+
         if channel.channel_name == NotificationChannel.EMAIL:
+
+            print("-" * 60)
+            print("EMAIL CHANNEL")
+            print("Sending email to student:", user_id)
+
+            # -------------------------------------------------
+            # IMPORTANT:
+            # Do NOT add admins here.
+            #
+            # Admins receive the subscription summary email
+            # from check_and_update_subscriptions() when
+            # more than 2 students are found.
+            # -------------------------------------------------
 
             email_user_ids = [user_id]
 
-            # Subscription notifications → also send to admins
-            if notification_name in [
-                "SUBSCRIPTION_REMINDER_NOTIFICATION",
-                "SUBSCRIPTION_EXPIRED_NOTIFICATION",
-            ]:
-                admin_role = Role.get_role_using_name("admin")
-
-                if admin_role:
-                    admin_ids = get_all_users_by_role(admin_role.id)
-                    email_user_ids.extend(admin_ids)
+            print(
+                "Email User IDs:",
+                email_user_ids
+            )
 
             send_email.delay(
                 user_ids=list(set(email_user_ids)),
                 subject=formatted_subject,
                 description=formatted_description,
                 category=notification.category,
-                bcc_recipients=["vijayaluguvelli@gmail.com"]
+                bcc_recipients=[
+                    "vijayaluguvelli@gmail.com"
+                ]
             )
 
+            print(
+                "Email task queued successfully."
+            )
+
+        # =====================================================
         # IN-APP NOTIFICATION CHANNEL
+        # =====================================================
+
         elif channel.channel_name == NotificationChannel.NOTIFICATION:
+
+            print("-" * 60)
+            print("IN-APP NOTIFICATION CHANNEL")
 
             user_ids = get_users_for_notification_category(
                 category=notification.category,
                 user_id=user_id
+            )
+
+            print(
+                "In-app notification user IDs:",
+                user_ids
             )
 
             create_user_notification.delay(
@@ -95,6 +140,14 @@ def send_notification(notification_name, params, user_id):
                 category=notification.category,
                 reference_id=reference_id
             )
+
+            print(
+                "In-app notification task queued successfully."
+            )
+
+    print("=" * 60)
+    print("SEND NOTIFICATION TASK FINISHED")
+    print("=" * 60)
 
 
 # ============================================================

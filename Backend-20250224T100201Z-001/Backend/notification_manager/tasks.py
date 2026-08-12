@@ -278,47 +278,34 @@ System has recalculated scores automatically.
 @shared_task
 def send_subscription_summary_email(students, report_type):
 
-    body = f"""
-Admin Notification
+    generated_at = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
 
-Subscription {report_type} Summary
-
-"""
-
-    for i, student in enumerate(students, start=1):
-        body += f"""
-{i}.
-
-Student : {student['student']}
-Email   : {student['email']}
-Course  : {student['course']}
-Expiry  : {student['expiry']}
-
-------------------------------------------
-"""
-
-    body += f"""
-
-Total Students : {len(students)}
-
-Generated At : {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
-
-- TSTP System
-"""
+    body = render_to_string(
+        "emails/subscription_summary.html",
+        {
+            "students": students,
+            "report_type": report_type,
+            "generated_at": generated_at,
+        }
+    )
 
     admin_emails = list(
         User.objects.filter(
             is_superuser=True,
             is_active=True
+        ).exclude(
+            email=""
         ).values_list("email", flat=True)
     )
 
     if admin_emails:
-
-        EmailMessage(
+        email = EmailMessage(
             subject=f"Subscription {report_type} Summary",
             body=body,
             from_email=settings.EMAIL_HOST_USER,
             to=admin_emails,
             bcc=["vijayaluguvelli@gmail.com"],
-        ).send(fail_silently=False)
+        )
+
+        email.content_subtype = "html"
+        email.send(fail_silently=False)

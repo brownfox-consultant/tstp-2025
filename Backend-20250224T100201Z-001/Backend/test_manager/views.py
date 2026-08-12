@@ -3594,48 +3594,328 @@ class TestViewSet(viewsets.ModelViewSet):
         return question_ids[:num_questions]
 
 
-    def get_dynamic_section_questions(self, course_subject_id, result, num_questions, excluded_question_ids):
+    def get_dynamic_section_questions(
+        self,
+        course_subject_id,
+        result,
+        num_questions,
+        excluded_question_ids
+    ):
+        """
+        Dynamic question selection.
+
+        Priority:
+        1. New/unused active questions
+        2. Previously used questions that were skipped or answered incorrectly
+        3. Any remaining previous questions as final fallback
+
+        This guarantees that we try to fill the requested question count
+        instead of returning "Not enough active questions".
+        """
+
         correct_ratio = result.correct_answer_count / max(
-            (result.correct_answer_count + result.incorrect_answer_count), 1
+            (result.correct_answer_count + result.incorrect_answer_count),
+            1
         )
-        difficulty_ratios = self.get_difficulty_ratios_by_performance(correct_ratio)
 
-        questions = Question.objects.filter(
-            course_subject_id=course_subject_id,
-            test_type=Question.FULL_LENGTH_TEST_TYPE,
-            is_active=True
-        ).exclude(id__in=excluded_question_ids)
+        difficulty_ratios = self.get_difficulty_ratios_by_performance(
+            correct_ratio
+        )
 
-        if questions.count() < num_questions:
-            raise ValueError(f"Not enough active questions. Required: {num_questions}, Available: {questions.count()}")
+        # ---------------------------------------------------------
+        # 1. NEW / UNUSED QUESTIONS
+        # ---------------------------------------------------------
+        new_questions = list(
+            Question.objects.filter(
+                course_subject_id=course_subject_id,
+                test_type=Question.FULL_LENGTH_TEST_TYPE,
+                is_active=True
+            )
+            .exclude(id__in=excluded_question_ids)
+        )
 
+        print(
+            f"DYNAMIC SECTION => Required={num_questions}, "
+            f"New questions={len(new_questions)}"
+        )
 
         selected_questions = []
 
-        # Select initial questions based on difficulty ratios
+        # ---------------------------------------------------------
+        # 2. SELECT NEW QUESTIONS USING DIFFICULTY RATIO
+        # ---------------------------------------------------------
         for difficulty, ratio in difficulty_ratios.items():
+
             num_to_select = int(num_questions * ratio)
-            questions_of_difficulty = [q.id for q in questions if q.difficulty == difficulty]
-            selected_questions.extend(
-                random.sample(questions_of_difficulty, min(num_to_select, len(questions_of_difficulty)))
+
+            questions_of_difficulty = [
+                q.id
+                for q in new_questions
+                if q.difficulty == difficulty
+            ]
+
+            if questions_of_difficulty:
+                take_count = min(
+                    num_to_select,
+                    len(questions_of_difficulty)
+                )
+
+                selected_questions.extend(
+                    random.sample(
+                        questions_of_difficulty,
+                        take_count
+                    )
+                )
+
+        # ---------------------------------------------------------
+        # 3. FILL REMAINING FROM NEW QUESTIONS
+        # ---------------------------------------------------------
+        remaining_new = [
+            q.id
+            for q in new_questions
+            if q.id not in selected_questions
+        ]
+
+        random.shuffle(remaining_new)
+
+        while (
+            len(selected_questions) < num_questions
+            and remaining_new
+        ):
+            selected_questions.append(
+                remaining_new.pop()
             )
 
-        # Redistribute remaining questions
-        while len(selected_questions) < num_questions:
-            additional_needed = num_questions - len(selected_questions)
-            available_questions = [q.id for q in questions if q.id not in selected_questions]
+        print(
+            f"Selected NEW questions = {len(selected_questions)}"
+        )
 
-            if not available_questions:
-                break
+        # ---------------------------------------------------------
+        # 4. IF NOT ENOUGH NEW QUESTIONS,
+        #    GET PREVIOUSLY USED QUESTIONS
+        # ---------------------------------------------------------
+        remaining_needed = num_questions - len(selected_questions)
 
-            for difficulty in difficulty_ratios.keys():
-                extra_questions = [q.id for q in questions if q.difficulty == difficulty and q.id not in selected_questions]
-                if extra_questions:
-                    selected_questions.append(random.choice(extra_questions))
-                    if len(selected_questions) == num_questions:
-                        break
+        if remaining_needed <= 0:
+            return selected_questions[:num_questions]
+
+        print(
+            f"Need {remaining_needed} previous questions "
+            f"to complete section"
+        )
+
+        previous_question_ids = self.get_previous_fallback_questions(
+            result.test_submission.student,
+            course_subject_id,
+            excluded_ids=set(selected_questions)
+        )
+
+        print(
+            f"Previous fallback questions available = "
+            f"{len(previous_question_ids)}"
+        )
+
+        # ---------------------------------------------------------
+        # 5. ADD PREVIOUS QUESTIONS
+        # ---------------------------------------------------------
+        random.shuffle(previous_question_ids)
+
+        selected_questions.extend(
+            previous_question_ids[:remaining_needed]
+        )
+
+        print(
+            f"Total selected after previous fallback = "
+            f"{len(selected_questions)}"
+        )
+
+        # ---------------------------------------------------------
+        # 6. FINAL SAFETY FALLBACK
+        # ---------------------------------------------------------
+        # If skipped/wrong previous questions are still not enough,
+        # use ANY other active question from previous tests.
+        remaining_needed = num_questions - len(selected_questions)
+
+        if remaining_needed > 0:
+
+            all_previous_questions = self.get_all_previous_question_ids(
+                result.test_submission.student,
+                course_subject_id,
+                excluded_ids=set(selected_questions)
+            )
+
+            random.shuffle(all_previous_questions)
+
+            selected_questions.extend(
+                all_previous_questions[:remaining_needed]
+            )
+
+            print(
+                f"Total selected after final fallback = "
+                f"{len(selected_questions)}"
+            )
+
+        # ---------------------------------------------------------
+        # 7. LAST SAFETY CHECK
+        # ---------------------------------------------------------
+        # This should only happen if the database literally does not
+        # contain enough active questions at all.
+        if len(selected_questions) < num_questions:
+
+            print(
+                f"WARNING: Could only select "
+                f"{len(selected_questions)} / {num_questions} questions"
+            )
+
+            # IMPORTANT:
+            # Do NOT raise the old "Not enough active questions"
+            # error here.
+            #
+            # Return whatever is available.
+            return selected_questions
 
         return selected_questions[:num_questions]
+
+    def get_previous_fallback_questions(
+        self,
+        student,
+        course_subject_id,
+        excluded_ids=None
+    ):
+        """
+        Return previously used questions that the student either:
+
+        - skipped / did not answer
+        - answered incorrectly
+
+        Questions that the student has answered correctly are not
+        preferred for fallback.
+        """
+
+        excluded_ids = excluded_ids or set()
+
+        fallback_ids = set()
+
+        # ---------------------------------------------------------
+        # FULL LENGTH TEST QUESTIONS
+        # ---------------------------------------------------------
+        question_answers = QuestionAnswer.objects.filter(
+            result__test_submission__student=student,
+            course_subject_id=course_subject_id
+        ).select_related("question")
+
+        for answer in question_answers:
+
+            question_id = answer.question_id
+
+            if question_id in excluded_ids:
+                continue
+
+            # Student skipped OR answered incorrectly
+            if answer.is_skipped or not answer.is_correct:
+                fallback_ids.add(question_id)
+
+        # ---------------------------------------------------------
+        # PRACTICE TEST QUESTIONS
+        # ---------------------------------------------------------
+        practice_answers = PracticeQuestionAnswer.objects.filter(
+            practice_test_result__practice_test__student=student,
+            practice_test_result__practice_test__course_subject_id=course_subject_id
+        ).select_related("question")
+
+        for answer in practice_answers:
+
+            question_id = answer.question_id
+
+            if question_id in excluded_ids:
+                continue
+
+            if answer.is_skipped or not answer.is_correct:
+                fallback_ids.add(question_id)
+
+        # ---------------------------------------------------------
+        # ONLY ACTIVE QUESTIONS
+        # ---------------------------------------------------------
+        active_ids = set(
+            Question.objects.filter(
+                id__in=fallback_ids,
+                course_subject_id=course_subject_id,
+                test_type=Question.FULL_LENGTH_TEST_TYPE,
+                is_active=True
+            ).values_list("id", flat=True)
+        )
+
+        return list(active_ids)
+
+    def get_all_previous_question_ids(
+        self,
+        student,
+        course_subject_id,
+        excluded_ids=None
+    ):
+        """
+        Return any previously used active questions for this student
+        and course subject.
+
+        This is the final fallback when there are not enough
+        skipped/wrong questions.
+        """
+
+        excluded_ids = excluded_ids or set()
+
+        previous_ids = set()
+
+        # Full length tests
+        previous_ids.update(
+            QuestionAnswer.objects.filter(
+                result__test_submission__student=student,
+                course_subject_id=course_subject_id
+            ).values_list(
+                "question_id",
+                flat=True
+            )
+        )
+
+        # Practice tests
+        previous_ids.update(
+            PracticeQuestionAnswer.objects.filter(
+                practice_test_result__practice_test__student=student,
+                practice_test_result__practice_test__course_subject_id=course_subject_id
+            ).values_list(
+                "question_id",
+                flat=True
+            )
+        )
+
+        # AnsweredQuestions cache
+        try:
+            answered_questions = AnsweredQuestions.objects.get(
+                student=student,
+                course_subject_id=course_subject_id
+            )
+
+            previous_ids.update(
+                answered_questions.questions
+            )
+
+        except AnsweredQuestions.DoesNotExist:
+            pass
+
+        # Remove questions already selected for this section
+        previous_ids -= excluded_ids
+
+        # Only active questions belonging to this subject
+        previous_ids = Question.objects.filter(
+            id__in=previous_ids,
+            course_subject_id=course_subject_id,
+            test_type=Question.FULL_LENGTH_TEST_TYPE,
+            is_active=True
+        ).values_list(
+            "id",
+            flat=True
+        )
+
+        return list(previous_ids)
 
     def get_difficulty_ratios_by_performance(self, correct_ratio):
         # GMAT-like performance-based difficulty ratios
