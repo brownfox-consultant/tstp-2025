@@ -203,6 +203,41 @@ allActions.forEach(action => {
   };
 
   
+const getTotalTimeSpent = () => {
+  let totalTime = 0;
+
+  resultData?.subjects?.forEach(subject => {
+    subject.sections?.forEach(section => {
+      totalTime +=
+        (section?.section_correct_time_taken || 0) +
+        (section?.section_incorrect_time_taken || 0);
+    });
+  });
+  console.log("Total Time Spent:", totalTime);
+  return totalTime;
+};
+
+const getTotalNavigationSteps = () => {
+  let totalSteps = 0;
+
+  resultData?.subjects?.forEach(subject => {
+    subject.sections?.forEach(section => {
+      const flow = buildNavigationFlow(
+        subject.name,
+        section.name
+      );
+
+      totalSteps += flow.filter(
+        f =>
+          f.action_type !== 'TIMEUP' &&
+          f.action_type !== 'Review_Time'
+      ).length;
+    });
+  });
+  console.log("Total Navigation Steps:", totalSteps);
+  return totalSteps;
+};
+
 
   // ✅ Render Navigation Flow Timeline - SINGLE DEFINITION
   const renderNavigationFlow = () => {
@@ -210,8 +245,10 @@ allActions.forEach(action => {
       selectedFlowSection?.subject,
       selectedFlowSection?.section
     );
-    const navigationFlow = flow.filter(
-  f => f.action_type !== 'TIMEUP'
+   const navigationFlow = flow.filter(
+  f =>
+    f.action_type !== 'TIMEUP' &&
+    f.action_type !== 'Review_Time'
 );
     
     const allSections = getAllSections();
@@ -239,7 +276,7 @@ allActions.forEach(action => {
     const nextCount = flow.filter(f => f.action_type === 'NEXT').length;
     const prevCount = flow.filter(f => f.action_type === 'PREVIOUS').length;
     const jumpCount = flow.filter(
-  f => f.action_type === 'JUMP' || f.action_type === 'Review_Time'
+  f => f.action_type === 'JUMP'
 ).length;
 
     // Get unique questions visited in order of first visit
@@ -368,7 +405,7 @@ const sequenceString = flow.map((f, index) => {
             <div className="text-xl font-bold text-orange-500">{totalVisits}</div>
           </div>
           <div className="text-center">
-            <div className="text-xs text-gray-400">Review Visits</div>
+            <div className="text-xs text-gray-400">Review Page Visits</div>
             <div className="text-xl font-bold text-orange-500">{reviewVisits}</div>
           </div>
           <div className="text-center">
@@ -398,11 +435,13 @@ const sequenceString = flow.map((f, index) => {
             <div className="text-xs text-gray-400">Avg Time/Step</div>
             <div className="text-xl font-bold text-gray-800">
               {navigationFlow.length > 0
-  ? Math.round(
-      navigationFlow.reduce((sum, f) => sum + f.time_spent, 0) /
-      navigationFlow.length
-    )
-  : 0}s
+      ? (
+          (
+            (section?.section_correct_time_taken || 0) +
+            (section?.section_incorrect_time_taken || 0)
+          ) / navigationFlow.length
+        ).toFixed(2)
+      : '0.00'}s
             </div>
           </div>
         </div>
@@ -431,7 +470,10 @@ const sequenceString = flow.map((f, index) => {
             <div className="flex items-center gap-1 min-w-max px-2">
               {flow.map((item, index) => {
                 const colorClass = getQuestionColor(item);
-                const action = getActionIcon(item.action_type);
+                const action =
+  item.action_type === 'Review_Time'
+    ? { icon: '→', color: 'text-green-500' }
+    : getActionIcon(item.action_type);
 
                 return (
                   <div key={index} className="flex items-center">
@@ -514,6 +556,32 @@ const sequenceString = flow.map((f, index) => {
   const renderPatternInsights = () => {
     const pattern = resultData?.navigation_pattern;
     const behavior = resultData?.test_taking_behavior;
+
+
+    const getTotalNavigationSteps = () => {
+  let totalSteps = 0;
+
+  resultData?.subjects?.forEach(subject => {
+    subject.sections?.forEach(section => {
+      const flow = buildNavigationFlow(
+        subject.name,
+        section.name
+      );
+
+      const navigationSteps = flow.filter(
+        f =>
+          f.action_type !== 'TIMEUP' &&
+          f.action_type !== 'Review_Time'
+      );
+
+      totalSteps += navigationSteps.length;
+    });
+  });
+
+  return totalSteps;
+};
+
+
     
     if (!pattern && !behavior) {
       return (
@@ -587,20 +655,71 @@ const sequenceString = flow.map((f, index) => {
   return totalRevisits;
 };
 
+const getTotalMarkedQuestions = () => {
+  let totalMarked = 0;
+
+  resultData?.subjects?.forEach(subject => {
+    subject.sections?.forEach(section => {
+      section.questions_data?.forEach(question => {
+        if (question.marked) {
+          totalMarked += 1;
+        }
+      });
+    });
+  });
+
+  return totalMarked;
+};
+
+const getTotalSkippedQuestions = () => {
+  let totalSkipped = 0;
+
+  resultData?.subjects?.forEach(subject => {
+    subject.sections?.forEach(section => {
+      section.questions_data?.forEach(question => {
+        if (question.is_skipped) {
+          totalSkipped += 1;
+        }
+      });
+    });
+  });
+
+  return totalSkipped;
+};
+
+const totalMarkedQuestions = getTotalMarkedQuestions();
+const totalSkippedQuestions = getTotalSkippedQuestions();
+
+const getTotalTimeSpent = () => {
+  let totalTime = 0;
+
+  resultData?.subjects?.forEach(subject => {
+    subject.sections?.forEach(section => {
+      const sectionTotalTime =
+        (section?.section_correct_time_taken || 0) +
+        (section?.section_incorrect_time_taken || 0);
+
+      totalTime += sectionTotalTime;
+    });
+  });
+
+  return totalTime;
+};
+
 const getTotalIdleTime = () => {
   let totalIdleTime = 0;
 
   resultData?.subjects?.forEach(subject => {
     subject.sections?.forEach(section => {
-      const sectionTime = section?.time_on_section || 0;
-
-      const actualQuestionTime =
+      const sectionTotalTime =
         (section?.section_correct_time_taken || 0) +
         (section?.section_incorrect_time_taken || 0);
 
+      const sectionTime = section?.time_on_section || 0;
+
       totalIdleTime += Math.max(
         0,
-        sectionTime - actualQuestionTime
+        sectionTime - sectionTotalTime
       );
     });
   });
@@ -608,6 +727,7 @@ const getTotalIdleTime = () => {
   return totalIdleTime;
 };
 
+const totalTimeSpent = getTotalTimeSpent();
 const totalIdleTime = getTotalIdleTime();
 
     return (
@@ -668,7 +788,9 @@ const totalIdleTime = getTotalIdleTime();
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
                 <ActivityIcon size={20} className="text-blue-500" />
               </div>
-              <span className="text-2xl font-bold text-gray-800">{pattern?.total_navigations || 0}</span>
+              <span className="text-2xl font-bold text-gray-800"><span className="text-2xl font-bold text-gray-800">
+  {getTotalNavigationSteps()}
+</span></span>
             </div>
             <p className="text-xs text-gray-400 mt-1.5 font-medium">Total Navigations</p>
           </div>
@@ -713,7 +835,7 @@ const totalIdleTime = getTotalIdleTime();
               </div>
               <h4 className="text-sm font-semibold text-gray-700">Detailed Behavior Analysis</h4>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-8 gap-4">
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-400">Unique Questions</p>
                 <p className="text-lg font-bold text-gray-800">{behavior.unique_questions_visited || 0}</p>
@@ -735,7 +857,7 @@ const totalIdleTime = getTotalIdleTime();
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-400">Total Time Spent</p>
                 <p className="text-lg font-bold text-gray-800">
-             {Math.floor((behavior.total_time_spent || 0) / 60)}m {Math.round((behavior.total_time_spent || 0) % 60)}s
+             {Math.floor(totalTimeSpent / 60)}m {totalTimeSpent % 60}s
                 </p>
               </div>
 
@@ -743,6 +865,18 @@ const totalIdleTime = getTotalIdleTime();
   <p className="text-xs text-gray-400">Total Idle Time</p>
   <p className="text-lg font-bold text-orange-500">
     {Math.floor(totalIdleTime / 60)}m {totalIdleTime % 60}s
+  </p>
+</div>
+<div className="bg-gray-50 rounded-lg p-3">
+  <p className="text-xs text-gray-400">Marked Questions</p>
+  <p className="text-lg font-bold text-blue-500">
+    {totalMarkedQuestions}
+  </p>
+</div>
+<div className="bg-gray-50 rounded-lg p-3">
+  <p className="text-xs text-gray-400">Skipped Questions</p>
+  <p className="text-lg font-bold text-gray-500">
+    {totalSkippedQuestions}
   </p>
 </div>
             </div>
