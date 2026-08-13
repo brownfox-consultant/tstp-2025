@@ -303,7 +303,7 @@ const reviewVisits = flow.filter(
   f => f.action_type === 'Review_Time'
 ).length;
 
-const totalVisits = revisits + timeupVisits;
+const totalVisits = revisits 
 
 const sectionTime = section?.time_on_section || 0;
 
