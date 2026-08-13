@@ -40,6 +40,8 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
   const availableSubjects = resultData?.subjects?.map(s => s.name.toLowerCase()) || [];
   const tabs = [...availableSubjects, "questions", "insights"];
 
+  
+
   useEffect(() => {
     setLoading(true);
     getTestResult({
@@ -179,14 +181,12 @@ allActions.sort(
   (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
 );
 
-// Remove TIMEUP and Review_Time from Navigation Timeline
-const timelineActions = allActions.filter(
-  action =>
-    action.action_type !== 'TIMEUP' &&
-    action.action_type !== 'Review_Time'
+// Sort by timestamp
+allActions.sort(
+  (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
 );
 
-timelineActions.forEach(action => {
+allActions.forEach(action => {
   flow.push({
     sr_no: action.sr_no,
     question_id: action.question_id,
@@ -202,12 +202,17 @@ timelineActions.forEach(action => {
     return flow;
   };
 
+  
+
   // ✅ Render Navigation Flow Timeline - SINGLE DEFINITION
   const renderNavigationFlow = () => {
     const flow = buildNavigationFlow(
       selectedFlowSection?.subject,
       selectedFlowSection?.section
     );
+    const navigationFlow = flow.filter(
+  f => f.action_type !== 'TIMEUP'
+);
     
     const allSections = getAllSections();
 
@@ -233,7 +238,9 @@ timelineActions.forEach(action => {
     // Group by action type for statistics
     const nextCount = flow.filter(f => f.action_type === 'NEXT').length;
     const prevCount = flow.filter(f => f.action_type === 'PREVIOUS').length;
-    const jumpCount = flow.filter(f => f.action_type === 'JUMP').length;
+    const jumpCount = flow.filter(
+  f => f.action_type === 'JUMP' || f.action_type === 'Review_Time'
+).length;
 
     // Get unique questions visited in order of first visit
     const uniqueQuestions = [];
@@ -251,8 +258,30 @@ const revisits = questions.reduce((total, q) => {
   return total + Math.max(0, (q.times_visited || 1) - 1);
 }, 0);
 
-    // Build sequence string - clean version with unique transitions
-    const sequenceString = flow.map(f => `Q${f.sr_no}`).join(' → ');
+const timeupVisits = flow.filter(
+  f => f.action_type === 'TIMEUP'
+).length;
+
+const reviewVisits = flow.filter(
+  f => f.action_type === 'Review_Time'
+).length;
+
+const totalVisits = revisits + timeupVisits;
+
+const sectionTime = section?.time_on_section || 0;
+
+const actualQuestionTime =
+  (section?.section_correct_time_taken || 0) +
+  (section?.section_incorrect_time_taken || 0);
+
+const idleTime = Math.max(
+  0,
+  sectionTime - actualQuestionTime
+);
+
+
+
+    
 
     
 
@@ -268,12 +297,37 @@ const revisits = questions.reduce((total, q) => {
 
     // ✅ Get action icon
     const getActionIcon = (actionType) => {
-      switch(actionType) {
-        case 'PREVIOUS': return { icon: '←', color: 'text-blue-500' };
-        case 'JUMP': return { icon: '↕', color: 'text-purple-500' };
-        default: return { icon: '→', color: 'text-green-500' };
-      }
-    };
+  switch(actionType) {
+    case 'PREVIOUS':
+      return { icon: '←', color: 'text-blue-500' };
+
+    case 'JUMP':
+    case 'Review_Time':
+      return { icon: '↕', color: 'text-purple-500' };
+
+    default:
+      return { icon: '→', color: 'text-green-500' };
+  }
+};
+
+const sequenceString = flow.map((f, index) => {
+  const question =
+    f.action_type === 'Review_Time'
+      ? 'R'
+      : `Q${f.sr_no}`;
+
+  if (index === 0) {
+    return question;
+  }
+
+  // Use the PREVIOUS item's action,
+  // because that action represents the arrow to this question.
+  const previousAction = getActionIcon(
+    flow[index - 1].action_type
+  );
+
+  return `${previousAction.icon} ${question}`;
+}).join(' ');
 
     return (
       <div className="space-y-4">
@@ -298,10 +352,12 @@ const revisits = questions.reduce((total, q) => {
         </div>
 
         {/* Flow Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-gray-50 rounded-xl p-4">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-3 bg-gray-50 rounded-xl p-4">
           <div className="text-center">
             <div className="text-xs text-gray-400">Total Steps</div>
-            <div className="text-xl font-bold text-gray-800">{flow.length}</div>
+            <div className="text-xl font-bold text-gray-800">
+  {navigationFlow.length}
+</div>
           </div>
           <div className="text-center">
             <div className="text-xs text-gray-400">Unique Questions</div>
@@ -309,11 +365,16 @@ const revisits = questions.reduce((total, q) => {
           </div>
           <div className="text-center">
             <div className="text-xs text-gray-400">Revisits</div>
-            <div className="text-xl font-bold text-orange-500">{revisits}</div>
+            <div className="text-xl font-bold text-orange-500">{totalVisits}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xs text-gray-400">Review Visits</div>
+            <div className="text-xl font-bold text-orange-500">{reviewVisits}</div>
           </div>
           <div className="text-center">
   <div className="text-xs text-gray-400">Total Time</div>
   <div className="text-xl font-bold text-gray-800">
+    
   {(() => {
     const totalSeconds =
       (section?.section_correct_time_taken || 0) +
@@ -325,11 +386,23 @@ const revisits = questions.reduce((total, q) => {
     return `${minutes}m ${seconds}s`;
   })()}
 </div>
+
+</div>
+<div className="text-center">
+  <div className="text-xs text-gray-400">Idle Time</div>
+  <div className="text-xl font-bold text-orange-500">
+    {Math.floor(idleTime / 60)}m {idleTime % 60}s
+  </div>
 </div>
           <div className="text-center">
             <div className="text-xs text-gray-400">Avg Time/Step</div>
             <div className="text-xl font-bold text-gray-800">
-              {flow.length > 0 ? Math.round(flow.reduce((sum, f) => sum + f.time_spent, 0) / flow.length) : 0}s
+              {navigationFlow.length > 0
+  ? Math.round(
+      navigationFlow.reduce((sum, f) => sum + f.time_spent, 0) /
+      navigationFlow.length
+    )
+  : 0}s
             </div>
           </div>
         </div>
@@ -367,7 +440,11 @@ const revisits = questions.reduce((total, q) => {
                       className={`relative flex-shrink-0 w-9 h-9 rounded-lg ${colorClass} font-bold text-sm flex items-center justify-center border-2 shadow-sm transition-all hover:scale-110 hover:shadow-md cursor-pointer group`}
                       title={`Q${item.sr_no} - ${item.action_type} (${item.time_spent}s)${item.marked ? ' 📌' : ''}${item.is_correct ? ' ✅' : item.is_skipped ? ' ⏭' : ' ❌'}`}
                     >
-                      <span className="relative z-10">{item.sr_no}</span>
+         <span className="relative z-10">
+  {item.action_type === 'Review_Time'
+    ? 'R'
+    : item.sr_no}
+</span>
                       {item.marked && (
                         <span className="absolute -top-1 -right-1 text-[8px]">📌</span>
                       )}
@@ -510,6 +587,29 @@ const revisits = questions.reduce((total, q) => {
   return totalRevisits;
 };
 
+const getTotalIdleTime = () => {
+  let totalIdleTime = 0;
+
+  resultData?.subjects?.forEach(subject => {
+    subject.sections?.forEach(section => {
+      const sectionTime = section?.time_on_section || 0;
+
+      const actualQuestionTime =
+        (section?.section_correct_time_taken || 0) +
+        (section?.section_incorrect_time_taken || 0);
+
+      totalIdleTime += Math.max(
+        0,
+        sectionTime - actualQuestionTime
+      );
+    });
+  });
+
+  return totalIdleTime;
+};
+
+const totalIdleTime = getTotalIdleTime();
+
     return (
       <div className="space-y-6">
         {/* Pattern Summary Card - Hero Card */}
@@ -613,7 +713,7 @@ const revisits = questions.reduce((total, q) => {
               </div>
               <h4 className="text-sm font-semibold text-gray-700">Detailed Behavior Analysis</h4>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-400">Unique Questions</p>
                 <p className="text-lg font-bold text-gray-800">{behavior.unique_questions_visited || 0}</p>
@@ -638,6 +738,13 @@ const revisits = questions.reduce((total, q) => {
              {Math.floor((behavior.total_time_spent || 0) / 60)}m {Math.round((behavior.total_time_spent || 0) % 60)}s
                 </p>
               </div>
+
+              <div className="bg-gray-50 rounded-lg p-3">
+  <p className="text-xs text-gray-400">Total Idle Time</p>
+  <p className="text-lg font-bold text-orange-500">
+    {Math.floor(totalIdleTime / 60)}m {totalIdleTime % 60}s
+  </p>
+</div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
               
