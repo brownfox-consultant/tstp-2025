@@ -343,6 +343,9 @@ const idleTime = Math.max(
     case 'Review_Time':
       return { icon: '↕', color: 'text-purple-500' };
 
+    case 'TIMEUP':
+      return { icon: '→', color: 'text-red-500' };
+
     default:
       return { icon: '→', color: 'text-green-500' };
   }
@@ -350,9 +353,11 @@ const idleTime = Math.max(
 
 const sequenceString = flow.map((f, index) => {
   const question =
-    f.action_type === 'Review_Time'
-      ? 'R'
-      : `Q${f.sr_no}`;
+  f.action_type === 'Review_Time'
+    ? 'R'
+    : f.action_type === 'TIMEUP'
+    ? 'T'
+    : `Q${f.sr_no}`;
 
   if (index === 0) {
     return question;
@@ -487,8 +492,10 @@ const sequenceString = flow.map((f, index) => {
                     >
          <span className="relative z-10">
   {item.action_type === 'Review_Time'
-    ? 'R'
-    : item.sr_no}
+  ? 'R'
+  : item.action_type === 'TIMEUP'
+  ? 'T'
+  : item.sr_no}
 </span>
                       {item.marked && (
                         <span className="absolute -top-1 -right-1 text-[8px]">📌</span>
