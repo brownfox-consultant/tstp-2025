@@ -1,43 +1,72 @@
 import { changePasswordService } from "@/app/services/authService";
-import { handleAPIError } from "@/utils/utils";
 import { LockOutlined } from "@ant-design/icons";
 import { Form, Input, Modal, Button, notification } from "antd";
-import { useParams, useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 function ChangePasswordModal({
   buttonVisible = true,
   changePasswordFlag = false,
 }) {
   const [form] = Form.useForm();
-  const router = useRouter();
-  const { params } = useParams();
+
   const [open, setOpen] = useState(changePasswordFlag);
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [oldPassword, setOldPassword] = useState("");
 
-  const onSubmit = (e) => {
+  // Keep modal state synced with the flag
+  useEffect(() => {
+    setOpen(changePasswordFlag);
+  }, [changePasswordFlag]);
+
+  const onSubmit = (values) => {
     setUpdateLoading(true);
-    const { old_password, new_password } = e;
 
-    changePasswordService({ old_password, new_password })
+    const { old_password, new_password } = values;
+
+    changePasswordService({
+      old_password,
+      new_password,
+    })
       .then((res) => {
         form.resetFields();
+
         setOpen(false);
+
         const { csrf_token } = res.data;
-        window.localStorage.setItem("change_password", false);
-        window.localStorage.setItem("csrfToken", csrf_token);
+
+        window.localStorage.setItem(
+          "change_password",
+          "false"
+        );
+
+        window.localStorage.setItem(
+          "csrfToken",
+          csrf_token
+        );
+
         Modal.success({
           title: "Password changed successfully.",
         });
       })
-      .finally(() => setUpdateLoading(false));
+      .catch((error) => {
+        console.error("Change password error:", error);
+
+        notification.error({
+          message: "Password change failed",
+          description:
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            "Unable to change password.",
+        });
+      })
+      .finally(() => {
+        setUpdateLoading(false);
+      });
   };
 
   return (
     <>
       {buttonVisible && (
-        <button 
+        <button
           onClick={() => setOpen(true)}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 shadow-sm transition-all duration-200"
         >
@@ -45,12 +74,29 @@ function ChangePasswordModal({
           Change Password
         </button>
       )}
+
       <Modal
         open={open}
-        title={<div className="text-2xl font-bold mb-2">Change Password</div>}
+        title={
+          <div className="text-2xl font-bold mb-2">
+            Change Password
+          </div>
+        }
         footer={false}
-        closable={!changePasswordFlag}
-        onCancel={!changePasswordFlag ? () => setOpen(false) : () => {}}
+
+        // Always show X close button
+        closable={true}
+
+        // Allow clicking outside to close
+        maskClosable={true}
+
+        // Allow ESC to close
+        keyboard={true}
+
+        // Close modal
+        onCancel={() => {
+          setOpen(false);
+        }}
       >
         <Form
           className="mt-5"
@@ -67,23 +113,14 @@ function ChangePasswordModal({
           <Form.Item
             label="Old Password"
             name="old_password"
-            initialValue=""
             rules={[
               {
                 required: true,
                 message: "Please input your password!",
               },
-              // {
-              //   min: 8,
-              //   message: "Password must be at least 8 characters long.",
-              // },
-              // {
-              //   pattern: /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/,
-              //   message: "Password must contain at least one uppercase letter, one lowercase letter, and one number.",
-              // },
             ]}
           >
-            <Input />
+            <Input.Password />
           </Form.Item>
 
           <Form.Item
@@ -96,16 +133,14 @@ function ChangePasswordModal({
               },
               {
                 min: 8,
-                message: "Password must be at least 8 characters long.",
+                message:
+                  "Password must be at least 8 characters long.",
               },
-              // {
-              //   pattern: /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/,
-              //   message: "Password must contain at least one uppercase letter, one lowercase letter, and one number.",
-              // },
             ]}
           >
             <Input.Password />
           </Form.Item>
+
           <Form.Item
             name="confirm"
             label="Confirm Password"
@@ -114,13 +149,18 @@ function ChangePasswordModal({
             rules={[
               {
                 required: true,
-                message: "Please confirm your password!",
+                message:
+                  "Please confirm your password!",
               },
               ({ getFieldValue }) => ({
                 validator(_, value) {
-                  if (!value || getFieldValue("new_password") === value) {
+                  if (
+                    !value ||
+                    getFieldValue("new_password") === value
+                  ) {
                     return Promise.resolve();
                   }
+
                   return Promise.reject(
                     new Error(
                       "The two passwords that you entered do not match!"
@@ -132,13 +172,18 @@ function ChangePasswordModal({
           >
             <Input.Password />
           </Form.Item>
+
           <Form.Item
             wrapperCol={{
               span: 24,
             }}
             className="flex justify-center"
           >
-            <Button type="primary" htmlType="submit" loading={updateLoading}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={updateLoading}
+            >
               Update
             </Button>
           </Form.Item>

@@ -133,6 +133,7 @@ function BackdoorLoginForm() {
       role_name,
       csrf_token,
       subscription_type,
+      change_password,
     } = res.data;
 
     // 🔐 STORE IMPERSONATED USER
@@ -143,6 +144,9 @@ function BackdoorLoginForm() {
     localStorage.setItem("csrfToken", csrf_token);
     localStorage.setItem("subscription_type", subscription_type);
     localStorage.setItem("impersonating", "true");
+    localStorage.setItem(
+  "change_password",change_password
+);
 
     message.success(`Logged in as ${name}`);
 
