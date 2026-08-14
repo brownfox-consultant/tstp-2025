@@ -5172,7 +5172,9 @@ class ResultViewSet(viewsets.ModelViewSet):
 
                     # Prepare counters and lists
                     section_correct_count = section_incorrect_count = section_blank_count = marked = 0
-                    section_correct_time_taken = section_incorrect_time_taken = 0
+                    section_correct_time_taken = 0
+                    section_incorrect_time_taken = 0
+                    section_blank_time_taken = 0
                     section_max_score = 0
                     section_min_score = 0
 
@@ -5234,8 +5236,11 @@ class ResultViewSet(viewsets.ModelViewSet):
                             if qa.is_correct:
                                 section_correct_count += 1
                                 section_correct_time_taken += qa.time_taken or 0
+
                             elif qa.is_skipped:
                                 section_blank_count += 1
+                                section_blank_time_taken += qa.time_taken or 0
+
                             else:
                                 section_incorrect_count += 1
                                 section_incorrect_time_taken += qa.time_taken or 0
@@ -5283,6 +5288,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                         'time_on_section': section_stats.time_taken if (section_stats := SectionStats.objects.filter(result=result, course_subject_id=subj_id, section_id=sub_section['id']).first()) else 0,
                         'section_correct_time_taken': section_correct_time_taken,
                         'section_incorrect_time_taken': section_incorrect_time_taken,
+                        'section_blank_time_taken': section_blank_time_taken,
                         'section_max_score': section_max_score,
                         'section_score': section_score,
                         'questions_data': questions_data,

@@ -31,16 +31,17 @@ const getTopicWiseDataset = (questions = []) => {
 
 const SectionSegmentLabel = ({ data }) => {
   const {
-    name,
-    section_correct_count,
-    section_incorrect_count,
-    section_blank_count,
-    section_correct_time_taken,
-    section_incorrect_time_taken,
-    time_on_section,
-    marked = 0,
-    questions_data = [],
-  } = data;
+  name,
+  section_correct_count,
+  section_incorrect_count,
+  section_blank_count,
+  section_correct_time_taken,
+  section_incorrect_time_taken,
+  section_blank_time_taken,
+  time_on_section,
+  marked = 0,
+  questions_data = [],
+} = data;
 
   const totalQuestions = section_correct_count + section_incorrect_count + section_blank_count;
   const { labels, data: values, backgroundColor } = getTopicWiseDataset(questions_data);
@@ -79,10 +80,14 @@ const SectionSegmentLabel = ({ data }) => {
     maintainAspectRatio: false,
   };
 
-  const idleTime = Math.max(
+ const idleTime = Math.max(
   0,
   (time_on_section || 0) -
-    ((section_correct_time_taken || 0) + (section_incorrect_time_taken || 0))
+    (
+      (section_correct_time_taken || 0) +
+      (section_incorrect_time_taken || 0) +
+      (section_blank_time_taken || 0)
+    )
 );
 
   return (
@@ -182,6 +187,16 @@ const SectionSegmentLabel = ({ data }) => {
               </div>
               <span className="font-bold text-red-600">{timeInMMSS(section_incorrect_time_taken)}</span>
             </div>
+
+            <div className="flex items-center justify-between text-sm">
+  <div className="flex items-center gap-2 text-gray-500">
+    <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+    <span>Time on Blank/Skipped</span>
+  </div>
+  <span className="font-bold text-gray-600">
+    {timeInMMSS(section_blank_time_taken || 0)}
+  </span>
+</div>
 
              <div className="flex items-center justify-between text-sm">
     <div className="flex items-center gap-2 text-gray-500">

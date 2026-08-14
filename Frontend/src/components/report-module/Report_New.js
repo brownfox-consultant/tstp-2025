@@ -414,8 +414,9 @@ const sequenceString = flow.map((f, index) => {
     
   {(() => {
     const totalSeconds =
-      (section?.section_correct_time_taken || 0) +
-      (section?.section_incorrect_time_taken || 0);
+       (section?.section_correct_time_taken || 0) +
+  (section?.section_incorrect_time_taken || 0) +
+  (section?.section_blank_time_taken || 0);
 
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -435,13 +436,14 @@ const sequenceString = flow.map((f, index) => {
             <div className="text-xs text-gray-400">Avg Time/Step</div>
             <div className="text-xl font-bold text-gray-800">
               {navigationFlow.length > 0
-      ? (
-          (
-            (section?.section_correct_time_taken || 0) +
-            (section?.section_incorrect_time_taken || 0)
-          ) / navigationFlow.length
-        ).toFixed(2)
-      : '0.00'}s
+  ? (
+      (
+        (section?.section_correct_time_taken || 0) +
+        (section?.section_incorrect_time_taken || 0) +
+        (section?.section_blank_time_taken || 0)
+      ) / navigationFlow.length
+    ).toFixed(2)
+  : '0.00'}s
             </div>
           </div>
         </div>
@@ -697,7 +699,8 @@ const getTotalTimeSpent = () => {
     subject.sections?.forEach(section => {
       const sectionTotalTime =
         (section?.section_correct_time_taken || 0) +
-        (section?.section_incorrect_time_taken || 0);
+  (section?.section_incorrect_time_taken || 0) +
+  (section?.section_blank_time_taken || 0);
 
       totalTime += sectionTotalTime;
     });
@@ -712,8 +715,9 @@ const getTotalIdleTime = () => {
   resultData?.subjects?.forEach(subject => {
     subject.sections?.forEach(section => {
       const sectionTotalTime =
-        (section?.section_correct_time_taken || 0) +
-        (section?.section_incorrect_time_taken || 0);
+       (section?.section_correct_time_taken || 0) +
+  (section?.section_incorrect_time_taken || 0) +
+  (section?.section_blank_time_taken || 0);
 
       const sectionTime = section?.time_on_section || 0;
 
