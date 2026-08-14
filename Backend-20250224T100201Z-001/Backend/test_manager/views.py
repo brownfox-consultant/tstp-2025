@@ -3521,17 +3521,34 @@ class TestViewSet(viewsets.ModelViewSet):
         if test.format_type == Test.LINEAR:
             question_ids = sub_section.get('questions', [])
         elif test.format_type == Test.DYNAMIC:
-            # if section_id == "1":  # First section
-            if section.order == 1 and section_id == "1":  # First section
-                question_ids = self.get_first_section_questions(course_subject_id,
-                                                                sub_section['no_of_questions'],
-                                                                excluded_question_ids)
-            else:
-                result = Result.objects.get(test_submission=test_submission) if test_submission else None
-                if result:
-                    question_ids = self.get_dynamic_section_questions(course_subject_id, result,
-                                                                      sub_section['no_of_questions'],
-                                                                      excluded_question_ids)
+
+            result = Result.objects.get(
+                test_submission=test_submission
+            ) if test_submission else None
+
+            if result:
+                question_ids = self.get_dynamic_section_questions(
+                    course_subject_id,
+                    result,
+                    sub_section['no_of_questions'],
+                    excluded_question_ids
+                )
+
+                section_stats, created = SectionStats.objects.get_or_create(
+                    result=result,
+                    course_subject_id=course_subject_id,
+                    section_id=section_id,
+                    defaults={
+                        "time_taken": 0,
+                        "last_sync_at": timezone.now(),
+                        "started_at": timezone.now(),
+                        "total_questions": len(question_ids)
+                    }
+                )
+
+                if not created:
+                    section_stats.total_questions = len(question_ids)
+                    section_stats.save(update_fields=["total_questions"])
                     
                     section_stats, created = SectionStats.objects.get_or_create(
                         result=result,

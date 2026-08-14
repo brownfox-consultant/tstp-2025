@@ -298,9 +298,26 @@ class Result(models.Model):
             return 0
 
 
-    def update_question_answer_and_stats(self, test, course_subject, section_id, question, answer_data,
-                                         time_taken, correct_answer, is_skipped, is_marked_for_review,navigation_action=None,):
-        # Create or update the QuestionAnswer entry
+    def update_question_answer_and_stats(
+    self,
+    test,
+    course_subject,
+    section_id,
+    question,
+    answer_data,
+    time_taken,
+    correct_answer,
+    is_skipped,
+    is_marked_for_review,
+    navigation_action=None,
+    ):
+        COUNTED_ACTIONS = ["NEXT", "PREVIOUS", "JUMP"]
+        is_counted_action = navigation_action in COUNTED_ACTIONS
+
+        # Only count actual navigation time.
+        counted_time = time_taken if is_counted_action else 0
+
+        # Create or update QuestionAnswer
         question_answer, created = QuestionAnswer.objects.get_or_create(
             result=self,
             course_subject_id=course_subject,
@@ -309,37 +326,50 @@ class Result(models.Model):
             defaults={
                 'is_correct': correct_answer,
                 'is_skipped': is_skipped,
-                'time_taken': time_taken,
+                'time_taken': counted_time,
                 'selected_options': answer_data if not is_skipped else [],
                 'times_visited': 1,
-                'first_time_taken': time_taken,
+                'first_time_taken': counted_time,
                 'is_marked_for_review': is_marked_for_review,
-                'order': self.get_question_order(test, course_subject, section_id, question.id)
+                'order': self.get_question_order(
+                    test,
+                    course_subject,
+                    section_id,
+                    question.id
+                )
             }
         )
 
-        # If not created, it means we are updating an existing answer
-        
+        print("created:", created)
+        print("time_taken:", time_taken)
+        print("navigation_action:", navigation_action)
+        print("is_counted_action:", is_counted_action)
 
         if not created:
             previous_correct = question_answer.is_correct
-            # Update fields
-            visit = question_answer.times_visited  # value before increment
+            visit = question_answer.times_visited
 
-            if visit == 1:
-                question_answer.second_time_taken = time_taken
-            elif visit == 2:
-                question_answer.third_time_taken = time_taken
+            # Only store visit-time values for counted navigation.
+            if is_counted_action:
+
+                if visit == 1:
+                    question_answer.second_time_taken = time_taken
+                elif visit == 2:
+                    question_answer.third_time_taken = time_taken
+
+                question_answer.time_taken += time_taken
+                question_answer.times_visited += 1
+
+                # Result total also counts only actual navigation time.
+                self.time_taken += time_taken
 
             question_answer.is_correct = correct_answer
             question_answer.is_skipped = is_skipped
-            if navigation_action in ["NEXT", "PREVIOUS","JUMP"]:
-                question_answer.time_taken += time_taken
-            question_answer.selected_options = answer_data if not is_skipped else []
-            print("navigation_action",navigation_action)    
-            if navigation_action in ["NEXT", "PREVIOUS","JUMP"]:
-                question_answer.times_visited += 1
+            question_answer.selected_options = (
+                answer_data if not is_skipped else []
+            )
             question_answer.is_marked_for_review = is_marked_for_review
+
             question_answer.save()
 
             # Adjust counts
@@ -350,6 +380,7 @@ class Result(models.Model):
                 else:
                     self.correct_answer_count += 1
                     self.incorrect_answer_count -= 1
+
         else:
             # First time answering this question
             if correct_answer:
@@ -357,7 +388,12 @@ class Result(models.Model):
             elif not is_skipped:
                 self.incorrect_answer_count += 1
 
-        # Initialize SectionStats (if it doesn't already exist) with the correct total number of questions
+            # If this is the first counted navigation event,
+            # include it in Result.time_taken.
+            if is_counted_action:
+                self.time_taken += time_taken
+
+        # SectionStats
         section_stats, created = SectionStats.objects.get_or_create(
             result=self,
             course_subject_id=course_subject,
@@ -365,7 +401,7 @@ class Result(models.Model):
             defaults={
                 'time_taken': 0,
                 'started_at': timezone.now(),
-                "last_sync_at": timezone.now(),   # NEW
+                'last_sync_at': timezone.now(),
                 'total_questions': self.get_total_questions_for_section(
                     test,
                     course_subject,
@@ -380,32 +416,37 @@ class Result(models.Model):
         if not section_stats.last_sync_at:
             section_stats.last_sync_at = timezone.now()
 
-        section_stats.save(update_fields=[
-            "started_at",
-            "last_sync_at",
-        ])
-        
+        section_stats.save(
+            update_fields=[
+                "started_at",
+                "last_sync_at",
+            ]
+        )
 
-        # Update only the time_taken, not the total_questions
-        
-
-        # Update the overall time taken in Result
-        self.time_taken += time_taken
-
-        # Check for test completion and update the status accordingly
+        # Check completion
         test_submission = self.test_submission
-        all_answered = QuestionAnswer.objects.filter(result=self).count() >= \
-                       sum([stats.total_questions for stats in SectionStats.objects.filter(result=self)])
+
+        all_answered = (
+            QuestionAnswer.objects.filter(result=self).count()
+            >=
+            sum(
+                stats.total_questions
+                for stats in SectionStats.objects.filter(result=self)
+            )
+        )
 
         if all_answered:
             test_submission.status = TestSubmission.COMPLETED
             test_submission.completion_date = timezone.now()
-            mark_notification_as_read.delay(user_id=test_submission.student.id, category=Notification.TEST,
-                                            reference_id=test_submission.id)
+
+            mark_notification_as_read.delay(
+                user_id=test_submission.student.id,
+                category=Notification.TEST,
+                reference_id=test_submission.id
+            )
         else:
             test_submission.status = TestSubmission.IN_PROGRESS
 
-        # Save all changes
         test_submission.save()
         self.save()
 
@@ -605,50 +646,68 @@ class PracticeTestResult(models.Model):
     def update_question_answer(
     self, question, answer_data, time_taken, correct_answer, is_skipped,
     is_marked_for_review, striked_data=None, navigation_action=None,
-):
+    ):
         striked_data = striked_data or []
 
-        # Get or create question answer entry
+        counted_action = navigation_action in ["NEXT", "PREVIOUS", "JUMP"]
+
+        initial_time = time_taken if counted_action else 0
+
         question_answer, created = PracticeQuestionAnswer.objects.get_or_create(
             practice_test_result=self,
             question=question,
             defaults={
                 'is_correct': correct_answer,
                 'is_skipped': is_skipped,
-                'time_taken': time_taken,
+                'time_taken': initial_time,
                 'selected_options': answer_data if not is_skipped else [],
                 'striked_options': striked_data,
-                'times_visited': 1,
-                'first_time_taken': time_taken,
+                'times_visited': 1 if counted_action else 0,
+                'first_time_taken': initial_time,
                 'is_marked_for_review': is_marked_for_review,
             }
-        )   
-        print("created",created)
-        print("time_taken",time_taken)
+        )
 
-        # Update if already exists
+        print("created", created)
+        print("time_taken", time_taken)
+        print("navigation_action", navigation_action)
+        print("counted_action", counted_action)
+
         if not created:
-            if question_answer.first_time_taken == 0:
-                question_answer.first_time_taken = time_taken
 
-            if navigation_action in ["NEXT", "PREVIOUS","JUMP"]:
+            if counted_action:
+                if question_answer.first_time_taken == 0:
+                    question_answer.first_time_taken = time_taken
+
                 question_answer.times_visited += 1
-            if navigation_action in ["NEXT", "PREVIOUS","JUMP"]:
                 question_answer.time_taken += time_taken
+
             question_answer.selected_options = answer_data if not is_skipped else []
             question_answer.striked_options = striked_data
             question_answer.is_correct = correct_answer
             question_answer.is_skipped = is_skipped
             question_answer.is_marked_for_review = is_marked_for_review
+
             question_answer.save()
 
-        # Recalculate totals (✅ this fixes your 0 or -3 issue)
-        all_answers = PracticeQuestionAnswer.objects.filter(practice_test_result=self)
-        self.correct_answer_count = all_answers.filter(is_correct=True).count()
-        self.incorrect_answer_count = all_answers.filter(is_correct=False, is_skipped=False).count()
+        # Recalculate totals
+        all_answers = PracticeQuestionAnswer.objects.filter(
+            practice_test_result=self
+        )
 
-        # Update total time taken
-        self.time_taken = sum(a.time_taken for a in all_answers)
+        self.correct_answer_count = all_answers.filter(
+            is_correct=True
+        ).count()
+
+        self.incorrect_answer_count = all_answers.filter(
+            is_correct=False,
+            is_skipped=False
+        ).count()
+
+        # Only counted question time is stored here
+        self.time_taken = sum(
+            a.time_taken for a in all_answers
+        )
 
         self.save()
 
