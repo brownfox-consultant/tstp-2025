@@ -384,7 +384,8 @@ const sectionTime = section?.time_on_section || 0;
 
 const actualQuestionTime =
   (section?.section_correct_time_taken || 0) +
-  (section?.section_incorrect_time_taken || 0);
+  (section?.section_incorrect_time_taken || 0) +
+  (section?.section_blank_time_taken || 0);
 
 const idleTime = Math.max(
   0,
