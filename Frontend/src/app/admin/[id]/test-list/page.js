@@ -661,13 +661,13 @@ const TestListPage = () => {
       key: "action",
       align: "center",
       render: (_, record) => (
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-center">
+        <div className="flex justify-center">
           <Button
-            type="primary"
+            type="default"
             icon={<EyeOutlined />}
             size="small"
-            style={{ backgroundColor: "#f59e0b", borderColor: "#f59e0b", color: "white" }}
-            className="hover:!bg-amber-600 hover:!border-amber-600 font-medium shadow-sm flex items-center gap-1.5"
+            style={{ color: "#f59e0b", borderColor: "#f59e0b", backgroundColor: "transparent", border:"transparent" }}
+            className="hover:!text-amber-600 hover:!border-amber-600 hover:!bg-orange-50 font-medium shadow-sm flex items-center gap-1.5"
             onClick={(e) => {
               e.stopPropagation();
               handleViewResult(record, type);
@@ -861,31 +861,8 @@ const TestListPage = () => {
 
         {/* Render Table based on Segmented Switcher selection */}
         {activeTabKey === "fullLength" ? (
-          loading && displayedFullLength.length === 0 ? (
-            <div className="bg-white rounded-xl p-4 mt-4 border border-gray-100 shadow-sm animate-pulse">
-              {/* Header Skeleton */}
-              <div className="flex gap-4 border-b border-gray-100 pb-4 mb-5">
-                <Skeleton.Button active size="small" style={{ width: 100 }} />
-                <Skeleton.Button active size="small" style={{ width: 160 }} />
-                <Skeleton.Button active size="small" style={{ width: 220 }} />
-                <Skeleton.Button active size="small" style={{ width: 120 }} />
-                <Skeleton.Button active size="small" style={{ width: 120 }} />
-                <Skeleton.Button active size="small" style={{ width: 80 }} />
-              </div>
-              {/* Rows Skeleton */}
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="flex gap-4 mb-6 items-center">
-                  <Skeleton.Button active size="small" style={{ width: 90, borderRadius: 16 }} />
-                  <Skeleton.Input active size="small" style={{ width: 140 }} />
-                  <Skeleton.Input active size="small" style={{ width: 200 }} />
-                  <Skeleton.Input active size="small" style={{ width: 120 }} />
-                  <Skeleton.Input active size="small" style={{ width: 120 }} />
-                  <Skeleton.Button active size="small" style={{ width: 70, borderRadius: 16 }} />
-                </div>
-              ))}
-            </div>
-          ) : (
             <Table
+              loading={loading}
               size="small"
               columns={getTableColumns("fullLength")}
               dataSource={displayedFullLength}
@@ -984,33 +961,9 @@ const TestListPage = () => {
               className="shadow-sm rounded-lg overflow-hidden mt-0 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5 [&_.ant-table-pagination-top]:!my-1.5 [&_.ant-table-pagination-top]:!mt-0"
               rowKey={(record) => record.id || record.test_submission_id}
             />
-          )
         ) : (
-          loading && displayedPractice.length === 0 ? (
-            <div className="bg-white rounded-xl p-4 mt-4 border border-gray-100 shadow-sm animate-pulse">
-              {/* Header Skeleton */}
-              <div className="flex gap-4 border-b border-gray-100 pb-4 mb-5">
-                <Skeleton.Button active size="small" style={{ width: 100 }} />
-                <Skeleton.Button active size="small" style={{ width: 160 }} />
-                <Skeleton.Button active size="small" style={{ width: 220 }} />
-                <Skeleton.Button active size="small" style={{ width: 120 }} />
-                <Skeleton.Button active size="small" style={{ width: 120 }} />
-                <Skeleton.Button active size="small" style={{ width: 80 }} />
-              </div>
-              {/* Rows Skeleton */}
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="flex gap-4 mb-6 items-center">
-                  <Skeleton.Button active size="small" style={{ width: 90, borderRadius: 16 }} />
-                  <Skeleton.Input active size="small" style={{ width: 140 }} />
-                  <Skeleton.Input active size="small" style={{ width: 200 }} />
-                  <Skeleton.Input active size="small" style={{ width: 120 }} />
-                  <Skeleton.Input active size="small" style={{ width: 120 }} />
-                  <Skeleton.Button active size="small" style={{ width: 70, borderRadius: 16 }} />
-                </div>
-              ))}
-            </div>
-          ) : (
             <Table
+              loading={loading}
               size="small"
               columns={getTableColumns("practice")}
               dataSource={displayedPractice}
@@ -1109,7 +1062,6 @@ const TestListPage = () => {
               className="shadow-sm rounded-lg overflow-hidden mt-0 [&_.ant-table-tbody>tr>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5 [&_.ant-table-pagination-top]:!my-1.5 [&_.ant-table-pagination-top]:!mt-0"
               rowKey={(record) => record.id || record.test_submission_id}
             />
-          )
         )}
       </div>
     </div>
