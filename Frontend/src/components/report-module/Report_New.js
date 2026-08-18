@@ -247,7 +247,7 @@ const getTotalNavigationSteps = () => {
     );
    const navigationFlow = flow.filter(
   f =>
-    f.action_type !== 'TIMEUP' &&
+    
     f.action_type !== 'Review_Time'
 );
     
@@ -352,11 +352,10 @@ const idleTime = Math.max(
 };
 
 const sequenceString = flow.map((f, index) => {
+  
   const question =
   f.action_type === 'Review_Time'
     ? 'R'
-    : f.action_type === 'TIMEUP'
-    ? 'T'
     : `Q${f.sr_no}`;
 
   if (index === 0) {
@@ -492,10 +491,8 @@ const sequenceString = flow.map((f, index) => {
                     >
          <span className="relative z-10">
   {item.action_type === 'Review_Time'
-  ? 'R'
-  : item.action_type === 'TIMEUP'
-  ? 'T'
-  : item.sr_no}
+    ? 'R'
+    : item.sr_no}
 </span>
                       {item.marked && (
                         <span className="absolute -top-1 -right-1 text-[8px]">📌</span>
@@ -580,7 +577,7 @@ const sequenceString = flow.map((f, index) => {
 
       const navigationSteps = flow.filter(
         f =>
-          f.action_type !== 'TIMEUP' &&
+          
           f.action_type !== 'Review_Time'
       );
 

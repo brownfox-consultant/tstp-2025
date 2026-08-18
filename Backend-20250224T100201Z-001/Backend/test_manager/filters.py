@@ -111,21 +111,20 @@ class TestSubmissionFilter(filters.FilterSet):
 
 
 class PracticeTestFilter(filters.FilterSet):
-    search = filters.CharFilter(method='filter_search')  # Universal search
+    search = filters.CharFilter(method='filter_search')
+
     ordering = filters.OrderingFilter(
         fields=(
             ('student__name', 'student'),
-            ('course_subject__course__name', 'course'),  # Sorting by course name
-            ('course_subject__subject__name', 'subject'),  # Sorting by subject name
-            ('created_at', 'created_at'),  # Sorting by creation date
-            ('result__correct_answer_count', 'correct_count'),  # Sorting by correct answers
-            ('result__incorrect_answer_count', 'incorrect_count'),  # Sorting by incorrect answers
-            ('result__time_taken', 'time_taken'),  # Sorting by time taken
-            # 🔥 KEY LINES
+            ('course_subject__course__name', 'course'),
+            ('course_subject__subject__name', 'subject'),
+            ('created_at', 'created_at'),
+            ('result__correct_answer_count', 'correct_count'),
+            ('result__incorrect_answer_count', 'incorrect_count'),
+            ('result__time_taken', 'time_taken'),
             ('correct_count', 'correct_count'),
             ('incorrect_count', 'incorrect_count'),
             ('performance', 'performance'),
-            
         )
     )
 
@@ -134,59 +133,110 @@ class PracticeTestFilter(filters.FilterSet):
         fields = []
 
     def filter_search(self, queryset, name, value):
+        value = value.strip()
+
+        if not value:
+            return queryset
+
+        # ---------------------------------
+        # TEXT SEARCH
+        # ---------------------------------
+        query = (
+            Q(student__name__icontains=value)
+            | Q(student__email__icontains=value)
+            | Q(course_subject__course__name__icontains=value)
+            | Q(course_subject__subject__name__icontains=value)
+        )
+
+        # ---------------------------------
+        # PRACTICE TEST ID SEARCH
+        # ---------------------------------
+        try:
+            value_as_int = int(value)
+
+            query |= Q(id=value_as_int)
+
+            # Result fields
+            query |= Q(
+                result__correct_answer_count=value_as_int
+            )
+
+            query |= Q(
+                result__incorrect_answer_count=value_as_int
+            )
+
+            query |= Q(
+                result__time_taken=value_as_int
+            )
+
+            # Annotated values
+            query |= Q(correct_count=value_as_int)
+            query |= Q(incorrect_count=value_as_int)
+
+        except (ValueError, TypeError):
+            pass
+
+        # ---------------------------------
+        # DATE SEARCH
+        # ---------------------------------
         from datetime import datetime
 
-        # Check if the value can be an integer (for correct_count, incorrect_count, or time_taken)
-        # try:
-        #     value_as_int = int(value)
-        # except ValueError:
-        #     value_as_int = None
-
-        # Universal search for student name, course name, subject name, correct/incorrect counts, and time taken
-        query = Q(student__name__icontains=value) | \
-                Q(course_subject__course__name__icontains=value) | \
-                Q(course_subject__subject__name__icontains=value)
-
-        # if value_as_int is not None:
-        #     # If the value is a number, search in correct_count, incorrect_count, and time_taken
-        #     query |= Q(result__correct_answer_count=value_as_int) | \
-        #              Q(result__incorrect_answer_count=value_as_int)
-
-        # List of potential date formats to try parsing
         date_formats = [
-            '%b %d, %Y',  # Format: 'Nov 10, 2023'
-            '%b %d %Y',  # Format: 'Nov 10 2023'
-            '%b %d',  # Format: 'Nov 10'
-            '%b %Y',  # Format: 'Nov 2023'
-            '%d %Y',  # Format: '10 2023'
-            '%Y',  # Format: '2023'
-            '%b',  # Format: 'Nov'
-            '%d',  # Format: '10'
+            '%b %d, %Y',
+            '%b %d %Y',
+            '%b %d',
+            '%b %Y',
+            '%d %Y',
+            '%Y',
+            '%b',
+            '%d',
         ]
 
         for date_format in date_formats:
             try:
-                # Attempt to parse the provided value with one of the formats
                 parsed_date = datetime.strptime(value, date_format)
 
-                # Apply year, month, and day-based filtering
                 if date_format == '%Y':
-                    query |= Q(created_at__year=parsed_date.year)
+                    query |= Q(
+                        created_at__year=parsed_date.year
+                    )
+
                 elif date_format in ['%b %d, %Y', '%b %d %Y']:
-                    query |= Q(created_at__date=parsed_date.date())
+                    query |= Q(
+                        created_at__date=parsed_date.date()
+                    )
+
                 elif date_format == '%b %d':
-                    query |= Q(created_at__month=parsed_date.month, created_at__day=parsed_date.day)
+                    query |= Q(
+                        created_at__month=parsed_date.month,
+                        created_at__day=parsed_date.day,
+                    )
+
                 elif date_format == '%b %Y':
-                    query |= Q(created_at__month=parsed_date.month, created_at__year=parsed_date.year)
+                    query |= Q(
+                        created_at__month=parsed_date.month,
+                        created_at__year=parsed_date.year,
+                    )
+
                 elif date_format == '%d %Y':
-                    query |= Q(created_at__day=parsed_date.day, created_at__year=parsed_date.year)
+                    query |= Q(
+                        created_at__day=parsed_date.day,
+                        created_at__year=parsed_date.year,
+                    )
+
                 elif date_format == '%b':
-                    query |= Q(created_at__month=parsed_date.month)
-                elif date_format == '%d':  # Specifically handle day-only queries
-                    query |= Q(created_at__day=parsed_date.day)
-                break  # If parsing succeeds, break out of the loop
+                    query |= Q(
+                        created_at__month=parsed_date.month
+                    )
+
+                elif date_format == '%d':
+                    query |= Q(
+                        created_at__day=parsed_date.day
+                    )
+
+                break
+
             except ValueError:
-                # If parsing fails, continue trying other formats
                 continue
 
-        return queryset.filter(query)
+        return queryset.filter(query).distinct()

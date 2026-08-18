@@ -171,44 +171,61 @@ console.log("Redux Restore Finished");
   restoreTest();
 }, []);
 
-  useEffect(() => {
+ useEffect(() => {
   if (!isTimeUp) return;
 
   const finishSection = async () => {
-    await dispatch(
-      saveAndMove({
-        operation: "TIMEUP",
-        questionIndex: -1,
-      })
-    ).unwrap();
+    try {
+      // If time expires while user is on Review page,
+      // send Review_Time instead of TIMEUP.
+      const operation = isReviewPage ? "Review_Time" : "TIMEUP";
 
-   if (testType === "practice") {
-  try {
-    await insideAuthInstance.post(
-      `/practice/${testId}/complete-test/`
-    );
+      console.log("========== TIME UP ==========");
+      console.log("isReviewPage:", isReviewPage);
+      console.log("operation:", operation);
+      console.log("=============================");
 
-    exitFullScreen();
+      await dispatch(
+        saveAndMove({
+          operation,
+          questionIndex: -1,
+        })
+      ).unwrap();
 
-    router.replace(
-      `/student/${id}/test/practice/${testId}/result`
-    );
-  } catch (err) {
-    console.error("Complete practice test failed:", err);
-  }
+      if (testType === "practice") {
+        try {
+          await insideAuthInstance.post(
+            `/practice/${testId}/complete-test/`
+          );
 
-  return;
-}
+          exitFullScreen();
 
-await dispatch(
-  sectionComplete({
-    via: "TIMEUP",
-  })
-).unwrap();
+          router.replace(
+            `/student/${id}/test/practice/${testId}/result`
+          );
+        } catch (err) {
+          console.error("Complete practice test failed:", err);
+        }
+
+        return;
+      }
+
+      await dispatch(
+        sectionComplete({
+          via: operation,
+        })
+      ).unwrap();
+
+    } catch (err) {
+      console.error("Time up handling failed:", err);
+    }
   };
 
   finishSection();
-}, [isTimeUp, testType]);
+}, [
+  isTimeUp,
+  testType,
+]);
 
   return (
     <Suspense fallback={<Loading />}>

@@ -324,7 +324,7 @@ const getTotalNavigationSteps = () => {
       );
       const navigationFlow = flow.filter(
   f =>
-    f.action_type !== 'TIMEUP' &&
+    
     f.action_type !== 'Review_Time'
 );
 
@@ -424,8 +424,6 @@ const idleTime = Math.max(
   const question =
   f.action_type === 'Review_Time'
     ? 'R'
-    : f.action_type === 'TIMEUP'
-    ? 'T'
     : `Q${f.sr_no}`;
 
   if (index === 0) {
@@ -557,12 +555,10 @@ const idleTime = Math.max(
                         className={`relative flex-shrink-0 w-9 h-9 rounded-lg ${colorClass} font-bold text-sm flex items-center justify-center border-2 shadow-sm transition-all hover:scale-110 hover:shadow-md cursor-pointer group`}
                         title={`Q${item.sr_no} - ${item.action_type} (${item.time_spent}s)${item.marked ? ' 📌' : ''}${item.is_correct ? ' ✅' : item.is_skipped ? ' ⏭' : ' ❌'}`}
                       >
-                      <span className="relative z-10">
- {item.action_type === 'Review_Time'
-  ? 'R'
-  : item.action_type === 'TIMEUP'
-  ? 'T'
-  : item.sr_no}
+             <span className="relative z-10">
+  {item.action_type === 'Review_Time'
+    ? 'R'
+    : item.sr_no}
 </span>
                         {item.marked && (
                           <span className="absolute -top-1 -right-1 text-[8px]">📌</span>
@@ -646,7 +642,7 @@ const idleTime = Math.max(
 
       const navigationSteps = flow.filter(
         f =>
-          f.action_type !== 'TIMEUP' &&
+         
           f.action_type !== 'Review_Time'
       );
 

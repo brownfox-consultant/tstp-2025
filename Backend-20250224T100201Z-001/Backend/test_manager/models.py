@@ -311,7 +311,7 @@ class Result(models.Model):
     is_marked_for_review,
     navigation_action=None,
     ):
-        COUNTED_ACTIONS = ["NEXT", "PREVIOUS", "JUMP"]
+        COUNTED_ACTIONS = ["NEXT", "PREVIOUS", "JUMP","TIMEUP"]  
         is_counted_action = navigation_action in COUNTED_ACTIONS
 
         # Only count actual navigation time.
@@ -649,7 +649,7 @@ class PracticeTestResult(models.Model):
     ):
         striked_data = striked_data or []
 
-        counted_action = navigation_action in ["NEXT", "PREVIOUS", "JUMP"]
+        counted_action = navigation_action in ["NEXT", "PREVIOUS", "JUMP","TIMEUP"]
 
         initial_time = time_taken if counted_action else 0
 
