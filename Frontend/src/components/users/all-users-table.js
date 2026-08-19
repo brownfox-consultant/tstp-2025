@@ -84,6 +84,8 @@ function AllUsersTable({ tabKey, api }) {
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [courseFilter, setCourseFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
 
   const searchInput = useRef(null);
@@ -230,37 +232,45 @@ function AllUsersTable({ tabKey, api }) {
   };
 
   const fetchUsers = async ({
-    role,
-    page = 1,
-    search = "",
-    ordering = "",
-    page_size = 15,
-  }) => {
-    setLoading(true);
-    try {
-      const params = {};
-      if (role) params.role = role;
-      if (search) params.search = search;
-      if (page) params.page = page;
-      if (ordering) params.ordering = ordering;
-      if (page_size) params.page_size = page_size;
+  role,
+  course = "",
+  status = "",
+  page = 1,
+  search = "",
+  ordering = "",
+  page_size = 15,
+}) => {
+  setLoading(true);
 
-      const response = await axios.get(`${BASE_URL}/api/user/`, {
-        params,
-        withCredentials: true,
-      });
+  try {
+    const params = {};
 
-      const { results, count, current_page, total_pages } = response.data;
-      setDataList(results);
-      setTotal(count);
-      setCurrent(current_page);
-      setTotalPages(total_pages);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (role) params.role = role;
+    if (course) params.course = course;
+    if (status) params.status = status;
+    if (search) params.search = search;
+    if (page) params.page = page;
+    if (ordering) params.ordering = ordering;
+    if (page_size) params.page_size = page_size;
+
+    const response = await axios.get(`${BASE_URL}/api/user/`, {
+      params,
+      withCredentials: true,
+    });
+
+    const { results, count, current_page, total_pages } = response.data;
+
+    setDataList(results);
+    setTotal(count);
+    setCurrent(current_page);
+    setTotalPages(total_pages);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
+
   const FIELD_MAP = {
     role_label: "role_label",
     name: "name",
@@ -278,22 +288,37 @@ function AllUsersTable({ tabKey, api }) {
     order = sorter.order === "ascend" ? field : `-${field}`;
   }
 
-  // Get ALL selected role IDs
+  // Role filter
   const selectedRoles = filters?.role_label || [];
-
-  console.log("Selected Role IDs:", selectedRoles);
-
-  // Convert [2, 5] -> "2,5"
   const roleParam = selectedRoles.join(",");
 
-  console.log("Role API Param:", roleParam);
+  // Course filter
+  const selectedCourses = filters?.course || [];
+  const courseParam = selectedCourses.join(",");
+
+  // Status filter
+  const selectedStatuses = filters?.is_active || [];
+
+  let statusParam = "";
+
+  if (selectedStatuses.length === 1) {
+    statusParam = selectedStatuses[0] ? "active" : "inactive";
+  }
+
+  console.log("Role:", roleParam);
+  console.log("Course:", courseParam);
+  console.log("Status:", statusParam);
 
   setFilterKey(roleParam);
+  setCourseFilter(courseParam);
+  setStatusFilter(statusParam);
   setOrdering(order);
   setCurrent(pagination.current);
 
   fetchUsers({
     role: roleParam,
+    course: courseParam,
+    status: statusParam,
     page: pagination.current,
     search: searchText,
     ordering: order,
@@ -302,14 +327,25 @@ function AllUsersTable({ tabKey, api }) {
 };
 
   useEffect(() => {
-    fetchUsers({
-      role: filterKey,
-      page: current,
-      search: searchText,
-      ordering,
-      page_size: pageSize,
-    });
-  }, [filterKey, updated, current, searchText, ordering, pageSize]);
+  fetchUsers({
+    role: filterKey,
+    course: courseFilter,
+    status: statusFilter,
+    page: current,
+    search: searchText,
+    ordering,
+    page_size: pageSize,
+  });
+}, [
+  filterKey,
+  courseFilter,
+  statusFilter,
+  updated,
+  current,
+  searchText,
+  ordering,
+  pageSize,
+]);
 
   const exportToCSV = async () => {
     try {
@@ -661,33 +697,47 @@ function AllUsersTable({ tabKey, api }) {
       },
 
       {
-        title: (
-          <div className="flex items-center">
-            <span>Course</span>
-            {/* <Image src={downArrowIcon} alt="Down Arrow" width={18} height={20}  style={{ marginLeft: "8px" }}/> */}
-          </div>
-        ),
-        key: "course",
-        filters: courseOptions.map((course) => ({ text: course.name, value: course.name })),
-        onFilter: (value, record) => {
-          const courses = record.course_details?.map((c) => c.course.name) || [];
-          return courses.includes(value);
-        },
-        sorter: (a, b) => {
-          const aCourses =
-            a.course_details?.map((c) => c.course.name).join(", ") || "";
-          const bCourses =
-            b.course_details?.map((c) => c.course.name).join(", ") || "";
-          return aCourses.localeCompare(bCourses);
-        },
-        render: (_, record) => {
-          const courses = record.course_details
-            ?.map((c) => c.course.name)
-            .join(", ");
-          return <span className="text-gray-700 font-medium">{courses || <span className="text-gray-500 font-normal">N/A</span>}</span>;
-        },
-        width: 150,
-      },
+  title: (
+    <div className="flex items-center">
+      <span>Course</span>
+    </div>
+  ),
+  dataIndex: "course",
+  key: "course",
+
+  filters: courseOptions.map((course) => ({
+    text: course.name,
+    value: String(course.id),
+  })),
+
+  sorter: (a, b) => {
+    const aCourses =
+      a.course_details?.map((c) => c.course.name).join(", ") || "";
+
+    const bCourses =
+      b.course_details?.map((c) => c.course.name).join(", ") || "";
+
+    return aCourses.localeCompare(bCourses);
+  },
+
+  render: (_, record) => {
+    const courses = record.course_details
+      ?.map((c) => c.course.name)
+      .join(", ");
+
+    return (
+      <span className="text-gray-700 font-medium">
+        {courses || (
+          <span className="text-gray-500 font-normal">
+            N/A
+          </span>
+        )}
+      </span>
+    );
+  },
+
+  width: 150,
+},
 
       {
         title: (
@@ -717,37 +767,62 @@ function AllUsersTable({ tabKey, api }) {
       },
 
       {
-        title: (
-          <div className="flex items-center justify-start pr-4">
-            <span>Status</span>
-          </div>
-        ),
-        dataIndex: "is_active",
-        sorter: (a, b) => Number(a.is_active) - Number(b.is_active),
-        filters: [
-          { text: "Active", value: true },
-          { text: "Inactive", value: false },
-        ],
-        onFilter: (value, record) => record.is_active === value,
-        key: "is_active",
-        align: "center",
-        width: 120,
-        render: (text, record) => {
-          const isActive = record.is_active;
-          const bgColor = isActive ? "bg-emerald-50" : "bg-red-50";
-          const textColor = isActive ? "text-emerald-700" : "text-red-700";
-          const borderColor = isActive ? "border-emerald-200" : "border-red-200";
-          const label = isActive ? "Active" : "Inactive";
+  title: (
+    <div className="flex items-center justify-start pr-4">
+      <span>Status</span>
+    </div>
+  ),
 
-          return (
-            <div className="flex justify-start pr-4">
-              <div className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold border ${bgColor} ${textColor} ${borderColor}`}>
-                {label}
-              </div>
-            </div>
-          );
-        },
-      },
+  dataIndex: "is_active",
+
+  sorter: (a, b) =>
+    Number(a.is_active) - Number(b.is_active),
+
+  filters: [
+    {
+      text: "Active",
+      value: true,
+    },
+    {
+      text: "Inactive",
+      value: false,
+    },
+  ],
+
+  key: "is_active",
+  align: "center",
+  width: 120,
+
+  render: (text, record) => {
+    const isActive = record.is_active;
+
+    const bgColor = isActive
+      ? "bg-emerald-50"
+      : "bg-red-50";
+
+    const textColor = isActive
+      ? "text-emerald-700"
+      : "text-red-700";
+
+    const borderColor = isActive
+      ? "border-emerald-200"
+      : "border-red-200";
+
+    const label = isActive
+      ? "Active"
+      : "Inactive";
+
+    return (
+      <div className="flex justify-start pr-4">
+        <div
+          className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold border ${bgColor} ${textColor} ${borderColor}`}
+        >
+          {label}
+        </div>
+      </div>
+    );
+  },
+},
 
       // {
       //   title: "Actions",

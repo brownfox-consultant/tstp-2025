@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Question Correction Impact Summary</title>
+</head>
+
+<body style="margin:0; padding:0; background:#f4f6f8; font-family:Arial, Helvetica, sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:#f4f6f8; padding:30px 0;">
+
+    <tr>
+        <td align="center">
+
+            <table width="700" cellpadding="0" cellspacing="0" border="0"
+                   style="background:#ffffff; border-radius:8px; overflow:hidden;">
+
+                <!-- Header -->
+                <tr>
+                    <td style="background:#1f2937; padding:25px 30px; color:#ffffff;">
+                        <h2 style="margin:0;">
+                            Question Correction Impact Summary
+                        </h2>
+                    </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                    <td style="padding:30px;">
+
+                        <p style="font-size:15px;">
+                            A question correction has impacted the following students.
+                        </p>
+
+                        {% for student in students %}
+
+                        <table width="100%" cellpadding="8" cellspacing="0" border="0"
+                               style="margin-top:25px; border:1px solid #e5e7eb;">
+
+                            <tr>
+                                <td colspan="2"
+                                    style="background:#f3f4f6; font-size:17px;">
+                                    <strong>{{ student.name }}</strong>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="160">
+                                    <strong>Email</strong>
+                                </td>
+                                <td>
+                                    {{ student.email }}
+                                </td>
+                            </tr>
+
+                        </table>
+
+                        {% for test in student.impacted_tests %}
+
+                        <table width="100%" cellpadding="7" cellspacing="0" border="0"
+                               style="margin-top:10px;">
+
+                            <tr>
+                                <td width="160">
+                                    <strong>Test Name</strong>
+                                </td>
+                                <td>
+                                    {{ test.test_name }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <strong>Section</strong>
+                                </td>
+                                <td>
+                                    {{ test.section_name }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <strong>Question No</strong>
+                                </td>
+                                <td>
+                                    {{ test.sr_no }}
+                                </td>
+                            </tr>
+
+                        </table>
+
+                        {% endfor %}
+
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin:25px 0;">
+
+                        {% endfor %}
+
+                        <!-- Summary -->
+                        <table width="100%" cellpadding="10" cellspacing="0" border="0"
+                               style="margin-top:25px; background:#f9fafb;">
+
+                            <tr>
+                                <td>
+                                    <strong>Total Students Impacted</strong>
+                                </td>
+                                <td>
+                                    {{ total_impacted_students }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <strong>Updated At</strong>
+                                </td>
+                                <td>
+                                    {{ updated_at }}
+                                </td>
+                            </tr>
+
+                        </table>
+
+                        <p style="margin-top:25px; font-size:14px; color:#555;">
+                            The system has automatically recalculated the affected
+                            test scores.
+                        </p>
+
+                        <p style="margin-top:30px;">
+                            <strong>TSTP System</strong>
+                        </p>
+
+                    </td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+
+</table>
+
+</body>
+</html>

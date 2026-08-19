@@ -1978,6 +1978,8 @@ class TestViewSet(viewsets.ModelViewSet):
     @permission_classes([IsAdminOrMentorOrFacultyOrStudentOrParent])
     def list(self, request):
         user = request.user
+        print("user",user)
+        print("user.role.name",user.role.name)
         serializer_class = TestListSerializer
         queryset = None
         filterset = None
@@ -1995,6 +1997,7 @@ class TestViewSet(viewsets.ModelViewSet):
 
         elif user.role.name == 'parent':
             sm = StudentMetadata.objects.filter(Q(father=user) | Q(mother=user))
+            print("sm",sm)
             queryset = TestSubmission.objects.filter(student__in=sm.values_list('student', flat=True))
             serializer_class = TestSubmissionSerializer
             filterset = TestSubmissionFilter(data=request.GET, queryset=queryset, request=request)
@@ -5026,34 +5029,70 @@ class ResultViewSet(viewsets.ModelViewSet):
     logger = logging.getLogger('Results')
 
 
-    @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated], url_path='details')
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="details"
+)
     def get_details(self, request, *args, **kwargs):
+
         test_submission_id = request.GET.get("test_submission_id")
         user = request.user
-        
-        # Admin / Mentor / Faculty can access all students' results
+
+        test_submission = get_object_or_404(
+            TestSubmission,
+            id=test_submission_id
+        )
+
+        # ---------------------------------------
+        # Admin / Mentor / Faculty
+        # ---------------------------------------
         if user.role.name in ["admin", "mentor", "faculty"]:
-            test_submission = get_object_or_404(
-                TestSubmission,
-                id=test_submission_id
-            )
+            pass
 
-        # Students can access only their own results
-        else:
-            test_submission = get_object_or_404(
-                TestSubmission,
-                id=test_submission_id
-            )
+        # ---------------------------------------
+        # Student
+        # ---------------------------------------
+        elif user.role.name == "student":
 
-            if test_submission.student.id != user.id:
+            if test_submission.student_id != user.id:
                 return Response(
-                    {"detail": "You are not authorized to access this test result."},
+                    {
+                        "detail": "You are not authorized to access this test result."
+                    },
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
+        # ---------------------------------------
+        # Parent
+        # ---------------------------------------
+        elif user.role.name == "parent":
 
+            is_parent = StudentMetadata.objects.filter(
+                Q(father=user) | Q(mother=user),
+                student_id=test_submission.student_id
+            ).exists()
 
+            if not is_parent:
+                return Response(
+                    {
+                        "detail": "You are not authorized to access this test result."
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
+        else:
+            return Response(
+                {
+                    "detail": "You are not authorized to access this test result."
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # ---------------------------------------
+        # Continue with existing logic
+        # ---------------------------------------
 
         test = test_submission.test
         student = test_submission.student

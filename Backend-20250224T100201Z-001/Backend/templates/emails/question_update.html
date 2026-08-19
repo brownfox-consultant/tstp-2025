@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Question Correction Update</title>
+</head>
+
+<body style="margin:0; padding:0; background:#f4f6f8; font-family:Arial, Helvetica, sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:#f4f6f8; padding:30px 0;">
+
+    <tr>
+        <td align="center">
+
+            <table width="650" cellpadding="0" cellspacing="0" border="0"
+                   style="background:#ffffff; border-radius:8px; overflow:hidden;">
+
+                <!-- Header -->
+                <tr>
+                    <td style="background:#1f2937; padding:25px 30px; color:#ffffff;">
+                        <h2 style="margin:0; font-size:22px;">
+                            Question Correction Update
+                        </h2>
+                    </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                    <td style="padding:30px; color:#333333;">
+
+                        <p style="font-size:16px;">
+                            Hi <strong>{{ student_name }}</strong>,
+                        </p>
+
+                        <p style="font-size:15px; line-height:1.6;">
+                            A question correction has impacted your test performance.
+                            Your scores have been recalculated automatically.
+                        </p>
+
+                        <h3 style="margin-top:30px; color:#1f2937;">
+                            Impacted Test Details
+                        </h3>
+
+                        {% for test in impacted_tests %}
+
+                        <table width="100%" cellpadding="8" cellspacing="0" border="0"
+                               style="margin-bottom:15px; border:1px solid #e5e7eb; border-radius:5px;">
+
+                            <tr>
+                                <td style="background:#f9fafb; width:150px;">
+                                    <strong>Test Name</strong>
+                                </td>
+                                <td>
+                                    {{ test.test_name }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="background:#f9fafb;">
+                                    <strong>Section</strong>
+                                </td>
+                                <td>
+                                    {{ test.section_name }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="background:#f9fafb;">
+                                    <strong>Question No</strong>
+                                </td>
+                                <td>
+                                    {{ test.sr_no }}
+                                </td>
+                            </tr>
+
+                        </table>
+
+                        {% endfor %}
+
+                        {% if subject_name %}
+                        <table width="100%" cellpadding="8" cellspacing="0" border="0"
+                               style="margin-top:20px;">
+
+                            <tr>
+                                <td width="150">
+                                    <strong>Subject</strong>
+                                </td>
+                                <td>{{ subject_name }}</td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <strong>Topic</strong>
+                                </td>
+                                <td>{{ topic_name }}</td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <strong>Difficulty</strong>
+                                </td>
+                                <td>{{ difficulty }}</td>
+                            </tr>
+
+                        </table>
+                        {% endif %}
+
+                        <p style="font-size:15px; line-height:1.6; margin-top:25px;">
+                            Please log in to your dashboard to view your updated
+                            results.
+                        </p>
+
+                        <p style="font-size:15px; margin-top:30px;">
+                            Regards,<br>
+                            <strong>TSTP Team</strong>
+                        </p>
+
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td style="background:#f9fafb; padding:15px 30px;
+                               text-align:center; color:#777777; font-size:12px;">
+
+                        This is an automated notification from TSTP.
+
+                    </td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+
+</table>
+
+</body>
+</html>

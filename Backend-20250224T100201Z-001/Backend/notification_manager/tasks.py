@@ -20,6 +20,10 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 
+import json
+
+
+
 
 @shared_task
 def send_pending_queries_reminder():
@@ -105,8 +109,8 @@ def send_question_update_email(student_ids, question_ids):
 
     print("\n========== QUESTION UPDATE EMAIL TASK ==========\n")
 
-    all_admin_lines = ""
     total_impacted_students = 0
+    admin_students = []
 
     for student in User.objects.filter(id__in=student_ids):
 
@@ -115,43 +119,74 @@ def send_question_update_email(student_ids, question_ids):
         answers = QuestionAnswer.objects.filter(
             question_id__in=question_ids,
             result__test_submission__student=student
-        ).select_related("result__test_submission__test")
+        ).select_related(
+            "result__test_submission__test"
+        )
 
         if not answers.exists():
             continue
 
-        submissions = {qa.result.test_submission for qa in answers}
+        submissions = {
+            qa.result.test_submission
+            for qa in answers
+        }
+
         impacted_tests = []
 
         # ---------------------------------------------------
-        # Use your existing result/details API logic
+        # GET RESULT DETAILS
         # ---------------------------------------------------
+
         for submission in submissions:
 
             view = ResultViewSet()
 
-            request = type("obj", (object,), {
-                "GET": {"test_submission_id": submission.id},
-                "user": student
-            })
+            request = type(
+                "obj",
+                (object,),
+                {
+                    "GET": {
+                        "test_submission_id": submission.id
+                    },
+                    "user": student
+                }
+            )
 
             response = view.get_details(request)
+
             detailed_view = json.loads(response.content)
 
             for subject in detailed_view.get("subjects", []):
-                for section in subject.get("sections", []):
-                    section_name = map_section_name(section.get("name"))
 
-                    for question in section.get("questions_data", []):
+                for section in subject.get("sections", []):
+
+                    section_name = map_section_name(
+                        section.get("name")
+                    )
+
+                    for question in section.get(
+                        "questions_data",
+                        []
+                    ):
+
                         if question["question_id"] in question_ids:
 
                             impacted_tests.append({
-                                "test_name": detailed_view["testName"].replace("Test - ", ""),
+                                "test_name": detailed_view[
+                                    "testName"
+                                ].replace("Test - ", ""),
+
                                 "section_name": section_name,
+
                                 "sr_no": question.get("sr_no"),
+
                                 "subject": subject.get("name"),
+
                                 "topic": question.get("topic"),
-                                "difficulty": question.get("difficulty"),
+
+                                "difficulty": question.get(
+                                    "difficulty"
+                                ),
                             })
 
         if not impacted_tests:
@@ -159,120 +194,134 @@ def send_question_update_email(student_ids, question_ids):
 
         total_impacted_students += 1
 
+        # ---------------------------------------------------
+        # SUBJECT / TOPIC / DIFFICULTY
+        # ---------------------------------------------------
+
         subject_name = impacted_tests[0]["subject"]
         topic_name = impacted_tests[0]["topic"]
         difficulty = impacted_tests[0]["difficulty"]
 
-        # ---------------------------------------------------
-        # STUDENT EMAIL
-        # ---------------------------------------------------
-        student_lines = ""
+        # ===================================================
+        # STUDENT NOTIFICATION
+        # ===================================================
 
-        for t in impacted_tests:
-            student_lines += f"""
-Test Name : {t['test_name']}
-   • Section     : {t['section_name']}
-   • Question No : {t['sr_no']}
+        student_email_context = {
+            "student_name": student.name,
+            "impacted_tests": impacted_tests,
+            "subject_name": subject_name,
+            "topic_name": topic_name,
+            "difficulty": difficulty,
+        }
+
+        student_email_body = render_to_string(
+            "emails/question_update.html",
+            student_email_context
+        )
+
+        # ---------------------------------------------------
+        # DATABASE NOTIFICATION
+        # ---------------------------------------------------
+
+        notification_description = f"""
+A question correction has impacted your test performance.
+
+Please log in to your dashboard to view your updated results.
 """
 
-        student_email_body = f"""
-Hi {student.name},
-
-A question correction has impacted your performance.
-
-────────────────────────────────────
-IMPACTED TEST DETAILS
-────────────────────────────────────
-{student_lines}
-
-Subject    : {subject_name}
-Topic      : {topic_name}
-Difficulty : {difficulty}
-
-Your scores have been recalculated automatically.
-
-Please log in to your dashboard to view updated results.
-
-– TSTP Team
-"""
-
-        # Save notification in DB
         UserNotification.objects.create(
             user=student,
             subject="Question Correction Update",
-            description=student_email_body,
+            description=notification_description,
             category=Notification.TEST,
             reference_id=impacted_tests[0]["sr_no"],
         )
 
-        # Send student email
-        email = EmailMessage(
+        # ---------------------------------------------------
+        # SEND STUDENT EMAIL
+        # ---------------------------------------------------
+
+        email = EmailMultiAlternatives(
             subject="Question Correction Update",
-            body=student_email_body,
+            body=notification_description,
             from_email=settings.EMAIL_HOST_USER,
             to=[student.email],
             bcc=["vijayaluguvelli@gmail.com"],
         )
 
+        email.attach_alternative(
+            student_email_body,
+            "text/html"
+        )
+
         email.send(fail_silently=False)
 
-        # ---------------------------------------------------
-        # COLLECT ADMIN DATA (DON’T SEND YET)
-        # ---------------------------------------------------
-        admin_student_block = f"""
-Student Name  : {student.name}
-Student Email : {student.email}
+        print(
+            "✅ Student email sent:",
+            student.email
+        )
 
-"""
+        # ===================================================
+        # COLLECT ADMIN DATA
+        # ===================================================
 
-        for t in impacted_tests:
-            admin_student_block += f"""
-Test Name : {t['test_name']}
-   • Section     : {t['section_name']}
-   • Question No : {t['sr_no']}
-"""
+        admin_students.append({
+            "name": student.name,
+            "email": student.email,
+            "impacted_tests": impacted_tests,
+        })
 
-        admin_student_block += "\n--------------------------------------------\n"
+    # =======================================================
+    # SINGLE ADMIN EMAIL
+    # =======================================================
 
-        all_admin_lines += admin_student_block
-
-    # ====================================================
-    # SEND SINGLE ADMIN EMAIL
-    # ====================================================
     if total_impacted_students > 0:
 
-        admin_email_body = f"""
-Admin Notification
+        updated_at = timezone.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
 
-A question correction has impacted students.
+        admin_email_context = {
+            "students": admin_students,
+            "total_impacted_students": total_impacted_students,
+            "updated_at": updated_at,
+        }
 
-────────────────────────────────────
-STUDENT IMPACT SUMMARY
-────────────────────────────────────
+        admin_email_body = render_to_string(
+            "emails/question_update_admin.html",
+            admin_email_context
+        )
 
-{all_admin_lines}
+        admin_plain_text = f"""
+Question Correction Impact Summary
 
 Total Students Impacted : {total_impacted_students}
-Updated At              : {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
+Updated At              : {updated_at}
 
-System has recalculated scores automatically.
-
-– TSTP System
+The system has automatically recalculated
+the affected test scores.
 """
 
-        email = EmailMessage(
+        email = EmailMultiAlternatives(
             subject="Question Correction Impact Summary",
-            body=admin_email_body,
+            body=admin_plain_text,
             from_email=settings.EMAIL_HOST_USER,
             to=[settings.EMAIL_HOST_USER],
             bcc=["vijayaluguvelli@gmail.com"],
+        )
+
+        email.attach_alternative(
+            admin_email_body,
+            "text/html"
         )
 
         email.send(fail_silently=False)
 
         print("✅ SINGLE ADMIN EMAIL SENT")
 
-    print("\n========== TASK COMPLETED ==========\n")
+    print(
+        "\n========== TASK COMPLETED ==========\n"
+    )
 
 
 @shared_task
