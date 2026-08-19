@@ -12,7 +12,7 @@ import ViewConcernModal from "./ViewConcernModal";
 function ConcernsList({ updated, setUpdated }) {
   const [concernsData, setConcernsData] = useState([]);
   const pathname = usePathname();
-  let role = pathname.split("/")[1];
+  let role = pathname.split("/")[2];
   const [total, setTotal] = useState(0);
   const [current, setCurrent] = useState(1);
   const [totalPages, setTotalPages] = useState(0);

@@ -11,7 +11,7 @@ function QuestionsComponent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  let role = pathname.split("/")[1];
+  let role = pathname.split("/")[2];
 
   const [courses, setCourses] = useState([]);
   const [activeCourseKey, setActiveCourseKey] = useState(null);

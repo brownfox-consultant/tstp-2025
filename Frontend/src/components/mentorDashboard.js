@@ -50,7 +50,7 @@ function StatCard({ title, value, icon: Icon, gradientClass }) {
 
     const route = routeMap[title];
     if (route) {
-      router.push(`/mentor/${id}/${route}`);
+      router.push(`/tstp/mentor/${id}/${route}`);
     }
   };
 

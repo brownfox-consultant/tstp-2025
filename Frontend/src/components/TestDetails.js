@@ -23,7 +23,7 @@ function TestDetails({
   setTestReady,
 }) {
   const router = useRouter();
-  const role = usePathname().split("/")[1];
+  const role = usePathname().split("/")[2];
 
   const generalTabItems = [
     {

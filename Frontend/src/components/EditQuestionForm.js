@@ -551,7 +551,7 @@ const [courseStatusMap, setCourseStatusMap] = useState(
     //           closeModal();
     //         } else {
     //           router.push(
-    //             `/admin/questions/questions?course_subject_id=${courseSubjectId}&page=${page}`
+    //             `/tstp/admin/questions/questions?course_subject_id=${courseSubjectId}&page=${page}`
     //           );
     //         }
     //       },

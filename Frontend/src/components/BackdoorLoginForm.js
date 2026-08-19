@@ -152,7 +152,7 @@ function BackdoorLoginForm() {
 
     const mappedRole = ROLE_ROUTE_MAP[role_name] || role_name;
 
-    const dashboardUrl = `/${mappedRole}/${id}/dashboard`;
+    const dashboardUrl = `/tstp/${mappedRole}/${id}/dashboard`;
 
     // ✅ SAME TAB REDIRECT
     window.location.replace(dashboardUrl);

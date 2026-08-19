@@ -172,7 +172,7 @@ function StatCard({
     } else {
       params.append("filter", selectedFilter);
     }
-    router.push(`/admin/${id}/${routeName}?${params.toString()}`);
+    router.push(`/tstp/admin/${id}/${routeName}?${params.toString()}`);
   };
 
   const isMuted = value === 0;

@@ -144,7 +144,7 @@ function RegisteredTable({ tabKey, api }) {
     window.sessionStorage.setItem("areParentDetailsCompulsory", true);
     console.log("pathname", pathname, `admin/${id}/users/approve`);
 
-    router.push(`/admin/${id}/users/students/approve`);
+    router.push(`/tstp/admin/${id}/users/students/approve`);
   }
   const cols = [
     {

@@ -8,7 +8,7 @@ import RaiseConcernModal from "./RaiseConcernModal";
 function ConcernsComponent() {
   const [updated, setUpdated] = useState(false);
   const pathname = usePathname();
-  let role = pathname.split("/")[1];
+  let role = pathname.split("/")[2];
   return (
     <>
       <div className="text-xl flex justify-between font-semibold mb-2">

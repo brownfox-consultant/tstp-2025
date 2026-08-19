@@ -45,19 +45,19 @@ export default function SelfPractice({ student_id, course_id }) {
   };
 
   const handleKnowMore = () => {
-    const portal = pathname.split("/")[1];
-    const id = pathname.split("/")[2];
+    const portal = pathname.split("/")[2];
+    const id = pathname.split("/")[3];
 
     if (portal === "faculty" || portal === "mentor") {
-      router.push(`/${portal}/${id}/practice`);
+      router.push(`/tstp/${portal}/${id}/practice`);
     } else if (portal === "admin") {
-      router.push(`/admin/${id}/tests`);
+      router.push(`/tstp/admin/${id}/tests`);
     } else if (portal === "parent") {
-      router.push(`/parent/${id}/test`);
+      router.push(`/tstp/parent/${id}/test`);
     } else if (portal === "student") {
-      router.push(`/student/${id}/test/practice`);
+      router.push(`/tstp/student/${id}/test/practice`);
     } else {
-      router.push(`/student/${student_id}/test/practice`);
+      router.push(`/tstp/student/${student_id}/test/practice`);
     }
   };
 

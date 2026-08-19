@@ -64,7 +64,7 @@ function PracticeTest() {
           exitFullScreen();
           // }
           router.replace(
-            `/student/${id}/test/practice/${practice_test_id}/result`
+            `/tstp/student/${id}/test/practice/${practice_test_id}/result`
           );
         },
       });
@@ -155,7 +155,7 @@ function PracticeTest() {
           exitFullScreen();
           // }
           router.replace(
-            `/student/${id}/test/practice/${practice_test_id}/result`
+            `/tstp/student/${id}/test/practice/${practice_test_id}/result`
           );
         },
       });
@@ -185,7 +185,7 @@ function PracticeTest() {
           exitFullScreen();
           // }
           router.replace(
-            `/student/${id}/test/practice/${practice_test_id}/result`
+            `/tstp/student/${id}/test/practice/${practice_test_id}/result`
           );
         },
       });

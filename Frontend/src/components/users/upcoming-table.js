@@ -40,7 +40,7 @@ function UpcomingTable({ tabKey, api }) {
     window.sessionStorage.removeItem("isTempUser");
     window.sessionStorage.setItem("requireParentDetails", true);
     window.sessionStorage.setItem("areParentDetailsCompulsory", false);
-    router.push(`/admin/${id}/users/upcoming/approve`);
+    router.push(`/tstp/admin/${id}/users/upcoming/approve`);
   }
 
   useEffect(() => {
@@ -138,7 +138,7 @@ function UpcomingTable({ tabKey, api }) {
       render: (text, record) => (
         <span
           className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 hover:underline transition-all"
-          onClick={() => router.push(`/admin/${id}/users/all/edit/${record.id}`)}
+          onClick={() => router.push(`/tstp/admin/${id}/users/all/edit/${record.id}`)}
         >
           {text}
         </span>
@@ -221,7 +221,7 @@ function UpcomingTable({ tabKey, api }) {
 
             <Button
               onClick={() => {
-                router.push(`/admin/${id}/users/all/edit/${record.id}`);
+                router.push(`/tstp/admin/${id}/users/all/edit/${record.id}`);
               }}
             >
               Edit

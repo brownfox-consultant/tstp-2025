@@ -18,7 +18,7 @@ function StudentsList() {
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
   const searchInput = useRef(null);
-  const role = usePathname().split("/")[1];
+  const role = usePathname().split("/")[2];
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();

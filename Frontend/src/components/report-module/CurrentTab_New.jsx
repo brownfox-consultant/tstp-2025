@@ -17,7 +17,7 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
 
   const { sections } = currentSubject;
   const pathname = usePathname();
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
   const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'correct', 'incorrect', 'blank'
 
   const [selectedSection, setSelectedSection] = useState(0);

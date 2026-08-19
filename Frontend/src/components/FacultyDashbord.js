@@ -83,7 +83,7 @@ function StatCard({ title, value, icon: Icon, gradient }) {
 
     const route = routeMap[title];
     if (route) {
-      router.push(`/faculty/${id}/${route}`);
+      router.push(`/tstp/faculty/${id}/${route}`);
     }
   };
 

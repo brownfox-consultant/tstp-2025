@@ -175,6 +175,10 @@ console.log(answerMap);
       "fullscreenchange",
       checkFullscreen
     );
+    if (fsModalInstance) {
+      fsModalInstance.destroy();
+      fsModalInstance = null;
+    }
   };
 }, []);
 

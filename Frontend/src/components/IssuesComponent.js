@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 function IssuesComponent() {
   const [updated, setUpdated] = useState(false);
   const pathname = usePathname();
-  let role = pathname.split("/")[1];
+  let role = pathname.split("/")[2];
   
   return (
     <div>

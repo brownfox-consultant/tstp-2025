@@ -17,7 +17,7 @@ function FeedbackList() {
   const [totalPages, setTotalPages] = useState(0);
   const [sortParams, setSortParams] = useState({});
 
-  const role = usePathname().split("/")[1];
+  const role = usePathname().split("/")[2];
 
   const fetchData = () => {
     const params = { page: current };

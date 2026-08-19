@@ -233,7 +233,7 @@ window.sessionStorage.setItem(
   practice_test_id
 );
 
-router.push(`/student/${id}/practice/${practice_test_id}/info`);
+router.push(`/tstp/student/${id}/practice/${practice_test_id}/info`);
           goFullScreen();
         } else {
           notification.info({

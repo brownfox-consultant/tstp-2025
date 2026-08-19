@@ -170,6 +170,10 @@ console.log("answerObject:", answerObject);
       "fullscreenchange",
       handleFullscreenChange
     );
+    if (fsModalInstance) {
+      fsModalInstance.destroy();
+      fsModalInstance = null;
+    }
   };
 }, []);
 

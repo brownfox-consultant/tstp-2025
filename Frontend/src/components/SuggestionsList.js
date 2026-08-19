@@ -31,7 +31,7 @@ function SuggestionsList() {
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const role = usePathname().split("/")[1];
+  const role = usePathname().split("/")[2];
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [sorterState, setSorterState] = useState(null); // ✅ added this to track sorting

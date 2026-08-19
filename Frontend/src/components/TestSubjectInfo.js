@@ -17,7 +17,7 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
   const [selectedSection, setSelectedSection] = useState("none");
   const { id, testId } = useParams();
   const router = useRouter();
-  const role = usePathname().split("/")[1];
+  const role = usePathname().split("/")[2];
   const [dataSource, setDataSource] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);

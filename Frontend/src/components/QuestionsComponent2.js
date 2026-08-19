@@ -35,7 +35,7 @@ function QuestionsComponent2({ courses }) {
   const [testTypeList, setTestTypeList] = useState([]);
   const [questionSubtypeList, setQuestionSubtypeList] = useState([]);
 
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
 
   // 🔧 Utility: parse and convert query params to arrays
   const getArrayParam = (key) =>

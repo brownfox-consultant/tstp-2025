@@ -53,7 +53,7 @@ function CreateTest({ setTestDetails }) {
           `test-${res.data.id}`,
           JSON.stringify(res.data),
         );
-        router.push(`/admin/${params.id}/tests/edit/${res.data.id}`);
+        router.push(`/tstp/admin/${params.id}/tests/edit/${res.data.id}`);
       })
       .finally(() => setCreateLoading(false));
   };

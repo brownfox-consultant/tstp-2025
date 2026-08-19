@@ -21,7 +21,7 @@ dayjs.extend(timezone);
 function IssuesList({ updated, setUpdated }) {
   const [issuesData, setIssuesData] = useState("");
   const pathname = usePathname();
-  let role = pathname.split("/")[1];
+  let role = pathname.split("/")[2];
   const [total, setTotal] = useState();
   const [totalPages, setTotalPages] = useState(0);
   const [current, setCurrent] = useState();

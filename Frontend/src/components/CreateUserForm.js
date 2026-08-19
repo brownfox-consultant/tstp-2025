@@ -174,7 +174,7 @@ function CreateUserForm() {
           window.sessionStorage.setItem("isCreatedFromAdmin", true);
           window.sessionStorage.setItem("areParentDetailsCompulsory", true);
           Modal.success({ title: "User successfully created" });
-          router.push(`/admin/${id}/users/students/approve`);
+          router.push(`/tstp/admin/${id}/users/students/approve`);
         }
       })
       .catch(console.log)

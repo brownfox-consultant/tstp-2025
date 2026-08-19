@@ -70,17 +70,17 @@ export default function Scoreboard({ student_id, course_id }) {
   }
 
   const handleKnowMore = () => {
-    const portal = pathname.split("/")[1];
-    const id = pathname.split("/")[2];
+    const portal = pathname.split("/")[2];
+    const id = pathname.split("/")[3];
 
     if (portal === "admin" || portal === "faculty" || portal === "mentor") {
-      router.push(`/${portal}/${id}/tests`);
+      router.push(`/tstp/${portal}/${id}/tests`);
     } else if (portal === "parent") {
-      router.push(`/parent/${id}/test`);
+      router.push(`/tstp/parent/${id}/test`);
     } else if (portal === "student") {
-      router.push(`/student/${id}/test/full`);
+      router.push(`/tstp/student/${id}/test/full`);
     } else {
-      router.push(`/student/${student_id}/test/full`);
+      router.push(`/tstp/student/${student_id}/test/full`);
     }
   };
 

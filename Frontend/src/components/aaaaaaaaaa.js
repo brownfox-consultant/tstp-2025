@@ -32,7 +32,7 @@ function StatCard({ title, value, selectedFilter, customStartDate, customEndDate
     } else {
       params.append("filter", selectedFilter);
     }
-    router.push(`/admin/${id}/${title.toLowerCase()}s?${params.toString()}`);
+    router.push(`/tstp/admin/${id}/${title.toLowerCase()}s?${params.toString()}`);
   };
 
   return (

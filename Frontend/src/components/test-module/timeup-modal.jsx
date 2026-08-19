@@ -34,7 +34,7 @@ function TimeupModal({ openModal }) {
     setHasRedirected(true);
     setShowFeedback(false);
     router.replace(
-      `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
+      `/tstp/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
     );
   };
 
@@ -44,7 +44,7 @@ function TimeupModal({ openModal }) {
     if (isSectionCompleted && isTestCompleted) {
       if (isPractice) {
         // ✅ Skip feedback for practice
-        router.replace(`/student/${id}/test/practice/${testId}/result`);
+        router.replace(`/tstp/student/${id}/test/practice/${testId}/result`);
       } else {
         setShowFeedback(true);
       }
@@ -57,12 +57,12 @@ function TimeupModal({ openModal }) {
     const timer = setTimeout(() => {
       if (isPractice) {
         if (isSectionCompleted && !isTestCompleted) {
-          router.replace(`/student/${id}/test/practice/${testId}/result`);
+          router.replace(`/tstp/student/${id}/test/practice/${testId}/result`);
         }
       } else {
         if (isSectionCompleted && !isTestCompleted) {
-          // router.replace(`/student/${id}/test/full/${testId}/`);
-          router.replace(`/student/${id}/test/${testId}/begin`);
+          // router.replace(`/tstp/student/${id}/test/full/${testId}/`);
+          router.replace(`/tstp/student/${id}/test/${testId}/begin`);
         }
       }
     }, 5000);

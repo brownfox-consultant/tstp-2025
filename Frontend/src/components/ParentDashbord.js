@@ -63,7 +63,7 @@ const CustomLegend = ({ payload }) => (
 export default function Dashbord() {
   const pathname = usePathname();
   const router = useRouter();
-  const parentId = pathname.split("/")[2];
+  const parentId = pathname.split("/")[3];
   const [name, setName] = useState("");
 
   // === Student & Stats ===
@@ -634,7 +634,7 @@ export default function Dashbord() {
                   </span>
                   {stat.title === "Full length tests" && (
                     <button
-                      onClick={() => router.push(`/parent/${parentId}/test`)}
+                      onClick={() => router.push(`/tstp/parent/${parentId}/test`)}
                       className="text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent"
                     >
                       View all →
@@ -719,13 +719,13 @@ export default function Dashbord() {
                   activeTab={activityTab}
                   fullLengthData={latestFullLengthTests}
                   practiceData={latestPracticeTests}
-                  onViewAll={() => router.push(`/parent/${parentId}/test`)}
+                  onViewAll={() => router.push(`/tstp/parent/${parentId}/test`)}
                   onTestClick={(test, type) => {
                     if (type === "fullLength") {
                       const targetId = test.test_submission_id || test.id;
-                      if(targetId) router.push(`/parent/${parentId}/test/${targetId}/result`);
+                      if(targetId) router.push(`/tstp/parent/${parentId}/test/${targetId}/result`);
                     } else {
-                      if(test.id) router.push(`/parent/${parentId}/test/practice/${test.id}/result`);
+                      if(test.id) router.push(`/tstp/parent/${parentId}/test/practice/${test.id}/result`);
                     }
                   }}
                 />

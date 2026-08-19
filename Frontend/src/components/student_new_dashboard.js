@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import '@/app/student/[id]/(base-layout)/report/Dashboard.css';
+import '@/app/tstp/student/[id]/(base-layout)/report/Dashboard.css';
 import { PieChart, Pie, Cell, Legend } from "recharts";
 
 

@@ -117,7 +117,7 @@ function PracticeTestResult() {
   const [resultDetails, setResultDetails] = useState();
   const [skeletonLoading, setSkeletonLoading] = useState(false);
   const pathname = usePathname();
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -162,9 +162,9 @@ function PracticeTestResult() {
 
   const handleBack = () => {
     if (role === "student") {
-      router.push(`/${role}/${id}/test/practice`);
+      router.push(`/tstp/${role}/${id}/test/practice`);
     } else {
-      router.push(`/${role}/${id}/practice`);
+      router.push(`/tstp/${role}/${id}/practice`);
     }
   };
 

@@ -11,7 +11,7 @@ import { scheduleMeeting } from "@/app/services/authService";
 function MeetingsComponent() {
   const [updated, setUpdated] = useState(false);
   const pathname = usePathname();
-  let role = pathname.split("/")[1];
+  let role = pathname.split("/")[2];
   const [openModal, setOpenModal] = useState(false);
 
   const [meetingAgenda, setMeetingAgenda] = useState("");

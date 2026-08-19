@@ -1,4 +1,4 @@
-import { ExamContext } from "@/app/student/[id]/(base-layout)/test/full/[testId]/page";
+import { ExamContext } from "@/app/tstp/student/[id]/(base-layout)/test/full/[testId]/page";
 import { useSelector } from "react-redux";
 
 import React, { useContext, useEffect } from "react";

@@ -220,7 +220,7 @@ function AllUsersTable({ tabKey, api }) {
         localStorage.setItem("subscription_type", subscription_type);
         localStorage.setItem("impersonating", "true");
 
-        const dashboardUrl = `/${role_name}/${id}/dashboard`;
+        const dashboardUrl = `/tstp/${role_name}/${id}/dashboard`;
 
         window.open(dashboardUrl, "_blank");
 

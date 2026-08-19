@@ -22,7 +22,7 @@ function StatCard({ title, value, icon: Icon, gradientClass }) {
 
     const route = routeMap[title];
     if (route) {
-      router.push(`/developer/${id}/${route}`);
+      router.push(`/tstp/developer/${id}/${route}`);
     }
   };
 

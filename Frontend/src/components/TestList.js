@@ -24,7 +24,7 @@ function TestList() {
   const [testLoading, setTestLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
 
   const { isFullScreen, goFullScreen, exitFullScreen } = useFullScreen();
   const [showResult, setShowResult] = useState(false);
@@ -250,8 +250,8 @@ function TestList() {
     );
     dispatch(resetTestSlice());
 
-    const studentId = pathname.split("/")[2]; 
-    const basePath = `/${role}/${studentId}/test`;
+    const studentId = pathname.split("/")[3]; 
+    const basePath = `/tstp/${role}/${studentId}/test`;
 
     if (status === "IN_PROGRESS") {
       setTestLoading(true);

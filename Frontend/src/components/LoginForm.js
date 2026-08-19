@@ -60,11 +60,11 @@ function LoginForm({ handleNext }) {
 
     if (subscription_type === "FREE") {
       router.push(
-        `/${role_name == "content_developer" ? "developer" : role_name}/${id}/dashboard`
+        `/tstp/${role_name == "content_developer" ? "developer" : role_name}/${id}/dashboard`
       );
     } else {
       router.push(
-        `/${role_name == "content_developer" ? "developer" : role_name}/${id}/dashboard`
+        `/tstp/${role_name == "content_developer" ? "developer" : role_name}/${id}/dashboard`
       );
     }
   })
@@ -107,12 +107,12 @@ function LoginForm({ handleNext }) {
       // ⭐ FREE user → go to free-user page
      
       router.push(
-        `/${role_name == "content_developer" ? "developer" : role_name}/${id}/dashboard`
+        `/tstp/${role_name == "content_developer" ? "developer" : role_name}/${id}/dashboard`
       );
     } else {
       // ⭐ PAID user → go to dashboard normally
       router.push(
-        `/${role_name == "content_developer" ? "developer" : role_name}/${id}/dashboard`
+        `/tstp/${role_name == "content_developer" ? "developer" : role_name}/${id}/dashboard`
       );
     }
       })

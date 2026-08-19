@@ -8,7 +8,7 @@ import { getUserDetails } from "@/app/services/authService";
 function MaterialsComponent() {
   const [tabItems, setTabItems] = useState([]);
   const [courses, setCourses] = useState([]);
-  const role = usePathname().split("/")[1];
+  const role = usePathname().split("/")[2];
   const { id } = useParams();
 
   useEffect(() => {

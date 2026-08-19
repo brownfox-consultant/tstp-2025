@@ -15,7 +15,7 @@ import { MoreOutlined } from "@ant-design/icons";
 function MeetingsList({ updated, setUpdated }) {
   const [meetingsData, setMeetingsData] = useState([]);
   const pathname = usePathname();
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
   const [total, setTotal] = useState(0);
   const [current, setCurrent] = useState(1);
   const [loading, setLoading] = useState(false);

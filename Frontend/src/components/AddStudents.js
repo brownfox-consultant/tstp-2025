@@ -221,7 +221,7 @@ function AddStudents({ courseFromTable = null }) {
       .then((res) => {
         Modal.success({
           title: res.data.detail,
-          onOk: router.push(`/admin/${id}/tests`),
+          onOk: router.push(`/tstp/admin/${id}/tests`),
         });
       })
       .catch((err) => console.log("err", err))

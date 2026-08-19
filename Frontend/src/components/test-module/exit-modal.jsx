@@ -31,7 +31,7 @@ function ExitExamModal({ openModal, setOpenModal }) {
       testSubmissionId;
 
     router.replace(
-      `/student/${id}/test/full/${testId}/result?test_submission_id=${test_submission_id}`
+      `/tstp/student/${id}/test/full/${testId}/result?test_submission_id=${test_submission_id}`
     );
   };
 
@@ -52,7 +52,7 @@ function ExitExamModal({ openModal, setOpenModal }) {
   );
 
   router.replace(
-    `/student/${id}/test/practice/${testId}/result`
+    `/tstp/student/${id}/test/practice/${testId}/result`
   );
 
   return;

@@ -29,7 +29,7 @@ function PracticeTestReport() {
           {/* Left Side - Back + Title */}
           <div className="flex items-start gap-3">
             <button 
-              onClick={() => router.push(`/student/${id}/test/practice`)}
+              onClick={() => router.push(`/tstp/student/${id}/test/practice`)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors mt-1"
             >
               <BackIcon />

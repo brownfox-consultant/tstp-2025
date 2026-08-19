@@ -52,7 +52,7 @@ function DashBoardStatsComponent({ date }) {
 
   const handleViewAllClick = (link) => {
     if (!link) return;
-    const basePath = pathname.split("/").slice(0, 3).join("/");
+    const basePath = pathname.split("/").slice(0, 4).join("/");
     router.push(`${basePath}${link}`);
   };
 

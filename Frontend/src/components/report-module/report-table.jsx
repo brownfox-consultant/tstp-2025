@@ -29,7 +29,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
   }
 
   const pathname = usePathname();
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
   const { questions_data = [], section_id, test_id, course_subject_id, test_type } =
     sectionData || {};
 

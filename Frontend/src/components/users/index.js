@@ -26,7 +26,7 @@ function AdminUsersComponent() {
     // {
     //   key: "registered",
     //   label: "Registered Students",
-    //   api: "/student/registered/",
+    //   api: "/tstp/student/registered/",
     // },
     {
       key: "upcoming",

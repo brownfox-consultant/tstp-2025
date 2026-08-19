@@ -40,7 +40,7 @@ const GET_TestScores = ({ studentId, courseId, subjectId, dateRange }) => {
 
 export default function TestScoresChart({ dateRange }) {
   const pathname = usePathname();
-  const studentId = pathname?.split("/")?.[2]; // e.g. /student/12/dashboard
+  const studentId = pathname?.split("/")?.[3]; // e.g. /student/12/dashboard
 
   const [courses, setCourses] = useState([]);
   const [subjects, setSubjects] = useState([]);

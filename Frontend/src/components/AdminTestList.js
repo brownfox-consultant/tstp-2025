@@ -33,7 +33,7 @@ function AdminTestList() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
   const [searchText, setSearchText] = useState("");
   const [params, setParams] = useState({});
   const [searchedColumn, setSearchedColumn] = useState("");

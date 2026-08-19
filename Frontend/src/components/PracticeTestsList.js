@@ -30,7 +30,7 @@ function PracticeTestsList() {
   
 
 
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
 
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -61,7 +61,7 @@ function PracticeTestsList() {
   useEffect(() => {
     // Fetch user details to get available courses
     if (role === "student") {
-      const userId = pathname.split("/")[2];
+      const userId = pathname.split("/")[3];
       getUserDetails(userId)
         .then((res) => {
           setCourses(res.data.course_details.map(c => c.course));
@@ -127,15 +127,15 @@ function PracticeTestsList() {
       sorter: false,
       render: (text, record) => {
         const { id } = record;
-        const userId = pathname.split("/")[2];
+        const userId = pathname.split("/")[3];
         
         return (
           <button
             onClick={() => {
               if (role === "student") {
-                router.push(`/${role}/${userId}/test/practice/${id}/result`);
+                router.push(`/tstp/${role}/${userId}/test/practice/${id}/result`);
               } else {
-                router.push(`/${role}/${userId}/practice/${id}/result`);
+                router.push(`/tstp/${role}/${userId}/practice/${id}/result`);
               }
             }}
             className="font-semibold  hover:text-blue-600 hover:underline cursor-pointer text-left transition-colors duration-200 bg-transparent text-blue-600"
@@ -254,7 +254,7 @@ function PracticeTestsList() {
       width: 50,
       render: (_, record) => {
   const { id, status } = record;
-  const userId = pathname.split("/")[2];
+  const userId = pathname.split("/")[3];
 
   if (status === "IN_PROGRESS") {
     return (
@@ -263,7 +263,7 @@ function PracticeTestsList() {
         size="small"
         onClick={() =>
           router.push(
-            `/${role}/${userId}/practice/${id}/info`
+            `/tstp/${role}/${userId}/practice/${id}/info`
           )
         }
       >
@@ -282,11 +282,11 @@ function PracticeTestsList() {
         onClick={() => {
           if (role === "student") {
             router.push(
-              `/${role}/${userId}/test/practice/${id}/result`
+              `/tstp/${role}/${userId}/test/practice/${id}/result`
             );
           } else {
             router.push(
-              `/${role}/${userId}/practice/${id}/result`
+              `/tstp/${role}/${userId}/practice/${id}/result`
             );
           }
         }}
@@ -388,11 +388,11 @@ function PracticeTestsList() {
     )
   }
   onClick={() => {
-    const userId = pathname.split("/")[2];
+    const userId = pathname.split("/")[3];
 
     if (inProgressTest) {
       router.push(
-        `/${role}/${userId}/practice/${inProgressTest.id}/info`
+        `/tstp/${role}/${userId}/practice/${inProgressTest.id}/info`
       );
     } else {
       setCreateTest(true);

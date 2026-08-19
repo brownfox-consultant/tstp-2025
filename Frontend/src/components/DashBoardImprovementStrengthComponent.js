@@ -35,7 +35,7 @@ const TEST_TYPE_OPTIONS = [
 
 const DashBoardImprovementStrengthComponent = ({ date }) => {
   const pathname = usePathname();
-  const studentId = pathname?.split("/")?.[2];
+  const studentId = pathname?.split("/")?.[3];
 
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);

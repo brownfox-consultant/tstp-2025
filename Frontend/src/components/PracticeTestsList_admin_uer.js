@@ -37,7 +37,7 @@ function PracticeTestsList({ studentId }) {
   const subActionParam = searchParams.get("subAction");
   const reportPracticeTestIdParam = searchParams.get("reportPracticeTestId");
 
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
   console.log("role", role);
   useEffect(() => {
     const params = {
@@ -163,7 +163,7 @@ function PracticeTestsList({ studentId }) {
       align: "center",
       render: (_, record) => {
         const { id } = record;
-        const userId = pathname.split("/")[2];
+        const userId = pathname.split("/")[3];
 
         return (
           <Button

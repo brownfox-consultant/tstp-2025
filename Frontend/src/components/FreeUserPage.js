@@ -69,7 +69,7 @@ export default function FreeUserPage() {
 
   function handleClick(course) {
     if (isCourseAssigned(course.id)) {
-      router.push(`/student/${id}/test/full`);
+      router.push(`/tstp/student/${id}/test/full`);
       return;
     }
 

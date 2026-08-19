@@ -36,7 +36,7 @@ export default function ImpersonationBanner() {
     localStorage.setItem("role_name", role_name);
     localStorage.setItem("csrfToken", csrf_token);
 
-    router.push(`/${role_name}/${id}/dashboard`);
+    router.push(`/tstp/${role_name}/${id}/dashboard`);
   });
 };
 

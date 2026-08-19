@@ -30,7 +30,7 @@ function StudentTestsComponent() {
     {
       key: "self",
       label: "Practice Questions",
-      api: "/student/registered/",
+      api: "/tstp/student/registered/",
     },
   ];
   return (

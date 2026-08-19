@@ -18,7 +18,7 @@ function Report({ testSubmissionId }) {
   const router = useRouter();
   const pathname = usePathname();
   const { id } = useParams();
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
 
   const test_submission_id = searchParams.get("test_submission_id");
 
@@ -68,7 +68,7 @@ function Report({ testSubmissionId }) {
                   <LeftOutlined
                     className="text-lg cursor-pointer mr-2"
                     onClick={() => {
-                      /* router.push(`/${role}/${id}/test/`); */
+                      /* router.push(`/tstp/${role}/${id}/test/`); */
                       /* setShowTestList(true); */
                       window.location.reload();
                     }}

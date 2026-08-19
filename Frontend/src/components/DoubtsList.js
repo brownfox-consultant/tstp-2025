@@ -33,7 +33,7 @@ function DoubtsList() {
   const debounceTimeoutRef = useRef(null);
   const formatDateTime = (text) =>
     text ? dayjs.utc(text).tz("Asia/Kolkata").format("MMM D, YYYY h:mm A") : "-";
-  const role = usePathname().split("/")[1];
+  const role = usePathname().split("/")[2];
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 const [editQuestionData, setEditQuestionData] = useState(null);
 const [topicOptions, setTopicOptions] = useState([]);

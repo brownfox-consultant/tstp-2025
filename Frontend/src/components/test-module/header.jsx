@@ -57,8 +57,8 @@ function TestHeader() {
     if (questions.length === 0 && !isSectionCompleted) {
       router.replace(
         testType === "practice"
-          ? `/student/${id}/test/practice/create`
-          : `/student/${id}/test/${testId}/begin`
+          ? `/tstp/student/${id}/test/practice/create`
+          : `/tstp/student/${id}/test/${testId}/begin`
       );
     }
   }, [questions, isSectionCompleted]);

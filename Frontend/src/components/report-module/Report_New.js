@@ -983,9 +983,9 @@ const totalIdleTime = getTotalIdleTime();
           if (onClose) {
             onClose();
           } else {
-            const role = pathname?.split('/')[1];
+            const role = pathname?.split('/')[2];
             if (role === 'student') {
-              router.push(`/student/${params.id}/test/full`);
+              router.push(`/tstp/student/${params.id}/test/full`);
             } else {
               router.back();
             }

@@ -79,8 +79,8 @@ useEffect(() => {
     if (questions.length == 0 && !isSectionCompleted) {
       router.replace(
         testType == "practice"
-          ? `/student/${id}/test/practice/create`
-          : `/student/${id}/test/${testId}/begin`
+          ? `/tstp/student/${id}/test/practice/create`
+          : `/tstp/student/${id}/test/${testId}/begin`
       );
       return;
     }
@@ -110,7 +110,7 @@ useEffect(() => {
     exitFullScreen();
 
     router.replace(
-      `/student/${id}/test/practice/${testId}/result`
+      `/tstp/student/${id}/test/practice/${testId}/result`
     );
   } catch (err) {
     console.error(err);
@@ -158,14 +158,14 @@ useEffect(() => {
       if (isTestCompleted && isSectionCompleted) {
         if (testType == "practice") {
           exitFullScreen();
-          router.replace(`/student/${id}/test/practice/${testId}/result`);
+          router.replace(`/tstp/student/${id}/test/practice/${testId}/result`);
         } else {
           exitFullScreen();
           window.sessionStorage.setItem("test_submission_id", testSubmissionId);
           setSubmissionId(testSubmissionId);
         }
       } else if (isSectionCompleted) {
-        router.replace(`/student/${id}/test/${testId}/begin`);
+        router.replace(`/tstp/student/${id}/test/${testId}/begin`);
       }
       setFinishTriggered(false);
     }, 500); // 0.5 second delay for Redux state update
@@ -243,10 +243,10 @@ useEffect(() => {
                 onClose={() => {
                   exitFullScreen();
                   if (testType === "practice") {
-                    router.replace(`/student/${id}/test/practice/${testId}/result`);
+                    router.replace(`/tstp/student/${id}/test/practice/${testId}/result`);
                   } else {
                     router.replace(
-                      `/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
+                      `/tstp/student/${id}/test/full/${testId}/result?test_submission_id=${testSubmissionId}`
                     );
                   }
                 }}

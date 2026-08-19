@@ -16,7 +16,7 @@ import {
 
 import BreakTimer from "./test-module/break-timer";
 
-import TestLoading from "@/app/student/[id]/(test-layout)/[testType]/[testId]/loading";
+import TestLoading from "@/app/tstp/student/[id]/(test-layout)/[testType]/[testId]/loading";
 
 let fsModalInstance = null;
 
@@ -198,7 +198,7 @@ useEffect(() => {
 
     dispatch(setTestRunning(true));
 
-    router.replace(`/student/${id}/test/${testId}/`);
+    router.replace(`/tstp/student/${id}/test/${testId}/`);
   } catch (errorMsg) {
     Modal.error({
       title: "Section Load Failed",
@@ -271,7 +271,7 @@ console.log({
       </Suspense>
     );
   } else if (status == "error") {
-    router.replace(`/student/${id}/dashboard`);
+    router.replace(`/tstp/student/${id}/dashboard`);
   } else {
     return <TestLoading />;
   }

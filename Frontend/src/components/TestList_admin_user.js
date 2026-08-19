@@ -30,7 +30,7 @@ function TestList_admin_user({ studentId }) {
   const [scoreMap, setScoreMap] = useState({});
 
 
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
   const { setTestRunning, setCollapsed } = useGlobalContext();
   const { isFullScreen, goFullScreen, exitFullScreen } = useFullScreen();
 

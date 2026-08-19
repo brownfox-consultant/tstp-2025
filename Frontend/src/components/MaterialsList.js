@@ -10,7 +10,7 @@ import { getMaterialDetails } from "@/app/services/authService";
 function MaterialsList({ course, subjectsData }) {
   const router = useRouter();
   const pathname = usePathname();
-  const role = pathname.split("/")[1];
+  const role = pathname.split("/")[2];
   const [courseSubId, setCourseSubId] = useState(0);
   const [updated, setUpdated] = useState(false);
   const [materialsData, setMaterialsData] = useState([]);
