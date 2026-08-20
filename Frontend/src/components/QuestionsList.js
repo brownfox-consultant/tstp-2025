@@ -175,6 +175,19 @@ function QuestionsList({
           >
             Search
           </Button>
+          <Button
+            size="small"
+            onClick={() => {
+              clearFilters && clearFilters();
+              setSelectedKeys([]);
+              confirm({ closeDropdown: true });
+              updatedSearchParams.delete(paramName || dataIndex);
+              router.replace(`${pathname}?${updatedSearchParams.toString()}`);
+              setSearchedColumn("");
+            }}
+          >
+            Reset
+          </Button>
         </Space>
       </div>
     ),
@@ -392,7 +405,7 @@ function QuestionsList({
         ) : (
           <FilterOutlined style={{ color: "gray" }} />
         ),
-      defaultFilteredValue: searchParams.get("test_type") || null,
+      defaultFilteredValue: searchParams.get("test_type")?.split(",") || null,
       render: (text) => {
         return text == "FULL_LENGTH_TEST"
           ? "Full Length Test"
@@ -409,7 +422,7 @@ function QuestionsList({
         ) : (
           <FilterOutlined style={{ color: "gray" }} />
         ),
-      defaultFilteredValue: searchParams.get("topic") || null,
+      defaultFilteredValue: searchParams.get("topic")?.split(",") || null,
       filters: topics.map(({ id, name }) => {
         return { value: id, text: name };
       }),
@@ -425,7 +438,7 @@ function QuestionsList({
         ) : (
           <FilterOutlined style={{ color: "gray" }} />
         ),
-      defaultFilteredValue: searchParams.get("sub_topic") || null,
+      defaultFilteredValue: searchParams.get("sub_topic")?.split(",") || null,
       render: (text) => {
         return <div>{text ? text : "-"}</div>;
       },
@@ -676,9 +689,7 @@ function QuestionsList({
   const mergedFilters = { ...currentFilters };
 
   Object.keys(tableFilters).forEach((key) => {
-    if (tableFilters[key]) {
-      mergedFilters[key] = tableFilters[key];
-    }
+    mergedFilters[key] = tableFilters[key];
   });
 
   updateURL(pagination.current, mergedFilters, searchText);

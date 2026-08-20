@@ -4,7 +4,7 @@ import React from "react";
 function page() {
   return (
     <>
-      <div className="text-xl font-semibold">Full Length Tests</div>
+      {/* <div className="text-xl font-semibold">Full Length Tests</div> */}
       <TestList />
     </>
   );

@@ -40,7 +40,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
   const availableSubjects = resultData?.subjects?.map(s => s.name.toLowerCase()) || [];
   const tabs = [...availableSubjects, "questions", "insights"];
 
-  
+
 
   useEffect(() => {
     setLoading(true);
@@ -56,7 +56,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
     if (resultData?.subjects?.length > 0) {
       const subjectNames = resultData.subjects.map(s => s.name.toLowerCase());
       if (activeTab === "english" && !subjectNames.some(n => n.includes("english"))) {
-         setActiveTab(subjectNames[0]);
+        setActiveTab(subjectNames[0]);
       }
     }
     if (activeTab === "questions" && resultData?.subjects?.length > 0) {
@@ -145,7 +145,7 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
     const questions = section.questions_data;
     const flow = [];
     const questionMap = {};
-    
+
     // Build map of question_id to sr_no and status
     questions.forEach(q => {
       questionMap[q.question_id] = {
@@ -177,66 +177,66 @@ const ReportNew = ({ testSubmissionId, onClose }) => {
     });
 
     // Sort by timestamp
-allActions.sort(
-  (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-);
+    allActions.sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
 
-// Sort by timestamp
-allActions.sort(
-  (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-);
+    // Sort by timestamp
+    allActions.sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
 
-allActions.forEach(action => {
-  flow.push({
-    sr_no: action.sr_no,
-    question_id: action.question_id,
-    action_type: action.action_type,
-    time_spent: action.time_spent || 0,
-    is_correct: action.is_correct,
-    is_skipped: action.is_skipped,
-    marked: action.marked,
-    timestamp: action.timestamp
-  });
-});
+    allActions.forEach(action => {
+      flow.push({
+        sr_no: action.sr_no,
+        question_id: action.question_id,
+        action_type: action.action_type,
+        time_spent: action.time_spent || 0,
+        is_correct: action.is_correct,
+        is_skipped: action.is_skipped,
+        marked: action.marked,
+        timestamp: action.timestamp
+      });
+    });
 
     return flow;
   };
 
-  
-const getTotalTimeSpent = () => {
-  let totalTime = 0;
 
-  resultData?.subjects?.forEach(subject => {
-    subject.sections?.forEach(section => {
-      totalTime +=
-        (section?.section_correct_time_taken || 0) +
-        (section?.section_incorrect_time_taken || 0);
+  const getTotalTimeSpent = () => {
+    let totalTime = 0;
+
+    resultData?.subjects?.forEach(subject => {
+      subject.sections?.forEach(section => {
+        totalTime +=
+          (section?.section_correct_time_taken || 0) +
+          (section?.section_incorrect_time_taken || 0);
+      });
     });
-  });
-  console.log("Total Time Spent:", totalTime);
-  return totalTime;
-};
+    console.log("Total Time Spent:", totalTime);
+    return totalTime;
+  };
 
-const getTotalNavigationSteps = () => {
-  let totalSteps = 0;
+  const getTotalNavigationSteps = () => {
+    let totalSteps = 0;
 
-  resultData?.subjects?.forEach(subject => {
-    subject.sections?.forEach(section => {
-      const flow = buildNavigationFlow(
-        subject.name,
-        section.name
-      );
+    resultData?.subjects?.forEach(subject => {
+      subject.sections?.forEach(section => {
+        const flow = buildNavigationFlow(
+          subject.name,
+          section.name
+        );
 
-      totalSteps += flow.filter(
-        f =>
-          f.action_type !== 'TIMEUP' &&
-          f.action_type !== 'Review_Time'
-      ).length;
+        totalSteps += flow.filter(
+          f =>
+            f.action_type !== 'TIMEUP' &&
+            f.action_type !== 'Review_Time'
+        ).length;
+      });
     });
-  });
-  console.log("Total Navigation Steps:", totalSteps);
-  return totalSteps;
-};
+    console.log("Total Navigation Steps:", totalSteps);
+    return totalSteps;
+  };
 
 
   // ✅ Render Navigation Flow Timeline - SINGLE DEFINITION
@@ -245,12 +245,12 @@ const getTotalNavigationSteps = () => {
       selectedFlowSection?.subject,
       selectedFlowSection?.section
     );
-   const navigationFlow = flow.filter(
-  f =>
-    
-    f.action_type !== 'Review_Time'
-);
-    
+    const navigationFlow = flow.filter(
+      f =>
+
+        f.action_type !== 'Review_Time'
+    );
+
     const allSections = getAllSections();
 
     const subject = resultData?.subjects?.find(
@@ -276,8 +276,8 @@ const getTotalNavigationSteps = () => {
     const nextCount = flow.filter(f => f.action_type === 'NEXT').length;
     const prevCount = flow.filter(f => f.action_type === 'PREVIOUS').length;
     const jumpCount = flow.filter(
-  f => f.action_type === 'JUMP'
-).length;
+      f => f.action_type === 'JUMP'
+    ).length;
 
     // Get unique questions visited in order of first visit
     const uniqueQuestions = [];
@@ -291,37 +291,37 @@ const getTotalNavigationSteps = () => {
 
     // Count revisits (questions that appear more than once)
     // Count revisits using backend times_visited
-const revisits = questions.reduce((total, q) => {
-  return total + Math.max(0, (q.times_visited || 1) - 1);
-}, 0);
+    const revisits = questions.reduce((total, q) => {
+      return total + Math.max(0, (q.times_visited || 1) - 1);
+    }, 0);
 
-const timeupVisits = flow.filter(
-  f => f.action_type === 'TIMEUP'
-).length;
+    const timeupVisits = flow.filter(
+      f => f.action_type === 'TIMEUP'
+    ).length;
 
-const reviewVisits = flow.filter(
-  f => f.action_type === 'Review_Time'
-).length;
+    const reviewVisits = flow.filter(
+      f => f.action_type === 'Review_Time'
+    ).length;
 
-const totalVisits = revisits 
+    const totalVisits = revisits
 
-const sectionTime = section?.time_on_section || 0;
+    const sectionTime = section?.time_on_section || 0;
 
-const actualQuestionTime =
-  (section?.section_correct_time_taken || 0) +
-  (section?.section_incorrect_time_taken || 0) +
-  (section?.section_blank_time_taken || 0);
+    const actualQuestionTime =
+      (section?.section_correct_time_taken || 0) +
+      (section?.section_incorrect_time_taken || 0) +
+      (section?.section_blank_time_taken || 0);
 
-const idleTime = Math.max(
-  0,
-  sectionTime - actualQuestionTime
-);
+    const idleTime = Math.max(
+      0,
+      sectionTime - actualQuestionTime
+    );
 
 
 
-    
 
-    
+
+
 
 
 
@@ -335,41 +335,41 @@ const idleTime = Math.max(
 
     // ✅ Get action icon
     const getActionIcon = (actionType) => {
-  switch(actionType) {
-    case 'PREVIOUS':
-      return { icon: '←', color: 'text-blue-500' };
+      switch (actionType) {
+        case 'PREVIOUS':
+          return { icon: '←', color: 'text-blue-500' };
 
-    case 'JUMP':
-    case 'Review_Time':
-      return { icon: '↕', color: 'text-purple-500' };
+        case 'JUMP':
+        case 'Review_Time':
+          return { icon: '↕', color: 'text-purple-500' };
 
-    case 'TIMEUP':
-      return { icon: '→', color: 'text-red-500' };
+        case 'TIMEUP':
+          return { icon: '→', color: 'text-red-500' };
 
-    default:
-      return { icon: '→', color: 'text-green-500' };
-  }
-};
+        default:
+          return { icon: '→', color: 'text-green-500' };
+      }
+    };
 
-const sequenceString = flow.map((f, index) => {
-  
-  const question =
-  f.action_type === 'Review_Time'
-    ? 'R'
-    : `Q${f.sr_no}`;
+    const sequenceString = flow.map((f, index) => {
 
-  if (index === 0) {
-    return question;
-  }
+      const question =
+        f.action_type === 'Review_Time'
+          ? 'R'
+          : `Q${f.sr_no}`;
 
-  // Use the PREVIOUS item's action,
-  // because that action represents the arrow to this question.
-  const previousAction = getActionIcon(
-    flow[index - 1].action_type
-  );
+      if (index === 0) {
+        return question;
+      }
 
-  return `${previousAction.icon} ${question}`;
-}).join(' ');
+      // Use the PREVIOUS item's action,
+      // because that action represents the arrow to this question.
+      const previousAction = getActionIcon(
+        flow[index - 1].action_type
+      );
+
+      return `${previousAction.icon} ${question}`;
+    }).join(' ');
 
     return (
       <div className="space-y-4">
@@ -381,11 +381,10 @@ const sequenceString = flow.map((f, index) => {
               <button
                 key={idx}
                 onClick={() => setSelectedFlowSection(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  selectedFlowSection?.subject === s.subject && selectedFlowSection?.section === s.section
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${selectedFlowSection?.subject === s.subject && selectedFlowSection?.section === s.section
                     ? 'bg-primary-color text-white shadow-md'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {s.subject} - {s.section}
               </button>
@@ -398,8 +397,8 @@ const sequenceString = flow.map((f, index) => {
           <div className="text-center">
             <div className="text-xs text-gray-400">Total Steps</div>
             <div className="text-xl font-bold text-gray-800">
-  {navigationFlow.length}
-</div>
+              {navigationFlow.length}
+            </div>
           </div>
           <div className="text-center">
             <div className="text-xs text-gray-400">Unique Questions</div>
@@ -414,41 +413,41 @@ const sequenceString = flow.map((f, index) => {
             <div className="text-xl font-bold text-orange-500">{reviewVisits}</div>
           </div>
           <div className="text-center">
-  <div className="text-xs text-gray-400">Total Time</div>
-  <div className="text-xl font-bold text-gray-800">
-    
-  {(() => {
-    const totalSeconds =
-       (section?.section_correct_time_taken || 0) +
-  (section?.section_incorrect_time_taken || 0) +
-  (section?.section_blank_time_taken || 0);
+            <div className="text-xs text-gray-400">Total Time</div>
+            <div className="text-xl font-bold text-gray-800">
 
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
+              {(() => {
+                const totalSeconds =
+                  (section?.section_correct_time_taken || 0) +
+                  (section?.section_incorrect_time_taken || 0) +
+                  (section?.section_blank_time_taken || 0);
 
-    return `${minutes}m ${seconds}s`;
-  })()}
-</div>
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
 
-</div>
-<div className="text-center">
-  <div className="text-xs text-gray-400">Idle Time</div>
-  <div className="text-xl font-bold text-orange-500">
-    {Math.floor(idleTime / 60)}m {idleTime % 60}s
-  </div>
-</div>
+                return `${minutes}m ${seconds}s`;
+              })()}
+            </div>
+
+          </div>
+          <div className="text-center">
+            <div className="text-xs text-gray-400">Idle Time</div>
+            <div className="text-xl font-bold text-orange-500">
+              {Math.floor(idleTime / 60)}m {idleTime % 60}s
+            </div>
+          </div>
           <div className="text-center">
             <div className="text-xs text-gray-400">Avg Time/Step</div>
             <div className="text-xl font-bold text-gray-800">
               {navigationFlow.length > 0
-  ? (
-      (
-        (section?.section_correct_time_taken || 0) +
-        (section?.section_incorrect_time_taken || 0) +
-        (section?.section_blank_time_taken || 0)
-      ) / navigationFlow.length
-    ).toFixed(2)
-  : '0.00'}s
+                ? (
+                  (
+                    (section?.section_correct_time_taken || 0) +
+                    (section?.section_incorrect_time_taken || 0) +
+                    (section?.section_blank_time_taken || 0)
+                  ) / navigationFlow.length
+                ).toFixed(2)
+                : '0.00'}s
             </div>
           </div>
         </div>
@@ -478,9 +477,9 @@ const sequenceString = flow.map((f, index) => {
               {flow.map((item, index) => {
                 const colorClass = getQuestionColor(item);
                 const action =
-  item.action_type === 'Review_Time'
-    ? { icon: '→', color: 'text-green-500' }
-    : getActionIcon(item.action_type);
+                  item.action_type === 'Review_Time'
+                    ? { icon: '→', color: 'text-green-500' }
+                    : getActionIcon(item.action_type);
 
                 return (
                   <div key={index} className="flex items-center">
@@ -489,11 +488,11 @@ const sequenceString = flow.map((f, index) => {
                       className={`relative flex-shrink-0 w-9 h-9 rounded-lg ${colorClass} font-bold text-sm flex items-center justify-center border-2 shadow-sm transition-all hover:scale-110 hover:shadow-md cursor-pointer group`}
                       title={`Q${item.sr_no} - ${item.action_type} (${item.time_spent}s)${item.marked ? ' 📌' : ''}${item.is_correct ? ' ✅' : item.is_skipped ? ' ⏭' : ' ❌'}`}
                     >
-         <span className="relative z-10">
-  {item.action_type === 'Review_Time'
-    ? 'R'
-    : item.sr_no}
-</span>
+                      <span className="relative z-10">
+                        {item.action_type === 'Review_Time'
+                          ? 'R'
+                          : item.sr_no}
+                      </span>
                       {item.marked && (
                         <span className="absolute -top-1 -right-1 text-[8px]">📌</span>
                       )}
@@ -566,30 +565,30 @@ const sequenceString = flow.map((f, index) => {
 
 
     const getTotalNavigationSteps = () => {
-  let totalSteps = 0;
+      let totalSteps = 0;
 
-  resultData?.subjects?.forEach(subject => {
-    subject.sections?.forEach(section => {
-      const flow = buildNavigationFlow(
-        subject.name,
-        section.name
-      );
+      resultData?.subjects?.forEach(subject => {
+        subject.sections?.forEach(section => {
+          const flow = buildNavigationFlow(
+            subject.name,
+            section.name
+          );
 
-      const navigationSteps = flow.filter(
-        f =>
-          
-          f.action_type !== 'Review_Time'
-      );
+          const navigationSteps = flow.filter(
+            f =>
 
-      totalSteps += navigationSteps.length;
-    });
-  });
+              f.action_type !== 'Review_Time'
+          );
 
-  return totalSteps;
-};
+          totalSteps += navigationSteps.length;
+        });
+      });
+
+      return totalSteps;
+    };
 
 
-    
+
     if (!pattern && !behavior) {
       return (
         <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
@@ -649,95 +648,95 @@ const sequenceString = flow.map((f, index) => {
     const config = pattern?.primary_pattern ? patternConfig[pattern.primary_pattern] : patternConfig['MIXED'];
 
     const getTotalRevisits = () => {
-  let totalRevisits = 0;
+      let totalRevisits = 0;
 
-  resultData?.subjects?.forEach(subject => {
-    subject.sections?.forEach(section => {
-      section.questions_data?.forEach(question => {
-        totalRevisits += Math.max(0, (question.times_visited || 1) - 1);
+      resultData?.subjects?.forEach(subject => {
+        subject.sections?.forEach(section => {
+          section.questions_data?.forEach(question => {
+            totalRevisits += Math.max(0, (question.times_visited || 1) - 1);
+          });
+        });
       });
-    });
-  });
 
-  return totalRevisits;
-};
+      return totalRevisits;
+    };
 
-const getTotalMarkedQuestions = () => {
-  let totalMarked = 0;
+    const getTotalMarkedQuestions = () => {
+      let totalMarked = 0;
 
-  resultData?.subjects?.forEach(subject => {
-    subject.sections?.forEach(section => {
-      section.questions_data?.forEach(question => {
-        if (question.marked) {
-          totalMarked += 1;
-        }
+      resultData?.subjects?.forEach(subject => {
+        subject.sections?.forEach(section => {
+          section.questions_data?.forEach(question => {
+            if (question.marked) {
+              totalMarked += 1;
+            }
+          });
+        });
       });
-    });
-  });
 
-  return totalMarked;
-};
+      return totalMarked;
+    };
 
-const getTotalSkippedQuestions = () => {
-  let totalSkipped = 0;
+    const getTotalSkippedQuestions = () => {
+      let totalSkipped = 0;
 
-  resultData?.subjects?.forEach(subject => {
-    subject.sections?.forEach(section => {
-      section.questions_data?.forEach(question => {
-        if (question.is_skipped) {
-          totalSkipped += 1;
-        }
+      resultData?.subjects?.forEach(subject => {
+        subject.sections?.forEach(section => {
+          section.questions_data?.forEach(question => {
+            if (question.is_skipped) {
+              totalSkipped += 1;
+            }
+          });
+        });
       });
-    });
-  });
 
-  return totalSkipped;
-};
+      return totalSkipped;
+    };
 
-const totalMarkedQuestions = getTotalMarkedQuestions();
-const totalSkippedQuestions = getTotalSkippedQuestions();
+    const totalMarkedQuestions = getTotalMarkedQuestions();
+    const totalSkippedQuestions = getTotalSkippedQuestions();
 
-const getTotalTimeSpent = () => {
-  let totalTime = 0;
+    const getTotalTimeSpent = () => {
+      let totalTime = 0;
 
-  resultData?.subjects?.forEach(subject => {
-    subject.sections?.forEach(section => {
-      const sectionTotalTime =
-        (section?.section_correct_time_taken || 0) +
-  (section?.section_incorrect_time_taken || 0) +
-  (section?.section_blank_time_taken || 0);
+      resultData?.subjects?.forEach(subject => {
+        subject.sections?.forEach(section => {
+          const sectionTotalTime =
+            (section?.section_correct_time_taken || 0) +
+            (section?.section_incorrect_time_taken || 0) +
+            (section?.section_blank_time_taken || 0);
 
-      totalTime += sectionTotalTime;
-    });
-  });
+          totalTime += sectionTotalTime;
+        });
+      });
 
-  return totalTime;
-};
+      return totalTime;
+    };
 
-const getTotalIdleTime = () => {
-  let totalIdleTime = 0;
+    const getTotalIdleTime = () => {
+      let totalIdleTime = 0;
 
-  resultData?.subjects?.forEach(subject => {
-    subject.sections?.forEach(section => {
-      const sectionTotalTime =
-       (section?.section_correct_time_taken || 0) +
-  (section?.section_incorrect_time_taken || 0) +
-  (section?.section_blank_time_taken || 0);
+      resultData?.subjects?.forEach(subject => {
+        subject.sections?.forEach(section => {
+          const sectionTotalTime =
+            (section?.section_correct_time_taken || 0) +
+            (section?.section_incorrect_time_taken || 0) +
+            (section?.section_blank_time_taken || 0);
 
-      const sectionTime = section?.time_on_section || 0;
+          const sectionTime = section?.time_on_section || 0;
 
-      totalIdleTime += Math.max(
-        0,
-        sectionTime - sectionTotalTime
-      );
-    });
-  });
+          totalIdleTime += Math.max(
+            0,
+            sectionTime - sectionTotalTime
+          );
+        });
+      });
 
-  return totalIdleTime;
-};
+      return totalIdleTime;
+    };
 
-const totalTimeSpent = getTotalTimeSpent();
-const totalIdleTime = getTotalIdleTime();
+    const totalTimeSpent = getTotalTimeSpent();
+    const totalIdleTime = getTotalIdleTime();
 
     return (
       <div className="space-y-6">
@@ -758,7 +757,7 @@ const totalIdleTime = getTotalIdleTime();
                     {config.label}
                   </h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span 
+                    <span
                       className="inline-block w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: config.color }}
                     />
@@ -777,11 +776,11 @@ const totalIdleTime = getTotalIdleTime();
                   {pattern.navigation_efficiency}%
                 </div>
                 <div className="w-full h-1.5 bg-gray-200 rounded-full mt-1.5 overflow-hidden">
-                  <div 
+                  <div
                     className="h-full rounded-full transition-all duration-500"
-                    style={{ 
+                    style={{
                       width: `${pattern.navigation_efficiency}%`,
-                      backgroundColor: config.color 
+                      backgroundColor: config.color
                     }}
                   />
                 </div>
@@ -798,12 +797,12 @@ const totalIdleTime = getTotalIdleTime();
                 <ActivityIcon size={20} className="text-blue-500" />
               </div>
               <span className="text-2xl font-bold text-gray-800"><span className="text-2xl font-bold text-gray-800">
-  {getTotalNavigationSteps()}
-</span></span>
+                {getTotalNavigationSteps()}
+              </span></span>
             </div>
             <p className="text-xs text-gray-400 mt-1.5 font-medium">Total Navigations</p>
           </div>
-          
+
           <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
@@ -813,7 +812,7 @@ const totalIdleTime = getTotalIdleTime();
             </div>
             <p className="text-xs text-gray-400 mt-1.5 font-medium">Sequential Moves</p>
           </div>
-          
+
           <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
@@ -823,7 +822,7 @@ const totalIdleTime = getTotalIdleTime();
             </div>
             <p className="text-xs text-gray-400 mt-1.5 font-medium">Jump Moves</p>
           </div>
-          
+
           <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
@@ -835,7 +834,7 @@ const totalIdleTime = getTotalIdleTime();
           </div>
         </div>
 
-         {/* Detailed Behavior Stats */}
+        {/* Detailed Behavior Stats */}
         {behavior && (
           <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
@@ -866,35 +865,35 @@ const totalIdleTime = getTotalIdleTime();
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-400">Total Time Spent</p>
                 <p className="text-lg font-bold text-gray-800">
-             {Math.floor(totalTimeSpent / 60)}m {totalTimeSpent % 60}s
+                  {Math.floor(totalTimeSpent / 60)}m {totalTimeSpent % 60}s
                 </p>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3">
-  <p className="text-xs text-gray-400">Total Idle Time</p>
-  <p className="text-lg font-bold text-orange-500">
-    {Math.floor(totalIdleTime / 60)}m {totalIdleTime % 60}s
-  </p>
-</div>
-<div className="bg-gray-50 rounded-lg p-3">
-  <p className="text-xs text-gray-400">Marked Questions</p>
-  <p className="text-lg font-bold text-blue-500">
-    {totalMarkedQuestions}
-  </p>
-</div>
-<div className="bg-gray-50 rounded-lg p-3">
-  <p className="text-xs text-gray-400">Skipped Questions</p>
-  <p className="text-lg font-bold text-gray-500">
-    {totalSkippedQuestions}
-  </p>
-</div>
+                <p className="text-xs text-gray-400">Total Idle Time</p>
+                <p className="text-lg font-bold text-orange-500">
+                  {Math.floor(totalIdleTime / 60)}m {totalIdleTime % 60}s
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Marked Questions</p>
+                <p className="text-lg font-bold text-blue-500">
+                  {totalMarkedQuestions}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Skipped Questions</p>
+                <p className="text-lg font-bold text-gray-500">
+                  {totalSkippedQuestions}
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
-              
-              
+
+
             </div>
           </div>
-        )} 
+        )}
 
         {/* ⭐ NAVIGATION FLOW TIMELINE */}
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
@@ -975,26 +974,31 @@ const totalIdleTime = getTotalIdleTime();
   const totalPercent = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
 
   return (
-    <div className="relative">
-      {/* Back Button */}
-      <button
-        className="absolute top-2 right-6 inline-flex items-center gap-2 px-5 py-3 bg-white/90 backdrop-blur-lg border border-gray-100 rounded-full text-sm font-semibold text-gray-800 cursor-pointer transition-all duration-300 shadow-sm hover:bg-primary-color hover:text-white hover:-translate-x-1 hover:shadow-lg hover:shadow-orange-200 z-10"
-        onClick={() => {
-          if (onClose) {
-            onClose();
-          } else {
-            const role = pathname?.split('/')[2];
-            if (role === 'student') {
-              router.push(`/tstp/student/${params.id}/test/full`);
+    <div className="">
+      <div className='flex justify-between align-middle'>
+
+        <div className="text-xl font-semibold">Full Length Test Result</div>
+        {/* Back Button */}
+        <button
+          className="inline-flex items-center gap-2 px-5 py-3 bg-white/90 backdrop-blur-lg border border-gray-100 rounded-xl mb-3 text-sm font-semibold text-gray-800 cursor-pointer transition-all duration-300 shadow-sm hover:bg-primary-color hover:text-white hover:-translate-x-1 hover:shadow-lg hover:shadow-orange-200 z-10"
+          onClick={() => {
+            if (onClose) {
+              onClose();
             } else {
-              router.back();
+              const role = pathname?.split('/')[2];
+              if (role === 'student') {
+                router.push(`/tstp/student/${params.id}/test/full`);
+              } else {
+                router.back();
+              }
             }
-          }
-        }}
-      >
-        <ArrowLeftIcon size={18} />
-        <span className="hidden sm:inline">Back</span>
-      </button>
+          }}
+        >
+          <ArrowLeftIcon size={18} />
+          <span className="hidden sm:inline">Back</span>
+        </button>
+      </div>
+
 
       <div className="bg-slate-200 rounded-xl p-4 md:p-6 shadow-card mb-6 animate-fade-in shadow-md">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1094,11 +1098,10 @@ const totalIdleTime = getTotalIdleTime();
                 setShowQuestionDetails(false);
                 setSelectedQuestionIndex(null);
               }}
-              className={`flex-1 md:min-w-[120px] min-w-[80px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
-                activeTab === tab
+              className={`flex-1 md:min-w-[120px] min-w-[80px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${activeTab === tab
                   ? 'bg-gradient-to-r from-primary-color to-orange-500 text-white shadow-lg shadow-orange-200'
                   : 'bg-transparent text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               {tab === "questions" ? (
                 <>
@@ -1146,58 +1149,53 @@ const totalIdleTime = getTotalIdleTime();
                   Question By Question Analysis
                 </h2>
               </div>
-              
+
               <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200">
-                <button 
+                <button
                   onClick={() => setFilterStatus('all')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    filterStatus === 'all' 
-                      ? 'bg-white text-gray-900 shadow-sm border border-gray-100' 
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${filterStatus === 'all'
+                      ? 'bg-white text-gray-900 shadow-sm border border-gray-100'
                       : 'text-gray-500 hover:text-gray-900 border border-transparent'
-                  }`}
+                    }`}
                 >
                   <span>All</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setFilterStatus('correct')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    filterStatus === 'correct' 
-                      ? 'bg-white text-green-700 shadow-sm border border-green-100' 
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${filterStatus === 'correct'
+                      ? 'bg-white text-green-700 shadow-sm border border-green-100'
                       : 'text-gray-500 hover:text-green-600 border border-transparent'
-                  }`}
+                    }`}
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'correct' ? 'bg-green-500' : 'bg-green-400'}`}></div>
                   <span>Correct</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setFilterStatus('incorrect')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    filterStatus === 'incorrect' 
-                      ? 'bg-white text-red-700 shadow-sm border border-red-100' 
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${filterStatus === 'incorrect'
+                      ? 'bg-white text-red-700 shadow-sm border border-red-100'
                       : 'text-gray-500 hover:text-red-600 border border-transparent'
-                  }`}
+                    }`}
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'incorrect' ? 'bg-red-500' : 'bg-red-400'}`}></div>
                   <span>Incorrect</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setFilterStatus('marked')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    filterStatus === 'marked' 
-                      ? 'bg-white text-blue-700 shadow-sm border border-blue-100' 
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${filterStatus === 'marked'
+                      ? 'bg-white text-blue-700 shadow-sm border border-blue-100'
                       : 'text-gray-500 hover:text-blue-600 border border-transparent'
-                  }`}
+                    }`}
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'marked' ? 'bg-blue-500' : 'bg-blue-400'}`}></div>
                   <span>Marked</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setFilterStatus('skipped')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    filterStatus === 'skipped' 
-                      ? 'bg-white text-gray-800 shadow-sm border border-gray-200' 
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${filterStatus === 'skipped'
+                      ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
                       : 'text-gray-500 hover:text-gray-800 border border-transparent'
-                  }`}
+                    }`}
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === 'skipped' ? 'bg-gray-500' : 'bg-gray-400'}`}></div>
                   <span>Skipped</span>
@@ -1209,11 +1207,10 @@ const totalIdleTime = getTotalIdleTime();
               {(resultData?.subjects || []).map((subject) => (
                 <button
                   key={subject.name}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 ${
-                    questionMainTab === subject.name
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 ${questionMainTab === subject.name
                       ? 'bg-gradient-to-r from-primary-color to-orange-500 text-white shadow-md shadow-orange-200 border-transparent'
                       : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-orange-200 hover:text-orange-600'
-                  }`}
+                    }`}
                   onClick={() => {
                     setQuestionMainTab(subject.name);
                     const firstSection = subject.sections?.[0]?.name;
@@ -1236,11 +1233,10 @@ const totalIdleTime = getTotalIdleTime();
                 ?.sections?.map((section) => (
                   <button
                     key={section.name}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 ${
-                      englishSubTab === section.name
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200 ${englishSubTab === section.name
                         ? 'bg-gray-800 text-white shadow-md'
                         : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                      }`}
                     onClick={() => {
                       setEnglishSubTab(section.name);
                       setShowQuestionDetails(false);
@@ -1258,11 +1254,11 @@ const totalIdleTime = getTotalIdleTime();
                   const section = resultData?.subjects
                     ?.find((s) => s.name === questionMainTab)
                     ?.sections?.find((sec) => sec.name === englishSubTab);
-                  
+
                   if (!section) return null;
 
                   let filteredQuestions = section.questions_data || [];
-                  
+
                   if (filterStatus === 'correct') {
                     filteredQuestions = filteredQuestions.filter(q => q.result && !q.is_skipped);
                   } else if (filterStatus === 'incorrect') {

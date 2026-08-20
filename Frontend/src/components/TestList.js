@@ -295,12 +295,14 @@ function TestList() {
   };
 
   return (
-    <div className="mt-3">
+    <div>
       {showResult ? (
         // <Report testSubmissionId={submissionId} />
         <ReportNew testSubmissionId={submissionId} onClose={() => setShowResult(false)} />
       ) : (
         <>
+              <div className="text-xl font-semibold mb-2">Full Length Tests</div>
+      
           <Input
             placeholder="Search Test Name"
             prefix={<SearchOutlined className="text-gray-400 text-lg mr-2" />}
