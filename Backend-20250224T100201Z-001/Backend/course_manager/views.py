@@ -1228,9 +1228,22 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
             for question in questions_to_update:
 
+                update_data = request.data.copy()
+
+                # --------------------------------------------------
+                # IMPORTANT:
+                # Do NOT change course/course_subject when doing
+                # "Update Question In Courses".
+                # Each matched question must stay in its own course.
+                # --------------------------------------------------
+
+                update_data.pop("course", None)
+                update_data.pop("course_subject", None)
+                update_data.pop("course_updates", None)
+
                 serializer = self.get_serializer(
                     question,
-                    data=request.data,
+                    data=update_data,
                     partial=True,
                     context=context
                 )
@@ -1243,7 +1256,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
                     serializer.validated_data
                 )
 
-                # Save question first
+                # Save while preserving this question's
+                # existing course_subject
                 updated_question = serializer.save(
                     is_active=status_map.get(
                         question.course_subject_id,
@@ -1255,11 +1269,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
                 updated_questions.append(updated_question)
 
-                # Only after saving, append id
                 if options_changed:
-                    options_changed_question_ids.append(updated_question.id)
+                    options_changed_question_ids.append(
+                        updated_question.id
+                    )
 
-                # Log
                 QuestionLog.objects.create(
                     question=updated_question,
                     user=request.user,

@@ -2,6 +2,7 @@ import {
   editQuestionService,
   getSubjectTopics,
   makeSuggestion,
+  createQuestionMultipleService,
 } from "@/app/services/authService";
 import { getCoursesInsideAuth } from "@/app/services/courseService";
 import {
@@ -120,8 +121,14 @@ function EditQuestionForm({
   const [selectedRange, setSelectedRange] = useState(
     isClosedRange ? "CLOSED RANGE" : "OPEN RANGE"
   );
-  const [selectedCourse, setSelectedCourse] = useState(courseSubId);
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedCourseSubject, setSelectedCourseSubject] = useState();
+  const [selectedStatus, setSelectedStatus] = useState(true);
+  const [originalCourseSubject, setOriginalCourseSubject] = useState(
+  Number(courseSubId)
+);
+
+const [isNewCourseSelected, setIsNewCourseSelected] = useState(false);
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [topicOptions, setTopicOptions] = useState(topicOptionsParam);
   const [subTopicOptions, setSubTopicOptions] = useState(subTopicOptionsParam);
@@ -146,6 +153,8 @@ const [courseStatusMap, setCourseStatusMap] = useState(
     return acc;
   }, {}) || {}
 );
+
+
 
   const isMobile = useMediaQuery({
     query: "(max-width: 768px)",
@@ -360,6 +369,89 @@ const [courseStatusMap, setCourseStatusMap] = useState(
     form.setFieldsValue({ options: newOptions });
   };
 
+
+
+ 
+
+  useEffect(() => {
+  getCoursesInsideAuth()
+    .then((res) => {
+      setCourses(res.data || []);
+    })
+    .catch((err) => {
+      console.error("Failed to fetch courses:", err);
+    });
+}, []);
+
+useEffect(() => {
+  if (
+    action !== "edit" ||
+    !courses?.length ||
+    !courseSubId
+  ) {
+    return;
+  }
+
+  const currentCourse = courses.find((course) =>
+    course.subjects?.some(
+      (subject) =>
+        Number(subject.course_subject_id) ===
+        Number(courseSubId)
+    )
+  );
+
+  if (!currentCourse) {
+    console.log("Course not found for courseSubId:", courseSubId);
+    return;
+  }
+
+  console.log("EDIT CURRENT COURSE:", currentCourse);
+  console.log("EDIT COURSE SUBJECT ID:", courseSubId);
+
+  // IMPORTANT: Course Select expects course.name
+  setSelectedCourse(currentCourse.name);
+
+  const subjects =
+    currentCourse.subjects?.map((subject) => ({
+      value: Number(subject.course_subject_id),
+      label: subject.name,
+    })) || [];
+
+  setSubjectOptions(subjects);
+
+  // Existing subject
+  setSelectedCourseSubject(Number(courseSubId));
+
+  // Remember original subject
+  setOriginalCourseSubject(Number(courseSubId));
+
+  setIsNewCourseSelected(false);
+
+  setSelectedCourse(currentCourse.name);
+
+form.setFieldsValue({
+  course: currentCourse.name,
+  course_subject: Number(courseSubId),
+});
+
+  const originalCourse =
+    initialValues.available_courses?.find(
+      (course) =>
+        Number(course.course_subject_id) ===
+        Number(courseSubId)
+    );
+
+  setSelectedStatus(
+    originalCourse?.is_active ?? true
+  );
+}, [
+  courses,
+  courseSubId,
+  action,
+  initialValues.available_courses,
+  form,
+]);
+
   useEffect(() => {
     const formValues = {};
     if (isClosedRange) {
@@ -389,24 +481,21 @@ const [courseStatusMap, setCourseStatusMap] = useState(
 }, [initialValues?.available_courses]);
 
 
-  useEffect(() => {
-    if (courses && courses.length > 0) {
-      setSubjectOptions(
-        courses
-          .find((course) => course.name == selectedCourse)
-          ?.subjects.map((subject) => {
-            return {
-              value: subject.course_subject_id,
-              label: subject.name,
-            };
-          })
-      );
+ useEffect(() => {
+  if (!courses?.length || !selectedCourse) return;
 
-      setSelectedCourseSubject();
-      setSelectedTopic();
-      form.setFieldValue("course_subject", null);
-    }
-  }, [courses, selectedCourse]);
+  const course = courses.find(
+    (course) => course.name === selectedCourse
+  );
+
+  const subjects =
+    course?.subjects?.map((subject) => ({
+      value: Number(subject.course_subject_id),
+      label: subject.name,
+    })) || [];
+
+  setSubjectOptions(subjects);
+}, [courses, selectedCourse]);
 
   function handleInputNumber(e, name) {
     let val = e.target.value;
@@ -475,21 +564,7 @@ const [courseStatusMap, setCourseStatusMap] = useState(
     }
   };
 
-  useEffect(() => {
-    if (selectedCourseSubject && topicOptionsParam.length == 0) {
-      getSubjectTopics(selectedCourseSubject).then((res) => {
-        setTopicOptions(
-          res.data.map((option) => {
-            return { ...option, label: option.name, value: option.name };
-          })
-        );
-      });
-
-      setSelectedTopic();
-      form.setFieldValue("topic", null);
-      form.setFieldValue("sub_topic", null);
-    }
-  }, [selectedCourseSubject]);
+  
 
   useEffect(() => {
     if (topicOptionsParam) {
@@ -521,6 +596,94 @@ const [courseStatusMap, setCourseStatusMap] = useState(
       // form.setFieldValue("options", [{}, {}, {}, {}]);
     }
   }, [selectedSubQuestionType]);
+
+
+ const handleAddNewQuestion = async () => {
+  try {
+    const values = await form.validateFields();
+
+    if (!selectedCourse || !selectedCourseSubject) {
+      Modal.warning({
+        title: "Course Details Required",
+        content: "Please select Course and Subject.",
+      });
+      return;
+    }
+
+    const options =
+      selectedRange === "OPEN RANGE"
+        ? transformExpressions(expressions)
+        : [
+            {
+              [inverseOperatorMapping[formState.operator1]]:
+                formState.value1,
+              [normalOperatorMapping[formState.operator2]]:
+                formState.value2,
+            },
+          ];
+
+    // Build Course Details exactly like QuestionForm
+    const questions_data = [
+      {
+        course: selectedCourse,
+        course_subject: Number(selectedCourseSubject),
+        topic: values.topic,
+        sub_topic: values.sub_topic,
+        difficulty: values.difficulty,
+        test_type: values.test_type,
+        is_active: selectedStatus,
+        show_calculator: values.show_calculator,
+      },
+    ];
+
+    const payload = {
+      question_type: values.question_type,
+      question_subtype: values.question_subtype,
+      description: values.description,
+      explanation: values.explanation,
+      options: values.options,
+
+      questions_data,
+
+      ...(selectedSubQuestionType === "RANGE_BASED_ANSWER" && {
+        options,
+      }),
+    };
+
+    console.log("========== ADD NEW QUESTION ==========");
+    console.log("Payload:", payload);
+
+    await createQuestionMultipleService(payload);
+
+    if (setUpdated) {
+      setUpdated((prev) => !prev);
+    }
+
+    Modal.success({
+      title: "Question successfully created",
+      content: "Question has been added to the selected course.",
+      onOk: () => {
+        closeModal?.();
+      },
+    });
+
+  } catch (error) {
+    console.error("ADD NEW QUESTION ERROR:", error);
+
+    if (error?.errorFields) {
+      return;
+    }
+
+    Modal.error({
+      title: "Failed to add question",
+      content:
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Something went wrong while creating the question.",
+    });
+  }
+};
 
   const onSubmit = (values) => {
     const options =
@@ -704,80 +867,185 @@ const [courseStatusMap, setCourseStatusMap] = useState(
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <Row gutter={[24, 24]}>
-              {action == "create" && (
-                <Col md={12} lg={6} span={24}>
-                  <Form.Item
-                    label={
-                      <span className="text-sm font-semibold text-gray-700">
-                        Course
-                      </span>
-                    }
-                    name="course"
-                    required
-                    className="!mb-0"
-                  >
-                    <FormReactSelect
-                      onSelectionChange={(v) => setSelectedCourse(v)}
-                      placeholder="Select Course"
-                      options={courses?.map((course) => {
-                        return { value: course.name, label: course.name };
-                      })}
-                      styles={customSelectStyles}
-                      components={{ DropdownIndicator }}
-                      classNamePrefix="react-select"
-                      menuPortalTarget={
-                        typeof document !== "undefined" ? document.body : null
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-              )}
+              <Col md={12} lg={6} span={24}>
+  <Form.Item
+  label={
+    <span className="text-sm font-semibold text-gray-700">
+      Course
+    </span>
+  }
+  name="course"
+  required
+  rules={[
+    {
+      required: true,
+      message: "Please select a course",
+    },
+  ]}
+  className="!mb-0"
+>
+    <FormReactSelect
+  value={selectedCourse}
+  onSelectionChange={(value) => {
+    setSelectedCourse(value);
 
-              {/* {action === "edit" && initialValues.available_in_other_courses && (
-  <Col span={24}>
-    <Form.Item
-      label={
-        <span className="text-sm font-semibold text-gray-700">
-          Update Question In Courses
-        </span>
-      }
-      required
-    >
-      <ReactSelect
-        isMulti
-        options={availableCourseOptions}
-        value={availableCourseOptions.filter(opt =>
-          selectedCourseSubjectIds.includes(opt.value)
-        )}
-        onChange={(selected) =>
-          setSelectedCourseSubjectIds(selected.map(s => s.value))
-        }
-        styles={customSelectStyles}
-        components={{ DropdownIndicator }}
-        classNamePrefix="react-select"
-        menuPortalTarget={
-          typeof document !== "undefined" ? document.body : null
-        }
-      />
-      <p className="text-xs text-gray-500 mt-1">
-        Changes will be applied to all selected courses
-      </p>
-    </Form.Item>
-  </Col>
-)} */}
+    if (!value) {
+      setSubjectOptions([]);
+      setSelectedCourseSubject(null);
+      setIsNewCourseSelected(false);
+      return;
+    }
+
+    const selectedCourseData = courses.find(
+      (course) => course.name === value
+    );
+
+    const subjects =
+      selectedCourseData?.subjects?.map((subject) => ({
+        value: subject.course_subject_id,
+        label: subject.name,
+      })) || [];
+
+    setSubjectOptions(subjects);
+
+    // Course changed, so subject must be selected again
+    setSelectedCourseSubject(null);
+
+    setSelectedTopic(null);
+    setSelectedSubTopic(null);
+
+    form.setFieldValue("course_subject", null);
+    form.setFieldValue("topic", null);
+    form.setFieldValue("sub_topic", null);
+
+    setIsNewCourseSelected(false);
+  }}
+  placeholder="Select Course"
+  options={courses?.map((course) => ({
+    value: course.name,
+    label: course.name,
+  }))}
+  styles={customSelectStyles}
+  components={{ DropdownIndicator }}
+  classNamePrefix="react-select"
+  menuPortalTarget={
+    typeof document !== "undefined"
+      ? document.body
+      : null
+  }
+/>
+  </Form.Item>
+</Col>
+
+<Col md={12} lg={6} span={24}>
+ <Form.Item
+  label={
+    <span className="text-sm font-semibold text-gray-700">
+      Subject
+    </span>
+  }
+  name="course_subject"
+  required
+  rules={[
+    {
+      required: true,
+      message: "Please select a subject",
+    },
+  ]}
+  className="!mb-0"
+>
+   <FormReactSelect
+  value={selectedCourseSubject}
+  onSelectionChange={(value) => {
+    setSelectedCourseSubject(value);
+
+    form.setFieldValue(
+      "course_subject",
+      value
+    );
+
+    if (!value) {
+      setIsNewCourseSelected(false);
+      setTopicOptions([]);
+      setSubTopicOptions([]);
+      setSelectedTopic(null);
+      setSelectedSubTopic(null);
+
+      form.setFieldValue("topic", null);
+      form.setFieldValue("sub_topic", null);
+
+      return;
+    }
+
+    const isNewCourse =
+      Number(value) !== Number(originalCourseSubject);
+
+    setIsNewCourseSelected(isNewCourse);
+
+    // Reset topic/subtopic
+    setSelectedTopic(null);
+    setSelectedSubTopic(null);
+
+    form.setFieldValue("topic", null);
+    form.setFieldValue("sub_topic", null);
+
+    // IMPORTANT:
+    // Load topics for the newly selected Course Subject
+    getSubjectTopics(value)
+      .then((res) => {
+        const topics = (res.data || []).map((topic) => ({
+          ...topic,
+          value: topic.name,
+          label: topic.name,
+        }));
+
+        setTopicOptions(topics);
+        setSubTopicOptions([]);
+      })
+      .catch((error) => {
+        console.error(
+          "Failed to load topics for subject:",
+          error
+        );
+
+        setTopicOptions([]);
+        setSubTopicOptions([]);
+      });
+  }}
+  placeholder="Select Subject"
+  options={subjectOptions}
+  styles={customSelectStyles}
+  components={{ DropdownIndicator }}
+  classNamePrefix="react-select"
+  menuPortalTarget={
+    typeof document !== "undefined"
+      ? document.body
+      : null
+  }
+/>
+  </Form.Item>
+</Col>
+
+             
 
 
               <Col md={12} lg={6} span={24}>
                 <Form.Item
-                  label={
-                    <span className="text-sm font-semibold text-gray-700">
-                      Topic
-                    </span>
-                  }
-                  name="topic"
-                  required
-                  className="!mb-0"
-                >
+  label={
+    <span className="text-sm font-semibold text-gray-700">
+      Topic
+    </span>
+  }
+  name="topic"
+  required
+  rules={[
+    {
+      required: true,
+      message: "Please select a topic",
+    },
+  ]}
+  className="!mb-0"
+>
                   <FormReactSelect
                     options={topicOptions}
                     value={selectedTopic}
@@ -806,14 +1074,21 @@ const [courseStatusMap, setCourseStatusMap] = useState(
               </Col>
               <Col md={12} lg={6} span={24}>
                 <Form.Item
-                  label={
-                    <span className="text-sm font-semibold text-gray-700">
-                      Sub Topic
-                    </span>
-                  }
-                  name="sub_topic"
-                  className="!mb-0"
-                >
+  label={
+    <span className="text-sm font-semibold text-gray-700">
+      Sub Topic
+    </span>
+  }
+  name="sub_topic"
+  required
+  rules={[
+    {
+      required: true,
+      message: "Please select a sub topic",
+    },
+  ]}
+  className="!mb-0"
+>
                   <FormReactSelect
                     options={subTopicOptions}
                     value={selectedSubTopic}
@@ -832,7 +1107,7 @@ const [courseStatusMap, setCourseStatusMap] = useState(
 
             <div className="pt-4 mt-2 border-t border-gray-200">
               <Row gutter={[24, 24]}>
-                <Col md={8} span={24}>
+                <Col md={12} lg={6} span={24}>
                   <Form.Item
                     label={
                       <span className="text-sm font-semibold text-gray-700">
@@ -855,7 +1130,7 @@ const [courseStatusMap, setCourseStatusMap] = useState(
                     />
                   </Form.Item>
                 </Col>
-                <Col md={8} span={24}>
+                <Col md={12} lg={6} span={24}>
                   <Form.Item
                     label={
                       <span className="text-sm font-semibold text-gray-700">
@@ -879,7 +1154,7 @@ const [courseStatusMap, setCourseStatusMap] = useState(
                   </Form.Item>
                 </Col>
 
-                <Col md={8} span={24}>
+                <Col md={12} lg={6} span={24}>
                   <Form.Item
                     label={
                       <span className="text-sm font-semibold text-gray-700">
@@ -904,10 +1179,51 @@ const [courseStatusMap, setCourseStatusMap] = useState(
                     />
                   </Form.Item>
                 </Col>
+
+                {(action !== "edit" || isNewCourseSelected) && (
+  <Col md={12} lg={6} span={24}>
+    <Form.Item
+      label={
+        <span className="text-sm font-semibold text-gray-700">
+          Status
+        </span>
+      }
+      className="!mb-0"
+    >
+      <FormReactSelect
+        value={selectedStatus}
+        onSelectionChange={(value) => {
+          setSelectedStatus(value);
+        }}
+        options={[
+          {
+            value: true,
+            label: "Active",
+          },
+          {
+            value: false,
+            label: "Inactive",
+          },
+        ]}
+        placeholder="Select Status"
+        styles={customSelectStyles}
+        components={{ DropdownIndicator }}
+        classNamePrefix="react-select"
+        menuPortalTarget={
+          typeof document !== "undefined"
+            ? document.body
+            : null
+        }
+      />
+    </Form.Item>
+  </Col>
+)}
               </Row>
 
              {action === "edit" && initialValues.available_in_other_courses && (
-  <Col span={24}>
+  <Col span={24}
+  className={isNewCourseSelected ? "opacity-50 pointer-events-none" : ""}
+  >
     <div className="mt-4">
       <h4 className="text-sm font-semibold text-gray-700 mb-2">
         Course-wise Status
@@ -942,6 +1258,42 @@ const [courseStatusMap, setCourseStatusMap] = useState(
     </div>
   </Col>
 )}
+
+ {/* {action === "edit" && initialValues.available_in_other_courses && (
+  <Col span={24}
+  className={isNewCourseSelected ? "opacity-50 pointer-events-none" : ""}
+  >
+    <Form.Item
+      label={
+        <span className="text-sm font-semibold text-gray-700">
+          Update Question In Courses
+        </span>
+      }
+      required
+    >
+      <ReactSelect
+        isMulti
+        isDisabled={isNewCourseSelected}
+        options={availableCourseOptions}
+        value={availableCourseOptions.filter(opt =>
+          selectedCourseSubjectIds.includes(opt.value)
+        )}
+        onChange={(selected) =>
+          setSelectedCourseSubjectIds(selected.map(s => s.value))
+        }
+        styles={customSelectStyles}
+        components={{ DropdownIndicator }}
+        classNamePrefix="react-select"
+        menuPortalTarget={
+          typeof document !== "undefined" ? document.body : null
+        }
+      />
+      <p className="text-xs text-gray-500 mt-1">
+        Changes will be applied to all selected courses
+      </p>
+    </Form.Item>
+  </Col>
+)} */}
 
 
             </div>
@@ -1452,14 +1804,38 @@ const [courseStatusMap, setCourseStatusMap] = useState(
             >
               Preview
             </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              size="large"
-              className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200 hover:shadow-orange-300 hover:opacity-90"
-            >
-              {action == "create" ? "Create Question" : "Update Question"}
-            </Button>
+            {action === "edit" ? (
+  <>
+    <Button
+      type="primary"
+      htmlType="submit"
+      disabled={isNewCourseSelected}
+      size="large"
+      className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
+    >
+      Update Question
+    </Button>
+
+    <Button
+      type="primary"
+      disabled={!isNewCourseSelected}
+      size="large"
+      onClick={handleAddNewQuestion}
+      className="min-w-[160px] h-12 rounded-xl bg-gradient-to-r from-[#007FBC] to-[#00A3E0] border-none font-bold"
+    >
+      Add New Question
+    </Button>
+  </>
+) : (
+  <Button
+    type="primary"
+    htmlType="submit"
+    size="large"
+    className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
+  >
+    Create Question
+  </Button>
+)}
           </div>
         </div>
       </Form>
