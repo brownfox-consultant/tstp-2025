@@ -1108,69 +1108,244 @@ class QuestionViewSet(viewsets.ModelViewSet):
     @permission_classes([IsAdminOrContentDeveloper])
     @action(detail=False, methods=['post'], url_path='create-multiple')
     def create_multiple_questions(self, request, *args, **kwargs):
+
         data = request.data
+
         common_description = data.get('description')
         common_options = data.get('options')
-        common_reading_comprehension_passage = data.get('reading_comprehension_passage', None)
+
+        common_reading_comprehension_passage = data.get(
+            'reading_comprehension_passage',
+            None
+        )
+
         common_question_type = data.get('question_type')
         common_directions = data.get('directions', None)
         common_explanation = data.get('explanation', None)
-        questions_data = data.get('questions_data', [])  # List of dictionaries for each course_subject
+
+        questions_data = data.get('questions_data', [])
+
         question_subtype = data.get('question_subtype')
-        
-        context = {'request': request, 'question_type': common_question_type, 'question_subtype': question_subtype}
+
+        context = {
+            'request': request,
+            'question_type': common_question_type,
+            'question_subtype': question_subtype
+        }
 
         created_questions = []
+
         srno_tracker = {}
+
         try:
-            # Fetch global max srno once
-            if 'global' not in srno_tracker:
-                max_srno = Question.objects.aggregate(Max('srno'))['srno__max'] or 0
-                srno_tracker['global'] = max_srno
 
-            for question_data in questions_data:
-                srno_tracker['global'] += 1  # increment globally
+            max_srno = (
+                Question.objects.aggregate(
+                    Max('srno')
+                )['srno__max'] or 0
+            )
 
-                individual_data = {
-                    'course_subject': question_data.get('course_subject'),
-                    'description': common_description,
-                    'options': common_options,
-                    'reading_comprehension_passage': common_reading_comprehension_passage,
-                    'question_type': common_question_type,
-                    'question_subtype': question_subtype,
-                    'difficulty': question_data.get('difficulty'),
-                    'test_type': question_data.get('test_type'),
-                    'topic': question_data.get('topic'),
-                    'sub_topic': question_data.get('sub_topic', None),
-                    'created_by': request.user.id,
-                    'updated_by': request.user.id,
-                    'is_active': question_data.get('is_active', True if request.user.role.name == 'admin' else False),
-                    'show_calculator': question_data.get('show_calculator', False),
-                    'directions': common_directions,
-                    'explanation': common_explanation,
-                    'srno': srno_tracker['global']  # unique across all
-                }
+            srno_tracker['global'] = max_srno
 
-                serializer = CreateQuestionSerializer(data=individual_data, context=context)
-                serializer.is_valid(raise_exception=True)
-                created_question = serializer.save()
-                created_questions.append(created_question)
+            with transaction.atomic():
 
-                # ✅ Log each question creation
-                QuestionLog.objects.create(
-                    question=created_question,
-                    user=request.user,
-                    action='ADD',
-                    ip_address=self.get_client_ip(request)
-                )
+                for question_data in questions_data:
+
+                    srno_tracker['global'] += 1
+
+                    individual_data = {
+                        'course_subject':
+                            question_data.get('course_subject'),
+
+                        'description':
+                            common_description,
+
+                        'options':
+                            common_options,
+
+                        'reading_comprehension_passage':
+                            common_reading_comprehension_passage,
+
+                        'question_type':
+                            common_question_type,
+
+                        'question_subtype':
+                            question_subtype,
+
+                        'difficulty':
+                            question_data.get('difficulty'),
+
+                        'test_type':
+                            question_data.get('test_type'),
+
+                        'topic':
+                            question_data.get('topic'),
+
+                        'sub_topic':
+                            question_data.get('sub_topic', None),
+
+                        'created_by':
+                            request.user.id,
+
+                        'updated_by':
+                            request.user.id,
+
+                        'is_active':
+                            question_data.get(
+                                'is_active',
+                                True
+                                if request.user.role.name == 'admin'
+                                else False
+                            ),
+
+                        'show_calculator':
+                            question_data.get(
+                                'show_calculator',
+                                False
+                            ),
+
+                        'directions':
+                            common_directions,
+
+                        'explanation':
+                            common_explanation,
+
+                        'srno':
+                            srno_tracker['global']
+                    }
+
+                    serializer = CreateQuestionSerializer(
+                        data=individual_data,
+                        context=context
+                    )
+
+                    serializer.is_valid(
+                        raise_exception=True
+                    )
+
+                    validated_data = serializer.validated_data
+
+                    # ------------------------------------------
+                    # DUPLICATE VALIDATION
+                    # ------------------------------------------
+
+                    
+
+                    course_subject = validated_data.get(
+                        'course_subject'
+                    )
+
+                    topic = validated_data.get(
+                        'topic'
+                    )
+
+                    sub_topic = validated_data.get(
+                        'sub_topic'
+                    )
+
+                    description = validated_data.get(
+                        'description'
+                    )
+
+                    options = validated_data.get(
+                        'options'
+                    )
+
+                    existing_questions = Question.objects.filter(
+                        course_subject=course_subject,
+                        description=description,
+                    ).select_related(
+                        'topic',
+                        'sub_topic'
+                    )
+
+                    duplicate_exists = False
+
+                    for existing_question in existing_questions:
+
+                        # ------------------------------------------
+                        # SAME TOPIC
+                        # ------------------------------------------
+                        if (
+                            not existing_question.topic
+                            or existing_question.topic.name != topic
+                        ):
+                            continue
+
+                        # ------------------------------------------
+                        # SAME SUB TOPIC
+                        # ------------------------------------------
+                        existing_sub_topic_name = (
+                            existing_question.sub_topic.name
+                            if existing_question.sub_topic
+                            else None
+                        )
+
+                        if existing_sub_topic_name != sub_topic:
+                            continue
+
+                        # ------------------------------------------
+                        # SAME OPTIONS
+                        # ------------------------------------------
+                        if existing_question.options != options:
+                            continue
+
+                        duplicate_exists = True
+                        break
+
+                    if duplicate_exists:
+
+                        return get_error_response(
+                            "Duplicate question already exists "
+                            "for the selected Course, Subject, "
+                            "Topic and Sub-Topic."
+                        )
+
+                    if duplicate_exists:
+
+                        return get_error_response(
+                            "Duplicate question already exists "
+                            "for the selected Course, Subject, "
+                            "Topic and Sub-Topic."
+                        )
+
+                    # ------------------------------------------
+                    # CREATE QUESTION
+                    # ------------------------------------------
+
+                    created_question = serializer.save()
+
+                    created_questions.append(
+                        created_question
+                    )
+
+                    QuestionLog.objects.create(
+                        question=created_question,
+                        user=request.user,
+                        action='ADD',
+                        ip_address=self.get_client_ip(request)
+                    )
 
             return Response(
-                CreateQuestionSerializer(created_questions, many=True, context=context).data,
+                CreateQuestionSerializer(
+                    created_questions,
+                    many=True,
+                    context=context
+                ).data,
                 status=status.HTTP_201_CREATED
             )
+
         except Exception as e:
-            self.logger.error(f'Error in create_multiple_questions: {e}')
-            return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
+
+            self.logger.error(
+                f'Error in create_multiple_questions: {e}'
+            )
+
+            return get_error_response_for_serializer(
+                logger=self.logger,
+                serializer=serializer,
+                data=request.data
+            )
 
 
     @permission_classes([IsAdmin])
