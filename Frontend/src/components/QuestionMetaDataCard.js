@@ -1,6 +1,6 @@
 import { CloseOutlined } from "@ant-design/icons";
 import { Col, Form, Row, Button, Radio } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ReactSelect, { components } from "react-select";
 import { ChevronIcon } from "./icons/dashboard-icons";
 
@@ -106,18 +106,37 @@ function QuestionMetaDataCard({
 
   const form = Form.useFormInstance();
 
-  const [selectedCourse, setSelectedCourse] = useState(courses[0]);
-  const [selectedCourseSubject, setSelectedCourseSubject] = useState();
+  const getInitialValue = (fieldName) => {
+    const data = form.getFieldValue("questions_data");
+    return data && data[name] ? data[name][fieldName] : undefined;
+  };
+
+  const [selectedCourse, setSelectedCourse] = useState(
+    () => getInitialValue("course") || (courses && courses.length > 0 ? courses[0].name : undefined)
+  );
+  const [selectedCourseSubject, setSelectedCourseSubject] = useState(
+    () => getInitialValue("course_subject")
+  );
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [topicOptions, setTopicOptions] = useState([]);
   const [subTopicOptions, setSubTopicOptions] = useState([]);
-  const [selectedTopic, setSelectedTopic] = useState([]);
-  const [selectedSubTopic, setSelectedSubTopic] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState(
+    () => getInitialValue("topic")
+  );
+  const [selectedSubTopic, setSelectedSubTopic] = useState(
+    () => getInitialValue("sub_topic")
+  );
 
   const router = useRouter();
+  const isUserChange = useRef(false);
 
   useEffect(() => {
     if (courses && courses.length > 0) {
+      if (!selectedCourse && courses[0]) {
+        setSelectedCourse(courses[0].name);
+        return;
+      }
+
       setSubjectOptions(
         courses
           .find((course) => course.name == selectedCourse)
@@ -129,9 +148,11 @@ function QuestionMetaDataCard({
           }) || []
       );
 
-      setSelectedCourseSubject();
-      setSelectedTopic();
-      form.setFieldValue([name, "course_subject"], null);
+      if (isUserChange.current) {
+        setSelectedCourseSubject();
+        setSelectedTopic();
+        form.setFieldValue([name, "course_subject"], null);
+      }
     }
   }, [courses, selectedCourse]);
 
@@ -145,11 +166,30 @@ function QuestionMetaDataCard({
         );
       });
 
-      setSelectedTopic();
-      form.setFieldValue([name, "topic"], null);
-      form.setFieldValue([name, "sub_topic"], null);
+      if (isUserChange.current) {
+        setSelectedTopic();
+        form.setFieldValue([name, "topic"], null);
+        form.setFieldValue([name, "sub_topic"], null);
+      }
     }
   }, [selectedCourseSubject]);
+
+  useEffect(() => {
+    if (selectedTopic && topicOptions.length > 0) {
+      setSubTopicOptions(
+        topicOptions.find((topicOption) => topicOption.name == selectedTopic)
+          ?.subtopics?.map(sub => {
+            const label = typeof sub === 'object' ? sub.name : sub;
+            return { value: label, label: label };
+          }) || []
+      );
+      
+      if (isUserChange.current) {
+        setSelectedSubTopic(null);
+        form.setFieldValue([name, "sub_topic"], null);
+      }
+    }
+  }, [selectedTopic, topicOptions]);
 
   return (
     <div key={key} className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
@@ -200,7 +240,10 @@ function QuestionMetaDataCard({
               className="!mb-0"
             >
               <FormReactSelect
-                onSelectionChange={(value) => setSelectedCourse(value)}
+                onSelectionChange={(value) => {
+                  isUserChange.current = true;
+                  setSelectedCourse(value);
+                }}
                 placeholder="Select Course"
                 options={courses?.map((course) => {
                   return { value: course.name, label: course.name };
@@ -230,7 +273,10 @@ function QuestionMetaDataCard({
               <FormReactSelect
                 placeholder="Select Subject"
                 options={subjectOptions}
-                onSelectionChange={(value) => setSelectedCourseSubject(value)}
+                onSelectionChange={(value) => {
+                  isUserChange.current = true;
+                  setSelectedCourseSubject(value);
+                }}
                 styles={customSelectStyles}
                 components={{ DropdownIndicator }}
                 classNamePrefix="react-select"
@@ -257,15 +303,8 @@ function QuestionMetaDataCard({
                 options={topicOptions}
                 placeholder="Select Topic"
                 onSelectionChange={(value) => {
-                  const val = value;
-                  setSelectedTopic(val);
-                  setSubTopicOptions(
-                    topicOptions.find((topicOption) => topicOption.name == val)
-                      ?.subtopics?.map(sub => {
-                        const label = typeof sub === 'object' ? sub.name : sub;
-                        return { value: label, label: label };
-                      }) || []
-                  );
+                  isUserChange.current = true;
+                  setSelectedTopic(value);
                 }}
                 styles={customSelectStyles}
                 components={{ DropdownIndicator }}
@@ -292,7 +331,10 @@ function QuestionMetaDataCard({
               <FormReactSelect
                 options={subTopicOptions}
                 placeholder="Select Sub Topic"
-                onSelectionChange={(value) => setSelectedSubTopic(value)}
+                onSelectionChange={(value) => {
+                  isUserChange.current = true;
+                  setSelectedSubTopic(value);
+                }}
                 styles={customSelectStyles}
                 components={{ DropdownIndicator }}
                 classNamePrefix="react-select"

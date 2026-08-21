@@ -29,6 +29,7 @@ import {
 import { useForm } from "antd/es/form/Form";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import QuestionMetaDataCard from "./QuestionMetaDataCard";
 import CustomSelect from "./CustomSelect";
 import { useMediaQuery } from "react-responsive";
 import RichTextEditor from "./RichTextEditor";
@@ -634,6 +635,7 @@ form.setFieldsValue({
         is_active: selectedStatus,
         show_calculator: values.show_calculator,
       },
+      ...(values.questions_data || [])
     ];
 
    const payload = {
@@ -728,6 +730,7 @@ form.setFieldsValue({
     //   });
     // }
     if (pathname.includes("admin")) {
+  const questions_data = values.questions_data || [];
   const course_updates = Object.entries(courseStatusMap).map(
     ([course_subject_id, is_active]) => ({
       course_subject_id: Number(course_subject_id),
@@ -738,6 +741,7 @@ form.setFieldsValue({
   editQuestionService(initialValues.id, {
   ...payload,
   course_updates,
+  questions_data,
 }).then(() => {
 
   // 🔁 refresh doubts + suggestions
@@ -1302,8 +1306,44 @@ form.setFieldsValue({
 )} */}
 
 
+
             </div>
           </div>
+        </div>
+
+        {/* Add more courses section */}
+        <div >
+          <Form.List name="questions_data">
+            {(fields, { add, remove }) => (
+              <div className="space-y-6">
+                {fields.map(({ key, name, ...restField }, index) => (
+                  <div key={key}>
+                    <QuestionMetaDataCard
+                      index={index + 1}
+                      name={name}
+                      fields={fields}
+                      courses={courses}
+                      restField={restField}
+                      add={add}
+                      remove={remove}
+                    />
+                  </div>
+                ))}
+
+                {fields.length <= 4 && (
+                  <div className="flex justify-center mt-6">
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      className="w-1/2 h-12 text-[#F59405] border-[#F59405] hover:bg-orange-50 font-semibold rounded-xl flex items-center justify-center gap-2"
+                    >
+                      Add this question in another course
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </Form.List>
         </div>
 
         {/* Reading Passage Card - Conditional */}
