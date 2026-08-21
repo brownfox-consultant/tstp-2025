@@ -130,6 +130,7 @@ function EditQuestionForm({
 );
 
 const [isNewCourseSelected, setIsNewCourseSelected] = useState(false);
+const [isAddingAnotherCourse, setIsAddingAnotherCourse] = useState(false);
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [topicOptions, setTopicOptions] = useState(topicOptionsParam);
   const [subTopicOptions, setSubTopicOptions] = useState(subTopicOptionsParam);
@@ -603,81 +604,135 @@ form.setFieldsValue({
   try {
     const values = await form.validateFields();
 
-    if (!selectedCourse || !selectedCourseSubject) {
+    // --------------------------------------------------
+    // NEW COURSE DETAILS
+    // These come from "Add this question in another course"
+    // --------------------------------------------------
+    const questions_data = values.questions_data || [];
+
+    if (!questions_data.length) {
       Modal.warning({
         title: "Course Details Required",
-        content: "Please select Course and Subject.",
+        content: "Please add and select another course.",
       });
       return;
     }
 
-    const options =
+    // Make sure every new course row has required data
+    const invalidCourse = questions_data.some(
+      (item) =>
+        !item.course ||
+        !item.course_subject ||
+        !item.topic ||
+        !item.sub_topic
+    );
+
+    if (invalidCourse) {
+      Modal.warning({
+        title: "Course Details Required",
+        content:
+          "Please select Course, Subject, Topic and Sub Topic for the new course.",
+      });
+      return;
+    }
+
+    // --------------------------------------------------
+    // RANGE OPTIONS
+    // --------------------------------------------------
+    const rangeOptions =
       selectedRange === "OPEN RANGE"
         ? transformExpressions(expressions)
         : [
             {
               [inverseOperatorMapping[formState.operator1]]:
                 formState.value1,
+
               [normalOperatorMapping[formState.operator2]]:
                 formState.value2,
             },
           ];
 
-    // Build Course Details exactly like QuestionForm
-    const questions_data = [
-      {
-        course: selectedCourse,
-        course_subject: Number(selectedCourseSubject),
-        topic: values.topic,
-        sub_topic: values.sub_topic,
-        difficulty: values.difficulty,
-        test_type: values.test_type,
-        is_active: selectedStatus,
-        show_calculator: values.show_calculator,
-      },
-      ...(values.questions_data || [])
-    ];
+    // --------------------------------------------------
+    // PAYLOAD
+    // --------------------------------------------------
+    const payload = {
+      question_type: values.question_type,
+      question_subtype: values.question_subtype,
 
-   const payload = {
-  question_type: values.question_type,
-  question_subtype: values.question_subtype,
-  description: values.description,
-  explanation: values.explanation,
-  options: values.options,
+      description: values.description,
+      explanation: values.explanation,
 
-  // IMPORTANT for Reading Comprehension
-  ...(selectedSubQuestionType === "READING_COMPREHENSION" && {
-    reading_comprehension_passage:
-      values.reading_comprehension_passage,
-  }),
+      options:
+        selectedSubQuestionType === "RANGE_BASED_ANSWER"
+          ? rangeOptions
+          : values.options,
 
-  questions_data,
+      // Reading comprehension
+      ...(selectedSubQuestionType === "READING_COMPREHENSION" && {
+        reading_comprehension_passage:
+          values.reading_comprehension_passage,
+      }),
 
-  ...(selectedSubQuestionType === "RANGE_BASED_ANSWER" && {
-    options,
-  }),
-};
+      // IMPORTANT:
+      // Only NEW course(s), not the original/current course
+      questions_data: questions_data.map((item) => ({
+        course: item.course,
+        course_subject: Number(item.course_subject),
+        topic: item.topic,
+        sub_topic: item.sub_topic,
+        difficulty: item.difficulty,
+        test_type: item.test_type,
+        is_active:
+          item.is_active !== undefined
+            ? item.is_active
+            : true,
+        show_calculator:
+          item.show_calculator !== undefined
+            ? item.show_calculator
+            : false,
+      })),
+    };
 
-    console.log("========== ADD NEW QUESTION ==========");
-    console.log("Payload:", payload);
+    console.log(
+      "========== ADD NEW QUESTION =========="
+    );
 
+    console.log(
+      "NEW COURSE DATA:",
+      payload.questions_data
+    );
+
+    console.log(
+      "PAYLOAD:",
+      payload
+    );
+
+    // --------------------------------------------------
+    // CREATE
+    // --------------------------------------------------
     await createQuestionMultipleService(payload);
 
+    // Refresh question list
     if (setUpdated) {
       setUpdated((prev) => !prev);
     }
 
     Modal.success({
       title: "Question successfully created",
-      content: "Question has been added to the selected course.",
+      content:
+        "Question has been added to the selected course.",
       onOk: () => {
         closeModal?.();
       },
     });
 
   } catch (error) {
-    console.error("ADD NEW QUESTION ERROR:", error);
+    console.error(
+      "ADD NEW QUESTION ERROR:",
+      error
+    );
 
+    // Ant Design validation error
     if (error?.errorFields) {
       return;
     }
@@ -896,6 +951,7 @@ form.setFieldsValue({
 >
     <FormReactSelect
   value={selectedCourse}
+  isDisabled={action === "edit" && isAddingAnotherCourse}
   onSelectionChange={(value) => {
     setSelectedCourse(value);
 
@@ -966,6 +1022,7 @@ form.setFieldsValue({
 >
    <FormReactSelect
   value={selectedCourseSubject}
+  isDisabled={action === "edit" && isAddingAnotherCourse}
   onSelectionChange={(value) => {
     setSelectedCourseSubject(value);
 
@@ -1059,6 +1116,7 @@ form.setFieldsValue({
                   <FormReactSelect
                     options={topicOptions}
                     value={selectedTopic}
+                    isDisabled={action === "edit" && isAddingAnotherCourse}
                     onSelectionChange={(value) => {
                       setSelectedTopic(value);
                       setSelectedSubTopic();
@@ -1102,6 +1160,7 @@ form.setFieldsValue({
                   <FormReactSelect
                     options={subTopicOptions}
                     value={selectedSubTopic}
+                     isDisabled={action === "edit" && isAddingAnotherCourse}
                     onSelectionChange={(value) => setSelectedSubTopic(value)}
                     placeholder="Select Sub Topic"
                     styles={customSelectStyles}
@@ -1131,6 +1190,7 @@ form.setFieldsValue({
                     <FormReactSelect
                       placeholder="Select Test Type"
                       options={testTypeOptions}
+                      isDisabled={action === "edit" && isAddingAnotherCourse}
                       styles={customSelectStyles}
                       components={{ DropdownIndicator }}
                       classNamePrefix="react-select"
@@ -1154,6 +1214,7 @@ form.setFieldsValue({
                     <FormReactSelect
                       placeholder="Select Difficulty"
                       options={difficultyOptions}
+                      isDisabled={action === "edit" && isAddingAnotherCourse}
                       styles={customSelectStyles}
                       components={{ DropdownIndicator }}
                       classNamePrefix="react-select"
@@ -1179,6 +1240,7 @@ form.setFieldsValue({
                       placeholder="Show Calculator"
                       options={showCalculatorOptions}
                       value={selectedShowCalculatorOption}
+                      isDisabled={action === "edit" && isAddingAnotherCourse}
                       onSelectionChange={setSelectedShowCalculatorOption}
                       styles={customSelectStyles}
                       components={{ DropdownIndicator }}
@@ -1230,7 +1292,7 @@ form.setFieldsValue({
 )}
               </Row>
 
-             {action === "edit" && initialValues.available_in_other_courses && (
+             {action === "edit" && initialValues.available_in_other_courses &&!isAddingAnotherCourse && (
   <Col span={24}
   className={isNewCourseSelected ? "opacity-50 pointer-events-none" : ""}
   >
@@ -1333,7 +1395,11 @@ form.setFieldsValue({
                     <div className="flex justify-center mt-6">
                       <Button
                         type="dashed"
-                        onClick={() => add()}
+                        onClick={() => {
+  setIsAddingAnotherCourse(true);
+  setIsNewCourseSelected(true);
+  add();
+}}
                         className="w-1/2 h-12 text-[#F59405] border-[#F59405] hover:bg-orange-50 font-semibold rounded-xl flex items-center justify-center gap-2"
                       >
                         Add this question in another course
@@ -1855,7 +1921,7 @@ form.setFieldsValue({
     <Button
       type="primary"
       htmlType="submit"
-      disabled={isNewCourseSelected}
+      disabled={isAddingAnotherCourse}
       size="large"
       className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
     >
