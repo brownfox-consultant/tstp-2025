@@ -1309,41 +1309,41 @@ form.setFieldsValue({
 
             </div>
           </div>
-        </div>
 
-        {/* Add more courses section */}
-        <div >
-          <Form.List name="questions_data">
-            {(fields, { add, remove }) => (
-              <div className="space-y-6">
-                {fields.map(({ key, name, ...restField }, index) => (
-                  <div key={key}>
-                    <QuestionMetaDataCard
-                      index={index + 1}
-                      name={name}
-                      fields={fields}
-                      courses={courses}
-                      restField={restField}
-                      add={add}
-                      remove={remove}
-                    />
-                  </div>
-                ))}
+          {/* Add more courses section */}
+          <div className="mt-4" >
+            <Form.List name="questions_data">
+              {(fields, { add, remove }) => (
+                <div className="space-y-6">
+                  {fields.map(({ key, name, ...restField }, index) => (
+                    <div key={key}>
+                      <QuestionMetaDataCard
+                        index={index + 1}
+                        name={name}
+                        fields={fields}
+                        courses={courses}
+                        restField={restField}
+                        add={add}
+                        remove={remove}
+                      />
+                    </div>
+                  ))}
 
-                {fields.length <= 4 && (
-                  <div className="flex justify-center mt-6">
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      className="w-1/2 h-12 text-[#F59405] border-[#F59405] hover:bg-orange-50 font-semibold rounded-xl flex items-center justify-center gap-2"
-                    >
-                      Add this question in another course
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-          </Form.List>
+                  {fields.length <= 4 && (
+                    <div className="flex justify-center mt-6">
+                      <Button
+                        type="dashed"
+                        onClick={() => add()}
+                        className="w-1/2 h-12 text-[#F59405] border-[#F59405] hover:bg-orange-50 font-semibold rounded-xl flex items-center justify-center gap-2"
+                      >
+                        Add this question in another course
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Form.List>
+          </div>
         </div>
 
         {/* Reading Passage Card - Conditional */}
