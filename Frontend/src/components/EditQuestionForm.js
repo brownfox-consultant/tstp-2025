@@ -636,19 +636,25 @@ form.setFieldsValue({
       },
     ];
 
-    const payload = {
-      question_type: values.question_type,
-      question_subtype: values.question_subtype,
-      description: values.description,
-      explanation: values.explanation,
-      options: values.options,
+   const payload = {
+  question_type: values.question_type,
+  question_subtype: values.question_subtype,
+  description: values.description,
+  explanation: values.explanation,
+  options: values.options,
 
-      questions_data,
+  // IMPORTANT for Reading Comprehension
+  ...(selectedSubQuestionType === "READING_COMPREHENSION" && {
+    reading_comprehension_passage:
+      values.reading_comprehension_passage,
+  }),
 
-      ...(selectedSubQuestionType === "RANGE_BASED_ANSWER" && {
-        options,
-      }),
-    };
+  questions_data,
+
+  ...(selectedSubQuestionType === "RANGE_BASED_ANSWER" && {
+    options,
+  }),
+};
 
     console.log("========== ADD NEW QUESTION ==========");
     console.log("Payload:", payload);
