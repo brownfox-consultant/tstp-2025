@@ -130,7 +130,8 @@ function EditQuestionForm({
 );
 
 const [isNewCourseSelected, setIsNewCourseSelected] = useState(false);
-const [isAddingAnotherCourse, setIsAddingAnotherCourse] = useState(false);
+const additionalCourses = Form.useWatch("additional_courses_data", form);
+const isAddingAnotherCourse = additionalCourses?.length > 0;
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [topicOptions, setTopicOptions] = useState(topicOptionsParam);
   const [subTopicOptions, setSubTopicOptions] = useState(subTopicOptionsParam);
@@ -608,9 +609,9 @@ form.setFieldsValue({
     // NEW COURSE DETAILS
     // These come from "Add this question in another course"
     // --------------------------------------------------
-    const questions_data = values.questions_data || [];
+    const additional_courses_data = values.additional_courses_data || [];
 
-    if (!questions_data.length) {
+    if (!additional_courses_data.length) {
       Modal.warning({
         title: "Course Details Required",
         content: "Please add and select another course.",
@@ -619,7 +620,7 @@ form.setFieldsValue({
     }
 
     // Make sure every new course row has required data
-    const invalidCourse = questions_data.some(
+    const invalidCourse = additional_courses_data.some(
       (item) =>
         !item.course ||
         !item.course_subject ||
@@ -675,7 +676,7 @@ form.setFieldsValue({
 
       // IMPORTANT:
       // Only NEW course(s), not the original/current course
-      questions_data: questions_data.map((item) => ({
+      questions_data: additional_courses_data.map((item) => ({
         course: item.course,
         course_subject: Number(item.course_subject),
         topic: item.topic,
@@ -785,7 +786,7 @@ form.setFieldsValue({
     //   });
     // }
     if (pathname.includes("admin")) {
-  const questions_data = values.questions_data || [];
+  const questions_data = values.additional_courses_data || [];
   const course_updates = Object.entries(courseStatusMap).map(
     ([course_subject_id, is_active]) => ({
       course_subject_id: Number(course_subject_id),
@@ -950,8 +951,8 @@ form.setFieldsValue({
   className="!mb-0"
 >
     <FormReactSelect
+  isDisabled={isAddingAnotherCourse}
   value={selectedCourse}
-  isDisabled={action === "edit" && isAddingAnotherCourse}
   onSelectionChange={(value) => {
     setSelectedCourse(value);
 
@@ -1021,8 +1022,8 @@ form.setFieldsValue({
   className="!mb-0"
 >
    <FormReactSelect
+  isDisabled={isAddingAnotherCourse}
   value={selectedCourseSubject}
-  isDisabled={action === "edit" && isAddingAnotherCourse}
   onSelectionChange={(value) => {
     setSelectedCourseSubject(value);
 
@@ -1114,9 +1115,9 @@ form.setFieldsValue({
   className="!mb-0"
 >
                   <FormReactSelect
+                    isDisabled={isAddingAnotherCourse}
                     options={topicOptions}
                     value={selectedTopic}
-                    isDisabled={action === "edit" && isAddingAnotherCourse}
                     onSelectionChange={(value) => {
                       setSelectedTopic(value);
                       setSelectedSubTopic();
@@ -1158,9 +1159,9 @@ form.setFieldsValue({
   className="!mb-0"
 >
                   <FormReactSelect
+                    isDisabled={isAddingAnotherCourse}
                     options={subTopicOptions}
                     value={selectedSubTopic}
-                     isDisabled={action === "edit" && isAddingAnotherCourse}
                     onSelectionChange={(value) => setSelectedSubTopic(value)}
                     placeholder="Select Sub Topic"
                     styles={customSelectStyles}
@@ -1188,9 +1189,9 @@ form.setFieldsValue({
                     className="!mb-0"
                   >
                     <FormReactSelect
+                      isDisabled={isAddingAnotherCourse}
                       placeholder="Select Test Type"
                       options={testTypeOptions}
-                      isDisabled={action === "edit" && isAddingAnotherCourse}
                       styles={customSelectStyles}
                       components={{ DropdownIndicator }}
                       classNamePrefix="react-select"
@@ -1212,9 +1213,9 @@ form.setFieldsValue({
                     className="!mb-0"
                   >
                     <FormReactSelect
+                      isDisabled={isAddingAnotherCourse}
                       placeholder="Select Difficulty"
                       options={difficultyOptions}
-                      isDisabled={action === "edit" && isAddingAnotherCourse}
                       styles={customSelectStyles}
                       components={{ DropdownIndicator }}
                       classNamePrefix="react-select"
@@ -1237,10 +1238,10 @@ form.setFieldsValue({
                     className="!mb-0"
                   >
                     <FormReactSelect
+                      isDisabled={isAddingAnotherCourse}
                       placeholder="Show Calculator"
                       options={showCalculatorOptions}
                       value={selectedShowCalculatorOption}
-                      isDisabled={action === "edit" && isAddingAnotherCourse}
                       onSelectionChange={setSelectedShowCalculatorOption}
                       styles={customSelectStyles}
                       components={{ DropdownIndicator }}
@@ -1292,7 +1293,7 @@ form.setFieldsValue({
 )}
               </Row>
 
-             {action === "edit" && initialValues.available_in_other_courses &&!isAddingAnotherCourse && (
+             {action === "edit" && initialValues.available_in_other_courses && (
   <Col span={24}
   className={isNewCourseSelected ? "opacity-50 pointer-events-none" : ""}
   >
@@ -1374,7 +1375,7 @@ form.setFieldsValue({
 
           {/* Add more courses section */}
           <div className="mt-4" >
-            <Form.List name="questions_data">
+            <Form.List name="additional_courses_data">
               {(fields, { add, remove }) => (
                 <div className="space-y-6">
                   {fields.map(({ key, name, ...restField }, index) => (
@@ -1396,7 +1397,6 @@ form.setFieldsValue({
                       <Button
                         type="dashed"
                         onClick={() => {
-  setIsAddingAnotherCourse(true);
   setIsNewCourseSelected(true);
   add();
 }}

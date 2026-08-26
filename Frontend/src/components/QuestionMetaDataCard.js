@@ -198,7 +198,7 @@ function QuestionMetaDataCard({
           Details for Course {index + 1}
         </h4>
 
-        {fields.length > 1 && (
+        {index > 0 && (
           <Button
             type="text"
             danger
