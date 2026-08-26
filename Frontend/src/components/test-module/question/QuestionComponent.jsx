@@ -136,10 +136,12 @@ console.log("answerObject:", answerObject);
           okText: "Return to Test",
           keyboard: false,
           maskClosable: false,
-          onOk: () => {
-            goFullScreen();
-            fsModalInstance = null;
-          },
+          onOk: async () => {
+  await goFullScreen();
+
+  // Don't manually set fsModalInstance = null here.
+  // The fullscreenchange event will handle it.
+},
         });
       }
     } else {

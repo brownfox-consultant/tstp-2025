@@ -1,77 +1,153 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+const getFullscreenElement = () => {
+  return (
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.mozFullScreenElement ||
+    document.msFullscreenElement ||
+    null
+  );
+};
 
 const useFullScreen = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
-  const goFullScreen = () => {
+  const goFullScreen = useCallback(async () => {
     const element = document.documentElement;
 
-    if (element.requestFullscreen) {
-      element.requestFullscreen();
-    } else if (element.mozRequestFullScreen) {
-      /* Firefox */
-      element.mozRequestFullScreen();
-    } else if (element.webkitRequestFullscreen) {
-      /* Chrome, Safari & Opera */
-      element.webkitRequestFullscreen();
-    } else if (element.msRequestFullscreen) {
-      /* IE/Edge */
-      element.msRequestFullscreen();
-    }
+    try {
+      // Already fullscreen
+      if (getFullscreenElement()) {
+        setIsFullScreen(true);
+        return true;
+      }
 
-    setIsFullScreen(true);
-  };
+      if (element.requestFullscreen) {
+        await element.requestFullscreen();
+      } else if (element.webkitRequestFullscreen) {
+        await element.webkitRequestFullscreen();
+      } else if (element.mozRequestFullScreen) {
+        await element.mozRequestFullScreen();
+      } else if (element.msRequestFullscreen) {
+        await element.msRequestFullscreen();
+      } else {
+        console.warn("Fullscreen API is not supported");
+        return false;
+      }
 
-  const exitFullScreen = () => {
-    // Check if document is actually in fullscreen before trying to exit
-    const isCurrentlyFullscreen = !!(
-      document.fullscreenElement ||
-      document.webkitFullscreenElement ||
-      document.mozFullScreenElement ||
-      document.msFullscreenElement
-    );
+      // Do not blindly set true before Safari confirms fullscreen.
+      // Check actual fullscreen state after request.
+      const fullscreenActive = !!getFullscreenElement();
 
-    if (!isCurrentlyFullscreen) {
+      setIsFullScreen(fullscreenActive);
+
+      return fullscreenActive;
+    } catch (error) {
+      console.error("Failed to enter fullscreen:", error);
       setIsFullScreen(false);
-      return; // Already not in fullscreen, no need to exit
+      return false;
     }
+  }, []);
 
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      /* Firefox */
-      document.mozCancelFullScreen();
-    } else if (document.webkitExitFullscreen) {
-      /* Chrome, Safari and Opera */
-      document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) {
-      /* IE/Edge */
-      document.msExitFullscreen();
+  const exitFullScreen = useCallback(async () => {
+    try {
+      if (!getFullscreenElement()) {
+        setIsFullScreen(false);
+        return true;
+      }
+
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        await document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        await document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        await document.msExitFullscreen();
+      }
+
+      setIsFullScreen(false);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to exit fullscreen:", error);
+      return false;
     }
-
-    setIsFullScreen(false);
-  };
+  }, []);
 
   useEffect(() => {
-    const handleFullScreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-      if (!!document.fullscreenElement) {
-        // Add a class to handle footer position when in fullscreen mode
+    const handleFullscreenChange = () => {
+      const fullscreenActive = !!getFullscreenElement();
+
+      console.log(
+        "Fullscreen state changed:",
+        fullscreenActive
+      );
+
+      setIsFullScreen(fullscreenActive);
+
+      if (fullscreenActive) {
         document.body.classList.add("fullscreen-mode");
       } else {
-        // Remove the class when exiting fullscreen mode
         document.body.classList.remove("fullscreen-mode");
       }
     };
 
-    document.addEventListener("fullscreenchange", handleFullScreenChange);
+    document.addEventListener(
+      "fullscreenchange",
+      handleFullscreenChange
+    );
+
+    // Safari / iPad compatibility
+    document.addEventListener(
+      "webkitfullscreenchange",
+      handleFullscreenChange
+    );
+
+    document.addEventListener(
+      "mozfullscreenchange",
+      handleFullscreenChange
+    );
+
+    document.addEventListener(
+      "MSFullscreenChange",
+      handleFullscreenChange
+    );
+
+    // Initial state
+    handleFullscreenChange();
 
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+      document.removeEventListener(
+        "fullscreenchange",
+        handleFullscreenChange
+      );
+
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange
+      );
+
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange
+      );
+
+      document.body.classList.remove("fullscreen-mode");
     };
   }, []);
 
-  return { isFullScreen, goFullScreen, exitFullScreen };
+  return {
+    isFullScreen,
+    goFullScreen,
+    exitFullScreen,
+  };
 };
 
 export default useFullScreen;

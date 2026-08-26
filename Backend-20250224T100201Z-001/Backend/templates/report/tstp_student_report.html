@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<title>
+    TSTP Student Performance Report - {{ student_name }}
+</title>
+
+<style>
+
+@page {
+    size: A4;
+    margin: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #13213b;
+    background: #fff;
+    font-size: 10px;
+}
+
+.page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 16mm 14mm 14mm;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+}
+
+.page:last-child {
+    page-break-after: auto;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero {
+    background: #0d1730;
+    color: white;
+    border-radius: 0 0 18px 18px;
+    padding: 18px 20px 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero:after {
+    content: "";
+    position: absolute;
+    width: 170px;
+    height: 170px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 50%;
+    right: -55px;
+    top: -85px;
+}
+
+.brand {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.brand span {
+    color: #ff7a18;
+}
+
+.eyebrow {
+    margin-top: 28px;
+    color: #ff7a18;
+    font-weight: 800;
+    letter-spacing: 2px;
+    font-size: 8px;
+}
+
+h1 {
+    margin: 7px 0 6px;
+    font-size: 29px;
+    line-height: 1.02;
+    color: #fff;
+}
+
+.meta {
+    color: #bdc6d8;
+    font-size: 10px;
+}
+
+.report-id {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    text-align: right;
+}
+
+.report-id small {
+    display: block;
+    color: #ff7a18;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+.report-id strong {
+    font-size: 18px;
+}
+
+
+/* =========================================================
+   SCORE CARDS
+========================================================= */
+
+.score-row {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr 1fr;
+    gap: 12px;
+    margin-top: -18px;
+    position: relative;
+    z-index: 2;
+    padding: 0 14px;
+}
+
+.score-card {
+    background: #fff;
+    border: 1px solid #e4e7ee;
+    border-radius: 16px;
+    padding: 15px;
+    box-shadow: 0 5px 14px rgba(18, 32, 58, .06);
+}
+
+.score-card.total {
+    border-color: #ffd7c1;
+}
+
+.label {
+    color: #69748a;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .8px;
+}
+
+.score {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 7px 0 5px;
+    color: #14223c;
+}
+
+.score span {
+    font-size: 11px;
+    color: #718096;
+    font-weight: 700;
+}
+
+.bar {
+    height: 5px;
+    background: #edf0f4;
+    border-radius: 10px;
+}
+
+.bar i {
+    display: block;
+    height: 100%;
+    background: #ff7a18;
+    border-radius: 10px;
+}
+
+.pct {
+    color: #000000;
+    font-size: 10px;
+    margin-top: 5px;
+}
+
+
+/* =========================================================
+   SECTION TITLE
+========================================================= */
+
+.section-title {
+    margin: 28px 0 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+}
+
+.section-title h2 {
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.05;
+}
+
+.section-title small {
+    color: #9aa3b2;
+    letter-spacing: 1.4px;
+    font-size: 7px;
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   PANELS
+========================================================= */
+
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.panel {
+    border: 1px solid #e7e9ee;
+    border-radius: 15px;
+    padding: 14px;
+    background: #fff;
+}
+
+
+/* =========================================================
+   PERFORMANCE
+========================================================= */
+
+.performance-list .row {
+    display: grid;
+    grid-template-columns: 1fr 45px 46px;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 0;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.performance-list .row:last-child {
+    border-bottom: 0;
+}
+
+.mini-bar {
+    height: 5px;
+    background: #eef1f5;
+    border-radius: 8px;
+}
+
+.mini-bar i {
+    display: block;
+    height: 100%;
+    background: #ff7a18;
+    border-radius: 8px;
+}
+
+.muted {
+    color: #000000;
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    background: #f2f5fa;
+    color: #69758a;
+    font-size: 8px;
+    padding: 8px;
+}
+
+td {
+    padding: 8px;
+    border-bottom: 1px solid #edf0f4;
+    font-size: 8px;
+    vertical-align: middle;
+}
+
+.center {
+    text-align: center;
+}
+
+
+/* =========================================================
+   METRICS
+========================================================= */
+
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 10px 0;
+}
+
+.metric {
+    border: 1px solid #e7e9ee;
+    border-radius: 14px;
+    padding: 13px;
+    min-height: 70px;
+}
+
+.metric .value {
+    font-size: 21px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.metric .name {
+    color: #7f899c;
+    font-size: 8px;
+    line-height: 1.2;
+}
+
+.metric.alert {
+    border-color: #ffd8d8;
+    background: #fff8f8;
+}
+
+.metric.alert .value {
+    color: #e94c56;
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.nav-grid {
+    display: grid;
+    grid-template-columns: 1.35fr .9fr;
+    gap: 14px;
+}
+
+.nav-summary {
+    min-height: 220px;
+}
+
+.nav-cards {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.nav-card {
+    background: #f7f8fb;
+    border-radius: 12px;
+    padding: 11px 8px;
+    text-align: center;
+}
+
+.nav-card .n {
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.nav-card .t {
+    color: #7f899c;
+    font-size: 7px;
+    margin-top: 4px;
+}
+
+
+/* =========================================================
+   SIGNALS
+========================================================= */
+
+.signals .signal {
+    background: #f7f8fb;
+    border-radius: 12px;
+    padding: 11px;
+    margin-bottom: 8px;
+}
+
+.signals .signal:last-child {
+    margin-bottom: 0;
+}
+
+.signals strong {
+    font-size: 9px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.signals p {
+    margin: 0;
+    color: #7b8597;
+    font-size: 8px;
+    line-height: 1.45;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.footer {
+    position: absolute;
+    left: 14mm;
+    right: 14mm;
+    bottom: 8mm;
+    border-top: 1px solid #edf0f4;
+    padding-top: 6px;
+    color: #9aa3b2;
+    font-size: 7px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.orange {
+    color: #ff7a18;
+}
+
+.dark {
+    color: #13213b;
+}
+
+
+/* =========================================================
+   INSIGHTS
+========================================================= */
+
+.insight-grid {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 12px;
+}
+
+.insight {
+    border: 1px solid #f6d9c9;
+    background: #fffaf7;
+    border-radius: 15px;
+    padding: 15px;
+    min-height: 150px;
+}
+
+.insight-num {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #ff7a18;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    margin-bottom: 22px;
+}
+
+.insight h3 {
+    margin: 0 0 8px;
+    font-size: 12px;
+}
+
+.insight p {
+    margin: 0;
+    color: #7b8597;
+    line-height: 1.5;
+    font-size: 9px;
+}
+
+.small-note {
+    color: #9aa3b2;
+    font-size: 7.5px;
+    line-height: 1.45;
+}
+
+.empty {
+    color: #9aa3b2;
+    text-align: center;
+    padding: 15px;
+}
+
+
+/* =========================================================
+   SECTION ACCURACY — circular graphs
+   (new: one ring per section, on the Performance Insights page)
+========================================================= */
+
+.accuracy-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 0 0 26px;
+}
+
+.accuracy-card {
+    background: #f7f8fb;
+    border-radius: 14px;
+    padding: 16px 8px 12px;
+    text-align: center;
+}
+
+.accuracy-ring-wrap {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 8px;
+}
+
+.accuracy-ring {
+    width: 76px;
+    height: 76px;
+    display: block;
+}
+
+.ring-track {
+    fill: none;
+    stroke: #e7eaf1;
+    stroke-width: 7;
+}
+
+.ring-fill {
+    fill: none;
+    stroke-width: 7;
+    stroke-linecap: round;
+}
+
+.accuracy-pct-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: #14223c;
+}
+
+.accuracy-section-name {
+    font-size: 8.5px;
+    font-weight: 800;
+    color: #13213b;
+}
+
+.accuracy-fraction {
+    font-size: 7.5px;
+    color: #9aa3b2;
+    margin-top: 1px;
+}
+
+
+/* =========================================================
+   PRINT
+========================================================= */
+
+@media print {
+
+    body {
+        background: white;
+    }
+
+    .page {
+        page-break-after: always;
+    }
+
+    .page:last-child {
+        page-break-after: auto;
+    }
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+<!-- ========================================================
+     PAGE 1
+========================================================= -->
+
+<section class="page">
+
+    <!-- HERO -->
+
+    <div class="hero">
+
+        <div class="brand">
+            TSTP <span>Test Preparation</span>
+        </div>
+
+        <div class="eyebrow">
+            TEST RESULTS
+        </div>
+
+        <h1>
+            Student Performance<br>
+            Report
+        </h1>
+
+        <div class="meta">
+
+            {{ student_name }}
+
+            ·
+
+            {{ test_name }}
+
+            ·
+
+            {{ test_date }}
+
+        </div>
+
+
+
+    </div>
+
+
+    <!-- =====================================================
+         SCORE CARDS
+    ====================================================== -->
+
+    <div class="score-row">
+
+
+        <!-- TOTAL -->
+
+        <div class="score-card total">
+
+            <div class="label">
+                TOTAL SCORE
+            </div>
+
+            <div class="score">
+
+                {{ total_score }}
+
+                <span>
+                    /{{ total_max_score }}
+                </span>
+
+            </div>
+
+            <div class="bar">
+
+                <i
+                    style="width: {{ total_percentage }}%;"
+                ></i>
+
+            </div>
+
+            <div class="pct">
+
+                Overall score percentage:
+                {{ total_percentage }}%
+
+            </div>
+
+        </div>
+
+
+        <!-- SUBJECTS -->
+
+        {% for subject in subjects %}
+
+        <div class="score-card">
+
+            <div class="label">
+
+                {{ subject.name|upper }}
+
+            </div>
+
+            <div class="score">
+
+                {{ subject.score }}
+
+                <span>
+                    /{{ subject.max_score }}
+                </span>
+
+            </div>
+
+            <div class="bar">
+
+                <i
+                    style="width: {{ subject.percentage }}%;"
+                ></i>
+
+            </div>
+
+            <div class="pct">
+
+                {{ subject.percentage }}%
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+
+    </div>
+
+
+    <!-- =====================================================
+         SECTION PERFORMANCE
+    ====================================================== -->
+
+    <div class="section-title">
+
+        <h2>
+            Section<br>
+            Performance
+        </h2>
+
+        <small>
+            ACCURACY &amp; TIME SNAPSHOT
+        </small>
+
+    </div>
+
+
+    <div class="two-col">
+
+
+        <!-- LEFT PERFORMANCE -->
+
+        <div class="panel performance-list">
+
+
+            {% for section in sections %}
+
+            <div class="row">
+
+                <div>
+
+                    {{ section.subject_name }}
+                    ·
+                    {{ section.section_name }}
+
+                </div>
+
+                <div class="muted">
+
+                    {{ section.correct }}
+                    /
+                    {{ section.total_questions }}
+
+                </div>
+
+                <div class="mini-bar">
+
+                    <i
+                        style="width: {{ section.accuracy }}%;"
+                    ></i>
+
+                </div>
+
+            </div>
+
+            {% empty %}
+
+            <div class="empty">
+                No section performance data available.
+            </div>
+
+            {% endfor %}
+
+
+
+        </div>
+
+
+        <!-- RIGHT TABLE -->
+
+        <div class="panel">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Section
+                        </th>
+
+                        <th class="center">
+                            Correct
+                        </th>
+
+                        <th class="center">
+                            Incorrect
+                        </th>
+
+                        <th class="center">
+                            Time
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for section in sections %}
+
+                    <tr>
+
+                        <td>
+
+                            {{ section.subject_name }}
+                            ·
+                            {{ section.section_name }}
+
+                        </td>
+
+                        <td class="center">
+
+                            {{ section.correct }}
+
+                        </td>
+
+                        <td class="center">
+
+                            {{ section.incorrect }}
+
+                        </td>
+
+                        <td class="center">
+
+                            {{ section.section_time }}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="4"
+                            class="empty"
+                        >
+                            No section data available.
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         BEHAVIOR OVERVIEW
+    ====================================================== -->
+
+    <div class="section-title">
+
+        <h2>
+            Behavior &amp; Navigation<br>
+            Overview
+        </h2>
+
+        <small>
+            HOW THE TEST WAS TAKEN
+        </small>
+
+    </div>
+
+
+    <div class="metrics">
+
+
+        <div class="metric">
+
+            <div class="value">
+
+                {{ unique_questions }}
+
+            </div>
+
+            <div class="name">
+
+                Unique Questions
+
+            </div>
+
+        </div>
+
+
+        <div class="metric">
+
+            <div class="value">
+
+                {{ avg_visits }}
+
+            </div>
+
+            <div class="name">
+
+                Avg Visits / Question
+
+            </div>
+
+        </div>
+
+
+        <div class="metric">
+
+            <div class="value">
+
+                {{ avg_time_question }}s
+
+            </div>
+
+            <div class="name">
+
+                Avg Time / Question
+
+            </div>
+
+        </div>
+
+
+        <div class="metric alert">
+
+            <div class="value">
+
+                {{ total_idle_time }}
+
+            </div>
+
+            <div class="name">
+
+                Total Idle Time
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+    <div class="metrics">
+
+
+        <div class="metric">
+
+            <div class="value">
+
+                {{ total_navigations }}
+
+            </div>
+
+            <div class="name">
+
+                Total Navigations
+
+            </div>
+
+        </div>
+
+
+        <div class="metric">
+
+            <div class="value">
+
+                {{ sequential_moves }}
+
+            </div>
+
+            <div class="name">
+
+                Sequential Moves
+
+            </div>
+
+        </div>
+
+
+        <div class="metric">
+
+            <div class="value">
+
+{{ jump_moves }}
+
+            </div>
+
+            <div class="name">
+
+                Jump Moves
+
+            </div>
+
+        </div>
+
+
+        <div class="metric alert">
+
+            <div class="value">
+
+                {{ total_revisits }}
+
+            </div>
+
+            <div class="name">
+
+                Total Revisits
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+     <!-- =====================================================
+         DETAILED SECTION BEHAVIOR
+    ====================================================== -->
+
+    <div class="section-title">
+
+        <h2>
+            Detailed Section<br>
+            Behavior
+        </h2>
+
+        <small>
+            NAVIGATION FLOW
+        </small>
+
+    </div>
+
+    <div class="panel">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Section
+                    </th>
+
+                    <th class="center">
+                        Steps
+                    </th>
+
+                    <th class="center">
+                        Unique
+                    </th>
+
+                    <th class="center">
+                        Revisits
+                    </th>
+
+                    <th class="center">
+                        Review
+                    </th>
+
+                    <th class="center">
+                        Total Time
+                    </th>
+
+                    <th class="center">
+                        Idle
+                    </th>
+
+                    <th class="center">
+                        Avg / Step
+                    </th>
+
+                    <th class="center">
+                        Next
+                    </th>
+
+                    <th class="center">
+                        Prev
+                    </th>
+
+                    <th class="center">
+                        Jump
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+                {% for section in sections %}
+
+                <tr>
+
+                    <td>
+
+                        {{ section.subject_name }}
+                        -
+                        {{ section.section_name }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.total_steps }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.unique_questions }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.revisits }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.review_visits }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.total_time }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.idle_time }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.avg_time }}s
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.next }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.previous }}
+
+                    </td>
+
+
+                    <td class="center">
+
+                        {{ section.navigation.jump }}
+
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <td
+                        colspan="11"
+                        class="empty"
+                    >
+
+                        No navigation flow data available.
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <!-- FOOTER -->
+
+    <div class="footer">
+
+        <span>
+            TSTP · Test Preparation &amp; Student Analytics
+        </span>
+
+        <span>
+            Student Performance Report
+        </span>
+
+    </div>
+
+</section>
+
+
+
+
+
+
+<!-- ========================================================
+     PAGE 2
+========================================================= -->
+
+<section class="page">
+
+
+    <div
+        class="section-title"
+        style="margin-top:0"
+    >
+
+        <h2>
+            Performance<br>
+            Insights
+        </h2>
+
+        <small>
+            MAKE THE REPORT ACTIONABLE
+        </small>
+
+    </div>
+
+
+    <!-- =====================================================
+         SECTION ACCURACY — one circular graph per section
+         (new)
+    ====================================================== -->
+
+    <div class="accuracy-grid">
+
+        {% for section in sections %}
+
+        <div class="accuracy-card">
+
+            <div class="accuracy-ring-wrap">
+
+                <svg
+                    class="accuracy-ring"
+                    viewBox="0 0 76 76"
+                >
+
+                    <circle
+                        cx="38"
+                        cy="38"
+                        r="31"
+                        fill="none"
+                        stroke="#e7eaf1"
+                        stroke-width="7"
+                    ></circle>
+
+                    <circle
+                        cx="38"
+                        cy="38"
+                        r="31"
+                        fill="none"
+                        stroke="{{ section.accuracy_color }}"
+                        stroke-width="7"
+                        stroke-linecap="round"
+                        stroke-dasharray="{{ section.accuracy_dash }} {{ ring_circumference }}"
+                        transform="rotate(-90 38 38)"
+                    ></circle>
+
+                </svg>
+
+                <div class="accuracy-pct-overlay">
+                    {{ section.accuracy }}%
+                </div>
+
+            </div>
+
+            <div class="accuracy-section-name">
+                {{ section.subject_name }} · {{ section.section_name }}
+            </div>
+
+            <div class="accuracy-fraction">
+                {{ section.correct }} / {{ section.total_questions }} correct
+            </div>
+
+        </div>
+
+        {% empty %}
+
+        <div class="empty">
+            No section accuracy data available.
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    <div class="insight-grid">
+
+
+        {% for insight in insights %}
+
+        <div class="insight">
+
+            <div class="insight-num">
+
+                {{ forloop.counter }}
+
+            </div>
+
+            <h3>
+
+                {{ insight.title }}
+
+            </h3>
+
+            <p>
+
+                {{ insight.text }}
+
+            </p>
+
+        </div>
+
+        {% empty %}
+
+        <div class="insight">
+
+            <div class="insight-num">
+                1
+            </div>
+
+            <h3>
+                Performance Review
+            </h3>
+
+            <p>
+                Review the section performance
+                and navigation behavior from
+                this test attempt.
+            </p>
+
+        </div>
+
+        {% endfor %}
+
+
+    </div>
+
+
+
+
+
+    <!-- FINAL FOOTER -->
+
+    <div
+        style="
+            margin-top:28px;
+            background:#0d1730;
+            color:#fff;
+            padding:18px 20px;
+            border-radius:0;
+        "
+    >
+
+        <div
+            style="
+                display:flex;
+                justify-content:space-between;
+                font-size:7px;
+            "
+        >
+
+            <span>
+                TSTP · Test Preparation &amp; Student Analytics
+            </span>
+
+            <span>
+                Student Performance Report
+            </span>
+
+        </div>
+
+    </div>
+
+
+</section>
+
+
+</body>
+</html>
