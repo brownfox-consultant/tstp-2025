@@ -1,13 +1,17 @@
 "use client";
 import './ReportNew.css';
-import { getTestResult } from "@/app/services/authService";
+import { getTestResult,downloadTestReport } from "@/app/services/authService";
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
 import StudentActivityLog from "./StudentActivityLog";
 import { Spin } from "antd";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  DownloadOutlined,
+} from "@ant-design/icons";
+
 import { 
   CalendarIcon, 
   UserProfileIcon, 
@@ -45,6 +49,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
   const router = useRouter();
   const availableSubjects = resultData?.subjects?.map(s => s.name.toLowerCase()) || [];
   const tabs = [...availableSubjects, "questions", "insights"];
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -1021,7 +1026,25 @@ const totalIdleTime = getTotalIdleTime();
           </div>
         );
       };
+    
+      
+  const handleDownloadReport = async () => {
+  const submissionId = testSubmissionId || test_submission_id;
 
+  if (!submissionId) {
+    return;
+  }
+
+  try {
+    setDownloadingReport(true);
+
+    await downloadTestReport(submissionId);
+  } catch (error) {
+    console.error("Failed to download report:", error);
+  } finally {
+    setDownloadingReport(false);
+  }
+};
 
   if (loading) {
     return (
@@ -1066,6 +1089,18 @@ const totalIdleTime = getTotalIdleTime();
               <h1 className="text-2xl font-bold text-[#F59403] mb-3">
                 Test Results
               </h1>
+           <button
+    type="button"
+    onClick={handleDownloadReport}
+    disabled={downloadingReport}
+    className="inline-flex items-center mb-3 gap-2 px-4 py-2 rounded-lg bg-[#F59403] hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-sm transition-all"
+  >
+    <DownloadOutlined />
+
+    {downloadingReport
+      ? "Generating..."
+      : "Download Report"}
+  </button>
 
               {/* Badges - Stacked */}
               <div className="flex flex-wrap gap-2">

@@ -188,6 +188,37 @@ from .serializers import AttemptedQuestionSerializer
 from test_manager.tasks import send_test_completion_email
 from test_manager.models import TestNavigationHistory, TestPatternSummary, SelectionHistory
 
+from io import BytesIO
+
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    PageBreak,
+)
+
+from test_manager.models import (
+    TestSubmission,
+    Result,
+    Section,
+    QuestionAnswer,
+    SectionStats,
+    TestNavigationHistory,
+    TestPatternSummary,
+)
+
 
 class AttemptedQuestionsPagination(PageNumberPagination):
     page_size = 10
@@ -5021,7 +5052,737 @@ class TestViewSet(viewsets.ModelViewSet):
         })
     
     
+    @action(
+    detail=False,
+    methods=["get"],
+    url_path="download-report",
+    permission_classes=[IsAuthenticated],
+    )
+    def download_report(self, request):
+        test_submission_id = request.query_params.get("test_submission_id")
 
+        if not test_submission_id:
+            return Response(
+                {"detail": "test_submission_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        test_submission = get_object_or_404(
+            TestSubmission.objects.select_related(
+                "test",
+                "test__course",
+                "student",
+            ),
+            id=test_submission_id,
+        )
+
+        user = request.user
+
+        role_name = getattr(
+            getattr(user, "role", None),
+            "name",
+            ""
+        ).lower()
+
+        allowed_roles = {
+            "admin",
+            "mentor",
+            "faculty",
+            "student",
+        }
+
+        if role_name not in allowed_roles:
+            return Response(
+                {"detail": "You are not authorized to download this report."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if (
+            role_name == "student"
+            and test_submission.student_id != user.id
+        ):
+            return Response(
+                {"detail": "You are not authorized to download this report."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            result = test_submission.result
+        except Result.DoesNotExist:
+            return Response(
+                {"detail": "Result not found for this test submission."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # ---------------------------------------------------------
+        # Your existing PDF generation code starts here
+        # ---------------------------------------------------------
+
+        buffer = BytesIO()
+
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            rightMargin=12 * mm,
+            leftMargin=12 * mm,
+            topMargin=12 * mm,
+            bottomMargin=12 * mm,
+            title=f"{test_submission.test.name} - Test Report",
+            author="TSTP",
+        )
+
+        # KEEP THE REST OF YOUR EXISTING PDF CODE HERE
+
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle(
+            "ReportTitle",
+            parent=styles["Title"],
+            fontSize=22,
+            leading=26,
+            alignment=TA_CENTER,
+            spaceAfter=8,
+            textColor=colors.HexColor("#F59403"),
+        )
+
+        heading_style = ParagraphStyle(
+            "Heading",
+            parent=styles["Heading2"],
+            fontSize=15,
+            leading=19,
+            spaceBefore=10,
+            spaceAfter=8,
+            textColor=colors.HexColor("#222222"),
+        )
+
+        subheading_style = ParagraphStyle(
+            "SubHeading",
+            parent=styles["Heading3"],
+            fontSize=11,
+            leading=14,
+            spaceBefore=6,
+            spaceAfter=5,
+            textColor=colors.HexColor("#F59403"),
+        )
+
+        normal_style = ParagraphStyle(
+            "NormalReport",
+            parent=styles["Normal"],
+            fontSize=8.5,
+            leading=11,
+        )
+
+        small_style = ParagraphStyle(
+            "SmallReport",
+            parent=styles["Normal"],
+            fontSize=7,
+            leading=9,
+        )
+
+        story = []
+
+        # ---------------------------------------------------------
+        # Helper functions
+        # ---------------------------------------------------------
+        def safe(value, default="-"):
+            if value is None or value == "":
+                return default
+            return value
+
+        def format_seconds(seconds):
+            seconds = int(seconds or 0)
+            minutes = seconds // 60
+            remaining = seconds % 60
+            return f"{minutes}m {remaining}s"
+
+        def add_table(data, widths=None, header=True):
+            table = Table(
+                data,
+                colWidths=widths,
+                repeatRows=1 if header else 0,
+            )
+
+            table_style = [
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.4,
+                    colors.HexColor("#DDDDDD"),
+                ),
+                (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "TOP",
+                ),
+                (
+                    "FONTNAME",
+                    (0, 0),
+                    (-1, -1),
+                    "Helvetica",
+                ),
+                (
+                    "FONTSIZE",
+                    (0, 0),
+                    (-1, -1),
+                    8,
+                ),
+                (
+                    "LEFTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    5,
+                ),
+                (
+                    "RIGHTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    5,
+                ),
+                (
+                    "TOPPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    5,
+                ),
+                (
+                    "BOTTOMPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    5,
+                ),
+            ]
+
+            if header:
+                table_style.extend([
+                    (
+                        "BACKGROUND",
+                        (0, 0),
+                        (-1, 0),
+                        colors.HexColor("#F59403"),
+                    ),
+                    (
+                        "TEXTCOLOR",
+                        (0, 0),
+                        (-1, 0),
+                        colors.white,
+                    ),
+                    (
+                        "FONTNAME",
+                        (0, 0),
+                        (-1, 0),
+                        "Helvetica-Bold",
+                    ),
+                ])
+
+            table.setStyle(TableStyle(table_style))
+            story.append(table)
+            story.append(Spacer(1, 8))
+
+        # ---------------------------------------------------------
+        # Header
+        # ---------------------------------------------------------
+        story.append(
+            Paragraph(
+                "TSTP TEST REPORT",
+                title_style,
+            )
+        )
+
+        story.append(
+            Paragraph(
+                safe(test_submission.test.name),
+                ParagraphStyle(
+                    "TestName",
+                    parent=styles["Heading2"],
+                    alignment=TA_CENTER,
+                    fontSize=14,
+                    textColor=colors.HexColor("#333333"),
+                    spaceAfter=15,
+                ),
+            )
+        )
+
+        # ---------------------------------------------------------
+        # Student information
+        # ---------------------------------------------------------
+        story.append(
+            Paragraph(
+                "Test Information",
+                heading_style,
+            )
+        )
+
+        student_name = safe(
+            getattr(test_submission.student, "name", None)
+        )
+
+        course_name = safe(
+            getattr(test_submission.test.course, "name", None)
+        )
+
+        info_data = [
+            ["Student", student_name, "Status", safe(test_submission.status)],
+            ["Course", course_name, "Test Type", safe(test_submission.test.test_type)],
+            ["Assigned Date", safe(test_submission.assigned_date), "Completion Date", safe(test_submission.completion_date)],
+            ["Expiration Date", safe(test_submission.expiration_date), "Format", safe(test_submission.test.format_type)],
+        ]
+
+        add_table(
+            info_data,
+            widths=[35 * mm, 55 * mm, 35 * mm, 55 * mm],
+            header=False,
+        )
+
+        # ---------------------------------------------------------
+        # Score calculation
+        # ---------------------------------------------------------
+        sections = Section.objects.filter(
+            test=test_submission.test
+        ).select_related(
+            "course_subject",
+            "course_subject__subject",
+        )
+
+        subject_scores = {}
+
+        for section in sections:
+            subject_name = section.course_subject.subject.name
+
+            if subject_name not in subject_scores:
+                subject_scores[subject_name] = {
+                    "correct": 0,
+                    "incorrect": 0,
+                    "skipped": 0,
+                    "time": 0,
+                }
+
+            question_answers = QuestionAnswer.objects.filter(
+                result=result,
+                course_subject=section.course_subject,
+            )
+
+            subject_scores[subject_name]["correct"] += question_answers.filter(
+                is_correct=True,
+                is_skipped=False,
+            ).count()
+
+            subject_scores[subject_name]["incorrect"] += question_answers.filter(
+                is_correct=False,
+                is_skipped=False,
+            ).count()
+
+            subject_scores[subject_name]["skipped"] += question_answers.filter(
+                is_skipped=True,
+            ).count()
+
+            stats = SectionStats.objects.filter(
+                result=result,
+                course_subject=section.course_subject,
+            ).first()
+
+            if stats:
+                subject_scores[subject_name]["time"] += stats.time_taken or 0
+
+        total_correct = sum(
+            data["correct"]
+            for data in subject_scores.values()
+        )
+
+        total_incorrect = sum(
+            data["incorrect"]
+            for data in subject_scores.values()
+        )
+
+        total_skipped = sum(
+            data["skipped"]
+            for data in subject_scores.values()
+        )
+
+        total_questions = (
+            total_correct +
+            total_incorrect +
+            total_skipped
+        )
+
+        percentage = (
+            round((total_correct / total_questions) * 100, 2)
+            if total_questions
+            else 0
+        )
+
+        story.append(
+            Paragraph(
+                "Overall Performance",
+                heading_style,
+            )
+        )
+
+        score_data = [
+            ["Total Questions", "Correct", "Incorrect", "Skipped", "Performance"],
+            [
+                str(total_questions),
+                str(total_correct),
+                str(total_incorrect),
+                str(total_skipped),
+                f"{percentage}%",
+            ],
+        ]
+
+        add_table(
+            score_data,
+            widths=[
+                35 * mm,
+                30 * mm,
+                30 * mm,
+                30 * mm,
+                40 * mm,
+            ],
+        )
+
+        # ---------------------------------------------------------
+        # Subject performance
+        # ---------------------------------------------------------
+        story.append(
+            Paragraph(
+                "Subject Performance",
+                heading_style,
+            )
+        )
+
+        subject_data = [
+            [
+                "Subject",
+                "Correct",
+                "Incorrect",
+                "Skipped",
+                "Time",
+            ]
+        ]
+
+        for subject_name, data in subject_scores.items():
+            subject_total = (
+                data["correct"] +
+                data["incorrect"] +
+                data["skipped"]
+            )
+
+            subject_data.append([
+                subject_name,
+                str(data["correct"]),
+                str(data["incorrect"]),
+                str(data["skipped"]),
+                format_seconds(data["time"]),
+            ])
+
+        if len(subject_data) > 1:
+            add_table(
+                subject_data,
+                widths=[
+                    55 * mm,
+                    30 * mm,
+                    30 * mm,
+                    30 * mm,
+                    35 * mm,
+                ],
+            )
+
+        # ---------------------------------------------------------
+        # Question-by-question report
+        # ---------------------------------------------------------
+        story.append(PageBreak())
+
+        story.append(
+            Paragraph(
+                "Question-by-Question Analysis",
+                heading_style,
+            )
+        )
+
+        for subject in sections.values_list(
+            "course_subject",
+            "course_subject__subject__name",
+            flat=False,
+        ).distinct():
+
+            course_subject_id = subject[0]
+            subject_name = subject[1]
+
+            story.append(
+                Paragraph(
+                    safe(subject_name),
+                    subheading_style,
+                )
+            )
+
+            section_objects = sections.filter(
+                course_subject_id=course_subject_id
+            )
+
+            for section in section_objects:
+                story.append(
+                    Paragraph(
+                        safe(section.name),
+                        ParagraphStyle(
+                            "SectionName",
+                            parent=normal_style,
+                            fontName="Helvetica-Bold",
+                            fontSize=9,
+                            spaceAfter=5,
+                        ),
+                    )
+                )
+
+                answers = QuestionAnswer.objects.filter(
+                    result=result,
+                    course_subject_id=course_subject_id,
+                    section_id__in=[
+                        sec.get("id")
+                        for sec in section.sub_sections
+                        if isinstance(sec, dict)
+                    ],
+                ).select_related("question").order_by("order")
+
+                question_data = [[
+                    "Q",
+                    "Result",
+                    "Skipped",
+                    "Marked",
+                    "Visits",
+                    "Time",
+                ]]
+
+                for answer in answers:
+                    if answer.is_skipped:
+                        result_text = "Skipped"
+                    elif answer.is_correct:
+                        result_text = "Correct"
+                    else:
+                        result_text = "Incorrect"
+
+                    question_data.append([
+                        str(answer.order + 1),
+                        result_text,
+                        "Yes" if answer.is_skipped else "No",
+                        "Yes" if answer.is_marked_for_review else "No",
+                        str(answer.times_visited),
+                        format_seconds(answer.time_taken),
+                    ])
+
+                if len(question_data) > 1:
+                    add_table(
+                        question_data,
+                        widths=[
+                            15 * mm,
+                            35 * mm,
+                            25 * mm,
+                            25 * mm,
+                            20 * mm,
+                            30 * mm,
+                        ],
+                    )
+
+        # ---------------------------------------------------------
+        # Navigation / behavior
+        # ---------------------------------------------------------
+        pattern = TestPatternSummary.objects.filter(
+            test_submission=test_submission
+        ).first()
+
+        navigation_count = TestNavigationHistory.objects.filter(
+            test_submission=test_submission
+        ).count()
+
+        if pattern or navigation_count:
+            story.append(PageBreak())
+
+            story.append(
+                Paragraph(
+                    "Test-Taking Behavior & Navigation",
+                    heading_style,
+                )
+            )
+
+            behavior_data = [
+                ["Metric", "Value"],
+                [
+                    "Total Navigations",
+                    str(
+                        pattern.total_navigations
+                        if pattern
+                        else navigation_count
+                    ),
+                ],
+                [
+                    "Sequential Moves",
+                    str(pattern.sequential_moves if pattern else 0),
+                ],
+                [
+                    "Jump Moves",
+                    str(pattern.jump_moves if pattern else 0),
+                ],
+                [
+                    "Back & Forth Moves",
+                    str(pattern.back_and_forth_moves if pattern else 0),
+                ],
+                [
+                    "Total Revisits",
+                    str(pattern.total_revisits if pattern else 0),
+                ],
+                [
+                    "Avg Revisits / Question",
+                    str(
+                        round(pattern.avg_revisits_per_question, 2)
+                        if pattern else 0
+                    ),
+                ],
+                [
+                    "Questions Marked for Review",
+                    str(
+                        pattern.questions_marked_for_review
+                        if pattern else 0
+                    ),
+                ],
+                [
+                    "Review Visits",
+                    str(
+                        pattern.review_visit_count
+                        if pattern else 0
+                    ),
+                ],
+                [
+                    "Sections Skipped",
+                    str(
+                        pattern.sections_skipped
+                        if pattern else 0
+                    ),
+                ],
+                [
+                    "Navigation Efficiency",
+                    f"{round(pattern.navigation_efficiency_score, 2)}%"
+                    if pattern else "0%",
+                ],
+                [
+                    "Time Management",
+                    f"{round(pattern.time_management_score, 2)}%"
+                    if pattern else "0%",
+                ],
+            ]
+
+            add_table(
+                behavior_data,
+                widths=[
+                    100 * mm,
+                    60 * mm,
+                ],
+            )
+
+            # -----------------------------------------------------
+            # Navigation history
+            # -----------------------------------------------------
+            navigation_history = TestNavigationHistory.objects.filter(
+                test_submission=test_submission
+            ).select_related(
+                "question"
+            ).order_by("timestamp")
+
+            if navigation_history.exists():
+
+                story.append(
+                    Paragraph(
+                        "Navigation Timeline",
+                        subheading_style,
+                    )
+                )
+
+                navigation_data = [[
+                    "Time",
+                    "Action",
+                    "Question",
+                    "Time Spent",
+                ]]
+
+                for item in navigation_history:
+                    question_number = "-"
+
+                    if item.question:
+                        question_number = f"Q{item.question.id}"
+
+                    navigation_data.append([
+                        item.timestamp.strftime(
+                            "%d %b %Y %I:%M:%S %p"
+                        ),
+                        safe(item.action_type),
+                        question_number,
+                        format_seconds(
+                            item.time_spent_on_previous_question
+                        ),
+                    ])
+
+                add_table(
+                    navigation_data,
+                    widths=[
+                        45 * mm,
+                        35 * mm,
+                        30 * mm,
+                        40 * mm,
+                    ],
+                )
+
+        # ---------------------------------------------------------
+        # Footer
+        # ---------------------------------------------------------
+        def add_page_number(canvas, doc):
+            canvas.saveState()
+
+            canvas.setFont(
+                "Helvetica",
+                7,
+            )
+
+            canvas.setFillColor(
+                colors.HexColor("#777777")
+            )
+
+            canvas.drawCentredString(
+                A4[0] / 2,
+                7 * mm,
+                f"TSTP | Page {doc.page}",
+            )
+
+            canvas.restoreState()
+
+        doc.build(
+            story,
+            onFirstPage=add_page_number,
+            onLaterPages=add_page_number,
+        )
+
+        buffer.seek(0)
+
+        filename = (
+            f"{test_submission.test.name}"
+            f"_{test_submission.student.name}"
+            f"_report.pdf"
+        )
+
+        # Remove characters that are unsafe in filenames
+        filename = "".join(
+            c if c.isalnum() or c in "._-" else "_"
+            for c in filename
+        )
+
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type="application/pdf",
+        )
+
+        response["Content-Disposition"] = (
+            f'attachment; filename="{filename}"'
+        )
+
+        return response
 
 
 class ResultViewSet(viewsets.ModelViewSet):

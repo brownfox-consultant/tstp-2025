@@ -10,3 +10,18 @@
 .ant-progress-bg {
   border-radius: 50px !important;
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .report-container {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}

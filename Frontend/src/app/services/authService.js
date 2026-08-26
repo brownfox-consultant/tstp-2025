@@ -1237,3 +1237,65 @@ export const deleteIssue = (id) => {
     })
     .catch(handleAPIError);
 };
+
+export const downloadTestReport = async (testSubmissionId) => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/test/download-report/`,
+      {
+        params: {
+          test_submission_id: testSubmissionId,
+        },
+        responseType: "blob",
+        withCredentials: true,
+        headers: {
+          "ngrok-skip-browser-warning": "69420",
+        },
+      }
+    );
+
+    const contentType = response.headers["content-type"];
+
+    // Handle backend errors returned as JSON instead of PDF
+    if (!contentType?.includes("application/pdf")) {
+      const text = await response.data.text();
+
+      let errorMessage = "Failed to download report.";
+
+      try {
+        const errorData = JSON.parse(text);
+        errorMessage =
+          errorData.detail ||
+          errorData.message ||
+          errorMessage;
+      } catch {
+        if (text) {
+          errorMessage = text;
+        }
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const blob = new Blob(
+      [response.data],
+      { type: "application/pdf" }
+    );
+
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `test-report-${testSubmissionId}.pdf`;
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error("Download test report error:", error);
+    throw error;
+  }
+};
