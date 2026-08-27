@@ -130,8 +130,13 @@ function EditQuestionForm({
 );
 
 const [isNewCourseSelected, setIsNewCourseSelected] = useState(false);
-const additionalCourses = Form.useWatch("additional_courses_data", form);
-const isAddingAnotherCourse = additionalCourses?.length > 0;
+
+const additionalCourses = Form.useWatch(
+  "additional_courses_data",
+  form
+) || [];
+
+const isAddingAnotherCourse = additionalCourses.length > 0;
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [topicOptions, setTopicOptions] = useState(topicOptionsParam);
   const [subTopicOptions, setSubTopicOptions] = useState(subTopicOptionsParam);
@@ -1264,6 +1269,7 @@ form.setFieldsValue({
       className="!mb-0"
     >
       <FormReactSelect
+       isDisabled={isAddingAnotherCourse}
         value={selectedStatus}
         onSelectionChange={(value) => {
           setSelectedStatus(value);
@@ -1293,9 +1299,14 @@ form.setFieldsValue({
 )}
               </Row>
 
-             {action === "edit" && initialValues.available_in_other_courses && (
-  <Col span={24}
-  className={isNewCourseSelected ? "opacity-50 pointer-events-none" : ""}
+            {action === "edit" && initialValues.available_in_other_courses && (
+  <Col
+    span={24}
+    className={
+      isAddingAnotherCourse
+        ? "opacity-50 pointer-events-none"
+        : ""
+    }
   >
     <div className="mt-4">
       <h4 className="text-sm font-semibold text-gray-700 mb-2">
@@ -1397,7 +1408,7 @@ form.setFieldsValue({
                       <Button
                         type="dashed"
                         onClick={() => {
-  setIsNewCourseSelected(true);
+  
   add();
 }}
                         className="w-1/2 h-12 text-[#F59405] border-[#F59405] hover:bg-orange-50 font-semibold rounded-xl flex items-center justify-center gap-2"
@@ -1919,24 +1930,24 @@ form.setFieldsValue({
             {action === "edit" ? (
   <>
     <Button
-      type="primary"
-      htmlType="submit"
-      disabled={isAddingAnotherCourse}
-      size="large"
-      className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
-    >
-      Update Question
-    </Button>
+  type="primary"
+  htmlType="submit"
+  disabled={isAddingAnotherCourse}
+  size="large"
+  className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
+>
+  Update Question
+</Button>
 
-    <Button
-      type="primary"
-      disabled={!isNewCourseSelected}
-      size="large"
-      onClick={handleAddNewQuestion}
-      className="min-w-[160px] h-12 rounded-xl bg-gradient-to-r from-[#007FBC] to-[#00A3E0] border-none font-bold"
-    >
-      Add New Question
-    </Button>
+<Button
+  type="primary"
+  disabled={!isAddingAnotherCourse}
+  size="large"
+  onClick={handleAddNewQuestion}
+  className="min-w-[160px] h-12 rounded-xl bg-gradient-to-r from-[#007FBC] to-[#00A3E0] border-none font-bold"
+>
+  Add New Question
+</Button>
   </>
 ) : (
   <Button
