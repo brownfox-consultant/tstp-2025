@@ -157,10 +157,10 @@ console.log("answerObject:", answerObject);
   document.addEventListener("copy", handleCopy);
   document.addEventListener("cut", handleCut);
   document.addEventListener("selectstart", handleSelectStart);
-  document.addEventListener(
-    "fullscreenchange",
-    handleFullscreenChange
-  );
+  // document.addEventListener(
+  //   "fullscreenchange",
+  //   handleFullscreenChange
+  // );
 
   return () => {
     document.removeEventListener("keydown", handleKeyDown);
@@ -168,10 +168,10 @@ console.log("answerObject:", answerObject);
     document.removeEventListener("copy", handleCopy);
     document.removeEventListener("cut", handleCut);
     document.removeEventListener("selectstart", handleSelectStart);
-    document.removeEventListener(
-      "fullscreenchange",
-      handleFullscreenChange
-    );
+    // document.removeEventListener(
+    //   "fullscreenchange",
+    //   handleFullscreenChange
+    // );
     if (fsModalInstance) {
       fsModalInstance.destroy();
       fsModalInstance = null;
@@ -179,30 +179,30 @@ console.log("answerObject:", answerObject);
   };
 }, []);
 
-useEffect(() => {
-  const wasTestRunning =
-    sessionStorage.getItem("test_submission_id");
+// useEffect(() => {
+//   const wasTestRunning =
+//     sessionStorage.getItem("test_submission_id");
 
-  if (wasTestRunning && !document.fullscreenElement) {
-    if (!fsModalInstance) {
-      fsModalInstance = Modal.confirm({
-        title: "Resume Test",
-        content:
-          "Please return to fullscreen mode to continue the test.",
-        okText: "Enter Fullscreen",
-        keyboard: false,
-        maskClosable: false,
-        cancelButtonProps: {
-          style: { display: "none" },
-        },
-        onOk: () => {
-          goFullScreen();
-          fsModalInstance = null;
-        },
-      });
-    }
-  }
-}, []);
+//   if (wasTestRunning && !document.fullscreenElement) {
+//     if (!fsModalInstance) {
+//       fsModalInstance = Modal.confirm({
+//         title: "Resume Test",
+//         content:
+//           "Please return to fullscreen mode to continue the test.",
+//         okText: "Enter Fullscreen",
+//         keyboard: false,
+//         maskClosable: false,
+//         cancelButtonProps: {
+//           style: { display: "none" },
+//         },
+//         onOk: () => {
+//           goFullScreen();
+//           fsModalInstance = null;
+//         },
+//       });
+//     }
+//   }
+// }, []);
 
   const { is_marked_for_review } = answerObject || false;
   return (

@@ -155,7 +155,7 @@ console.log(answerMap);
   };
 
   // Check immediately on mount
-  checkFullscreen();
+  // checkFullscreen();
 
   document.addEventListener("keydown", handleKeyDown);
   document.addEventListener("contextmenu", handleContextMenu);
