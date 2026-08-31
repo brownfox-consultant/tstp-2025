@@ -1,42 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
 
 <title>
     TSTP Student Performance Report - {{ student_name }}
 </title>
 
+
 <style>
 
+/* =========================================================
+   PAGE
+========================================================= */
+
 @page {
+
     size: A4;
+
     margin: 0;
 }
+
 
 * {
+
     box-sizing: border-box;
+
 }
+
 
 body {
+
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    color: #13213b;
-    background: #fff;
+
+    padding: 0;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: #172033;
+
+    background: white;
+
     font-size: 10px;
+
 }
+
 
 .page {
+
     width: 210mm;
+
     min-height: 297mm;
-    padding: 16mm 14mm 14mm;
-    page-break-after: always;
+
+    padding:
+        12mm
+        12mm
+        14mm;
+
     position: relative;
-    overflow: hidden;
+
+    page-break-after: always;
+
 }
 
+
 .page:last-child {
+
     page-break-after: auto;
+
 }
 
 
@@ -45,70 +81,78 @@ body {
 ========================================================= */
 
 .hero {
+
     background: #0d1730;
+
     color: white;
-    border-radius: 0 0 18px 18px;
-    padding: 18px 20px 24px;
-    position: relative;
-    overflow: hidden;
+
+    border-radius:
+        0
+        0
+        18px
+        18px;
+
+    padding:
+        18px
+        20px
+        24px;
+
 }
 
-.hero:after {
-    content: "";
-    position: absolute;
-    width: 170px;
-    height: 170px;
-    border: 1px solid rgba(255,255,255,.10);
-    border-radius: 50%;
-    right: -55px;
-    top: -85px;
-}
 
 .brand {
-    font-size: 16px;
+
+    font-size: 17px;
+
     font-weight: 800;
+
 }
+
 
 .brand span {
+
     color: #ff7a18;
+
 }
+
 
 .eyebrow {
-    margin-top: 28px;
+
+    margin-top: 25px;
+
     color: #ff7a18;
+
     font-weight: 800;
+
     letter-spacing: 2px;
-    font-size: 8px;
+
+    font-size: 9px;
+
 }
+
 
 h1 {
-    margin: 7px 0 6px;
-    font-size: 29px;
-    line-height: 1.02;
-    color: #fff;
+
+    margin:
+        7px
+        0
+        7px;
+
+    font-size: 28px;
+
+    line-height: 1.05;
+
+    color: white;
+
 }
+
 
 .meta {
-    color: #bdc6d8;
+
+    color: #c7cfdd;
+
     font-size: 10px;
-}
 
-.report-id {
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    text-align: right;
-}
-
-.report-id small {
-    display: block;
-    color: #ff7a18;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-}
-
-.report-id strong {
-    font-size: 18px;
 }
 
 
@@ -117,89 +161,187 @@ h1 {
 ========================================================= */
 
 .score-row {
+
     display: grid;
-    grid-template-columns: 1.35fr 1fr 1fr;
+
+    grid-template-columns:
+        1.35fr
+        1fr
+        1fr;
+
     gap: 12px;
+
     margin-top: -18px;
+
     position: relative;
+
     z-index: 2;
-    padding: 0 14px;
+
+    padding:
+        0
+        14px;
+
 }
+
 
 .score-card {
-    background: #fff;
-    border: 1px solid #e4e7ee;
-    border-radius: 16px;
+
+    background: white;
+
+    border:
+        1px solid
+        #e2e6ec;
+
+    border-radius: 15px;
+
     padding: 15px;
-    box-shadow: 0 5px 14px rgba(18, 32, 58, .06);
+
+    box-shadow:
+        0
+        5px
+        15px
+        rgba(
+            18,
+            32,
+            58,
+            .07
+        );
+
 }
+
 
 .score-card.total {
-    border-color: #ffd7c1;
+
+    border-color:
+        #ffd6bd;
+
 }
+
 
 .label {
-    color: #69748a;
+
+    color: #667085;
+
     font-size: 8px;
+
     font-weight: 800;
+
     letter-spacing: .8px;
+
 }
+
 
 .score {
+
     font-size: 26px;
-    font-weight: 800;
-    margin: 7px 0 5px;
-    color: #14223c;
+
+    font-weight: 900;
+
+    margin:
+        7px
+        0
+        6px;
+
+    color: #172033;
+
 }
+
 
 .score span {
+
     font-size: 11px;
-    color: #718096;
+
+    color: #667085;
+
     font-weight: 700;
+
 }
+
 
 .bar {
+
     height: 5px;
+
     background: #edf0f4;
+
     border-radius: 10px;
+
+    overflow: hidden;
+
 }
+
 
 .bar i {
+
     display: block;
+
     height: 100%;
+
     background: #ff7a18;
+
     border-radius: 10px;
+
 }
 
+
 .pct {
-    color: #000000;
-    font-size: 10px;
+
+    color: #172033;
+
+    font-size: 9px;
+
     margin-top: 5px;
+
+    font-weight: 700;
+
 }
 
 
 /* =========================================================
-   SECTION TITLE
+   TITLES
 ========================================================= */
 
 .section-title {
-    margin: 28px 0 12px;
+
+    margin:
+        23px
+        0
+        10px;
+
     display: flex;
-    justify-content: space-between;
-    align-items: end;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        flex-end;
+
 }
+
 
 .section-title h2 {
+
     margin: 0;
-    font-size: 19px;
+
+    font-size: 17px;
+
     line-height: 1.05;
+
+    color: #13213b;
+
 }
 
+
 .section-title small {
-    color: #9aa3b2;
-    letter-spacing: 1.4px;
+
+    color: #8b95a7;
+
+    letter-spacing: 1px;
+
     font-size: 7px;
+
     font-weight: 800;
+
 }
 
 
@@ -208,52 +350,102 @@ h1 {
 ========================================================= */
 
 .two-col {
+
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
+
+    grid-template-columns:
+        1fr
+        1fr;
+
+    gap: 12px;
+
 }
 
+
 .panel {
-    border: 1px solid #e7e9ee;
-    border-radius: 15px;
-    padding: 14px;
-    background: #fff;
+
+    border:
+        1px solid
+        #e2e6ec;
+
+    border-radius: 14px;
+
+    padding: 12px;
+
+    background: white;
+
 }
 
 
 /* =========================================================
-   PERFORMANCE
+   SECTION PERFORMANCE
 ========================================================= */
 
 .performance-list .row {
+
     display: grid;
-    grid-template-columns: 1fr 45px 46px;
+
+    grid-template-columns:
+        1fr
+        45px
+        60px;
+
     align-items: center;
+
     gap: 7px;
-    padding: 8px 0;
-    border-bottom: 1px solid #edf0f4;
+
+    padding:
+        7px
+        0;
+
+    border-bottom:
+        1px solid
+        #edf0f4;
+
 }
+
 
 .performance-list .row:last-child {
+
     border-bottom: 0;
+
 }
+
 
 .mini-bar {
+
     height: 5px;
+
     background: #eef1f5;
+
     border-radius: 8px;
+
+    overflow: hidden;
+
 }
+
 
 .mini-bar i {
+
     display: block;
+
     height: 100%;
+
     background: #ff7a18;
+
     border-radius: 8px;
+
 }
 
+
 .muted {
-    color: #000000;
-    font-size: 10px;
+
+    color: #172033;
+
+    font-size: 9px;
+
+    font-weight: 600;
+
 }
 
 
@@ -262,27 +454,52 @@ h1 {
 ========================================================= */
 
 table {
+
     width: 100%;
+
     border-collapse: collapse;
+
 }
+
 
 th {
+
     text-align: left;
-    background: #f2f5fa;
-    color: #69758a;
+
+    background: #eef3fb;
+
+    color: #263a5b;
+
     font-size: 8px;
-    padding: 8px;
+
+    font-weight: 800;
+
+    padding: 7px;
+
 }
+
 
 td {
-    padding: 8px;
-    border-bottom: 1px solid #edf0f4;
+
+    padding: 7px;
+
+    border-bottom:
+        1px solid
+        #e7eaf0;
+
     font-size: 8px;
+
+    color: #172033;
+
     vertical-align: middle;
+
 }
 
+
 .center {
+
     text-align: center;
+
 }
 
 
@@ -291,107 +508,370 @@ td {
 ========================================================= */
 
 .metrics {
+
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    padding: 10px 0;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 9px;
+
+    margin-bottom: 9px;
+
 }
+
 
 .metric {
-    border: 1px solid #e7e9ee;
-    border-radius: 14px;
-    padding: 13px;
-    min-height: 70px;
+
+    border:
+        1px solid
+        #e3e7ed;
+
+    border-radius: 12px;
+
+    padding: 11px;
+
+    min-height: 66px;
+
 }
+
 
 .metric .value {
-    font-size: 21px;
-    font-weight: 800;
+
+    font-size: 19px;
+
+    font-weight: 900;
+
     margin-bottom: 4px;
+
+    color: #172033;
+
 }
+
 
 .metric .name {
-    color: #7f899c;
+
+    color: #737f93;
+
     font-size: 8px;
-    line-height: 1.2;
+
 }
+
 
 .metric.alert {
-    border-color: #ffd8d8;
-    background: #fff8f8;
+
+    background: #fff8f5;
+
+    border-color:
+        #ffd9ca;
+
 }
+
 
 .metric.alert .value {
-    color: #e94c56;
+
+    color: #ff6b22;
+
 }
 
 
 /* =========================================================
-   NAVIGATION
+   NAVIGATION FLOW
 ========================================================= */
 
-.nav-grid {
-    display: grid;
-    grid-template-columns: 1.35fr .9fr;
-    gap: 14px;
-}
+.navigation-table {
 
-.nav-summary {
-    min-height: 220px;
-}
-
-.nav-cards {
-    display: grid;
-    grid-template-columns: repeat(4,1fr);
-    gap: 8px;
-    margin-top: 14px;
-}
-
-.nav-card {
-    background: #f7f8fb;
-    border-radius: 12px;
-    padding: 11px 8px;
-    text-align: center;
-}
-
-.nav-card .n {
-    font-size: 20px;
-    font-weight: 800;
-}
-
-.nav-card .t {
-    color: #7f899c;
-    font-size: 7px;
-    margin-top: 4px;
-}
-
-
-/* =========================================================
-   SIGNALS
-========================================================= */
-
-.signals .signal {
-    background: #f7f8fb;
-    border-radius: 12px;
-    padding: 11px;
-    margin-bottom: 8px;
-}
-
-.signals .signal:last-child {
-    margin-bottom: 0;
-}
-
-.signals strong {
-    font-size: 9px;
-    display: block;
-    margin-bottom: 4px;
-}
-
-.signals p {
-    margin: 0;
-    color: #7b8597;
     font-size: 8px;
-    line-height: 1.45;
+
+}
+
+
+.navigation-table th {
+
+    white-space: nowrap;
+
+}
+
+
+.navigation-table td {
+
+    white-space: nowrap;
+
+}
+
+
+.navigation-table td:first-child {
+
+    font-weight: 700;
+
+}
+
+
+/* =========================================================
+   TOPIC PERFORMANCE
+========================================================= */
+
+.topic-performance-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr
+        1fr;
+
+    gap: 14px;
+
+}
+
+
+.topic-performance-card {
+
+    border:
+        1px solid
+        #e0e5ec;
+
+    border-radius: 15px;
+
+    padding: 14px;
+
+    background: white;
+
+    page-break-inside: avoid;
+
+}
+
+
+.topic-card-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content:
+        space-between;
+
+    padding-bottom: 8px;
+
+    border-bottom:
+        1px solid
+        #edf0f4;
+
+}
+
+
+.topic-card-title {
+
+    font-size: 13px;
+
+    font-weight: 900;
+
+    color: #172033;
+
+}
+
+
+.topic-card-subtitle {
+
+    font-size: 9px;
+
+    color: #667085;
+
+    margin-top: 3px;
+
+}
+
+
+.topic-total {
+
+    font-size: 18px;
+
+    font-weight: 900;
+
+    color: #172033;
+
+}
+
+
+/* =========================================================
+   DONUT
+========================================================= */
+
+.topic-chart-wrapper {
+
+    width: 145px;
+
+    height: 145px;
+
+    position: relative;
+
+    margin:
+        13px
+        auto
+        10px;
+
+}
+
+
+.topic-donut {
+
+    width: 145px;
+
+    height: 145px;
+
+    display: block;
+
+}
+
+
+.topic-donut-center {
+
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+}
+
+
+.topic-donut-center strong {
+
+    font-size: 24px;
+
+    font-weight: 900;
+
+    line-height: 1;
+
+    color: #172033;
+
+}
+
+
+.topic-donut-center span {
+
+    margin-top: 5px;
+
+    font-size: 8px;
+
+    font-weight: 700;
+
+    color: #667085;
+
+}
+
+
+/* =========================================================
+   TOPIC LEGEND
+========================================================= */
+
+.topic-legend {
+
+    border-top:
+        1px solid
+        #edf0f4;
+
+    padding-top: 8px;
+
+}
+
+
+.topic-legend-row {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content:
+        space-between;
+
+    padding:
+        4px
+        0;
+
+    border-bottom:
+        1px solid
+        #f0f2f5;
+
+}
+
+
+.topic-legend-row:last-child {
+
+    border-bottom: 0;
+
+}
+
+
+.topic-legend-left {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    min-width: 0;
+
+}
+
+
+.topic-dot {
+
+    width: 8px;
+
+    height: 8px;
+
+    border-radius: 50%;
+
+    flex-shrink: 0;
+
+}
+
+
+.topic-name {
+
+    font-size: 8px;
+
+    font-weight: 800;
+
+    color: #172033;
+
+    max-width: 115px;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+
+}
+
+
+.topic-status {
+
+    font-size: 7px;
+
+    color: #8a94a6;
+
+    text-transform: uppercase;
+
+}
+
+
+.topic-count {
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    color: #172033;
+
 }
 
 
@@ -400,151 +880,45 @@ td {
 ========================================================= */
 
 .footer {
+
     position: absolute;
-    left: 14mm;
-    right: 14mm;
-    bottom: 8mm;
-    border-top: 1px solid #edf0f4;
+
+    left: 12mm;
+
+    right: 12mm;
+
+    bottom: 7mm;
+
+    border-top:
+        1px solid
+        #edf0f4;
+
     padding-top: 6px;
-    color: #9aa3b2;
+
+    color: #8c96a7;
+
     font-size: 7px;
+
     display: flex;
-    justify-content: space-between;
-}
 
-.orange {
-    color: #ff7a18;
-}
+    justify-content:
+        space-between;
 
-.dark {
-    color: #13213b;
 }
 
 
 /* =========================================================
-   INSIGHTS
+   EMPTY
 ========================================================= */
-
-.insight-grid {
-    display: grid;
-    grid-template-columns: repeat(3,1fr);
-    gap: 12px;
-}
-
-.insight {
-    border: 1px solid #f6d9c9;
-    background: #fffaf7;
-    border-radius: 15px;
-    padding: 15px;
-    min-height: 150px;
-}
-
-.insight-num {
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    background: #ff7a18;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    margin-bottom: 22px;
-}
-
-.insight h3 {
-    margin: 0 0 8px;
-    font-size: 12px;
-}
-
-.insight p {
-    margin: 0;
-    color: #7b8597;
-    line-height: 1.5;
-    font-size: 9px;
-}
-
-.small-note {
-    color: #9aa3b2;
-    font-size: 7.5px;
-    line-height: 1.45;
-}
 
 .empty {
-    color: #9aa3b2;
+
+    color: #8c96a7;
+
     text-align: center;
+
     padding: 15px;
-}
 
-
-/* =========================================================
-   SECTION ACCURACY — circular graphs
-   (new: one ring per section, on the Performance Insights page)
-========================================================= */
-
-.accuracy-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin: 0 0 26px;
-}
-
-.accuracy-card {
-    background: #f7f8fb;
-    border-radius: 14px;
-    padding: 16px 8px 12px;
-    text-align: center;
-}
-
-.accuracy-ring-wrap {
-    position: relative;
-    width: 76px;
-    height: 76px;
-    margin: 0 auto 8px;
-}
-
-.accuracy-ring {
-    width: 76px;
-    height: 76px;
-    display: block;
-}
-
-.ring-track {
-    fill: none;
-    stroke: #e7eaf1;
-    stroke-width: 7;
-}
-
-.ring-fill {
-    fill: none;
-    stroke-width: 7;
-    stroke-linecap: round;
-}
-
-.accuracy-pct-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 800;
-    color: #14223c;
-}
-
-.accuracy-section-name {
-    font-size: 8.5px;
-    font-weight: 800;
-    color: #13213b;
-}
-
-.accuracy-fraction {
-    font-size: 7.5px;
-    color: #9aa3b2;
-    margin-top: 1px;
 }
 
 
@@ -555,19 +929,27 @@ td {
 @media print {
 
     body {
+
         background: white;
+
     }
 
     .page {
+
         page-break-after: always;
+
     }
 
     .page:last-child {
+
         page-break-after: auto;
+
     }
+
 }
 
 </style>
+
 </head>
 
 
@@ -580,56 +962,69 @@ td {
 
 <section class="page">
 
+
     <!-- HERO -->
 
     <div class="hero">
 
         <div class="brand">
-            TSTP <span>Test Preparation</span>
+
+            TSTP
+            <span>
+                Test Preparation
+            </span>
+
         </div>
+
 
         <div class="eyebrow">
+
             TEST RESULTS
+
         </div>
 
+
         <h1>
-            Student Performance<br>
+
+            Student Performance
+            <br>
             Report
+
         </h1>
+
 
         <div class="meta">
 
             {{ student_name }}
 
-            ·
+            &nbsp; · &nbsp;
 
             {{ test_name }}
 
-            ·
+            &nbsp; · &nbsp;
 
             {{ test_date }}
 
         </div>
 
-
-
     </div>
 
 
     <!-- =====================================================
-         SCORE CARDS
+         SCORE
     ====================================================== -->
 
     <div class="score-row">
 
 
-        <!-- TOTAL -->
-
         <div class="score-card total">
 
             <div class="label">
+
                 TOTAL SCORE
+
             </div>
+
 
             <div class="score">
 
@@ -641,25 +1036,27 @@ td {
 
             </div>
 
+
             <div class="bar">
 
                 <i
-                    style="width: {{ total_percentage }}%;"
+                    style="
+                        width:
+                        {{ total_percentage }}%;
+                    "
                 ></i>
 
             </div>
 
+
             <div class="pct">
 
-                Overall score percentage:
                 {{ total_percentage }}%
 
             </div>
 
         </div>
 
-
-        <!-- SUBJECTS -->
 
         {% for subject in subjects %}
 
@@ -671,6 +1068,7 @@ td {
 
             </div>
 
+
             <div class="score">
 
                 {{ subject.score }}
@@ -681,13 +1079,18 @@ td {
 
             </div>
 
+
             <div class="bar">
 
                 <i
-                    style="width: {{ subject.percentage }}%;"
+                    style="
+                        width:
+                        {{ subject.percentage }}%;
+                    "
                 ></i>
 
             </div>
+
 
             <div class="pct">
 
@@ -699,7 +1102,6 @@ td {
 
         {% endfor %}
 
-
     </div>
 
 
@@ -710,8 +1112,7 @@ td {
     <div class="section-title">
 
         <h2>
-            Section<br>
-            Performance
+            Section Performance
         </h2>
 
         <small>
@@ -724,7 +1125,7 @@ td {
     <div class="two-col">
 
 
-        <!-- LEFT PERFORMANCE -->
+        <!-- LEFT -->
 
         <div class="panel performance-list">
 
@@ -735,11 +1136,18 @@ td {
 
                 <div>
 
-                    {{ section.subject_name }}
+                    <strong>
+
+                        {{ section.subject_name }}
+
+                    </strong>
+
                     ·
+
                     {{ section.section_name }}
 
                 </div>
+
 
                 <div class="muted">
 
@@ -749,10 +1157,14 @@ td {
 
                 </div>
 
+
                 <div class="mini-bar">
 
                     <i
-                        style="width: {{ section.accuracy }}%;"
+                        style="
+                            width:
+                            {{ section.accuracy }}%;
+                        "
                     ></i>
 
                 </div>
@@ -762,17 +1174,17 @@ td {
             {% empty %}
 
             <div class="empty">
-                No section performance data available.
+
+                No section data available.
+
             </div>
 
             {% endfor %}
 
-
-
         </div>
 
 
-        <!-- RIGHT TABLE -->
+        <!-- RIGHT -->
 
         <div class="panel">
 
@@ -817,17 +1229,20 @@ td {
 
                         </td>
 
+
                         <td class="center">
 
                             {{ section.correct }}
 
                         </td>
 
+
                         <td class="center">
 
                             {{ section.incorrect }}
 
                         </td>
+
 
                         <td class="center">
 
@@ -845,7 +1260,9 @@ td {
                             colspan="4"
                             class="empty"
                         >
+
                             No section data available.
+
                         </td>
 
                     </tr>
@@ -862,14 +1279,13 @@ td {
 
 
     <!-- =====================================================
-         BEHAVIOR OVERVIEW
+         BEHAVIOR
     ====================================================== -->
 
     <div class="section-title">
 
         <h2>
-            Behavior &amp; Navigation<br>
-            Overview
+            Behavior &amp; Navigation Overview
         </h2>
 
         <small>
@@ -949,8 +1365,8 @@ td {
 
         </div>
 
-
     </div>
+
 
     <div class="metrics">
 
@@ -993,7 +1409,7 @@ td {
 
             <div class="value">
 
-{{ jump_moves }}
+                {{ jump_moves }}
 
             </div>
 
@@ -1022,37 +1438,42 @@ td {
 
         </div>
 
-
     </div>
 
 
-     <!-- =====================================================
-         DETAILED SECTION BEHAVIOR
+ <!-- =====================================================
+         NAVIGATION FLOW
     ====================================================== -->
 
     <div class="section-title">
 
         <h2>
-            Detailed Section<br>
-            Behavior
+
+            Navigation Flow
+
         </h2>
 
         <small>
-            NAVIGATION FLOW
+
+            QUESTION MOVEMENT
+
         </small>
 
     </div>
 
+
     <div class="panel">
 
-        <table>
+
+        <table class="navigation-table">
+
 
             <thead>
 
                 <tr>
 
                     <th>
-                        Section
+                        Navigation Flow
                     </th>
 
                     <th class="center">
@@ -1080,7 +1501,7 @@ td {
                     </th>
 
                     <th class="center">
-                        Avg / Step
+                        Avg/Step
                     </th>
 
                     <th class="center">
@@ -1105,12 +1526,16 @@ td {
 
                 {% for section in sections %}
 
+
                 <tr>
+
 
                     <td>
 
                         {{ section.subject_name }}
+
                         -
+
                         {{ section.section_name }}
 
                     </td>
@@ -1185,9 +1610,12 @@ td {
 
                     </td>
 
+
                 </tr>
 
+
                 {% empty %}
+
 
                 <tr>
 
@@ -1202,36 +1630,42 @@ td {
 
                 </tr>
 
+
                 {% endfor %}
 
 
             </tbody>
 
+
         </table>
+
 
     </div>
 
 
 
-    <!-- FOOTER -->
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
 
     <div class="footer">
 
         <span>
-            TSTP · Test Preparation &amp; Student Analytics
+
+            TSTP · Test Preparation &amp;
+            Student Analytics
+
         </span>
 
         <span>
+
             Student Performance Report
+
         </span>
 
     </div>
 
 </section>
-
-
-
-
 
 
 <!-- ========================================================
@@ -1247,131 +1681,240 @@ td {
     >
 
         <h2>
-            Performance<br>
-            Insights
+
+            Performance Insights
+
         </h2>
 
         <small>
-            MAKE THE REPORT ACTIONABLE
+
+            TOPIC-WISE PERFORMANCE
+
         </small>
 
     </div>
 
 
     <!-- =====================================================
-         SECTION ACCURACY — one circular graph per section
-         (new)
+         TOPIC-WISE CIRCULAR GRAPHS
     ====================================================== -->
 
-    <div class="accuracy-grid">
+    <div class="topic-performance-grid">
+
 
         {% for section in sections %}
 
-        <div class="accuracy-card">
 
-            <div class="accuracy-ring-wrap">
+        <div class="topic-performance-card">
 
-                <svg
-                    class="accuracy-ring"
-                    viewBox="0 0 76 76"
-                >
 
-                    <circle
-                        cx="38"
-                        cy="38"
-                        r="31"
-                        fill="none"
-                        stroke="#e7eaf1"
-                        stroke-width="7"
-                    ></circle>
+            <!-- HEADER -->
 
-                    <circle
-                        cx="38"
-                        cy="38"
-                        r="31"
-                        fill="none"
-                        stroke="{{ section.accuracy_color }}"
-                        stroke-width="7"
-                        stroke-linecap="round"
-                        stroke-dasharray="{{ section.accuracy_dash }} {{ ring_circumference }}"
-                        transform="rotate(-90 38 38)"
-                    ></circle>
+            <div class="topic-card-header">
 
-                </svg>
+                <div>
 
-                <div class="accuracy-pct-overlay">
-                    {{ section.accuracy }}%
+                    <div class="topic-card-title">
+
+                        {{ section.subject_name }}
+
+                    </div>
+
+
+                    <div class="topic-card-subtitle">
+
+                        {{ section.section_name }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="topic-total">
+
+                    {{ section.topic_total }}
+
                 </div>
 
             </div>
 
-            <div class="accuracy-section-name">
-                {{ section.subject_name }} · {{ section.section_name }}
+
+            <!-- =================================================
+                 DONUT
+            ================================================== -->
+
+            {% if section.topic_total %}
+
+
+            <div class="topic-chart-wrapper">
+
+
+                <svg
+                    class="topic-donut"
+                    viewBox="0 0 76 76"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+
+
+                    <!-- BACKGROUND -->
+
+                    <circle
+                        cx="38"
+                        cy="38"
+                        r="31"
+                        fill="none"
+                        stroke="#edf0f4"
+                        stroke-width="8"
+                    ></circle>
+
+
+                    <!-- =================================================
+                         TOPIC SEGMENTS
+                    ================================================== -->
+
+                    {% for segment in section.topic_segments %}
+
+
+                    <circle
+                        cx="38"
+                        cy="38"
+                        r="31"
+                        fill="none"
+                        stroke="{{ segment.color }}"
+                        stroke-width="8"
+                        stroke-linecap="butt"
+                        stroke-dasharray="
+                            {{ segment.length }}
+                            {{ ring_circumference }}
+                        "
+                        stroke-dashoffset="
+                            {{ segment.offset }}
+                        "
+                        transform="
+                            rotate(-90 38 38)
+                        "
+                    ></circle>
+
+
+                    {% endfor %}
+
+
+                    <!-- WHITE CENTER -->
+
+                    <circle
+                        cx="38"
+                        cy="38"
+                        r="25"
+                        fill="white"
+                    ></circle>
+
+
+                </svg>
+
+
+                <div class="topic-donut-center">
+
+                    <strong>
+
+                        {{ section.correct }}
+
+                    </strong>
+
+                    <span>
+
+                        Correct
+
+                    </span>
+
+                </div>
+
+
             </div>
 
-            <div class="accuracy-fraction">
-                {{ section.correct }} / {{ section.total_questions }} correct
+
+            <!-- =================================================
+                 TOPIC LEGEND
+            ================================================== -->
+
+            <div class="topic-legend">
+
+
+                {% for segment in section.topic_segments %}
+
+
+                <div class="topic-legend-row">
+
+
+                    <div class="topic-legend-left">
+
+
+                        <span
+                            class="topic-dot"
+                            style="
+                                background:
+                                {{ segment.color }};
+                            "
+                        ></span>
+
+
+                        <span class="topic-name">
+
+                            {{ segment.topic }}
+
+                        </span>
+
+
+                        <span class="topic-status">
+
+                            {{ segment.status }}
+
+                        </span>
+
+
+                    </div>
+
+
+                    <div class="topic-count">
+
+                        {{ segment.count }}
+
+                    </div>
+
+
+                </div>
+
+
+                {% endfor %}
+
+
             </div>
+
+
+            {% else %}
+
+
+            <div class="empty">
+
+                No topic performance data available.
+
+            </div>
+
+
+            {% endif %}
+
 
         </div>
 
+
         {% empty %}
+
 
         <div class="empty">
-            No section accuracy data available.
-        </div>
 
-        {% endfor %}
-
-    </div>
-
-
-    <div class="insight-grid">
-
-
-        {% for insight in insights %}
-
-        <div class="insight">
-
-            <div class="insight-num">
-
-                {{ forloop.counter }}
-
-            </div>
-
-            <h3>
-
-                {{ insight.title }}
-
-            </h3>
-
-            <p>
-
-                {{ insight.text }}
-
-            </p>
+            No section performance data available.
 
         </div>
 
-        {% empty %}
-
-        <div class="insight">
-
-            <div class="insight-num">
-                1
-            </div>
-
-            <h3>
-                Performance Review
-            </h3>
-
-            <p>
-                Review the section performance
-                and navigation behavior from
-                this test attempt.
-            </p>
-
-        </div>
 
         {% endfor %}
 
@@ -1379,38 +1922,27 @@ td {
     </div>
 
 
+   
 
 
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
 
-    <!-- FINAL FOOTER -->
+    <div class="footer">
 
-    <div
-        style="
-            margin-top:28px;
-            background:#0d1730;
-            color:#fff;
-            padding:18px 20px;
-            border-radius:0;
-        "
-    >
+        <span>
 
-        <div
-            style="
-                display:flex;
-                justify-content:space-between;
-                font-size:7px;
-            "
-        >
+            TSTP · Test Preparation &amp;
+            Student Analytics
 
-            <span>
-                TSTP · Test Preparation &amp; Student Analytics
-            </span>
+        </span>
 
-            <span>
-                Student Performance Report
-            </span>
+        <span>
 
-        </div>
+            Student Performance Report
+
+        </span>
 
     </div>
 
@@ -1419,4 +1951,5 @@ td {
 
 
 </body>
+
 </html>
