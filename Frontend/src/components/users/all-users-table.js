@@ -59,6 +59,7 @@ const formatPhoneNumberDisplay = (text) => {
 function AllUsersTable({ tabKey, api }) {
   const [loading, setLoading] = useState(false);
   const [dataList, setDataList] = useState([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [current, setCurrent] = useState(null);
   const [total, setTotal] = useState(null);
   const [totalPages, setTotalPages] = useState(null);
@@ -346,6 +347,204 @@ function AllUsersTable({ tabKey, api }) {
   ordering,
   pageSize,
 ]);
+
+  const downloadStudentReports = async (studentId, studentName) => {
+  try {
+    setLoading(true);
+
+    message.loading({
+      content: `Generating reports for ${studentName}...`,
+      key: "studentReports",
+    });
+
+    const response = await axios.get(
+      `${BASE_URL}/api/test/download-all-student-reports/`,
+      {
+        params: {
+          student_id: studentId,
+        },
+        responseType: "blob",
+        withCredentials: true,
+      }
+    );
+
+    const blob = new Blob(
+      [response.data],
+      {
+        type: "application/zip",
+      }
+    );
+
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+      `${studentName}_all_test_reports.zip`;
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    message.success({
+      content: "All test reports downloaded successfully.",
+      key: "studentReports",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Download student reports failed:",
+      error
+    );
+
+    // Because responseType is blob, backend errors
+    // can also arrive as a Blob.
+    let errorMessage =
+      "Failed to download student reports.";
+
+    try {
+
+      if (
+        error?.response?.data instanceof Blob
+      ) {
+
+        const text =
+          await error.response.data.text();
+
+        const data =
+          JSON.parse(text);
+
+        errorMessage =
+          data?.detail || errorMessage;
+      }
+
+    } catch (parseError) {
+      console.error(parseError);
+    }
+
+    message.error({
+      content: errorMessage,
+      key: "studentReports",
+    });
+
+  } finally {
+
+    setLoading(false);
+  }
+};
+
+const downloadMultipleStudentReports = async () => {
+  if (!selectedStudentIds.length) {
+    message.warning(
+      "Please select at least one student."
+    );
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    message.loading({
+      content:
+        `Generating reports for ${selectedStudentIds.length} student(s)...`,
+      key: "multipleStudentReports",
+    });
+
+    const response = await axios.get(
+      `${BASE_URL}/api/test/download-multiple-student-reports/`,
+      {
+        params: {
+          student_ids:
+            selectedStudentIds.join(","),
+        },
+
+        responseType: "blob",
+
+        withCredentials: true,
+      }
+    );
+
+    const blob = new Blob(
+      [response.data],
+      {
+        type: "application/zip",
+      }
+    );
+
+    const url =
+      window.URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+      "selected_students_test_reports.zip";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    setSelectedStudentIds([]);
+
+    message.success({
+      content:
+        "Selected student reports downloaded successfully.",
+      key: "multipleStudentReports",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Multiple student reports download failed:",
+      error
+    );
+
+    let errorMessage =
+      "Failed to download student reports.";
+
+    try {
+
+      if (
+        error?.response?.data instanceof Blob
+      ) {
+
+        const text =
+          await error.response.data.text();
+
+        const data =
+          JSON.parse(text);
+
+        errorMessage =
+          data?.detail || errorMessage;
+      }
+
+    } catch (parseError) {
+      console.error(parseError);
+    }
+
+    message.error({
+      content: errorMessage,
+      key: "multipleStudentReports",
+    });
+
+  } finally {
+
+    setLoading(false);
+  }
+};
 
   const exportToCSV = async () => {
     try {
@@ -908,27 +1107,80 @@ function AllUsersTable({ tabKey, api }) {
           const menuItems = [];
 
           if (record.role_name === "student") {
-            menuItems.push({
-              key: "results",
-              label: "Results",
-              onClick: () => {
-                const urlParams = new URLSearchParams(searchParams);
-                urlParams.set("action", "viewStudentResults");
-                urlParams.set("studentId", record.id);
-                urlParams.set("studentName", record.name);
-                router.push(`${pathname}?${urlParams.toString()}`);
-              },
-            });
-            menuItems.push({
-              key: "assign_test",
-              label: "Assign Test",
-              onClick: () => {
-                set_student_id(record.id);
-                setStudentName(record.name);
-                setShowAssignTestModal(true);
-              },
-            });
-          }
+
+  menuItems.push({
+    key: "results",
+
+    label: "Results",
+
+    onClick: () => {
+
+      const urlParams =
+        new URLSearchParams(searchParams);
+
+      urlParams.set(
+        "action",
+        "viewStudentResults"
+      );
+
+      urlParams.set(
+        "studentId",
+        record.id
+      );
+
+      urlParams.set(
+        "studentName",
+        record.name
+      );
+
+      router.push(
+        `${pathname}?${urlParams.toString()}`
+      );
+    },
+  });
+
+
+  // =====================================================
+  // DOWNLOAD ALL TEST REPORTS
+  // =====================================================
+
+  menuItems.push({
+
+    key: "download_all_reports",
+
+    label: "Download All Reports",
+
+    onClick: () => {
+
+      downloadStudentReports(
+        record.id,
+        record.name
+      );
+
+    },
+
+  });
+
+
+  menuItems.push({
+
+    key: "assign_test",
+
+    label: "Assign Test",
+
+    onClick: () => {
+
+      set_student_id(record.id);
+
+      setStudentName(record.name);
+
+      setShowAssignTestModal(true);
+
+    },
+
+  });
+
+}
 
           menuItems.push({
             key: "reset_password",
@@ -1073,34 +1325,61 @@ function AllUsersTable({ tabKey, api }) {
         </div>
 
         {/* Action Buttons */}
-        {tabKey == "all" && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="large"
-              onClick={() => router.push(`${pathname}/all/create/`)}
-              type="primary"
-              className="h-10 px-4 bg-orange-500 hover:bg-orange-600 border-none rounded-lg font-medium"
-            >
-              Add new user
-            </Button>
-            <Button
-              size="large"
-              icon={<UploadOutlined />}
-              onClick={exportToCSV}
-              className="h-10 px-4 rounded-lg"
-            >
-              Export
-            </Button>
+        {tabKey === "all" && (
+  <div className="flex flex-wrap items-center gap-2">
 
-            <Button
-              size="large"
-              type="primary"
-              icon={<UploadOutlined />}
-              className="h-10 px-4 bg-green-600 hover:bg-green-700 border-none rounded-lg"
-              onClick={() => setBulkModalOpen(true)}
-            >
-              Bulk Register
-            </Button>
+    <Button
+      size="large"
+      onClick={() =>
+        router.push(
+          `${pathname}/all/create/`
+        )
+      }
+      type="primary"
+      className="h-10 px-4 bg-orange-500 hover:bg-orange-600 border-none rounded-lg font-medium"
+    >
+      Add new user
+    </Button>
+
+
+    <Button
+      size="large"
+      icon={<UploadOutlined />}
+      onClick={exportToCSV}
+      className="h-10 px-4 rounded-lg"
+    >
+      Export
+    </Button>
+
+
+    {selectedStudentIds.length > 0 && (
+      <Button
+        size="large"
+        type="primary"
+        loading={loading}
+        onClick={
+          downloadMultipleStudentReports
+        }
+        className="h-10 px-4 bg-blue-600 hover:bg-blue-700 border-none rounded-lg font-medium"
+      >
+        Download Reports (
+        {selectedStudentIds.length}
+        )
+      </Button>
+    )}
+
+
+    <Button
+      size="large"
+      type="primary"
+      icon={<UploadOutlined />}
+      className="h-10 px-4 bg-green-600 hover:bg-green-700 border-none rounded-lg"
+      onClick={() =>
+        setBulkModalOpen(true)
+      }
+    >
+      Bulk Register
+    </Button>
             {/* <Dropdown
               trigger={["click"]}
               open={isDropdownVisible}
@@ -1128,45 +1407,49 @@ function AllUsersTable({ tabKey, api }) {
       </div>
 
       <Table
-        dataSource={dataList}
-        columns={UsersColumnsMap[tabKey]}
-        loading={loading}
-        rowKey={(record) => record.id}
-        /* rowClassName={(record, index) => {
-          return index % 2 === 0 ? "bg-even-color" : "bg-odd-color";
-        }} */
-        expandable={{
-          fixed: "left",
-          rowExpandable: (record) => record.role_name == "student",
-          showExpandColumn: true,
-          expandRowByClick: false,
-          expandedRowRender: expandedRowRenderFunc,
-          /* expandIcon: ({ expanded, onExpand, record }) =>
-            record.role_name == "student" ? (
-              <Image
-                src={arrowUpCircle}
-                alt="Down Arrow"
-                width={18}
-                height={20}
-                style={{ marginLeft: "8px" }}
-              />
-            ) : (
-              <Image
-                src={arrowDownCircle}
-                alt="Down Arrow"
-                width={18}
-                height={20}
-                style={{ marginLeft: "8px" }}
-              />
-            ), */
-        }}
-        // scroll={{ x: "max-content" }}
-        size="small"
-        pagination={paginationConfig}
-        onChange={handleTableChange}
-        rowClassName="hover:bg-gray-100 transition-colors"
-        className="tablestyles mt-4 [&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
-      />
+  rowSelection={
+    tabKey === "all"
+      ? {
+          selectedRowKeys: selectedStudentIds,
+
+          onChange: (selectedRowKeys, selectedRows) => {
+            const studentIds = selectedRows
+              .filter(
+                (row) => row.role_name === "student"
+              )
+              .map((row) => row.id);
+
+            setSelectedStudentIds(studentIds);
+          },
+
+          getCheckboxProps: (record) => ({
+            disabled:
+              record.role_name !== "student",
+          }),
+        }
+      : undefined
+  }
+
+  dataSource={dataList}
+  columns={UsersColumnsMap[tabKey]}
+  loading={loading}
+  rowKey={(record) => record.id}
+
+  expandable={{
+    fixed: "left",
+    rowExpandable: (record) =>
+      record.role_name === "student",
+    showExpandColumn: true,
+    expandRowByClick: false,
+    expandedRowRender: expandedRowRenderFunc,
+  }}
+
+  size="small"
+  pagination={paginationConfig}
+  onChange={handleTableChange}
+  rowClassName="hover:bg-gray-100 transition-colors"
+  className="tablestyles mt-4 [&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-1 [&_.ant-table-thead>tr>th]:!py-1.5"
+/>
 
       {showAssignTestModal && (
         <AssignTestModal

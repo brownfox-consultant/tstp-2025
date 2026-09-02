@@ -380,6 +380,16 @@ from io import BytesIO
 # WeasyPrint converts the rendered HTML string into the final PDF bytes.
 # pip install weasyprint --break-system-packages   (if not already installed)
 from weasyprint import HTML
+
+import io
+import zipfile
+
+from django.http import HttpResponse
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
  
  
 # =============================================================================
@@ -409,6 +419,1454 @@ class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.get_all()
     serializer_class = TestSerializer
     logger = logging.getLogger('Tests')
+
+    # =========================================================
+    # HELPER
+    # =========================================================
+
+    def _generate_student_report_pdf(
+        self,
+        request,
+        test_submission,
+    ):
+
+         
+        
+                
+        
+                # =========================================================
+                # 3. BASIC OBJECTS
+                # =========================================================
+        
+                test = test_submission.test
+                student = test_submission.student
+        
+                try:
+        
+                    result = test_submission.result
+        
+                except Result.DoesNotExist:
+        
+                    return Response(
+                        {
+                            "detail":
+                            "Result not found for this test submission."
+                        },
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+        
+                # =========================================================
+                # 4. HELPERS
+                # =========================================================
+        
+                def safe(value):
+        
+                    if value is None:
+                        return "-"
+        
+                    return str(value)
+        
+        
+                def format_duration(seconds):
+        
+                    try:
+        
+                        seconds = int(
+                            float(seconds or 0)
+                        )
+        
+                    except (
+                        TypeError,
+                        ValueError,
+                    ):
+        
+                        seconds = 0
+        
+                    hours = seconds // 3600
+        
+                    minutes = (
+                        seconds % 3600
+                    ) // 60
+        
+                    remaining = seconds % 60
+        
+                    if hours:
+        
+                        return (
+                            f"{hours}h "
+                            f"{minutes}m "
+                            f"{remaining}s"
+                        )
+        
+                    return (
+                        f"{minutes}m "
+                        f"{remaining}s"
+                    )
+        
+        
+                def percentage(value, maximum):
+        
+                    try:
+        
+                        if not maximum:
+                            return 0
+        
+                        return round(
+                            (
+                                float(value)
+                                /
+                                float(maximum)
+                            ) * 100
+                        )
+        
+                    except (
+                        TypeError,
+                        ValueError,
+                        ZeroDivisionError,
+                    ):
+        
+                        return 0
+        
+        
+                # =========================================================
+                # 5. NAVIGATION HISTORY
+                # =========================================================
+        
+                navigation_history = list(
+                    TestNavigationHistory.objects.filter(
+                        test_submission=test_submission
+                    ).order_by("timestamp")
+                )
+        
+        
+                # =========================================================
+                # 6. NAVIGATION PATTERN
+                # =========================================================
+        
+                pattern = (
+                    TestPatternSummary.objects.filter(
+                        test_submission=test_submission
+                    ).first()
+                )
+        
+        
+                if pattern:
+        
+                    total_navigations = (
+                        pattern.total_navigations or 0
+                    )
+        
+                    sequential_moves = (
+                        pattern.sequential_moves or 0
+                    )
+        
+                    jump_moves = (
+                        pattern.jump_moves or 0
+                    )
+        
+                    total_revisits = (
+                        pattern.total_revisits or 0
+                    )
+        
+                else:
+        
+                    total_navigations = 0
+                    sequential_moves = 0
+                    jump_moves = 0
+                    total_revisits = 0
+        
+        
+                # =========================================================
+                # 7. QUESTION ANSWERS
+                #
+                # select_related(question, question__topic) is important
+                # for the topic-wise donut.
+                # =========================================================
+        
+                question_answers = list(
+                    QuestionAnswer.objects.filter(
+                        result=result
+                    ).select_related(
+                        "question",
+                        "question__topic",
+                        "question__course_subject",
+                        "question__course_subject__subject",
+                    )
+                )
+        
+        
+                # =========================================================
+                # 8. UNIQUE QUESTIONS
+                # =========================================================
+        
+                visited_question_ids = {
+                    answer.question_id
+                    for answer in question_answers
+                    if answer.question_id
+                }
+        
+                unique_questions = len(
+                    visited_question_ids
+                )
+        
+        
+                # =========================================================
+                # 9. AVG VISITS / QUESTION
+                #
+                # Use QuestionAnswer.times_visited.
+                #
+                # This is important because the frontend value such as
+                # 3.36 should come from question visits, not only the
+                # navigation target dictionary.
+                # =========================================================
+        
+                total_question_visits = sum(
+                    max(
+                        1,
+                        int(
+                            answer.times_visited or 1
+                        )
+                    )
+                    for answer in question_answers
+                )
+        
+        
+                # =========================================================
+                # AVG VISITS / QUESTION
+                # SAME LOGIC AS FRONTEND
+                # =========================================================
+        
+                question_visits = defaultdict(int)
+        
+                for nav in navigation_history:
+                    if nav.to_question_id:
+                        question_visits[nav.to_question_id] += 1
+        
+                # Frontend logic:
+                # total navigation visits / unique visited questions
+        
+                total_question_visits = sum(question_visits.values())
+                unique_visited_questions = len(question_visits)
+        
+                avg_visits = (
+                    round(
+                        total_question_visits / unique_visited_questions,
+                        2
+                    )
+                    if unique_visited_questions > 0
+                    else 0
+                )
+        
+        
+                # =========================================================
+                # 10. TOTAL REVISITS
+                # =========================================================
+        
+                calculated_revisits = sum(
+                    max(
+                        0,
+                        int(
+                            answer.times_visited or 1
+                        ) - 1
+                    )
+                    for answer in question_answers
+                )
+        
+        
+                if calculated_revisits:
+        
+                    total_revisits = (
+                        calculated_revisits
+                    )
+        
+        
+                # =========================================================
+                # 11. TIME
+                # =========================================================
+        
+                total_actual_question_time = sum(
+                    answer.time_taken or 0
+                    for answer in question_answers
+                )
+        
+        
+                # =========================================================
+                # 12. SECTIONS
+                # =========================================================
+        
+                sections_qs = (
+                    Section.objects
+                    .filter(test=test)
+                    .select_related(
+                        "course_subject",
+                        "course_subject__subject",
+                    )
+                    .order_by(
+                        "course_subject_id",
+                        "order",
+                    )
+                )
+        
+        
+                # =========================================================
+                # 13. SUBJECT DATA
+                # =========================================================
+        
+                subjects = {}
+        
+                html_sections = []
+        
+                total_score = 0
+        
+                total_correct = 0
+                total_incorrect = 0
+                total_blank = 0
+                total_marked = 0
+        
+                total_correct_time = 0
+                total_incorrect_time = 0
+                total_blank_time = 0
+        
+        
+                # =========================================================
+                # 14. SECTION LOOP
+                # =========================================================
+        
+                for section in sections_qs:
+        
+                    course_subject = (
+                        section.course_subject
+                    )
+        
+                    if not course_subject:
+                        continue
+        
+                    subject_id = (
+                        course_subject.id
+                    )
+        
+                    subject_obj = getattr(
+                        course_subject,
+                        "subject",
+                        None
+                    )
+        
+                    subject_name = (
+                        getattr(
+                            subject_obj,
+                            "name",
+                            None
+                        )
+                        or
+                        "General"
+                    )
+        
+        
+                    # =====================================================
+                    # SUBJECT INITIALIZATION
+                    # =====================================================
+        
+                    if subject_id not in subjects:
+        
+                        subjects[subject_id] = {
+        
+                            "name":
+                                subject_name,
+        
+                            "score":
+                                0,
+        
+                            "max_score":
+                                800,
+        
+                            "correct":
+                                0,
+        
+                            "incorrect":
+                                0,
+        
+                            "blank":
+                                0,
+        
+                            "section1_correct":
+                                0,
+        
+                            "section2_correct":
+                                0,
+                        }
+        
+        
+                    subject = subjects[
+                        subject_id
+                    ]
+        
+        
+                    correct_marks = (
+                        course_subject.correct_answer_marks
+                        or 0
+                    )
+        
+                    incorrect_marks = (
+                        course_subject.incorrect_answer_marks
+                        or 0
+                    )
+        
+        
+                    # =====================================================
+                    # SUB SECTIONS
+                    # =====================================================
+        
+                    for sub_section in (
+                        section.sub_sections or []
+                    ):
+        
+                        section_id = (
+                            sub_section.get("id")
+                        )
+        
+                        section_name = (
+                            sub_section.get(
+                                "name",
+                                f"Section {section_id}"
+                            )
+                        )
+        
+        
+                        # =================================================
+                        # QUESTION IDS
+                        # =================================================
+        
+                        selected_question_ids = (
+                            test_submission.selected_question_ids
+                            or {}
+                        )
+        
+        
+                        section_key = (
+                            f"{subject_id}_{section_id}"
+                        )
+        
+        
+                        if section_key in selected_question_ids:
+        
+                            question_ids = (
+                                selected_question_ids[
+                                    section_key
+                                ]
+                            )
+        
+                        elif str(section_id) in selected_question_ids:
+        
+                            question_ids = (
+                                selected_question_ids[
+                                    str(section_id)
+                                ]
+                            )
+        
+                        else:
+        
+                            question_ids = (
+                                sub_section.get(
+                                    "questions",
+                                    []
+                                )
+                            )
+        
+        
+                        if not isinstance(
+                            question_ids,
+                            list
+                        ):
+        
+                            question_ids = list(
+                                question_ids or []
+                            )
+        
+        
+                        # =================================================
+                        # ANSWERS
+                        # =================================================
+        
+                        answers = [
+                            answer
+                            for answer in question_answers
+                            if (
+                                answer.course_subject_id
+                                == subject_id
+                                and
+                                answer.section_id
+                                == section_id
+                                and
+                                answer.question_id
+                                in question_ids
+                            )
+                        ]
+        
+        
+                        # =================================================
+                        # COUNTERS
+                        # =================================================
+        
+                        correct = 0
+                        incorrect = 0
+                        blank = 0
+                        marked = 0
+        
+                        correct_time = 0
+                        incorrect_time = 0
+                        blank_time = 0
+        
+        
+                        # =================================================
+                        # TOPIC-WISE DATA
+                        #
+                        # SAME LOGIC AS YOUR REACT COMPONENT
+                        # =================================================
+        
+                        topic_map = defaultdict(
+                            lambda: {
+                                "topic": "",
+                                "correct": 0,
+                                "incorrect": 0,
+                            }
+                        )
+        
+        
+                        for answer in answers:
+        
+                            answer_time = (
+                                answer.time_taken or 0
+                            )
+        
+        
+                            # ---------------------------------------------
+                            # ANSWER STATUS
+                            # ---------------------------------------------
+        
+                            if answer.is_skipped:
+        
+                                blank += 1
+        
+                                blank_time += (
+                                    answer_time
+                                )
+        
+                            elif answer.is_correct:
+        
+                                correct += 1
+        
+                                correct_time += (
+                                    answer_time
+                                )
+        
+                            else:
+        
+                                incorrect += 1
+        
+                                incorrect_time += (
+                                    answer_time
+                                )
+        
+        
+                            # ---------------------------------------------
+                            # MARKED
+                            # ---------------------------------------------
+        
+                            if answer.is_marked_for_review:
+        
+                                marked += 1
+        
+        
+                            # ---------------------------------------------
+                            # TOPIC
+                            # ---------------------------------------------
+        
+                            question = (
+                                getattr(
+                                    answer,
+                                    "question",
+                                    None
+                                )
+                            )
+        
+        
+                            topic = (
+                                getattr(
+                                    question,
+                                    "topic",
+                                    None
+                                )
+                                if question
+                                else None
+                            )
+        
+        
+                            if topic:
+        
+                                topic_name = (
+                                    getattr(
+                                        topic,
+                                        "name",
+                                        None
+                                    )
+                                    or
+                                    str(topic)
+                                )
+        
+                            else:
+        
+                                topic_name = "Unknown"
+        
+        
+                            topic_map[
+                                topic_name
+                            ]["topic"] = topic_name
+        
+        
+                            # Blank questions are not added to the
+                            # green/red donut, same as the requested
+                            # frontend behaviour.
+        
+                            if answer.is_skipped:
+                                continue
+        
+        
+                            if answer.is_correct:
+        
+                                topic_map[
+                                    topic_name
+                                ]["correct"] += 1
+        
+                            else:
+        
+                                topic_map[
+                                    topic_name
+                                ]["incorrect"] += 1
+        
+        
+                        # =================================================
+                        # TOPIC DONUT SEGMENTS
+                        # =================================================
+        
+                        topic_total_answers = sum(
+                            item["correct"]
+                            +
+                            item["incorrect"]
+                            for item in topic_map.values()
+                        )
+        
+        
+                        # SVG circumference for r=31
+                        ring_circumference = (
+                            2 * 3.14159265359 * 31
+                        )
+        
+        
+                        topic_segments = []
+        
+                        current_offset = 0
+        
+        
+                        if topic_total_answers:
+        
+                            for item in topic_map.values():
+        
+                                # -----------------------------------------
+                                # CORRECT
+                                # -----------------------------------------
+        
+                                if item["correct"] > 0:
+        
+                                    segment_length = (
+                                        ring_circumference
+                                        *
+                                        item["correct"]
+                                        /
+                                        topic_total_answers
+                                    )
+        
+        
+                                    topic_segments.append({
+        
+                                        "topic":
+                                            item["topic"],
+        
+                                        "status":
+                                            "correct",
+        
+                                        "count":
+                                            item["correct"],
+        
+                                        "percentage":
+                                            round(
+                                                (
+                                                    item["correct"]
+                                                    /
+                                                    topic_total_answers
+                                                ) * 100,
+                                                1
+                                            ),
+        
+                                        "length":
+                                            round(
+                                                segment_length,
+                                                3
+                                            ),
+        
+                                        "offset":
+                                            round(
+                                                -current_offset,
+                                                3
+                                            ),
+        
+                                        "color":
+                                            "#22c55e",
+                                    })
+        
+        
+                                    current_offset += (
+                                        segment_length
+                                    )
+        
+        
+                                # -----------------------------------------
+                                # INCORRECT
+                                # -----------------------------------------
+        
+                                if item["incorrect"] > 0:
+        
+                                    segment_length = (
+                                        ring_circumference
+                                        *
+                                        item["incorrect"]
+                                        /
+                                        topic_total_answers
+                                    )
+        
+        
+                                    topic_segments.append({
+        
+                                        "topic":
+                                            item["topic"],
+        
+                                        "status":
+                                            "incorrect",
+        
+                                        "count":
+                                            item["incorrect"],
+        
+                                        "percentage":
+                                            round(
+                                                (
+                                                    item["incorrect"]
+                                                    /
+                                                    topic_total_answers
+                                                ) * 100,
+                                                1
+                                            ),
+        
+                                        "length":
+                                            round(
+                                                segment_length,
+                                                3
+                                            ),
+        
+                                        "offset":
+                                            round(
+                                                -current_offset,
+                                                3
+                                            ),
+        
+                                        "color":
+                                            "#ef4444",
+                                    })
+        
+        
+                                    current_offset += (
+                                        segment_length
+                                    )
+        
+        
+                        # =================================================
+                        # SECTION STATS
+                        # =================================================
+        
+                        section_stats = (
+                            SectionStats.objects.filter(
+                                result=result,
+                                course_subject_id=subject_id,
+                                section_id=section_id,
+                            ).first()
+                        )
+        
+        
+                        section_time = (
+                            section_stats.time_taken
+                            if section_stats
+                            else 0
+                        )
+        
+        
+                        # =================================================
+                        # NAVIGATION
+                        # =================================================
+        
+                        section_navigation = [
+        
+                            nav
+        
+                            for nav in navigation_history
+        
+                            if (
+                                nav.course_subject_id
+                                == subject_id
+                                and
+                                nav.current_section_id
+                                == section_id
+                            )
+                        ]
+        
+        
+                        section_navigation_steps = [
+        
+                            nav
+        
+                            for nav in section_navigation
+        
+                            if nav.action_type not in [
+                                "TIMEUP",
+                                "Review_Time",
+                            ]
+                        ]
+        
+        
+                        total_steps = len(
+                            section_navigation_steps
+                        )
+        
+        
+                        review_visits = sum(
+        
+                            1
+        
+                            for nav in section_navigation
+        
+                            if nav.action_type
+                            == "Review_Time"
+                        )
+        
+        
+                        section_next = sum(
+        
+                            1
+        
+                            for nav in section_navigation
+        
+                            if nav.action_type
+                            == "NEXT"
+                        )
+        
+        
+                        section_previous = sum(
+        
+                            1
+        
+                            for nav in section_navigation
+        
+                            if nav.action_type
+                            == "PREVIOUS"
+                        )
+        
+        
+                        section_jump = sum(
+        
+                            1
+        
+                            for nav in section_navigation
+        
+                            if nav.action_type
+                            == "JUMP"
+                        )
+        
+        
+                        # =================================================
+                        # UNIQUE QUESTIONS
+                        # =================================================
+        
+                        section_question_ids = {
+        
+                            answer.question_id
+        
+                            for answer in answers
+        
+                            if answer.question_id
+                        }
+        
+        
+                        section_unique = len(
+                            section_question_ids
+                        )
+        
+        
+                        # =================================================
+                        # SECTION REVISITS
+                        # =================================================
+        
+                        section_revisits = sum(
+        
+                            max(
+                                0,
+                                int(
+                                    answer.times_visited or 1
+                                ) - 1
+                            )
+        
+                            for answer in answers
+                        )
+        
+        
+                        # =================================================
+                        # QUESTION TIME
+                        # =================================================
+        
+                        actual_question_time = (
+        
+                            correct_time
+        
+                            +
+        
+                            incorrect_time
+        
+                            +
+        
+                            blank_time
+                        )
+        
+        
+                        # =================================================
+                        # AVG TIME / STEP
+                        # =================================================
+        
+                        avg_time_step = (
+        
+                            round(
+                                actual_question_time
+                                /
+                                total_steps,
+                                2
+                            )
+        
+                            if total_steps
+        
+                            else 0
+                        )
+        
+        
+                        # =================================================
+                        # SECTION SCORE
+                        # =================================================
+        
+                        section_score = (
+        
+                            correct
+                            *
+                            correct_marks
+        
+                        ) - (
+        
+                            incorrect
+                            *
+                            incorrect_marks
+                        )
+        
+        
+                        # =================================================
+                        # COMBINED SCORE INPUT
+                        # =================================================
+        
+                        if section_id == 1:
+        
+                            subject[
+                                "section1_correct"
+                            ] = correct
+        
+                        else:
+        
+                            subject[
+                                "section2_correct"
+                            ] = correct
+        
+        
+                        # =================================================
+                        # SUBJECT COUNTERS
+                        # =================================================
+        
+                        subject["correct"] += (
+                            correct
+                        )
+        
+                        subject["incorrect"] += (
+                            incorrect
+                        )
+        
+                        subject["blank"] += (
+                            blank
+                        )
+        
+                        subject["score"] += (
+                            section_score
+                        )
+        
+        
+                        # =================================================
+                        # GLOBAL COUNTERS
+                        # =================================================
+        
+                        total_correct += correct
+        
+                        total_incorrect += incorrect
+        
+                        total_blank += blank
+        
+                        total_marked += marked
+        
+                        total_correct_time += (
+                            correct_time
+                        )
+        
+                        total_incorrect_time += (
+                            incorrect_time
+                        )
+        
+                        total_blank_time += (
+                            blank_time
+                        )
+        
+        
+                        # =================================================
+                        # TOTAL QUESTIONS
+                        # =================================================
+        
+                        section_total_questions = (
+        
+                            correct
+                            +
+                            incorrect
+                            +
+                            blank
+                        )
+        
+        
+                        # =================================================
+                        # ACCURACY
+                        # =================================================
+        
+                        accuracy = (
+        
+                            round(
+                                (
+                                    correct
+                                    /
+                                    section_total_questions
+                                ) * 100
+                            )
+        
+                            if section_total_questions
+        
+                            else 0
+                        )
+        
+        
+                        # =================================================
+                        # HTML SECTION
+                        # =================================================
+        
+                        html_sections.append({
+        
+                            "subject_name":
+                                subject_name,
+        
+                            "section_name":
+                                section_name,
+        
+                            "correct":
+                                correct,
+        
+                            "incorrect":
+                                incorrect,
+        
+                            "blank":
+                                blank,
+        
+                            "marked":
+                                marked,
+        
+                            "total_questions":
+                                section_total_questions,
+        
+                            "accuracy":
+                                accuracy,
+        
+                            "topic_segments":
+                                topic_segments,
+        
+                            "topic_total":
+                                topic_total_answers,
+        
+                            "section_time":
+                                format_duration(
+                                    section_time
+                                ),
+        
+                            "navigation": {
+        
+                                "total_steps":
+                                    total_steps,
+        
+                                "unique_questions":
+                                    section_unique,
+        
+                                "revisits":
+                                    section_revisits,
+        
+                                "review_visits":
+                                    review_visits,
+        
+                                "total_time":
+                                    format_duration(
+                                        actual_question_time
+                                    ),
+        
+                                "idle_time":
+                                    format_duration(
+                                        max(
+                                            0,
+                                            section_time
+                                            -
+                                            actual_question_time
+                                        )
+                                    ),
+        
+                                "avg_time":
+                                    avg_time_step,
+        
+                                "next":
+                                    section_next,
+        
+                                "previous":
+                                    section_previous,
+        
+                                "jump":
+                                    section_jump,
+                            },
+                        })
+        
+        
+                # =========================================================
+                # 15. COMBINED SCORE
+                # =========================================================
+        
+                for subject in subjects.values():
+        
+                    score_record = (
+                        CombinedScore.objects.filter(
+        
+                            section1_correct=
+                                subject[
+                                    "section1_correct"
+                                ],
+        
+                            section2_correct=
+                                subject[
+                                    "section2_correct"
+                                ],
+        
+                            subject_name__iexact=
+                                subject["name"],
+        
+                        ).first()
+                    )
+        
+        
+                    if score_record:
+        
+                        subject["score"] = (
+                            score_record.total_score
+                        )
+        
+                        subject["max_score"] = 800
+        
+                        total_score += (
+                            score_record.total_score
+                        )
+        
+                    else:
+        
+                        total_score += (
+                            subject["score"]
+                        )
+        
+        
+                # =========================================================
+                # 16. SUBJECT HTML
+                # =========================================================
+        
+                html_subjects = []
+        
+        
+                for subject in subjects.values():
+        
+                    subject_score = (
+                        subject["score"]
+                        or 0
+                    )
+        
+                    subject_max_score = (
+                        subject["max_score"]
+                        or 800
+                    )
+        
+        
+                    subject_percentage = percentage(
+                        subject_score,
+                        subject_max_score,
+                    )
+        
+        
+                    html_subjects.append({
+        
+                        "name":
+                            subject["name"],
+        
+                        "score":
+                            subject_score,
+        
+                        "max_score":
+                            subject_max_score,
+        
+                        "percentage":
+                            subject_percentage,
+        
+                    })
+        
+        
+                # =========================================================
+                # 17. TOTAL SCORE
+                # =========================================================
+        
+                total_max_score = (
+                    len(html_subjects) * 800
+                )
+        
+        
+                if not total_max_score:
+        
+                    total_max_score = 1600
+        
+        
+                total_percentage = percentage(
+                    total_score,
+                    total_max_score,
+                )
+        
+        
+                # =========================================================
+                # 18. TOTAL SECTION TIME
+                # =========================================================
+        
+                total_section_time = sum(
+        
+                    stat.time_taken or 0
+        
+                    for stat in SectionStats.objects.filter(
+                        result=result
+                    )
+                )
+        
+        
+                total_idle_time = max(
+                    0,
+                    total_section_time
+                    -
+                    total_actual_question_time
+                )
+        
+        
+                # =========================================================
+                # 19. AVG TIME / QUESTION
+                # =========================================================
+        
+                avg_time_question = (
+        
+                    round(
+                        total_actual_question_time
+                        /
+                        unique_questions,
+                        2
+                    )
+        
+                    if unique_questions
+        
+                    else 0
+                )
+        
+        
+                # =========================================================
+                # 20. TEST DATE
+                # =========================================================
+        
+                test_date = "-"
+        
+        
+                if test_submission.assigned_date:
+        
+                    test_date = (
+                        test_submission.assigned_date
+                        .strftime("%b %d, %Y")
+                    )
+        
+                elif test_submission.completion_date:
+        
+                    test_date = (
+                        test_submission.completion_date
+                        .strftime("%b %d, %Y")
+                    )
+        
+        
+                # =========================================================
+                # 21. CONTEXT
+                # =========================================================
+        
+                context = {
+        
+                    "student_name":
+                        safe(student.name),
+        
+                    "test_name":
+                        safe(test.name),
+        
+                    "test_date":
+                        test_date,
+        
+                    "total_score":
+                        total_score,
+        
+                    "total_max_score":
+                        total_max_score,
+        
+                    "total_percentage":
+                        total_percentage,
+        
+                    "subjects":
+                        html_subjects,
+        
+                    "sections":
+                        html_sections,
+        
+                    "unique_questions":
+                        unique_questions,
+        
+                    "avg_visits":
+                        avg_visits,
+        
+                    "avg_time_question":
+                        avg_time_question,
+        
+                    "total_time_spent":
+                        format_duration(
+                            total_actual_question_time
+                        ),
+        
+                    "total_idle_time":
+                        format_duration(
+                            total_idle_time
+                        ),
+        
+                    "total_navigations":
+                        total_navigations,
+        
+                    "sequential_moves":
+                        sequential_moves,
+        
+                    "jump_moves":
+                        jump_moves,
+        
+                    "total_revisits":
+                        total_revisits,
+        
+                    # SVG circumference
+                    "ring_circumference":
+                        194.77874452256717,
+                }
+        
+        
+                # =========================================================
+                # 22. RENDER HTML
+                # =========================================================
+        
+                html_string = render_to_string(
+                    "report/tstp_student_report.html",
+                    context,
+                    request=request,
+                )
+        
+        
+                # =========================================================
+                # 23. HTML PREVIEW
+                #
+                # Open:
+                #
+                # /api/test/download-report/
+                # ?test_submission_id=548
+                # &format=html
+                #
+                # This lets you directly see/edit the HTML design.
+                # =========================================================
+        
+                if request.query_params.get(
+                    "format"
+                ) == "html":
+        
+                    return HttpResponse(
+                        html_string,
+                        content_type="text/html; charset=utf-8",
+                    )
+        
+        
+                # =========================================================
+                # 24. GENERATE PDF
+                # =========================================================
+        
+                try:
+        
+                    pdf_bytes = HTML(
+                        string=html_string,
+                        base_url=request.build_absolute_uri("/"),
+                    ).write_pdf()
+        
+                except Exception as exc:
+        
+                    self.logger.exception(
+                        "Student report PDF generation failed"
+                    )
+        
+                    return Response(
+                        {
+                            "detail":
+                                "Failed to generate test report.",
+        
+                            "error":
+                                str(exc),
+                        },
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+        
+        
+                # =========================================================
+                # RETURN PDF BYTES
+                # =========================================================
+
+                return pdf_bytes
 
 
     @action(detail=True, methods=['POST'], url_path='track-navigation')
@@ -5231,6 +6689,11 @@ class TestViewSet(viewsets.ModelViewSet):
             "time_management": time_management,
             "recommendation": recommendation
         })
+
+
+    
+
+        
     @action(
     detail=False,
     methods=["GET"],
@@ -5340,12 +6803,8 @@ class TestViewSet(viewsets.ModelViewSet):
 
         except Result.DoesNotExist:
 
-            return Response(
-                {
-                    "detail":
-                    "Result not found for this test submission."
-                },
-                status=status.HTTP_404_NOT_FOUND,
+            raise ValueError(
+                "Result not found for this test submission."
             )
 
         # =========================================================
@@ -6810,6 +8269,620 @@ class TestViewSet(viewsets.ModelViewSet):
 
 
         return response
+
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="download-all-student-reports",
+    )
+    def download_all_student_reports(self, request, *args, **kwargs):
+
+        import io
+        import zipfile
+
+        # =========================================================
+        # 1. GET STUDENT ID
+        # =========================================================
+
+        student_id = request.query_params.get("student_id")
+
+        if not student_id:
+            return Response(
+                {
+                    "detail": "student_id is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # =========================================================
+        # 2. CLEAN FILENAME HELPER
+        # IMPORTANT:
+        # This must be OUTSIDE the loop.
+        # =========================================================
+
+        def clean_filename(value):
+
+            value = str(value or "unknown")
+
+            return "".join(
+                char
+                if (
+                    char.isalnum()
+                    or char in "._-"
+                )
+                else "_"
+                for char in value
+            )
+
+        # =========================================================
+        # 3. USER / AUTHORIZATION
+        # =========================================================
+
+        user = request.user
+
+        role_name = (
+            getattr(
+                getattr(user, "role", None),
+                "name",
+                "",
+            )
+            or ""
+        ).lower()
+
+        if role_name not in [
+            "admin",
+            "mentor",
+            "faculty",
+        ]:
+
+            return Response(
+                {
+                    "detail":
+                        "You are not authorized to download student reports."
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # =========================================================
+        # 4. STUDENT
+        # =========================================================
+
+        student = get_object_or_404(
+            User,
+            id=student_id,
+        )
+
+        # =========================================================
+        # 5. ALL TEST SUBMISSIONS
+        # =========================================================
+
+        submissions = (
+            TestSubmission.objects
+            .filter(
+                student_id=student_id
+            )
+            .select_related(
+                "test",
+                "test__course",
+                "student",
+            )
+            .order_by(
+                "id"
+            )
+        )
+
+        if not submissions.exists():
+
+            return Response(
+                {
+                    "detail":
+                        "No test reports found for this student."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # =========================================================
+        # 6. CREATE ZIP
+        # =========================================================
+
+        zip_buffer = io.BytesIO()
+
+        generated_count = 0
+        skipped_count = 0
+
+        with zipfile.ZipFile(
+            zip_buffer,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as zip_file:
+
+            # =====================================================
+            # 7. LOOP ALL TESTS
+            # =====================================================
+
+            for index, test_submission in enumerate(
+                submissions,
+                start=1,
+            ):
+
+                # -------------------------------------------------
+                # CHECK RESULT
+                # -------------------------------------------------
+
+                try:
+
+                    test_submission.result
+
+                except Result.DoesNotExist:
+
+                    print(
+                        f"⚠️ Skipping submission "
+                        f"{test_submission.id}: Result not found"
+                    )
+
+                    skipped_count += 1
+
+                    continue
+
+                # -------------------------------------------------
+                # GENERATE PDF
+                # -------------------------------------------------
+
+                try:
+
+                    # =================================================
+                    # IMPORTANT
+                    #
+                    # We call the reusable helper below.
+                    # =================================================
+
+                    pdf_bytes = (
+                        self._generate_student_report_pdf(
+                            request=request,
+                            test_submission=test_submission,
+                        )
+                    )
+
+                except Exception as exc:
+
+                    print(
+                        f"❌ Failed to generate report "
+                        f"for submission "
+                        f"{test_submission.id}: {exc}"
+                    )
+
+                    self.logger.exception(
+                        "Failed to generate report for submission %s",
+                        test_submission.id,
+                    )
+
+                    skipped_count += 1
+
+                    continue
+
+                # -------------------------------------------------
+                # FILE NAME
+                # -------------------------------------------------
+
+                test_name = clean_filename(
+                    test_submission.test.name
+                )
+
+                student_name = clean_filename(
+                    student.name
+                )
+
+                filename = (
+                    f"{index:02d}_"
+                    f"{test_name}_"
+                    f"{student_name}_"
+                    f"report.pdf"
+                )
+
+                # -------------------------------------------------
+                # ADD PDF TO ZIP
+                # -------------------------------------------------
+
+                zip_file.writestr(
+                    filename,
+                    pdf_bytes,
+                )
+
+                generated_count += 1
+
+                print(
+                    f"✅ Added report: {filename}"
+                )
+
+        # =========================================================
+        # 8. CHECK IF ANY PDF WAS GENERATED
+        # =========================================================
+
+        if generated_count == 0:
+
+            return Response(
+                {
+                    "detail":
+                        "No test reports could be generated.",
+                    "skipped_count":
+                        skipped_count,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # =========================================================
+        # 9. FINAL ZIP FILENAME
+        # =========================================================
+
+        student_filename = clean_filename(
+            student.name
+        )
+
+        zip_filename = (
+            f"{student_filename}_"
+            f"all_test_reports.zip"
+        )
+
+        # =========================================================
+        # 10. ZIP RESPONSE
+        # =========================================================
+
+        zip_buffer.seek(0)
+
+        response = HttpResponse(
+            zip_buffer.getvalue(),
+            content_type="application/zip",
+        )
+
+        response["Content-Disposition"] = (
+            f'attachment; filename="{zip_filename}"'
+        )
+
+        response["Content-Length"] = str(
+            zip_buffer.getbuffer().nbytes
+        )
+
+        return response
+    
+
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="download-multiple-student-reports",
+    )
+    def download_multiple_student_reports(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+
+        import io
+        import zipfile
+
+        # =========================================================
+        # 1. GET STUDENT IDS
+        # =========================================================
+
+        student_ids_param = request.query_params.get(
+            "student_ids"
+        )
+
+        if not student_ids_param:
+
+            return Response(
+                {
+                    "detail":
+                        "student_ids is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+        # =========================================================
+        # 2. PARSE IDS
+        # =========================================================
+
+        try:
+
+            student_ids = [
+                int(student_id.strip())
+                for student_id in
+                student_ids_param.split(",")
+                if student_id.strip()
+            ]
+
+        except ValueError:
+
+            return Response(
+                {
+                    "detail":
+                        "student_ids must contain valid IDs."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+        if not student_ids:
+
+            return Response(
+                {
+                    "detail":
+                        "No student IDs supplied."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+        # Remove duplicate IDs
+
+        student_ids = list(
+            dict.fromkeys(student_ids)
+        )
+
+
+        # =========================================================
+        # 3. AUTHORIZATION
+        # =========================================================
+
+        user = request.user
+
+        role_name = (
+            getattr(
+                getattr(user, "role", None),
+                "name",
+                "",
+            )
+            or ""
+        ).lower()
+
+
+        if role_name not in [
+            "admin",
+            "mentor",
+            "faculty",
+        ]:
+
+            return Response(
+                {
+                    "detail":
+                        "You are not authorized to download student reports."
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+
+        # =========================================================
+        # 4. GET STUDENTS
+        # =========================================================
+
+        students = {
+            student.id: student
+            for student in User.objects.filter(
+                id__in=student_ids,
+                role__name__iexact="student",
+            )
+        }
+
+
+        if not students:
+
+            return Response(
+                {
+                    "detail":
+                        "No valid students found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+        # =========================================================
+        # 5. CREATE ZIP
+        # =========================================================
+
+        zip_buffer = io.BytesIO()
+
+        generated_count = 0
+        skipped_count = 0
+
+
+        with zipfile.ZipFile(
+            zip_buffer,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as zip_file:
+
+
+            # =====================================================
+            # EACH STUDENT
+            # =====================================================
+
+            for student_id in student_ids:
+
+                student = students.get(
+                    student_id
+                )
+
+                if not student:
+                    continue
+
+
+                # -------------------------------------------------
+                # GET ALL TEST SUBMISSIONS
+                # -------------------------------------------------
+
+                submissions = (
+                    TestSubmission.objects
+                    .filter(
+                        student_id=student_id
+                    )
+                    .select_related(
+                        "test",
+                        "test__course",
+                        "student",
+                    )
+                    .order_by("id")
+                )
+
+
+                if not submissions.exists():
+
+                    skipped_count += 1
+
+                    continue
+
+
+                # -------------------------------------------------
+                # STUDENT FOLDER
+                # -------------------------------------------------
+
+                def clean_filename(value):
+
+                    value = str(
+                        value or "unknown"
+                    )
+
+                    return "".join(
+                        char
+                        if (
+                            char.isalnum()
+                            or char in "._-"
+                        )
+                        else "_"
+                        for char in value
+                    )
+
+
+                student_name = clean_filename(
+                    student.name
+                )
+
+
+                # =================================================
+                # EACH TEST
+                # =================================================
+
+                for index, test_submission in enumerate(
+                    submissions,
+                    start=1,
+                ):
+
+                    try:
+
+                        test_submission.result
+
+                    except Result.DoesNotExist:
+
+                        skipped_count += 1
+
+                        continue
+
+
+                    try:
+
+                        pdf_bytes = (
+                            self._generate_student_report_pdf(
+                                request=request,
+                                test_submission=test_submission,
+                            )
+                        )
+
+                        # Safety check
+                        if not isinstance(
+                            pdf_bytes,
+                            bytes,
+                        ):
+
+                            raise TypeError(
+                                "Report generator must return bytes."
+                            )
+
+
+                    except Exception as exc:
+
+                        self.logger.exception(
+                            "Failed to generate report "
+                            "for submission %s",
+                            test_submission.id,
+                        )
+
+                        skipped_count += 1
+
+                        continue
+
+
+                    test_name = clean_filename(
+                        test_submission.test.name
+                    )
+
+
+                    filename = (
+                        f"{student_name}/"
+                        f"{index:02d}_"
+                        f"{test_name}_"
+                        f"report.pdf"
+                    )
+
+
+                    zip_file.writestr(
+                        filename,
+                        pdf_bytes,
+                    )
+
+
+                    generated_count += 1
+
+
+        # =========================================================
+        # 6. NOTHING GENERATED
+        # =========================================================
+
+        if generated_count == 0:
+
+            return Response(
+                {
+                    "detail":
+                        "No test reports could be generated.",
+                    "skipped_count":
+                        skipped_count,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+        # =========================================================
+        # 7. ZIP RESPONSE
+        # =========================================================
+
+        zip_buffer.seek(0)
+
+
+        response = HttpResponse(
+            zip_buffer.getvalue(),
+            content_type="application/zip",
+        )
+
+
+        response[
+            "Content-Disposition"
+        ] = (
+            'attachment; '
+            'filename="selected_students_test_reports.zip"'
+        )
+
+
+        response[
+            "Content-Length"
+        ] = str(
+            zip_buffer.getbuffer().nbytes
+        )
+
+
+        return response
+
+    
     
 
 
