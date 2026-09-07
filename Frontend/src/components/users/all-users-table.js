@@ -348,12 +348,15 @@ function AllUsersTable({ tabKey, api }) {
   pageSize,
 ]);
 
-  const downloadStudentReports = async (studentId, studentName) => {
+ const downloadStudentReports = async (
+  studentId,
+  studentName
+) => {
   try {
     setLoading(true);
 
     message.loading({
-      content: `Generating reports for ${studentName}...`,
+      content: `Generating all reports for ${studentName}...`,
       key: "studentReports",
     });
 
@@ -371,18 +374,20 @@ function AllUsersTable({ tabKey, api }) {
     const blob = new Blob(
       [response.data],
       {
-        type: "application/zip",
+        type: "application/pdf",
       }
     );
 
-    const url = window.URL.createObjectURL(blob);
+    const url =
+      window.URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
+    const link =
+      document.createElement("a");
 
     link.href = url;
 
     link.download =
-      `${studentName}_all_test_reports.zip`;
+      `${studentName}_all_test_reports.pdf`;
 
     document.body.appendChild(link);
 
@@ -393,7 +398,8 @@ function AllUsersTable({ tabKey, api }) {
     window.URL.revokeObjectURL(url);
 
     message.success({
-      content: "All test reports downloaded successfully.",
+      content:
+        "All test reports downloaded successfully.",
       key: "studentReports",
     });
 
@@ -404,8 +410,6 @@ function AllUsersTable({ tabKey, api }) {
       error
     );
 
-    // Because responseType is blob, backend errors
-    // can also arrive as a Blob.
     let errorMessage =
       "Failed to download student reports.";
 
@@ -1408,27 +1412,35 @@ const downloadMultipleStudentReports = async () => {
 
       <Table
   rowSelection={
-    tabKey === "all"
-      ? {
-          selectedRowKeys: selectedStudentIds,
+  tabKey === "all"
+    ? {
+        selectedRowKeys: selectedStudentIds,
 
-          onChange: (selectedRowKeys, selectedRows) => {
-            const studentIds = selectedRows
-              .filter(
-                (row) => row.role_name === "student"
-              )
-              .map((row) => row.id);
+        onSelect: (record, selected) => {
+          setSelectedStudentIds((prev) => {
+            if (selected) {
+              // Add student without removing previous selections
+              if (!prev.includes(record.id)) {
+                return [...prev, record.id];
+              }
 
-            setSelectedStudentIds(studentIds);
-          },
+              return prev;
+            }
 
-          getCheckboxProps: (record) => ({
-            disabled:
-              record.role_name !== "student",
-          }),
-        }
-      : undefined
-  }
+            // Remove only this student
+            return prev.filter(
+              (id) => id !== record.id
+            );
+          });
+        },
+
+        getCheckboxProps: (record) => ({
+          disabled:
+            record.role_name !== "student",
+        }),
+      }
+    : undefined
+}
 
   dataSource={dataList}
   columns={UsersColumnsMap[tabKey]}

@@ -390,6 +390,11 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
+
+import io
+import zipfile
+
+from pypdf import PdfReader, PdfWriter
  
  
 # =============================================================================
@@ -419,6 +424,45 @@ class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.get_all()
     serializer_class = TestSerializer
     logger = logging.getLogger('Tests')
+
+
+    def _merge_student_report_pdfs(self, pdf_list):
+        """
+        Merge multiple individual test report PDFs
+        into one PDF.
+
+        pdf_list = [
+            pdf_bytes,
+            pdf_bytes,
+            ...
+        ]
+
+        Returns:
+            bytes
+        """
+
+        if not pdf_list:
+            return None
+
+        writer = PdfWriter()
+
+        for pdf_bytes in pdf_list:
+
+            if not pdf_bytes:
+                continue
+
+            reader = PdfReader(
+                io.BytesIO(pdf_bytes)
+            )
+
+            for page in reader.pages:
+                writer.add_page(page)
+
+        output = io.BytesIO()
+
+        writer.write(output)
+
+        return output.getvalue()
 
     # =========================================================
     # HELPER
@@ -8276,10 +8320,12 @@ class TestViewSet(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated],
     url_path="download-all-student-reports",
     )
-    def download_all_student_reports(self, request, *args, **kwargs):
-
-        import io
-        import zipfile
+    def download_all_student_reports(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
 
         # =========================================================
         # 1. GET STUDENT ID
@@ -8296,27 +8342,7 @@ class TestViewSet(viewsets.ModelViewSet):
             )
 
         # =========================================================
-        # 2. CLEAN FILENAME HELPER
-        # IMPORTANT:
-        # This must be OUTSIDE the loop.
-        # =========================================================
-
-        def clean_filename(value):
-
-            value = str(value or "unknown")
-
-            return "".join(
-                char
-                if (
-                    char.isalnum()
-                    or char in "._-"
-                )
-                else "_"
-                for char in value
-            )
-
-        # =========================================================
-        # 3. USER / AUTHORIZATION
+        # 2. AUTHORIZATION
         # =========================================================
 
         user = request.user
@@ -8335,7 +8361,6 @@ class TestViewSet(viewsets.ModelViewSet):
             "mentor",
             "faculty",
         ]:
-
             return Response(
                 {
                     "detail":
@@ -8345,7 +8370,7 @@ class TestViewSet(viewsets.ModelViewSet):
             )
 
         # =========================================================
-        # 4. STUDENT
+        # 3. STUDENT
         # =========================================================
 
         student = get_object_or_404(
@@ -8354,7 +8379,7 @@ class TestViewSet(viewsets.ModelViewSet):
         )
 
         # =========================================================
-        # 5. ALL TEST SUBMISSIONS
+        # 4. ALL TEST SUBMISSIONS
         # =========================================================
 
         submissions = (
@@ -8367,13 +8392,10 @@ class TestViewSet(viewsets.ModelViewSet):
                 "test__course",
                 "student",
             )
-            .order_by(
-                "id"
-            )
+            .order_by("id")
         )
 
         if not submissions.exists():
-
             return Response(
                 {
                     "detail":
@@ -8383,123 +8405,83 @@ class TestViewSet(viewsets.ModelViewSet):
             )
 
         # =========================================================
-        # 6. CREATE ZIP
+        # 5. GENERATE ALL TEST REPORT PDFs
         # =========================================================
 
-        zip_buffer = io.BytesIO()
+        pdf_list = []
 
         generated_count = 0
         skipped_count = 0
 
-        with zipfile.ZipFile(
-            zip_buffer,
-            "w",
-            compression=zipfile.ZIP_DEFLATED,
-        ) as zip_file:
+        for test_submission in submissions:
 
-            # =====================================================
-            # 7. LOOP ALL TESTS
-            # =====================================================
+            # -----------------------------------------------------
+            # CHECK RESULT
+            # -----------------------------------------------------
 
-            for index, test_submission in enumerate(
-                submissions,
-                start=1,
-            ):
+            try:
+                test_submission.result
 
-                # -------------------------------------------------
-                # CHECK RESULT
-                # -------------------------------------------------
+            except Result.DoesNotExist:
 
-                try:
-
-                    test_submission.result
-
-                except Result.DoesNotExist:
-
-                    print(
-                        f"⚠️ Skipping submission "
-                        f"{test_submission.id}: Result not found"
-                    )
-
-                    skipped_count += 1
-
-                    continue
-
-                # -------------------------------------------------
-                # GENERATE PDF
-                # -------------------------------------------------
-
-                try:
-
-                    # =================================================
-                    # IMPORTANT
-                    #
-                    # We call the reusable helper below.
-                    # =================================================
-
-                    pdf_bytes = (
-                        self._generate_student_report_pdf(
-                            request=request,
-                            test_submission=test_submission,
-                        )
-                    )
-
-                except Exception as exc:
-
-                    print(
-                        f"❌ Failed to generate report "
-                        f"for submission "
-                        f"{test_submission.id}: {exc}"
-                    )
-
-                    self.logger.exception(
-                        "Failed to generate report for submission %s",
-                        test_submission.id,
-                    )
-
-                    skipped_count += 1
-
-                    continue
-
-                # -------------------------------------------------
-                # FILE NAME
-                # -------------------------------------------------
-
-                test_name = clean_filename(
-                    test_submission.test.name
+                print(
+                    f"⚠️ Skipping submission "
+                    f"{test_submission.id}: Result not found"
                 )
 
-                student_name = clean_filename(
-                    student.name
+                skipped_count += 1
+                continue
+
+            # -----------------------------------------------------
+            # GENERATE INDIVIDUAL TEST PDF
+            # -----------------------------------------------------
+
+            try:
+
+                pdf_bytes = (
+                    self._generate_student_report_pdf(
+                        request=request,
+                        test_submission=test_submission,
+                    )
                 )
 
-                filename = (
-                    f"{index:02d}_"
-                    f"{test_name}_"
-                    f"{student_name}_"
-                    f"report.pdf"
-                )
-
-                # -------------------------------------------------
-                # ADD PDF TO ZIP
-                # -------------------------------------------------
-
-                zip_file.writestr(
-                    filename,
+                if not isinstance(
                     pdf_bytes,
-                )
+                    bytes,
+                ):
+                    raise TypeError(
+                        "Report generator must return bytes."
+                    )
+
+                pdf_list.append(pdf_bytes)
 
                 generated_count += 1
 
                 print(
-                    f"✅ Added report: {filename}"
+                    f"✅ Generated report for submission "
+                    f"{test_submission.id}"
                 )
 
+            except Exception as exc:
+
+                print(
+                    f"❌ Failed to generate report "
+                    f"for submission "
+                    f"{test_submission.id}: {exc}"
+                )
+
+                self.logger.exception(
+                    "Failed to generate report for submission %s",
+                    test_submission.id,
+                )
+
+                skipped_count += 1
+
         # =========================================================
-        # 8. CHECK IF ANY PDF WAS GENERATED
+        # 6. CHECK GENERATED REPORTS
         # =========================================================
 
-        if generated_count == 0:
+        if not pdf_list:
 
             return Response(
                 {
@@ -8512,35 +8494,82 @@ class TestViewSet(viewsets.ModelViewSet):
             )
 
         # =========================================================
-        # 9. FINAL ZIP FILENAME
+        # 7. MERGE ALL TEST REPORTS INTO ONE PDF
         # =========================================================
 
-        student_filename = clean_filename(
-            student.name
+        try:
+
+            merged_pdf = (
+                self._merge_student_report_pdfs(
+                    pdf_list
+                )
+            )
+
+        except Exception as exc:
+
+            self.logger.exception(
+                "Failed to merge student reports for student %s",
+                student_id,
+            )
+
+            return Response(
+                {
+                    "detail":
+                        "Failed to merge test reports.",
+                    "error":
+                        str(exc),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        if not merged_pdf:
+
+            return Response(
+                {
+                    "detail":
+                        "Merged report is empty."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        # =========================================================
+        # 8. FILENAME
+        # =========================================================
+
+        student_name = str(
+            student.name or "student"
         )
 
-        zip_filename = (
-            f"{student_filename}_"
-            f"all_test_reports.zip"
+        student_name = "".join(
+            char
+            if (
+                char.isalnum()
+                or char in "._-"
+            )
+            else "_"
+            for char in student_name
+        )
+
+        filename = (
+            f"{student_name}_"
+            f"all_test_reports.pdf"
         )
 
         # =========================================================
-        # 10. ZIP RESPONSE
+        # 9. PDF RESPONSE
         # =========================================================
-
-        zip_buffer.seek(0)
 
         response = HttpResponse(
-            zip_buffer.getvalue(),
-            content_type="application/zip",
+            merged_pdf,
+            content_type="application/pdf",
         )
 
         response["Content-Disposition"] = (
-            f'attachment; filename="{zip_filename}"'
+            f'attachment; filename="{filename}"'
         )
 
         response["Content-Length"] = str(
-            zip_buffer.getbuffer().nbytes
+            len(merged_pdf)
         )
 
         return response
@@ -8571,7 +8600,6 @@ class TestViewSet(viewsets.ModelViewSet):
         )
 
         if not student_ids_param:
-
             return Response(
                 {
                     "detail":
@@ -8579,7 +8607,6 @@ class TestViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
 
         # =========================================================
         # 2. PARSE IDS
@@ -8604,7 +8631,6 @@ class TestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-
         if not student_ids:
 
             return Response(
@@ -8615,13 +8641,11 @@ class TestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-
-        # Remove duplicate IDs
+        # Remove duplicates
 
         student_ids = list(
             dict.fromkeys(student_ids)
         )
-
 
         # =========================================================
         # 3. AUTHORIZATION
@@ -8638,7 +8662,6 @@ class TestViewSet(viewsets.ModelViewSet):
             or ""
         ).lower()
 
-
         if role_name not in [
             "admin",
             "mentor",
@@ -8653,7 +8676,6 @@ class TestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-
         # =========================================================
         # 4. GET STUDENTS
         # =========================================================
@@ -8666,7 +8688,6 @@ class TestViewSet(viewsets.ModelViewSet):
             )
         }
 
-
         if not students:
 
             return Response(
@@ -8677,7 +8698,6 @@ class TestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-
         # =========================================================
         # 5. CREATE ZIP
         # =========================================================
@@ -8687,13 +8707,11 @@ class TestViewSet(viewsets.ModelViewSet):
         generated_count = 0
         skipped_count = 0
 
-
         with zipfile.ZipFile(
             zip_buffer,
             "w",
             compression=zipfile.ZIP_DEFLATED,
         ) as zip_file:
-
 
             # =====================================================
             # EACH STUDENT
@@ -8707,7 +8725,6 @@ class TestViewSet(viewsets.ModelViewSet):
 
                 if not student:
                     continue
-
 
                 # -------------------------------------------------
                 # GET ALL TEST SUBMISSIONS
@@ -8726,48 +8743,21 @@ class TestViewSet(viewsets.ModelViewSet):
                     .order_by("id")
                 )
 
-
                 if not submissions.exists():
-
                     skipped_count += 1
-
                     continue
 
-
                 # -------------------------------------------------
-                # STUDENT FOLDER
+                # GENERATE ALL TEST PDFS FOR THIS STUDENT
                 # -------------------------------------------------
 
-                def clean_filename(value):
+                student_pdf_list = []
 
-                    value = str(
-                        value or "unknown"
-                    )
+                for test_submission in submissions:
 
-                    return "".join(
-                        char
-                        if (
-                            char.isalnum()
-                            or char in "._-"
-                        )
-                        else "_"
-                        for char in value
-                    )
-
-
-                student_name = clean_filename(
-                    student.name
-                )
-
-
-                # =================================================
-                # EACH TEST
-                # =================================================
-
-                for index, test_submission in enumerate(
-                    submissions,
-                    start=1,
-                ):
+                    # -------------------------------------------------
+                    # CHECK RESULT
+                    # -------------------------------------------------
 
                     try:
 
@@ -8775,10 +8765,17 @@ class TestViewSet(viewsets.ModelViewSet):
 
                     except Result.DoesNotExist:
 
-                        skipped_count += 1
+                        print(
+                            f"⚠️ Skipping submission "
+                            f"{test_submission.id}: Result not found"
+                        )
 
+                        skipped_count += 1
                         continue
 
+                    # -------------------------------------------------
+                    # GENERATE TEST REPORT
+                    # -------------------------------------------------
 
                     try:
 
@@ -8789,7 +8786,6 @@ class TestViewSet(viewsets.ModelViewSet):
                             )
                         )
 
-                        # Safety check
                         if not isinstance(
                             pdf_bytes,
                             bytes,
@@ -8799,6 +8795,15 @@ class TestViewSet(viewsets.ModelViewSet):
                                 "Report generator must return bytes."
                             )
 
+                        student_pdf_list.append(
+                            pdf_bytes
+                        )
+
+                        print(
+                            f"✅ Generated report for "
+                            f"student {student_id}, "
+                            f"submission {test_submission.id}"
+                        )
 
                     except Exception as exc:
 
@@ -8808,32 +8813,84 @@ class TestViewSet(viewsets.ModelViewSet):
                             test_submission.id,
                         )
 
-                        skipped_count += 1
+                        print(
+                            f"❌ Failed to generate report "
+                            f"for submission {test_submission.id}: "
+                            f"{exc}"
+                        )
 
+                        skipped_count += 1
                         continue
 
+                # -------------------------------------------------
+                # NO REPORTS FOR THIS STUDENT
+                # -------------------------------------------------
 
-                    test_name = clean_filename(
-                        test_submission.test.name
+                if not student_pdf_list:
+                    continue
+
+                # -------------------------------------------------
+                # MERGE THIS STUDENT'S REPORTS
+                # -------------------------------------------------
+
+                try:
+
+                    merged_student_pdf = (
+                        self._merge_student_report_pdfs(
+                            student_pdf_list
+                        )
                     )
 
+                except Exception as exc:
 
-                    filename = (
-                        f"{student_name}/"
-                        f"{index:02d}_"
-                        f"{test_name}_"
-                        f"report.pdf"
+                    self.logger.exception(
+                        "Failed to merge reports for student %s",
+                        student_id,
                     )
 
+                    skipped_count += 1
+                    continue
 
-                    zip_file.writestr(
-                        filename,
-                        pdf_bytes,
+                if not merged_student_pdf:
+                    continue
+
+                # -------------------------------------------------
+                # CLEAN STUDENT NAME
+                # -------------------------------------------------
+
+                student_name = str(
+                    student.name or f"student_{student_id}"
+                )
+
+                student_name = "".join(
+                    char
+                    if (
+                        char.isalnum()
+                        or char in "._-"
                     )
+                    else "_"
+                    for char in student_name
+                )
 
+                # -------------------------------------------------
+                # ONE PDF PER STUDENT
+                # -------------------------------------------------
 
-                    generated_count += 1
+                filename = (
+                    f"{student_name}_"
+                    f"all_test_reports.pdf"
+                )
 
+                zip_file.writestr(
+                    filename,
+                    merged_student_pdf,
+                )
+
+                generated_count += 1
+
+                print(
+                    f"✅ Added combined report: {filename}"
+                )
 
         # =========================================================
         # 6. NOTHING GENERATED
@@ -8851,34 +8908,27 @@ class TestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-
         # =========================================================
         # 7. ZIP RESPONSE
         # =========================================================
 
         zip_buffer.seek(0)
 
+        zip_data = zip_buffer.getvalue()
 
         response = HttpResponse(
-            zip_buffer.getvalue(),
+            zip_data,
             content_type="application/zip",
         )
 
-
-        response[
-            "Content-Disposition"
-        ] = (
+        response["Content-Disposition"] = (
             'attachment; '
             'filename="selected_students_test_reports.zip"'
         )
 
-
-        response[
-            "Content-Length"
-        ] = str(
-            zip_buffer.getbuffer().nbytes
+        response["Content-Length"] = str(
+            len(zip_data)
         )
-
 
         return response
 
