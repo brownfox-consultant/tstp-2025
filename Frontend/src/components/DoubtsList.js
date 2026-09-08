@@ -41,6 +41,18 @@ const pathParts = usePathname().split("/");
   
   const currentUserId = pathParts[2]; // the "247" in /faculty/247/doubts
 
+
+  const getCourseSubject = (record) => {
+  const courseData = record?.question?.available_courses?.find(
+    (item) => item?.is_active !== false
+  );
+
+  return {
+    course: courseData?.course || "-",
+    subject: courseData?.subject || "-",
+  };
+};
+
   const formatTestType = (type) => {
   if (!type) return "-";
 
@@ -141,6 +153,27 @@ const handleDelete = async (id) => {
       sorter: true,
       render: (text) => <>{formatTestType(text)}</>,
     },
+
+    {
+  key: "course",
+  title: "Course",
+  width: 150,
+  
+  render: (_, record) => {
+    const { course } = getCourseSubject(record);
+    return <span>{course}</span>;
+  },
+},
+{
+  key: "subject",
+  title: "Subject",
+  width: 150,
+  
+  render: (_, record) => {
+    const { subject } = getCourseSubject(record);
+    return <span>{subject}</span>;
+  },
+},
 
     {
       key: "created_at",
