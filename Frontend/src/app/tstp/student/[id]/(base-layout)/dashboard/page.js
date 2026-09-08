@@ -27,6 +27,7 @@ import { BASE_URL } from "@/app/constants/apiConstants";
 
 // Styles
 import "@/app/Dashboard.css";
+import StudentDashboardImprovement from "@/components/StudentDashboardImprovement";
 
 /**
  * Student Dashboard Page Component
@@ -466,6 +467,8 @@ function DashboardPage() {
       <div className="grid gap-5 mb-8">
         {/* Statistics Component */}
         <DashBoardStatsComponent date={selectedTab} />
+
+        <StudentDashboardImprovement />
 
         {/* Test Scores Chart */}
         <TestScoresChart dateRange={selectedTab} />

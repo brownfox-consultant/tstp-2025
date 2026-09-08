@@ -9950,6 +9950,362 @@ class ResultViewSet(viewsets.ModelViewSet):
 
         return Response(final_response)
     
+
+
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="student-improvement"
+    )
+    def student_improvement(self, request, *args, **kwargs):
+        """
+        Student Dashboard - Areas of Improvement
+
+        Returns topic-wise accuracy for every subject in a course.
+
+        Query params:
+            student_id
+            course_id
+            test_type
+
+        test_type:
+            fullLength
+            practiceTest
+            all
+
+        Example:
+
+        /api/result/student-improvement/
+            ?student_id=174
+            &course_id=1
+            &test_type=all
+        """
+
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+        test_type = request.GET.get("test_type", "all")
+
+        # ==========================================================
+        # VALIDATION
+        # ==========================================================
+
+        if not student_id or not course_id:
+            return Response(
+                {
+                    "error": "student_id and course_id are required"
+                },
+                status=400
+            )
+
+        if test_type not in [
+            "fullLength",
+            "practiceTest",
+            "all"
+        ]:
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use fullLength, practiceTest or all."
+                    )
+                },
+                status=400
+            )
+
+        # ==========================================================
+        # GET STUDENT
+        # ==========================================================
+
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
+
+        # ==========================================================
+        # GET COURSE
+        # ==========================================================
+
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
+
+        # ==========================================================
+        # GET COURSE SUBJECTS
+        # ==========================================================
+
+        course_subjects = (
+            CourseSubjects.objects
+            .filter(
+                course=course
+            )
+            .select_related("subject")
+            .order_by("order", "id")
+        )
+
+        final_response = []
+
+        # ==========================================================
+        # SUBJECT LOOP
+        # ==========================================================
+
+        for course_subject in course_subjects:
+
+            subject = course_subject.subject
+
+            topics_response = []
+
+            # ======================================================
+            # GET ALL TOPICS FOR THIS SUBJECT
+            # ======================================================
+
+            topics = (
+                Topic.objects
+                .filter(
+                    course_subject=course_subject
+                )
+                .order_by("id")
+            )
+
+            for topic in topics:
+
+                # ==================================================
+                # UNIQUE QUESTION IDS
+                # ==================================================
+
+                attempted_question_ids = set()
+                correct_question_ids = set()
+
+                # ==================================================
+                # FULL LENGTH TEST
+                # ==================================================
+
+                if test_type in [
+                    "fullLength",
+                    "all"
+                ]:
+
+                    full_answers = (
+                        QuestionAnswer.objects
+                        .filter(
+                            result__test_submission__student=student,
+                            course_subject=course_subject,
+                            question__topic=topic,
+                            is_skipped=False,
+                            question__is_active=True,
+                        )
+                    )
+
+                    attempted_question_ids.update(
+                        full_answers.values_list(
+                            "question_id",
+                            flat=True
+                        )
+                    )
+
+                    correct_question_ids.update(
+                        full_answers
+                        .filter(
+                            is_correct=True
+                        )
+                        .values_list(
+                            "question_id",
+                            flat=True
+                        )
+                    )
+
+                # ==================================================
+                # PRACTICE TEST
+                # ==================================================
+
+                if test_type in [
+                    "practiceTest",
+                    "all"
+                ]:
+
+                    practice_answers = (
+                        PracticeQuestionAnswer.objects
+                        .filter(
+                            practice_test_result__practice_test__student=student,
+                            practice_test_result__practice_test__course_subject=course_subject,
+                            question__topic=topic,
+                            is_skipped=False,
+                            question__is_active=True,
+                        )
+                    )
+
+                    attempted_question_ids.update(
+                        practice_answers.values_list(
+                            "question_id",
+                            flat=True
+                        )
+                    )
+
+                    correct_question_ids.update(
+                        practice_answers
+                        .filter(
+                            is_correct=True
+                        )
+                        .values_list(
+                            "question_id",
+                            flat=True
+                        )
+                    )
+
+                # ==================================================
+                # CALCULATE SCORE
+                # ==================================================
+
+                total_attempted = len(
+                    attempted_question_ids
+                )
+
+                total_correct = len(
+                    correct_question_ids
+                )
+
+                if total_attempted:
+
+                    accuracy_percent = round(
+                        (
+                            total_correct
+                            / total_attempted
+                        ) * 100,
+                        2
+                    )
+
+                else:
+
+                    accuracy_percent = 0
+
+                # ==================================================
+                # TOPIC RESPONSE
+                # ==================================================
+
+                topics_response.append(
+                    {
+                        "id": topic.id,
+                        "name": topic.name,
+
+                        "score": accuracy_percent,
+
+                        "accuracy_percent": accuracy_percent,
+
+                        "total_attempted": total_attempted,
+
+                        "correct": total_correct,
+
+                        "incorrect": max(
+                            total_attempted
+                            - total_correct,
+                            0
+                        ),
+
+                        "status": (
+                            "strong"
+                            if accuracy_percent >= 70
+                            else "improve"
+                        ),
+                    }
+                )
+
+            # ======================================================
+            # SORT TOPICS
+            # ======================================================
+
+            topics_response.sort(
+                key=lambda item: item["score"],
+                reverse=True
+            )
+
+            # ======================================================
+            # GOOD AT
+            # ======================================================
+
+            good_at = [
+                topic
+                for topic in topics_response
+                if topic["score"] >= 70
+            ]
+
+            # ======================================================
+            # NEEDS IMPROVEMENT
+            # ======================================================
+
+            needs_improvement = [
+                topic
+                for topic in topics_response
+                if topic["score"] < 70
+            ]
+
+            # ======================================================
+            # SUBJECT AVERAGE
+            # ======================================================
+
+            if topics_response:
+
+                average_score = round(
+                    sum(
+                        topic["score"]
+                        for topic in topics_response
+                    )
+                    / len(topics_response),
+                    2
+                )
+
+            else:
+
+                average_score = 0
+
+            # ======================================================
+            # SUBJECT RESPONSE
+            # ======================================================
+
+            final_response.append(
+                {
+                    "id": course_subject.id,
+
+                    "subject_id": subject.id,
+
+                    "subject": subject.name,
+
+                    "name": subject.name,
+
+                    "average_score": average_score,
+
+                    "topics": topics_response,
+
+                    "good_at": good_at,
+
+                    "needs_improvement": needs_improvement,
+                }
+            )
+
+        # ==========================================================
+        # FINAL RESPONSE
+        # ==========================================================
+
+        return Response(
+            {
+                "course": {
+                    "id": course.id,
+                    "name": course.name,
+                },
+
+                "student": {
+                    "id": student.id,
+                    "name": student.name,
+                },
+
+                "test_type": test_type,
+
+                "threshold": 70,
+
+                "subjects": final_response,
+            }
+        )
+    
     @action(
     detail=False,
     methods=['GET'],
