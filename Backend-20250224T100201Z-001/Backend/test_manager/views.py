@@ -8575,11 +8575,12 @@ class TestViewSet(viewsets.ModelViewSet):
         return response
     
 
+    
     @action(
-    detail=False,
-    methods=["GET"],
-    permission_classes=[IsAuthenticated],
-    url_path="download-multiple-student-reports",
+        detail=False,
+        methods=["GET"],
+        permission_classes=[IsAuthenticated],
+        url_path="download-multiple-student-reports",
     )
     def download_multiple_student_reports(
         self,
@@ -8602,8 +8603,7 @@ class TestViewSet(viewsets.ModelViewSet):
         if not student_ids_param:
             return Response(
                 {
-                    "detail":
-                        "student_ids is required."
+                    "detail": "student_ids is required."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -8616,8 +8616,7 @@ class TestViewSet(viewsets.ModelViewSet):
 
             student_ids = [
                 int(student_id.strip())
-                for student_id in
-                student_ids_param.split(",")
+                for student_id in student_ids_param.split(",")
                 if student_id.strip()
             ]
 
@@ -8642,7 +8641,6 @@ class TestViewSet(viewsets.ModelViewSet):
             )
 
         # Remove duplicates
-
         student_ids = list(
             dict.fromkeys(student_ids)
         )
@@ -8699,204 +8697,194 @@ class TestViewSet(viewsets.ModelViewSet):
             )
 
         # =========================================================
-        # 5. CREATE ZIP
+        # 5. GENERATE REPORTS
         # =========================================================
 
-        zip_buffer = io.BytesIO()
+        student_reports = []
 
-        generated_count = 0
         skipped_count = 0
 
-        with zipfile.ZipFile(
-            zip_buffer,
-            "w",
-            compression=zipfile.ZIP_DEFLATED,
-        ) as zip_file:
+        for student_id in student_ids:
 
-            # =====================================================
-            # EACH STUDENT
-            # =====================================================
+            student = students.get(student_id)
 
-            for student_id in student_ids:
+            if not student:
+                skipped_count += 1
+                continue
 
-                student = students.get(
-                    student_id
+            # -----------------------------------------------------
+            # GET ALL TEST SUBMISSIONS
+            # -----------------------------------------------------
+
+            submissions = (
+                TestSubmission.objects
+                .filter(
+                    student_id=student_id
                 )
-
-                if not student:
-                    continue
-
-                # -------------------------------------------------
-                # GET ALL TEST SUBMISSIONS
-                # -------------------------------------------------
-
-                submissions = (
-                    TestSubmission.objects
-                    .filter(
-                        student_id=student_id
-                    )
-                    .select_related(
-                        "test",
-                        "test__course",
-                        "student",
-                    )
-                    .order_by("id")
+                .select_related(
+                    "test",
+                    "test__course",
+                    "student",
                 )
+                .order_by("id")
+            )
 
-                if not submissions.exists():
-                    skipped_count += 1
-                    continue
+            if not submissions.exists():
 
-                # -------------------------------------------------
-                # GENERATE ALL TEST PDFS FOR THIS STUDENT
-                # -------------------------------------------------
+                skipped_count += 1
+                continue
 
-                student_pdf_list = []
+            # -----------------------------------------------------
+            # GENERATE ALL TEST REPORT PDFs
+            # -----------------------------------------------------
 
-                for test_submission in submissions:
+            student_pdf_list = []
 
-                    # -------------------------------------------------
-                    # CHECK RESULT
-                    # -------------------------------------------------
-
-                    try:
-
-                        test_submission.result
-
-                    except Result.DoesNotExist:
-
-                        print(
-                            f"⚠️ Skipping submission "
-                            f"{test_submission.id}: Result not found"
-                        )
-
-                        skipped_count += 1
-                        continue
-
-                    # -------------------------------------------------
-                    # GENERATE TEST REPORT
-                    # -------------------------------------------------
-
-                    try:
-
-                        pdf_bytes = (
-                            self._generate_student_report_pdf(
-                                request=request,
-                                test_submission=test_submission,
-                            )
-                        )
-
-                        if not isinstance(
-                            pdf_bytes,
-                            bytes,
-                        ):
-
-                            raise TypeError(
-                                "Report generator must return bytes."
-                            )
-
-                        student_pdf_list.append(
-                            pdf_bytes
-                        )
-
-                        print(
-                            f"✅ Generated report for "
-                            f"student {student_id}, "
-                            f"submission {test_submission.id}"
-                        )
-
-                    except Exception as exc:
-
-                        self.logger.exception(
-                            "Failed to generate report "
-                            "for submission %s",
-                            test_submission.id,
-                        )
-
-                        print(
-                            f"❌ Failed to generate report "
-                            f"for submission {test_submission.id}: "
-                            f"{exc}"
-                        )
-
-                        skipped_count += 1
-                        continue
+            for test_submission in submissions:
 
                 # -------------------------------------------------
-                # NO REPORTS FOR THIS STUDENT
-                # -------------------------------------------------
-
-                if not student_pdf_list:
-                    continue
-
-                # -------------------------------------------------
-                # MERGE THIS STUDENT'S REPORTS
+                # CHECK RESULT
                 # -------------------------------------------------
 
                 try:
 
-                    merged_student_pdf = (
-                        self._merge_student_report_pdfs(
-                            student_pdf_list
+                    test_submission.result
+
+                except Result.DoesNotExist:
+
+                    print(
+                        f"⚠️ Skipping submission "
+                        f"{test_submission.id}: Result not found"
+                    )
+
+                    skipped_count += 1
+                    continue
+
+                # -------------------------------------------------
+                # GENERATE TEST REPORT
+                # -------------------------------------------------
+
+                try:
+
+                    pdf_bytes = (
+                        self._generate_student_report_pdf(
+                            request=request,
+                            test_submission=test_submission,
                         )
+                    )
+
+                    if not isinstance(
+                        pdf_bytes,
+                        bytes,
+                    ):
+
+                        raise TypeError(
+                            "Report generator must return bytes."
+                        )
+
+                    student_pdf_list.append(
+                        pdf_bytes
+                    )
+
+                    print(
+                        f"✅ Generated report for "
+                        f"student {student_id}, "
+                        f"submission {test_submission.id}"
                     )
 
                 except Exception as exc:
 
                     self.logger.exception(
-                        "Failed to merge reports for student %s",
-                        student_id,
+                        "Failed to generate report "
+                        "for submission %s",
+                        test_submission.id,
+                    )
+
+                    print(
+                        f"❌ Failed to generate report "
+                        f"for submission {test_submission.id}: "
+                        f"{exc}"
                     )
 
                     skipped_count += 1
-                    continue
 
-                if not merged_student_pdf:
-                    continue
+            # -----------------------------------------------------
+            # NO REPORTS FOR THIS STUDENT
+            # -----------------------------------------------------
 
-                # -------------------------------------------------
-                # CLEAN STUDENT NAME
-                # -------------------------------------------------
+            if not student_pdf_list:
+                continue
 
-                student_name = str(
-                    student.name or f"student_{student_id}"
-                )
+            # -----------------------------------------------------
+            # MERGE ALL TEST REPORTS FOR THIS STUDENT
+            # -----------------------------------------------------
 
-                student_name = "".join(
-                    char
-                    if (
-                        char.isalnum()
-                        or char in "._-"
+            try:
+
+                merged_student_pdf = (
+                    self._merge_student_report_pdfs(
+                        student_pdf_list
                     )
-                    else "_"
-                    for char in student_name
                 )
 
-                # -------------------------------------------------
-                # ONE PDF PER STUDENT
-                # -------------------------------------------------
+            except Exception as exc:
 
-                filename = (
-                    f"{student_name}_"
-                    f"all_test_reports.pdf"
+                self.logger.exception(
+                    "Failed to merge reports for student %s",
+                    student_id,
                 )
-
-                zip_file.writestr(
-                    filename,
-                    merged_student_pdf,
-                )
-
-                generated_count += 1
 
                 print(
-                    f"✅ Added combined report: {filename}"
+                    f"❌ Failed to merge reports "
+                    f"for student {student_id}: {exc}"
                 )
+
+                skipped_count += 1
+                continue
+
+            if not merged_student_pdf:
+                continue
+
+            # -----------------------------------------------------
+            # CLEAN STUDENT NAME
+            # -----------------------------------------------------
+
+            student_name = str(
+                student.name or f"student_{student_id}"
+            )
+
+            student_name = "".join(
+                char
+                if (
+                    char.isalnum()
+                    or char in "._-"
+                )
+                else "_"
+                for char in student_name
+            )
+
+            filename = (
+                f"{student_name}_"
+                f"all_test_reports.pdf"
+            )
+
+            # -----------------------------------------------------
+            # STORE REPORT
+            # -----------------------------------------------------
+
+            student_reports.append(
+                {
+                    "student_id": student_id,
+                    "filename": filename,
+                    "pdf": merged_student_pdf,
+                }
+            )
 
         # =========================================================
         # 6. NOTHING GENERATED
         # =========================================================
 
-        if generated_count == 0:
+        if not student_reports:
 
             return Response(
                 {
@@ -8909,7 +8897,61 @@ class TestViewSet(viewsets.ModelViewSet):
             )
 
         # =========================================================
-        # 7. ZIP RESPONSE
+        # 7. ONLY ONE STUDENT → RETURN PDF DIRECTLY
+        # =========================================================
+
+        if len(student_reports) == 1:
+
+            report = student_reports[0]
+
+            pdf_data = report["pdf"]
+
+            response = HttpResponse(
+                pdf_data,
+                content_type="application/pdf",
+            )
+
+            response["Content-Disposition"] = (
+                f'attachment; filename="{report["filename"]}"'
+            )
+
+            response["Content-Length"] = str(
+                len(pdf_data)
+            )
+
+            print(
+                f"✅ Returning single PDF: "
+                f"{report['filename']}"
+            )
+
+            return response
+
+        # =========================================================
+        # 8. MORE THAN ONE STUDENT → CREATE ZIP
+        # =========================================================
+
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(
+            zip_buffer,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as zip_file:
+
+            for report in student_reports:
+
+                zip_file.writestr(
+                    report["filename"],
+                    report["pdf"],
+                )
+
+                print(
+                    f"✅ Added to ZIP: "
+                    f"{report['filename']}"
+                )
+
+        # =========================================================
+        # 9. ZIP RESPONSE
         # =========================================================
 
         zip_buffer.seek(0)
@@ -8930,7 +8972,14 @@ class TestViewSet(viewsets.ModelViewSet):
             len(zip_data)
         )
 
+        print(
+            f"✅ Returning ZIP with "
+            f"{len(student_reports)} student reports"
+        )
+
         return response
+
+
 
     
     

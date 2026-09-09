@@ -444,6 +444,7 @@ function AllUsersTable({ tabKey, api }) {
   }
 };
 
+
 const downloadMultipleStudentReports = async () => {
   if (!selectedStudentIds.length) {
     message.warning(
@@ -455,9 +456,13 @@ const downloadMultipleStudentReports = async () => {
   try {
     setLoading(true);
 
+    const studentCount = selectedStudentIds.length;
+
     message.loading({
       content:
-        `Generating reports for ${selectedStudentIds.length} student(s)...`,
+        studentCount === 1
+          ? "Generating student report..."
+          : `Generating reports for ${studentCount} student(s)...`,
       key: "multipleStudentReports",
     });
 
@@ -465,8 +470,7 @@ const downloadMultipleStudentReports = async () => {
       `${BASE_URL}/api/test/download-multiple-student-reports/`,
       {
         params: {
-          student_ids:
-            selectedStudentIds.join(","),
+          student_ids: selectedStudentIds.join(","),
         },
 
         responseType: "blob",
@@ -475,10 +479,48 @@ const downloadMultipleStudentReports = async () => {
       }
     );
 
+    // =====================================================
+    // GET CONTENT TYPE FROM BACKEND
+    // =====================================================
+
+    const contentType =
+      response.headers["content-type"] ||
+      response.data?.type ||
+      "";
+
+    // =====================================================
+    // GET FILENAME FROM CONTENT-DISPOSITION
+    // =====================================================
+
+    let filename =
+      studentCount === 1
+        ? "student_all_test_reports.pdf"
+        : "selected_students_test_reports.zip";
+
+    const contentDisposition =
+      response.headers["content-disposition"];
+
+    if (contentDisposition) {
+
+      // filename="example.pdf"
+      const filenameMatch =
+        contentDisposition.match(
+          /filename="([^"]+)"/
+        );
+
+      if (filenameMatch?.[1]) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    // =====================================================
+    // CREATE BLOB USING BACKEND CONTENT TYPE
+    // =====================================================
+
     const blob = new Blob(
       [response.data],
       {
-        type: "application/zip",
+        type: contentType,
       }
     );
 
@@ -489,9 +531,7 @@ const downloadMultipleStudentReports = async () => {
       document.createElement("a");
 
     link.href = url;
-
-    link.download =
-      "selected_students_test_reports.zip";
+    link.download = filename;
 
     document.body.appendChild(link);
 
@@ -501,18 +541,37 @@ const downloadMultipleStudentReports = async () => {
 
     window.URL.revokeObjectURL(url);
 
+    // =====================================================
+    // CLEAR SELECTION
+    // =====================================================
+
     setSelectedStudentIds([]);
 
-    message.success({
-      content:
-        "Selected student reports downloaded successfully.",
-      key: "multipleStudentReports",
-    });
+    // =====================================================
+    // SUCCESS MESSAGE
+    // =====================================================
+
+    if (
+      contentType.includes("application/pdf") ||
+      filename.toLowerCase().endsWith(".pdf")
+    ) {
+      message.success({
+        content:
+          "Student report downloaded successfully.",
+        key: "multipleStudentReports",
+      });
+    } else {
+      message.success({
+        content:
+          "Student reports downloaded successfully.",
+        key: "multipleStudentReports",
+      });
+    }
 
   } catch (error) {
 
     console.error(
-      "Multiple student reports download failed:",
+      "Student reports download failed:",
       error
     );
 
@@ -532,11 +591,17 @@ const downloadMultipleStudentReports = async () => {
           JSON.parse(text);
 
         errorMessage =
-          data?.detail || errorMessage;
+          data?.detail ||
+          errorMessage;
       }
 
     } catch (parseError) {
-      console.error(parseError);
+
+      console.error(
+        "Error parsing error response:",
+        parseError
+      );
+
     }
 
     message.error({
@@ -547,8 +612,11 @@ const downloadMultipleStudentReports = async () => {
   } finally {
 
     setLoading(false);
+
   }
 };
+
+
 
   const exportToCSV = async () => {
     try {
