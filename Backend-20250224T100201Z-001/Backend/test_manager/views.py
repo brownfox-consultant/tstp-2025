@@ -9562,138 +9562,575 @@ class ResultViewSet(viewsets.ModelViewSet):
 
 
 
-    @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated], url_path='Subject_Wise_Practice')
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAuthenticated],
+    url_path='Subject_Wise_Practice'
+    )
     def Subject_Wise_Practice(self, request, *args, **kwargs):
+
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type", "all")  # full, practice, all
+        test_type = request.GET.get("test_type", "all")
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {
+                    "error": "student_id and course_id are required"
+                },
+                status=400
+            )
 
-        student = get_object_or_404(User, id=student_id)
-        course = get_object_or_404(Course, id=course_id)
-        course_subjects = CourseSubjects.objects.filter(course=course)
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
+
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
+
+        course_subjects = CourseSubjects.objects.filter(
+            course=course
+        )
+
+        valid_types = [
+            "fullLength",
+            "practiceTest",
+            "overall",
+            "all"
+        ]
+
+        if test_type not in valid_types:
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use fullLength, practiceTest, overall or all."
+                    )
+                },
+                status=400
+            )
 
         response = []
 
         for cs in course_subjects:
 
-            # ⭐ Total available questions in DB for this subject
-            total_questions = Question.objects.filter(course_subject=cs).count()
+            # =====================================================
+            # FULL LENGTH RESULT
+            # =====================================================
 
-            # -------------------------------------------------------
-            # ⭐ PRACTICED QUESTIONS COLLECTOR
-            # -------------------------------------------------------
-            practiced_ids = set()
+            full_total_questions = Question.objects.filter(
+                course_subject=cs
+            ).count()
 
-            # ========= FULL LENGTH TESTS ==========
-            if test_type in ["fullLength", "all"]:
-                full_practiced = QuestionAnswer.objects.filter(
-                    result__test_submission__student=student,
+            full_practiced_ids = set()
+
+            if test_type in [
+                "fullLength",
+                "overall",
+                "all"
+            ]:
+
+                full_practiced = (
+                    QuestionAnswer.objects
+                    .filter(
+                        result__test_submission__student=student,
+                        course_subject=cs
+                    )
+                    .values_list(
+                        "question_id",
+                        flat=True
+                    )
+                )
+
+                full_practiced_ids = set(
+                    full_practiced
+                )
+
+            full_practiced_count = len(
+                full_practiced_ids
+            )
+
+            full_percent = (
+                round(
+                    (
+                        full_practiced_count /
+                        full_total_questions
+                    ) * 100,
+                    2
+                )
+                if full_total_questions
+                else 0
+            )
+
+            # =====================================================
+            # PRACTICE TEST RESULT
+            # =====================================================
+
+            practice_total_questions = Question.objects.filter(
+                course_subject=cs
+            ).count()
+
+            practice_practiced_ids = set()
+
+            if test_type in [
+                "practiceTest",
+                "overall",
+                "all"
+            ]:
+
+                practice_tests = PracticeTest.objects.filter(
+                    student=student,
                     course_subject=cs
-                ).values_list("question_id", flat=True)
+                )
 
-                practiced_ids |= set(full_practiced)
+                practice_practiced = (
+                    PracticeQuestionAnswer.objects
+                    .filter(
+                        practice_test_result__practice_test__in=practice_tests
+                    )
+                    .values_list(
+                        "question_id",
+                        flat=True
+                    )
+                )
 
-            # ========= PRACTICE TESTS ==========
-            if test_type in ["practiceTest", "all"]:
-                practice_tests = PracticeTest.objects.filter(student=student, course_subject=cs)
+                practice_practiced_ids = set(
+                    practice_practiced
+                )
 
-                practice_practiced = PracticeQuestionAnswer.objects.filter(
-                    practice_test_result__practice_test__in=practice_tests
-                ).values_list("question_id", flat=True)
+            practice_practiced_count = len(
+                practice_practiced_ids
+            )
 
-                practiced_ids |= set(practice_practiced)
+            practice_percent = (
+                round(
+                    (
+                        practice_practiced_count /
+                        practice_total_questions
+                    ) * 100,
+                    2
+                )
+                if practice_total_questions
+                else 0
+            )
 
-            practiced_count = len(practiced_ids)
+            # =====================================================
+            # NORMAL FULL LENGTH
+            # =====================================================
 
-            # -------------------------------------------------------
-            # ⭐ PERCENT CALCULATION
-            # -------------------------------------------------------
-            percent = round((practiced_count / total_questions) * 100, 2) if total_questions else 0
+            if test_type == "fullLength":
 
-            response.append({
-                "subject": cs.subject.name,
-                "total_questions": total_questions,
-                "practiced_questions": practiced_count,
-                "practice_percent": percent,
-                "test_type_used": test_type
-            })
+                response.append({
+                    "subject": cs.subject.name,
+                    "total_questions": full_total_questions,
+                    "practiced_questions": full_practiced_count,
+                    "practice_percent": full_percent,
+                    "test_type_used": test_type
+                })
+
+            # =====================================================
+            # NORMAL PRACTICE
+            # =====================================================
+
+            elif test_type == "practiceTest":
+
+                response.append({
+                    "subject": cs.subject.name,
+                    "total_questions": practice_total_questions,
+                    "practiced_questions": practice_practiced_count,
+                    "practice_percent": practice_percent,
+                    "test_type_used": test_type
+                })
+
+            # =====================================================
+            # OVERALL
+            #
+            # Overall = (FULL LENGTH + PRACTICE) / 2
+            # =====================================================
+
+            elif test_type == "overall":
+
+                overall_practice_percent = round(
+                    (
+                        full_percent +
+                        practice_percent
+                    ) / 2,
+                    2
+                )
+
+                overall_practiced_questions = round(
+                    (
+                        full_practiced_count +
+                        practice_practiced_count
+                    ) / 2,
+                    2
+                )
+
+                overall_total_questions = round(
+                    (
+                        full_total_questions +
+                        practice_total_questions
+                    ) / 2,
+                    2
+                )
+
+                response.append({
+                    "subject": cs.subject.name,
+
+                    "total_questions": overall_total_questions,
+
+                    "practiced_questions": overall_practiced_questions,
+
+                    "practice_percent": overall_practice_percent,
+
+                    "test_type_used": "overall",
+
+                    # Optional: useful for debugging/frontend
+                    "full_length_percent": full_percent,
+                    "practice_test_percent": practice_percent,
+                })
+
+            # =====================================================
+            # OLD "all" BEHAVIOUR
+            #
+            # Keep this for backward compatibility.
+            # =====================================================
+
+            else:
+
+                practiced_ids = (
+                    full_practiced_ids |
+                    practice_practiced_ids
+                )
+
+                practiced_count = len(
+                    practiced_ids
+                )
+
+                percent = (
+                    round(
+                        (
+                            practiced_count /
+                            full_total_questions
+                        ) * 100,
+                        2
+                    )
+                    if full_total_questions
+                    else 0
+                )
+
+                response.append({
+                    "subject": cs.subject.name,
+                    "total_questions": full_total_questions,
+                    "practiced_questions": practiced_count,
+                    "practice_percent": percent,
+                    "test_type_used": test_type
+                })
 
         return Response(response)
 
-    @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated], url_path='Subject_Wise_Accuracy')
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAuthenticated],
+    url_path='Subject_Wise_Accuracy'
+    )
     def Subject_Wise_Accuracy(self, request, *args, **kwargs):
+
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+        test_type = request.GET.get("test_type", "all")
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {
+                    "error": "student_id and course_id are required"
+                },
+                status=400
+            )
 
-        student = get_object_or_404(User, id=student_id)
-        course = get_object_or_404(Course, id=course_id)
-        course_subjects = CourseSubjects.objects.filter(course=course)
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
+
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
+
+        course_subjects = CourseSubjects.objects.filter(
+            course=course
+        )
+
+        valid_types = [
+            "fullLength",
+            "practiceTest",
+            "overall",
+            "all"
+        ]
+
+        if test_type not in valid_types:
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use fullLength, practiceTest, overall or all."
+                    )
+                },
+                status=400
+            )
 
         response = []
-        
+
         for cs in course_subjects:
 
-            # ------------------------------------------
-            # ⭐ COLLECT RIGHT & ATTEMPTED COUNTS
-            # ------------------------------------------
-            right_ids = set()
-            attempted_ids = set()
+            # =====================================================
+            # FULL LENGTH
+            # =====================================================
 
-            # ========== FULL LENGTH =============
-            if test_type in ["fullLength", "all"]:
+            full_attempted_ids = set()
+            full_right_ids = set()
 
-                full_answers = QuestionAnswer.objects.filter(
-                    result__test_submission__student=student,
-                    course_subject=cs,
-                    is_skipped=False  # attempted only
+            if test_type in [
+                "fullLength",
+                "overall",
+                "all"
+            ]:
+
+                full_answers = (
+                    QuestionAnswer.objects
+                    .filter(
+                        result__test_submission__student=student,
+                        course_subject=cs,
+                        is_skipped=False
+                    )
                 )
 
-                # attempted
-                attempted_ids |= set(full_answers.values_list("question_id", flat=True))
-
-                # right
-                right_full = full_answers.filter(is_correct=True).values_list("question_id", flat=True)
-                right_ids |= set(right_full)
-
-            # ========== PRACTICE TEST ============
-            if test_type in ["practiceTest", "all"]:
-
-                practice_tests = PracticeTest.objects.filter(student=student, course_subject=cs)
-
-                practice_answers = PracticeQuestionAnswer.objects.filter(
-                    practice_test_result__practice_test__in=practice_tests,
-                    is_skipped=False
+                full_attempted_ids = set(
+                    full_answers.values_list(
+                        "question_id",
+                        flat=True
+                    )
                 )
 
-                # attempted
-                attempted_ids |= set(practice_answers.values_list("question_id", flat=True))
+                full_right_ids = set(
+                    full_answers
+                    .filter(is_correct=True)
+                    .values_list(
+                        "question_id",
+                        flat=True
+                    )
+                )
 
-                # right
-                right_practice = practice_answers.filter(is_correct=True).values_list("question_id", flat=True)
-                right_ids |= set(right_practice)
+            full_attempted = len(
+                full_attempted_ids
+            )
 
-            total_attempted = len(attempted_ids)
-            total_right = len(right_ids)
+            full_right = len(
+                full_right_ids
+            )
 
-            # ------------------------------------------
-            # ⭐ ACCURACY CALCULATION
-            # ------------------------------------------
-            accuracy = round((total_right / total_attempted) * 100, 2) if total_attempted else 0
+            full_accuracy = (
+                round(
+                    (
+                        full_right /
+                        full_attempted
+                    ) * 100,
+                    2
+                )
+                if full_attempted
+                else 0
+            )
 
-            response.append({
-                "subject": cs.subject.name,
-                "total_attempted": total_attempted,
-                "right_questions": total_right,
-                "accuracy_percent": accuracy,
-                "test_type_used": test_type
-            })
+            # =====================================================
+            # PRACTICE
+            # =====================================================
+
+            practice_attempted_ids = set()
+            practice_right_ids = set()
+
+            if test_type in [
+                "practiceTest",
+                "overall",
+                "all"
+            ]:
+
+                practice_tests = PracticeTest.objects.filter(
+                    student=student,
+                    course_subject=cs
+                )
+
+                practice_answers = (
+                    PracticeQuestionAnswer.objects
+                    .filter(
+                        practice_test_result__practice_test__in=practice_tests,
+                        is_skipped=False
+                    )
+                )
+
+                practice_attempted_ids = set(
+                    practice_answers.values_list(
+                        "question_id",
+                        flat=True
+                    )
+                )
+
+                practice_right_ids = set(
+                    practice_answers
+                    .filter(is_correct=True)
+                    .values_list(
+                        "question_id",
+                        flat=True
+                    )
+                )
+
+            practice_attempted = len(
+                practice_attempted_ids
+            )
+
+            practice_right = len(
+                practice_right_ids
+            )
+
+            practice_accuracy = (
+                round(
+                    (
+                        practice_right /
+                        practice_attempted
+                    ) * 100,
+                    2
+                )
+                if practice_attempted
+                else 0
+            )
+
+            # =====================================================
+            # FULL LENGTH ONLY
+            # =====================================================
+
+            if test_type == "fullLength":
+
+                response.append({
+                    "subject": cs.subject.name,
+                    "total_attempted": full_attempted,
+                    "right_questions": full_right,
+                    "accuracy_percent": full_accuracy,
+                    "test_type_used": test_type
+                })
+
+            # =====================================================
+            # PRACTICE ONLY
+            # =====================================================
+
+            elif test_type == "practiceTest":
+
+                response.append({
+                    "subject": cs.subject.name,
+                    "total_attempted": practice_attempted,
+                    "right_questions": practice_right,
+                    "accuracy_percent": practice_accuracy,
+                    "test_type_used": test_type
+                })
+
+            # =====================================================
+            # OVERALL
+            #
+            # Overall = (FULL LENGTH + PRACTICE) / 2
+            # =====================================================
+
+            elif test_type == "overall":
+
+                overall_attempted = round(
+                    (
+                        full_attempted +
+                        practice_attempted
+                    ) / 2,
+                    2
+                )
+
+                overall_right = round(
+                    (
+                        full_right +
+                        practice_right
+                    ) / 2,
+                    2
+                )
+
+                overall_accuracy = round(
+                    (
+                        full_accuracy +
+                        practice_accuracy
+                    ) / 2,
+                    2
+                )
+
+                response.append({
+
+                    "subject": cs.subject.name,
+
+                    "total_attempted": overall_attempted,
+
+                    "right_questions": overall_right,
+
+                    "accuracy_percent": overall_accuracy,
+
+                    "test_type_used": "overall",
+
+                    # Useful if frontend needs details
+                    "full_length_accuracy": full_accuracy,
+
+                    "practice_test_accuracy": practice_accuracy,
+
+                })
+
+            # =====================================================
+            # OLD ALL BEHAVIOUR
+            # =====================================================
+
+            else:
+
+                attempted_ids = (
+                    full_attempted_ids |
+                    practice_attempted_ids
+                )
+
+                right_ids = (
+                    full_right_ids |
+                    practice_right_ids
+                )
+
+                total_attempted = len(
+                    attempted_ids
+                )
+
+                total_right = len(
+                    right_ids
+                )
+
+                accuracy = (
+                    round(
+                        (
+                            total_right /
+                            total_attempted
+                        ) * 100,
+                        2
+                    )
+                    if total_attempted
+                    else 0
+                )
+
+                response.append({
+                    "subject": cs.subject.name,
+                    "total_attempted": total_attempted,
+                    "right_questions": total_right,
+                    "accuracy_percent": accuracy,
+                    "test_type_used": test_type
+                })
 
         return Response(response)
 
@@ -9703,122 +10140,534 @@ class ResultViewSet(viewsets.ModelViewSet):
     methods=['GET'],
     permission_classes=[IsAuthenticated],
     url_path='Subject_Wise_Time'
-)
+    )
     def Subject_Wise_Time(self, request, *args, **kwargs):
+
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+        test_type = request.GET.get("test_type", "all")
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {
+                    "error": "student_id and course_id are required"
+                },
+                status=400
+            )
 
-        student = get_object_or_404(User, id=student_id)
-        course = get_object_or_404(Course, id=course_id)
-        course_subjects = CourseSubjects.objects.filter(course=course)
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
+
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
+
+        course_subjects = CourseSubjects.objects.filter(
+            course=course
+        )
+
+        valid_types = [
+            "fullLength",
+            "practiceTest",
+            "overall",
+            "all"
+        ]
+
+        if test_type not in valid_types:
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use fullLength, practiceTest, overall or all."
+                    )
+                },
+                status=400
+            )
 
         response = []
 
         for cs in course_subjects:
 
-            total_time_seconds = 0
-            total_attempted = 0
+            # =====================================================
+            # FULL LENGTH
+            # =====================================================
 
-            # ================================
-            # FULL LENGTH TESTS
-            # ================================
-            if test_type in ["fullLength", "all"]:
-                full_qas = QuestionAnswer.objects.filter(
-                    result__test_submission__student=student,
-                    course_subject=cs,
-                    time_taken__gt=0
+            full_total_time = 0
+            full_attempted = 0
+
+            if test_type in [
+                "fullLength",
+                "overall",
+                "all"
+            ]:
+
+                full_qas = (
+                    QuestionAnswer.objects
+                    .filter(
+                        result__test_submission__student=student,
+                        course_subject=cs,
+                        time_taken__gt=0
+                    )
                 )
 
-                total_time_seconds += sum(qa.time_taken or 0 for qa in full_qas)
-                total_attempted += full_qas.count()
+                full_total_time = sum(
+                    qa.time_taken or 0
+                    for qa in full_qas
+                )
 
-            # ================================
-            # PRACTICE TESTS
-            # ================================
-            if test_type in ["practiceTest", "all"]:
+                full_attempted = full_qas.count()
+
+            full_avg_time = (
+                round(
+                    full_total_time /
+                    full_attempted,
+                    2
+                )
+                if full_attempted
+                else 0
+            )
+
+            # =====================================================
+            # PRACTICE
+            # =====================================================
+
+            practice_total_time = 0
+            practice_attempted = 0
+
+            if test_type in [
+                "practiceTest",
+                "overall",
+                "all"
+            ]:
+
                 practice_tests = PracticeTest.objects.filter(
                     student=student,
                     course_subject=cs
                 )
 
-                practice_qas = PracticeQuestionAnswer.objects.filter(
-                    practice_test_result__practice_test__in=practice_tests,
-                    time_taken__gt=0
+                practice_qas = (
+                    PracticeQuestionAnswer.objects
+                    .filter(
+                        practice_test_result__practice_test__in=practice_tests,
+                        time_taken__gt=0
+                    )
                 )
 
-                total_time_seconds += sum(qa.time_taken or 0 for qa in practice_qas)
-                total_attempted += practice_qas.count()
+                practice_total_time = sum(
+                    qa.time_taken or 0
+                    for qa in practice_qas
+                )
 
-            # ================================
-            # CALCULATE AVERAGE TIME
-            # ================================
-            avg_time_seconds = round(total_time_seconds / total_attempted, 2) if total_attempted else 0
+                practice_attempted = (
+                    practice_qas.count()
+                )
 
-            response.append({
-                "subject": cs.subject.name,
-                "total_attempted": total_attempted,
-                "total_time_seconds": total_time_seconds,
-                "avg_time_seconds": avg_time_seconds,
-                "test_type_used": test_type
-            })
+            practice_avg_time = (
+                round(
+                    practice_total_time /
+                    practice_attempted,
+                    2
+                )
+                if practice_attempted
+                else 0
+            )
+
+            # =====================================================
+            # FULL LENGTH ONLY
+            # =====================================================
+
+            if test_type == "fullLength":
+
+                response.append({
+                    "subject": cs.subject.name,
+
+                    "total_attempted": full_attempted,
+
+                    "total_time_seconds": full_total_time,
+
+                    "avg_time_seconds": full_avg_time,
+
+                    "test_type_used": test_type
+                })
+
+            # =====================================================
+            # PRACTICE ONLY
+            # =====================================================
+
+            elif test_type == "practiceTest":
+
+                response.append({
+                    "subject": cs.subject.name,
+
+                    "total_attempted": practice_attempted,
+
+                    "total_time_seconds": practice_total_time,
+
+                    "avg_time_seconds": practice_avg_time,
+
+                    "test_type_used": test_type
+                })
+
+            # =====================================================
+            # OVERALL
+            #
+            # Overall = (FULL LENGTH + PRACTICE) / 2
+            # =====================================================
+
+            elif test_type == "overall":
+
+                overall_attempted = round(
+                    (
+                        full_attempted +
+                        practice_attempted
+                    ) / 2,
+                    2
+                )
+
+                overall_total_time = round(
+                    (
+                        full_total_time +
+                        practice_total_time
+                    ) / 2,
+                    2
+                )
+
+                overall_avg_time = round(
+                    (
+                        full_avg_time +
+                        practice_avg_time
+                    ) / 2,
+                    2
+                )
+
+                response.append({
+
+                    "subject": cs.subject.name,
+
+                    "total_attempted": overall_attempted,
+
+                    "total_time_seconds": overall_total_time,
+
+                    "avg_time_seconds": overall_avg_time,
+
+                    "test_type_used": "overall",
+
+                    "full_length_avg_time": full_avg_time,
+
+                    "practice_test_avg_time": practice_avg_time,
+
+                })
+
+            # =====================================================
+            # OLD ALL BEHAVIOUR
+            # =====================================================
+
+            else:
+
+                total_time_seconds = (
+                    full_total_time +
+                    practice_total_time
+                )
+
+                total_attempted = (
+                    full_attempted +
+                    practice_attempted
+                )
+
+                avg_time_seconds = (
+                    round(
+                        total_time_seconds /
+                        total_attempted,
+                        2
+                    )
+                    if total_attempted
+                    else 0
+                )
+
+                response.append({
+                    "subject": cs.subject.name,
+                    "total_attempted": total_attempted,
+                    "total_time_seconds": total_time_seconds,
+                    "avg_time_seconds": avg_time_seconds,
+                    "test_type_used": test_type
+                })
 
         return Response(response)
 
-    @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated], url_path='Date_Wise_Time')
+    @action(
+    detail=False,
+    methods=['GET'],
+    permission_classes=[IsAuthenticated],
+    url_path='Date_Wise_Time'
+    )
     def Date_Wise_Time(self, request, *args, **kwargs):
+
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+        test_type = request.GET.get("test_type", "all")
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {
+                    "error": "student_id and course_id are required"
+                },
+                status=400
+            )
 
-        student = get_object_or_404(User, id=student_id)
-        course = get_object_or_404(Course, id=course_id)
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
 
-        # Final result list
-        date_map = {}
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
 
-        # =======================
-        # ⭐ FULL LENGTH TEST TIME
-        # =======================
-        if test_type in ["fullLength", "all"]:
-            full_qas = QuestionAnswer.objects.filter(
-                result__test_submission__student=student,
-                course_subject__course=course
-            ).values("result__test_submission__assigned_date__date", "time_taken")
+        valid_types = [
+            "fullLength",
+            "practiceTest",
+            "overall",
+            "all"
+        ]
+
+        if test_type not in valid_types:
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use fullLength, practiceTest, overall or all."
+                    )
+                },
+                status=400
+            )
+
+        # =========================================================
+        # FULL LENGTH DATE MAP
+        # =========================================================
+
+        full_date_map = {}
+
+        if test_type in [
+            "fullLength",
+            "overall",
+            "all"
+        ]:
+
+            full_qas = (
+                QuestionAnswer.objects
+                .filter(
+                    result__test_submission__student=student,
+                    course_subject__course=course
+                )
+                .values(
+                    "result__test_submission__assigned_date__date",
+                    "time_taken"
+                )
+            )
 
             for item in full_qas:
-                dt = item["result__test_submission__assigned_date__date"]
-                secs = item["time_taken"] or 0
-                date_map[dt] = date_map.get(dt, 0) + secs
 
-        # =======================
-        # ⭐ PRACTICE TEST TIME
-        # =======================
-        if test_type in ["practiceTest", "all"]:
-            practice_qas = PracticeQuestionAnswer.objects.filter(
-                practice_test_result__practice_test__student=student,
-                practice_test_result__practice_test__course_subject__course=course
-            ).values("practice_test_result__created_at__date", "time_taken")
+                dt = (
+                    item[
+                        "result__test_submission__assigned_date__date"
+                    ]
+                )
+
+                seconds = (
+                    item["time_taken"] or 0
+                )
+
+                full_date_map[dt] = (
+                    full_date_map.get(dt, 0)
+                    + seconds
+                )
+
+        # =========================================================
+        # PRACTICE DATE MAP
+        # =========================================================
+
+        practice_date_map = {}
+
+        if test_type in [
+            "practiceTest",
+            "overall",
+            "all"
+        ]:
+
+            practice_qas = (
+                PracticeQuestionAnswer.objects
+                .filter(
+                    practice_test_result__practice_test__student=student,
+                    practice_test_result__practice_test__course_subject__course=course
+                )
+                .values(
+                    "practice_test_result__created_at__date",
+                    "time_taken"
+                )
+            )
 
             for item in practice_qas:
-                dt = item["practice_test_result__created_at__date"]
-                secs = item["time_taken"] or 0
-                date_map[dt] = date_map.get(dt, 0) + secs
 
-        # =======================
-        # ⭐ BUILD RESPONSE
-        # =======================
+                dt = (
+                    item[
+                        "practice_test_result__created_at__date"
+                    ]
+                )
+
+                seconds = (
+                    item["time_taken"] or 0
+                )
+
+                practice_date_map[dt] = (
+                    practice_date_map.get(dt, 0)
+                    + seconds
+                )
+
+        # =========================================================
+        # FULL LENGTH ONLY
+        # =========================================================
+
+        if test_type == "fullLength":
+
+            response = []
+
+            for dt, total_seconds in sorted(
+                full_date_map.items()
+            ):
+
+                response.append({
+                    "date": (
+                        dt.strftime("%Y-%m-%d")
+                        if isinstance(dt, datetime)
+                        else str(dt)
+                    ),
+
+                    "seconds": total_seconds,
+
+                    "test_type_used": test_type
+                })
+
+            return Response(response)
+
+        # =========================================================
+        # PRACTICE ONLY
+        # =========================================================
+
+        if test_type == "practiceTest":
+
+            response = []
+
+            for dt, total_seconds in sorted(
+                practice_date_map.items()
+            ):
+
+                response.append({
+                    "date": (
+                        dt.strftime("%Y-%m-%d")
+                        if isinstance(dt, datetime)
+                        else str(dt)
+                    ),
+
+                    "seconds": total_seconds,
+
+                    "test_type_used": test_type
+                })
+
+            return Response(response)
+
+        # =========================================================
+        # OVERALL
+        #
+        # Overall = (FULL LENGTH + PRACTICE) / 2
+        # =========================================================
+
+        if test_type == "overall":
+
+            all_dates = (
+                set(full_date_map.keys()) |
+                set(practice_date_map.keys())
+            )
+
+            response = []
+
+            for dt in sorted(all_dates):
+
+                full_seconds = (
+                    full_date_map.get(dt, 0)
+                )
+
+                practice_seconds = (
+                    practice_date_map.get(dt, 0)
+                )
+
+                overall_seconds = round(
+                    (
+                        full_seconds +
+                        practice_seconds
+                    ) / 2,
+                    2
+                )
+
+                response.append({
+
+                    "date": (
+                        dt.strftime("%Y-%m-%d")
+                        if isinstance(dt, datetime)
+                        else str(dt)
+                    ),
+
+                    "seconds": overall_seconds,
+
+                    "test_type_used": "overall",
+
+                    "full_length_seconds": full_seconds,
+
+                    "practice_test_seconds": practice_seconds,
+
+                })
+
+            return Response(response)
+
+        # =========================================================
+        # OLD ALL BEHAVIOUR
+        # =========================================================
+
+        date_map = {}
+
+        all_dates = (
+            set(full_date_map.keys()) |
+            set(practice_date_map.keys())
+        )
+
+        for dt in all_dates:
+
+            date_map[dt] = (
+                full_date_map.get(dt, 0) +
+                practice_date_map.get(dt, 0)
+            )
+
         response = []
-        for dt, total_seconds in sorted(date_map.items()):
+
+        for dt, total_seconds in sorted(
+            date_map.items()
+        ):
+
             response.append({
-                "date": dt.strftime("%Y-%m-%d") if isinstance(dt, datetime) else str(dt),
-                "seconds": total_seconds
+
+                "date": (
+                    dt.strftime("%Y-%m-%d")
+                    if isinstance(dt, datetime)
+                    else str(dt)
+                ),
+
+                "seconds": total_seconds,
+
+                "test_type_used": test_type
+
             })
 
         return Response(response)
@@ -9827,100 +10676,385 @@ class ResultViewSet(viewsets.ModelViewSet):
     methods=['GET'],
     permission_classes=[IsAuthenticated],
     url_path='Topic_Wise_Practice'
-)
+    )
     def Topic_Wise_Practice(self, request, *args, **kwargs):
+
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+
+        # fullLength | practiceTest | overall | all
+        test_type = request.GET.get(
+            "test_type",
+            "all"
+        )
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {
+                    "error": "student_id and course_id are required"
+                },
+                status=400
+            )
 
-        student = get_object_or_404(User, id=student_id)
-        course = get_object_or_404(Course, id=course_id)
-        course_subjects = CourseSubjects.objects.filter(course=course)
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
+
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
+
+        course_subjects = CourseSubjects.objects.filter(
+            course=course
+        )
+
+        valid_types = [
+            "fullLength",
+            "practiceTest",
+            "overall",
+            "all"
+        ]
+
+        if test_type not in valid_types:
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use fullLength, practiceTest, overall or all."
+                    )
+                },
+                status=400
+            )
 
         final_response = []
 
+        # =========================================================
+        # SUBJECT LOOP
+        # =========================================================
+
         for cs in course_subjects:
-            
+
             subject_block = {
                 "subject": cs.subject.name,
                 "topics": []
             }
 
-            # Get all topics under this subject
-            topics = Topic.objects.filter(course_subject=cs)
+            # =====================================================
+            # GET ALL TOPICS
+            # =====================================================
+
+            topics = Topic.objects.filter(
+                course_subject=cs
+            )
 
             for topic in topics:
 
-                # ⭐ Total available DB questions for this topic
+                # =================================================
+                # TOTAL AVAILABLE QUESTIONS
+                # =================================================
+
                 total_questions = Question.objects.filter(
                     course_subject=cs,
                     topic=topic
                 ).count()
 
-                practiced_ids = set()
+                # =================================================
+                # FULL LENGTH
+                # =================================================
 
-                # ----------------------------------------------------
-                # FULL LENGTH TEST QUESTIONS (from QuestionAnswer)
-                # ----------------------------------------------------
-                if test_type in ["fullLength", "all"]:
-                    full_qs = QuestionAnswer.objects.filter(
-                        result__test_submission__student=student,
-                        course_subject=cs,
-                        question__topic=topic      # ✅ FIXED FIELD
-                    ).values_list("question_id", flat=True)
+                full_practiced_ids = set()
 
-                    practiced_ids |= set(full_qs)
+                if test_type in [
+                    "fullLength",
+                    "overall",
+                    "all"
+                ]:
 
-                # ----------------------------------------------------
-                # PRACTICE TEST QUESTIONS (from PracticeTestResult)
-                # ----------------------------------------------------
-                if test_type in ["practiceTest", "all"]:
+                    full_qs = (
+                        QuestionAnswer.objects
+                        .filter(
+                            result__test_submission__student=student,
+                            course_subject=cs,
+                            question__topic=topic
+                        )
+                        .values_list(
+                            "question_id",
+                            flat=True
+                        )
+                    )
+
+                    full_practiced_ids = set(
+                        full_qs
+                    )
+
+                full_practiced_count = len(
+                    full_practiced_ids
+                )
+
+                # -------------------------------------------------
+                # FULL LENGTH PERCENT
+                # -------------------------------------------------
+
+                full_percent = (
+                    round(
+                        (
+                            full_practiced_count /
+                            total_questions
+                        ) * 100,
+                        2
+                    )
+                    if total_questions
+                    else 0
+                )
+
+                # =================================================
+                # PRACTICE TEST
+                # =================================================
+
+                practice_practiced_ids = set()
+
+                if test_type in [
+                    "practiceTest",
+                    "overall",
+                    "all"
+                ]:
 
                     practice_tests = PracticeTest.objects.filter(
                         student=student,
                         course_subject=cs
                     )
 
-                    practice_qs = PracticeQuestionAnswer.objects.filter(
-                        practice_test_result__practice_test__in=practice_tests,
-                        question__topic=topic      # ✅ FIXED FIELD
-                    ).values_list("question_id", flat=True)
+                    practice_qs = (
+                        PracticeQuestionAnswer.objects
+                        .filter(
+                            practice_test_result__practice_test__in=practice_tests,
+                            question__topic=topic
+                        )
+                        .values_list(
+                            "question_id",
+                            flat=True
+                        )
+                    )
 
-                    practiced_ids |= set(practice_qs)
+                    practice_practiced_ids = set(
+                        practice_qs
+                    )
 
-                practiced_count = len(practiced_ids)
+                practice_practiced_count = len(
+                    practice_practiced_ids
+                )
 
-                percent = round(
-                    (practiced_count / total_questions) * 100, 2
-                ) if total_questions else 0
+                # -------------------------------------------------
+                # PRACTICE PERCENT
+                # -------------------------------------------------
 
-                subject_block["topics"].append({
-                    "topic": topic.name,
-                    "total_questions": total_questions,
-                    "practiced_questions": practiced_count,
-                    "practice_percent": percent,
-                })
+                practice_percent = (
+                    round(
+                        (
+                            practice_practiced_count /
+                            total_questions
+                        ) * 100,
+                        2
+                    )
+                    if total_questions
+                    else 0
+                )
 
-            final_response.append(subject_block)
+                # =================================================
+                # FULL LENGTH ONLY
+                # =================================================
 
-        return Response(final_response)
+                if test_type == "fullLength":
+
+                    subject_block["topics"].append({
+
+                        "topic": topic.name,
+
+                        "total_questions":
+                            total_questions,
+
+                        "practiced_questions":
+                            full_practiced_count,
+
+                        "practice_percent":
+                            full_percent,
+
+                        "test_type_used":
+                            "fullLength"
+
+                    })
+
+                # =================================================
+                # PRACTICE TEST ONLY
+                # =================================================
+
+                elif test_type == "practiceTest":
+
+                    subject_block["topics"].append({
+
+                        "topic": topic.name,
+
+                        "total_questions":
+                            total_questions,
+
+                        "practiced_questions":
+                            practice_practiced_count,
+
+                        "practice_percent":
+                            practice_percent,
+
+                        "test_type_used":
+                            "practiceTest"
+
+                    })
+
+                # =================================================
+                # OVERALL
+                #
+                # IMPORTANT:
+                #
+                # Overall =
+                # (Full Length % + Practice %) / 2
+                #
+                # NOT:
+                # union of question IDs
+                # =================================================
+
+                elif test_type == "overall":
+
+                    overall_percent = round(
+                        (
+                            full_percent +
+                            practice_percent
+                        ) / 2,
+                        2
+                    )
+
+                    # ---------------------------------------------
+                    # If you want the displayed practiced count
+                    # to also represent the average:
+                    # ---------------------------------------------
+
+                    overall_practiced_count = round(
+                        (
+                            full_practiced_count +
+                            practice_practiced_count
+                        ) / 2,
+                        2
+                    )
+
+                    subject_block["topics"].append({
+
+                        "topic":
+                            topic.name,
+
+                        "total_questions":
+                            total_questions,
+
+                        "practiced_questions":
+                            overall_practiced_count,
+
+                        "practice_percent":
+                            overall_percent,
+
+                        "test_type_used":
+                            "overall",
+
+                        # -----------------------------------------
+                        # Optional source values
+                        # -----------------------------------------
+
+                        "full_length_practiced_questions":
+                            full_practiced_count,
+
+                        "full_length_percent":
+                            full_percent,
+
+                        "practice_test_practiced_questions":
+                            practice_practiced_count,
+
+                        "practice_test_percent":
+                            practice_percent,
+
+                    })
+
+                # =================================================
+                # OLD ALL BEHAVIOUR
+                #
+                # Keep this so existing frontend still works.
+                # =================================================
+
+                else:
+
+                    practiced_ids = (
+                        full_practiced_ids |
+                        practice_practiced_ids
+                    )
+
+                    practiced_count = len(
+                        practiced_ids
+                    )
+
+                    percent = (
+                        round(
+                            (
+                                practiced_count /
+                                total_questions
+                            ) * 100,
+                            2
+                        )
+                        if total_questions
+                        else 0
+                    )
+
+                    subject_block["topics"].append({
+
+                        "topic":
+                            topic.name,
+
+                        "total_questions":
+                            total_questions,
+
+                        "practiced_questions":
+                            practiced_count,
+
+                        "practice_percent":
+                            percent,
+
+                        "test_type_used":
+                            "all"
+
+                    })
+
+            final_response.append(
+                subject_block
+            )
+
+        return Response(
+            final_response
+        )
 
     @action(
     detail=False,
     methods=['GET'],
     permission_classes=[IsAuthenticated],
     url_path='Topic_Wise_Accuracy'
-)
+    )
     def Topic_Wise_Accuracy(self, request, *args, **kwargs):
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+        test_type = request.GET.get(
+            "test_type",
+            "all"
+        )  # fullLength, practiceTest, overall, all
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {"error": "student_id and course_id are required"},
+                status=400
+            )
 
         student = get_object_or_404(User, id=student_id)
         course = get_object_or_404(Course, id=course_id)
@@ -9940,14 +11074,14 @@ class ResultViewSet(viewsets.ModelViewSet):
 
             for topic in topics:
 
-                # Count attempted & correct
-                attempted_ids = set()
-                correct_ids = set()
+                # =========================================================
+                # FULL LENGTH TEST
+                # =========================================================
+                full_attempted_ids = set()
+                full_correct_ids = set()
 
-                # ---------------------------
-                # FULL LENGTH TEST ANSWERS
-                # ---------------------------
-                if test_type in ["fullLength", "all"]:
+                if test_type in ["fullLength", "overall", "all"]:
+
                     full_qs = QuestionAnswer.objects.filter(
                         result__test_submission__student=student,
                         course_subject=cs,
@@ -9955,17 +11089,44 @@ class ResultViewSet(viewsets.ModelViewSet):
                         is_skipped=False
                     )
 
-                    attempted_ids |= set(full_qs.values_list("question_id", flat=True))
-                    correct_ids |= set(
-                        full_qs.filter(is_correct=True).values_list("question_id", flat=True)
+                    full_attempted_ids = set(
+                        full_qs.values_list(
+                            "question_id",
+                            flat=True
+                        )
                     )
 
-                # ---------------------------
-                # PRACTICE TEST ANSWERS
-                # ---------------------------
-                if test_type in ["practiceTest", "all"]:
+                    full_correct_ids = set(
+                        full_qs.filter(
+                            is_correct=True
+                        ).values_list(
+                            "question_id",
+                            flat=True
+                        )
+                    )
+
+                full_attempted = len(full_attempted_ids)
+                full_correct = len(full_correct_ids)
+
+                full_accuracy = (
+                    round(
+                        (full_correct / full_attempted) * 100,
+                        2
+                    )
+                    if full_attempted
+                    else 0
+                )
+
+                # =========================================================
+                # PRACTICE TEST
+                # =========================================================
+                practice_attempted_ids = set()
+                practice_correct_ids = set()
+
+                if test_type in ["practiceTest", "overall", "all"]:
+
                     practice_tests = PracticeTest.objects.filter(
-                        student=student, 
+                        student=student,
                         course_subject=cs
                     )
 
@@ -9975,25 +11136,137 @@ class ResultViewSet(viewsets.ModelViewSet):
                         is_skipped=False
                     )
 
-                    attempted_ids |= set(practice_qs.values_list("question_id", flat=True))
-                    correct_ids |= set(
-                        practice_qs.filter(is_correct=True).values_list("question_id", flat=True)
+                    practice_attempted_ids = set(
+                        practice_qs.values_list(
+                            "question_id",
+                            flat=True
+                        )
                     )
 
-                total_attempted = len(attempted_ids)
-                total_correct = len(correct_ids)
+                    practice_correct_ids = set(
+                        practice_qs.filter(
+                            is_correct=True
+                        ).values_list(
+                            "question_id",
+                            flat=True
+                        )
+                    )
 
-                accuracy_percent = (
-                    round((total_correct / total_attempted) * 100, 2)
-                    if total_attempted else 0
+                practice_attempted = len(practice_attempted_ids)
+                practice_correct = len(practice_correct_ids)
+
+                practice_accuracy = (
+                    round(
+                        (practice_correct / practice_attempted) * 100,
+                        2
+                    )
+                    if practice_attempted
+                    else 0
                 )
 
-                subject_block["topics"].append({
-                    "topic": topic.name,
-                    "total_attempted": total_attempted,
-                    "correct": total_correct,
-                    "accuracy_percent": accuracy_percent,
-                })
+                # =========================================================
+                # OVERALL
+                # =========================================================
+                if test_type == "overall":
+
+                    # IMPORTANT:
+                    # Overall = (Full Length + Practice Test) / 2
+                    overall_attempted = round(
+                        (full_attempted + practice_attempted) / 2,
+                        2
+                    )
+
+                    overall_correct = round(
+                        (full_correct + practice_correct) / 2,
+                        2
+                    )
+
+                    overall_accuracy = round(
+                        (full_accuracy + practice_accuracy) / 2,
+                        2
+                    )
+
+                    subject_block["topics"].append({
+                        "topic": topic.name,
+
+                        "total_attempted": overall_attempted,
+                        "correct": overall_correct,
+                        "accuracy_percent": overall_accuracy,
+
+                        "test_type_used": "overall",
+
+                        # Separate values for reference
+                        "full_length_attempted": full_attempted,
+                        "full_length_correct": full_correct,
+                        "full_length_accuracy": full_accuracy,
+
+                        "practice_test_attempted": practice_attempted,
+                        "practice_test_correct": practice_correct,
+                        "practice_test_accuracy": practice_accuracy,
+                    })
+
+                # =========================================================
+                # FULL LENGTH ONLY
+                # =========================================================
+                elif test_type == "fullLength":
+
+                    subject_block["topics"].append({
+                        "topic": topic.name,
+                        "total_attempted": full_attempted,
+                        "correct": full_correct,
+                        "accuracy_percent": full_accuracy,
+                        "test_type_used": "fullLength",
+                    })
+
+                # =========================================================
+                # PRACTICE TEST ONLY
+                # =========================================================
+                elif test_type == "practiceTest":
+
+                    subject_block["topics"].append({
+                        "topic": topic.name,
+                        "total_attempted": practice_attempted,
+                        "correct": practice_correct,
+                        "accuracy_percent": practice_accuracy,
+                        "test_type_used": "practiceTest",
+                    })
+
+                # =========================================================
+                # ALL
+                # =========================================================
+                else:
+
+                    # Keep existing "all" behavior:
+                    # merge unique attempted/correct question IDs.
+                    attempted_ids = (
+                        full_attempted_ids |
+                        practice_attempted_ids
+                    )
+
+                    correct_ids = (
+                        full_correct_ids |
+                        practice_correct_ids
+                    )
+
+                    total_attempted = len(attempted_ids)
+                    total_correct = len(correct_ids)
+
+                    accuracy_percent = (
+                        round(
+                            (total_correct / total_attempted) * 100,
+                            2
+                        )
+                        if total_attempted
+                        else 0
+                    )
+
+                    subject_block["topics"].append({
+                        "topic": topic.name,
+                        "total_attempted": total_attempted,
+                        "correct": total_correct,
+                        "accuracy_percent": accuracy_percent,
+                        "test_type_used": "all",
+                    })
 
             final_response.append(subject_block)
 
@@ -10013,22 +11286,15 @@ class ResultViewSet(viewsets.ModelViewSet):
 
         Returns topic-wise accuracy for every subject in a course.
 
-        Query params:
-            student_id
-            course_id
-            test_type
-
         test_type:
             fullLength
             practiceTest
+            overall
             all
 
-        Example:
-
-        /api/result/student-improvement/
-            ?student_id=174
-            &course_id=1
-            &test_type=all
+        Overall:
+            Full Length accuracy and Practice Test accuracy are
+            calculated separately and then averaged.
         """
 
         student_id = request.GET.get("student_id")
@@ -10050,13 +11316,14 @@ class ResultViewSet(viewsets.ModelViewSet):
         if test_type not in [
             "fullLength",
             "practiceTest",
+            "overall",
             "all"
         ]:
             return Response(
                 {
                     "error": (
                         "Invalid test_type. "
-                        "Use fullLength, practiceTest or all."
+                        "Use fullLength, practiceTest, overall or all."
                     )
                 },
                 status=400
@@ -10106,7 +11373,7 @@ class ResultViewSet(viewsets.ModelViewSet):
             topics_response = []
 
             # ======================================================
-            # GET ALL TOPICS FOR THIS SUBJECT
+            # GET ALL TOPICS
             # ======================================================
 
             topics = (
@@ -10120,18 +11387,15 @@ class ResultViewSet(viewsets.ModelViewSet):
             for topic in topics:
 
                 # ==================================================
-                # UNIQUE QUESTION IDS
+                # FULL LENGTH DATA
                 # ==================================================
 
-                attempted_question_ids = set()
-                correct_question_ids = set()
-
-                # ==================================================
-                # FULL LENGTH TEST
-                # ==================================================
+                full_attempted_ids = set()
+                full_correct_ids = set()
 
                 if test_type in [
                     "fullLength",
+                    "overall",
                     "all"
                 ]:
 
@@ -10146,14 +11410,14 @@ class ResultViewSet(viewsets.ModelViewSet):
                         )
                     )
 
-                    attempted_question_ids.update(
+                    full_attempted_ids = set(
                         full_answers.values_list(
                             "question_id",
                             flat=True
                         )
                     )
 
-                    correct_question_ids.update(
+                    full_correct_ids = set(
                         full_answers
                         .filter(
                             is_correct=True
@@ -10164,12 +11428,36 @@ class ResultViewSet(viewsets.ModelViewSet):
                         )
                     )
 
+                full_attempted = len(
+                    full_attempted_ids
+                )
+
+                full_correct = len(
+                    full_correct_ids
+                )
+
+                full_accuracy = (
+                    round(
+                        (
+                            full_correct
+                            / full_attempted
+                        ) * 100,
+                        2
+                    )
+                    if full_attempted
+                    else 0
+                )
+
                 # ==================================================
-                # PRACTICE TEST
+                # PRACTICE TEST DATA
                 # ==================================================
+
+                practice_attempted_ids = set()
+                practice_correct_ids = set()
 
                 if test_type in [
                     "practiceTest",
+                    "overall",
                     "all"
                 ]:
 
@@ -10184,14 +11472,14 @@ class ResultViewSet(viewsets.ModelViewSet):
                         )
                     )
 
-                    attempted_question_ids.update(
+                    practice_attempted_ids = set(
                         practice_answers.values_list(
                             "question_id",
                             flat=True
                         )
                     )
 
-                    correct_question_ids.update(
+                    practice_correct_ids = set(
                         practice_answers
                         .filter(
                             is_correct=True
@@ -10202,31 +11490,105 @@ class ResultViewSet(viewsets.ModelViewSet):
                         )
                     )
 
-                # ==================================================
-                # CALCULATE SCORE
-                # ==================================================
-
-                total_attempted = len(
-                    attempted_question_ids
+                practice_attempted = len(
+                    practice_attempted_ids
                 )
 
-                total_correct = len(
-                    correct_question_ids
+                practice_correct = len(
+                    practice_correct_ids
                 )
 
-                if total_attempted:
-
-                    accuracy_percent = round(
+                practice_accuracy = (
+                    round(
                         (
-                            total_correct
-                            / total_attempted
+                            practice_correct
+                            / practice_attempted
                         ) * 100,
                         2
                     )
+                    if practice_attempted
+                    else 0
+                )
+
+                # ==================================================
+                # CALCULATE FINAL VALUES
+                # ==================================================
+
+                if test_type == "overall":
+
+                    # Overall = (Full Length + Practice Test) / 2
+
+                    accuracy_percent = round(
+                        (
+                            full_accuracy
+                            + practice_accuracy
+                        ) / 2,
+                        2
+                    )
+
+                    total_attempted = round(
+                        (
+                            full_attempted
+                            + practice_attempted
+                        ) / 2,
+                        2
+                    )
+
+                    total_correct = round(
+                        (
+                            full_correct
+                            + practice_correct
+                        ) / 2,
+                        2
+                    )
+
+                elif test_type == "fullLength":
+
+                    accuracy_percent = full_accuracy
+                    total_attempted = full_attempted
+                    total_correct = full_correct
+
+                elif test_type == "practiceTest":
+
+                    accuracy_percent = practice_accuracy
+                    total_attempted = practice_attempted
+                    total_correct = practice_correct
 
                 else:
+                    # ==================================================
+                    # ALL
+                    # Existing behavior: merge unique question IDs
+                    # ==================================================
 
-                    accuracy_percent = 0
+                    attempted_question_ids = (
+                        full_attempted_ids
+                        | practice_attempted_ids
+                    )
+
+                    correct_question_ids = (
+                        full_correct_ids
+                        | practice_correct_ids
+                    )
+
+                    total_attempted = len(
+                        attempted_question_ids
+                    )
+
+                    total_correct = len(
+                        correct_question_ids
+                    )
+
+                    accuracy_percent = (
+                        round(
+                            (
+                                total_correct
+                                / total_attempted
+                            ) * 100,
+                            2
+                        )
+                        if total_attempted
+                        else 0
+                    )
 
                 # ==================================================
                 # TOPIC RESPONSE
@@ -10256,21 +11618,27 @@ class ResultViewSet(viewsets.ModelViewSet):
                             if accuracy_percent >= 70
                             else "improve"
                         ),
+
+                        "test_type_used": test_type,
+
+                        # Separate values are useful for Overall
+                        "full_length_accuracy": full_accuracy,
+                        "practice_test_accuracy": practice_accuracy,
                     }
                 )
 
-            # ======================================================
+            # ==========================================================
             # SORT TOPICS
-            # ======================================================
+            # ==========================================================
 
             topics_response.sort(
                 key=lambda item: item["score"],
                 reverse=True
             )
 
-            # ======================================================
+            # ==========================================================
             # GOOD AT
-            # ======================================================
+            # ==========================================================
 
             good_at = [
                 topic
@@ -10278,9 +11646,9 @@ class ResultViewSet(viewsets.ModelViewSet):
                 if topic["score"] >= 70
             ]
 
-            # ======================================================
+            # ==========================================================
             # NEEDS IMPROVEMENT
-            # ======================================================
+            # ==========================================================
 
             needs_improvement = [
                 topic
@@ -10288,9 +11656,9 @@ class ResultViewSet(viewsets.ModelViewSet):
                 if topic["score"] < 70
             ]
 
-            # ======================================================
+            # ==========================================================
             # SUBJECT AVERAGE
-            # ======================================================
+            # ==========================================================
 
             if topics_response:
 
@@ -10307,9 +11675,9 @@ class ResultViewSet(viewsets.ModelViewSet):
 
                 average_score = 0
 
-            # ======================================================
+            # ==========================================================
             # SUBJECT RESPONSE
-            # ======================================================
+            # ==========================================================
 
             final_response.append(
                 {
@@ -10360,20 +11728,67 @@ class ResultViewSet(viewsets.ModelViewSet):
     methods=['GET'],
     permission_classes=[IsAuthenticated],
     url_path='SubTopic_Wise_Practice'
-)
+    )
     def SubTopic_Wise_Practice(self, request, *args, **kwargs):
+
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type", "all")  # fullLength, practiceTest, all
+        test_type = request.GET.get(
+            "test_type",
+            "all"
+        )  # fullLength, practiceTest, overall, all
+
+        # ==========================================================
+        # VALIDATION
+        # ==========================================================
 
         if not student_id or not course_id:
-            return Response({"error": "student_id and course_id are required"}, status=400)
+            return Response(
+                {
+                    "error": "student_id and course_id are required"
+                },
+                status=400
+            )
 
-        student = get_object_or_404(User, id=student_id)
-        course = get_object_or_404(Course, id=course_id)
-        course_subjects = CourseSubjects.objects.filter(course=course)
+        if test_type not in [
+            "fullLength",
+            "practiceTest",
+            "overall",
+            "all"
+        ]:
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use fullLength, practiceTest, overall or all."
+                    )
+                },
+                status=400
+            )
+
+        # ==========================================================
+        # GET STUDENT / COURSE
+        # ==========================================================
+
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
+
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
+
+        course_subjects = CourseSubjects.objects.filter(
+            course=course
+        )
 
         final_response = []
+
+        # ==========================================================
+        # SUBJECT LOOP
+        # ==========================================================
 
         for cs in course_subjects:
 
@@ -10382,7 +11797,13 @@ class ResultViewSet(viewsets.ModelViewSet):
                 "topics": []
             }
 
-            topics = Topic.objects.filter(course_subject=cs)
+            topics = Topic.objects.filter(
+                course_subject=cs
+            )
+
+            # ======================================================
+            # TOPIC LOOP
+            # ======================================================
 
             for topic in topics:
 
@@ -10391,87 +11812,487 @@ class ResultViewSet(viewsets.ModelViewSet):
                     "subtopics": []
                 }
 
-                subtopics = SubTopic.objects.filter(topic=topic)
+                subtopics = SubTopic.objects.filter(
+                    topic=topic
+                )
+
+                # ==================================================
+                # SUBTOPIC LOOP
+                # ==================================================
 
                 for sub in subtopics:
 
-                    # ⭐ Total questions in DB
+                    # ==================================================
+                    # TOTAL QUESTIONS
+                    # ==================================================
+
                     total_questions = Question.objects.filter(
                         course_subject=cs,
                         topic=topic,
                         sub_topic=sub
                     ).count()
 
-                    practiced_ids = set()
-                    right_ids = set()
-                    time_spent = 0
-                    attempted_count = 0
+                    # ==================================================
+                    # FULL LENGTH VARIABLES
+                    # ==================================================
 
-                    # ==================================================
-                    # ⭐ FULL LENGTH TEST DATA
-                    # ==================================================
-                    if test_type in ["fullLength", "all"]:
-                        full_entries = QuestionAnswer.objects.filter(
-                            result__test_submission__student=student,
-                            course_subject=cs,
-                            question__topic=topic,
-                            question__sub_topic=sub
+                    full_practiced_ids = set()
+                    full_right_ids = set()
+
+                    full_time_spent = 0
+                    full_attempted_count = 0
+
+                    if test_type in [
+                        "fullLength",
+                        "overall",
+                        "all"
+                    ]:
+
+                        full_entries = (
+                            QuestionAnswer.objects
+                            .filter(
+                                result__test_submission__student=student,
+                                course_subject=cs,
+                                question__topic=topic,
+                                question__sub_topic=sub
+                            )
                         )
 
-                        practiced_ids |= set(full_entries.values_list("question_id", flat=True))
-                        right_ids |= set(full_entries.filter(is_correct=True).values_list("question_id", flat=True))
-
-                        time_spent += sum(full_entries.values_list("time_taken", flat=True) or [0])
-                        attempted_count += full_entries.count()
-
-                    # ==================================================
-                    # ⭐ PRACTICE TEST DATA
-                    # ==================================================
-                    if test_type in ["practiceTest", "all"]:
-
-                        practice_entries = PracticeQuestionAnswer.objects.filter(
-                            practice_test_result__practice_test__student=student,
-                            practice_test_result__practice_test__course_subject=cs,
-                            question__topic=topic,
-                            question__sub_topic=sub
+                        full_practiced_ids = set(
+                            full_entries.values_list(
+                                "question_id",
+                                flat=True
+                            )
                         )
 
-                        practiced_ids |= set(practice_entries.values_list("question_id", flat=True))
-                        right_ids |= set(practice_entries.filter(is_correct=True).values_list("question_id", flat=True))
+                        full_right_ids = set(
+                            full_entries
+                            .filter(
+                                is_correct=True
+                            )
+                            .values_list(
+                                "question_id",
+                                flat=True
+                            )
+                        )
 
-                        time_spent += sum(practice_entries.values_list("time_taken", flat=True) or [0])
-                        attempted_count += practice_entries.count()
+                        full_time_values = list(
+                            full_entries.values_list(
+                                "time_taken",
+                                flat=True
+                            )
+                        )
+
+                        full_time_spent = sum(
+                            value or 0
+                            for value in full_time_values
+                        )
+
+                        full_attempted_count = (
+                            full_entries.count()
+                        )
 
                     # ==================================================
-                    # ⭐ CALCULATIONS
+                    # FULL LENGTH CALCULATIONS
                     # ==================================================
-                    practiced_count = len(practiced_ids)
-                    practice_percent = round((practiced_count / total_questions) * 100, 2) if total_questions else 0
 
-                    accuracy_percent = round(
-                        (len(right_ids) / attempted_count) * 100, 2
-                    ) if attempted_count else 0
+                    full_practiced_count = len(
+                        full_practiced_ids
+                    )
 
-                    avg_time = round(time_spent / attempted_count, 2) if attempted_count else 0
+                    full_practice_percent = (
+                        round(
+                            (
+                                full_practiced_count
+                                / total_questions
+                            ) * 100,
+                            2
+                        )
+                        if total_questions
+                        else 0
+                    )
+
+                    full_accuracy_percent = (
+                        round(
+                            (
+                                len(full_right_ids)
+                                / full_attempted_count
+                            ) * 100,
+                            2
+                        )
+                        if full_attempted_count
+                        else 0
+                    )
+
+                    full_avg_time = (
+                        round(
+                            full_time_spent
+                            / full_attempted_count,
+                            2
+                        )
+                        if full_attempted_count
+                        else 0
+                    )
 
                     # ==================================================
-                    # ⭐ BUILD SUBTOPIC BLOCK
+                    # PRACTICE TEST VARIABLES
                     # ==================================================
-                    topic_block["subtopics"].append({
+
+                    practice_practiced_ids = set()
+                    practice_right_ids = set()
+
+                    practice_time_spent = 0
+                    practice_attempted_count = 0
+
+                    if test_type in [
+                        "practiceTest",
+                        "overall",
+                        "all"
+                    ]:
+
+                        practice_entries = (
+                            PracticeQuestionAnswer.objects
+                            .filter(
+                                practice_test_result__practice_test__student=student,
+                                practice_test_result__practice_test__course_subject=cs,
+                                question__topic=topic,
+                                question__sub_topic=sub
+                            )
+                        )
+
+                        practice_practiced_ids = set(
+                            practice_entries.values_list(
+                                "question_id",
+                                flat=True
+                            )
+                        )
+
+                        practice_right_ids = set(
+                            practice_entries
+                            .filter(
+                                is_correct=True
+                            )
+                            .values_list(
+                                "question_id",
+                                flat=True
+                            )
+                        )
+
+                        practice_time_values = list(
+                            practice_entries.values_list(
+                                "time_taken",
+                                flat=True
+                            )
+                        )
+
+                        practice_time_spent = sum(
+                            value or 0
+                            for value in practice_time_values
+                        )
+
+                        practice_attempted_count = (
+                            practice_entries.count()
+                        )
+
+                    # ==================================================
+                    # PRACTICE TEST CALCULATIONS
+                    # ==================================================
+
+                    practice_practiced_count = len(
+                        practice_practiced_ids
+                    )
+
+                    practice_practice_percent = (
+                        round(
+                            (
+                                practice_practiced_count
+                                / total_questions
+                            ) * 100,
+                            2
+                        )
+                        if total_questions
+                        else 0
+                    )
+
+                    practice_accuracy_percent = (
+                        round(
+                            (
+                                len(practice_right_ids)
+                                / practice_attempted_count
+                            ) * 100,
+                            2
+                        )
+                        if practice_attempted_count
+                        else 0
+                    )
+
+                    practice_avg_time = (
+                        round(
+                            practice_time_spent
+                            / practice_attempted_count,
+                            2
+                        )
+                        if practice_attempted_count
+                        else 0
+                    )
+
+                    # ==================================================
+                    # OVERALL
+                    # ==================================================
+
+                    if test_type == "overall":
+
+                        # ----------------------------------------------
+                        # Overall Practice %
+                        # ----------------------------------------------
+
+                        practice_percent = round(
+                            (
+                                full_practice_percent
+                                + practice_practice_percent
+                            ) / 2,
+                            2
+                        )
+
+                        # ----------------------------------------------
+                        # Overall Accuracy
+                        # ----------------------------------------------
+
+                        accuracy_percent = round(
+                            (
+                                full_accuracy_percent
+                                + practice_accuracy_percent
+                            ) / 2,
+                            2
+                        )
+
+                        # ----------------------------------------------
+                        # Overall Average Time
+                        # ----------------------------------------------
+
+                        avg_time = round(
+                            (
+                                full_avg_time
+                                + practice_avg_time
+                            ) / 2,
+                            2
+                        )
+
+                        # ----------------------------------------------
+                        # Overall counts
+                        # ----------------------------------------------
+
+                        practiced_count = round(
+                            (
+                                full_practiced_count
+                                + practice_practiced_count
+                            ) / 2,
+                            2
+                        )
+
+                        attempted_count = round(
+                            (
+                                full_attempted_count
+                                + practice_attempted_count
+                            ) / 2,
+                            2
+                        )
+
+                        total_time_spent = round(
+                            (
+                                full_time_spent
+                                + practice_time_spent
+                            ) / 2,
+                            2
+                        )
+
+                    # ==================================================
+                    # FULL LENGTH ONLY
+                    # ==================================================
+
+                    elif test_type == "fullLength":
+
+                        practiced_count = full_practiced_count
+
+                        practice_percent = (
+                            full_practice_percent
+                        )
+
+                        accuracy_percent = (
+                            full_accuracy_percent
+                        )
+
+                        avg_time = full_avg_time
+
+                        attempted_count = (
+                            full_attempted_count
+                        )
+
+                        total_time_spent = (
+                            full_time_spent
+                        )
+
+                    # ==================================================
+                    # PRACTICE ONLY
+                    # ==================================================
+
+                    elif test_type == "practiceTest":
+
+                        practiced_count = (
+                            practice_practiced_count
+                        )
+
+                        practice_percent = (
+                            practice_practice_percent
+                        )
+
+                        accuracy_percent = (
+                            practice_accuracy_percent
+                        )
+
+                        avg_time = practice_avg_time
+
+                        attempted_count = (
+                            practice_attempted_count
+                        )
+
+                        total_time_spent = (
+                            practice_time_spent
+                        )
+
+                    # ==================================================
+                    # ALL
+                    # ==================================================
+
+                    else:
+
+                        practiced_ids = (
+                            full_practiced_ids
+                            | practice_practiced_ids
+                        )
+
+                        right_ids = (
+                            full_right_ids
+                            | practice_right_ids
+                        )
+
+                        practiced_count = len(
+                            practiced_ids
+                        )
+
+                        practice_percent = (
+                            round(
+                                (
+                                    practiced_count
+                                    / total_questions
+                                ) * 100,
+                                2
+                            )
+                            if total_questions
+                            else 0
+                        )
+
+                        attempted_count = (
+                            full_attempted_count
+                            + practice_attempted_count
+                        )
+
+                        accuracy_percent = (
+                            round(
+                                (
+                                    len(right_ids)
+                                    / attempted_count
+                                ) * 100,
+                                2
+                            )
+                            if attempted_count
+                            else 0
+                        )
+
+                        total_time_spent = (
+                            full_time_spent
+                            + practice_time_spent
+                        )
+
+                        avg_time = (
+                            round(
+                                total_time_spent
+                                / attempted_count,
+                                2
+                            )
+                            if attempted_count
+                            else 0
+                        )
+
+                    # ==================================================
+                    # SUBTOPIC RESPONSE
+                    # ==================================================
+
+                    subtopic_response = {
                         "subtopic": sub.name,
+
                         "total_questions": total_questions,
+
                         "practiced_questions": practiced_count,
+
                         "practice_percent": practice_percent,
+
                         "accuracy_percent": accuracy_percent,
+
                         "avg_time_seconds": avg_time,
-                        "total_time_spent": time_spent,
-                    })
 
-                subject_block["topics"].append(topic_block)
+                        "total_time_spent": total_time_spent,
 
-            final_response.append(subject_block)
+                        "test_type_used": test_type,
+                    }
 
-        return Response(final_response)
+                    # ==================================================
+                    # EXTRA OVERALL DETAILS
+                    # ==================================================
+
+                    if test_type == "overall":
+
+                        subtopic_response.update({
+                            "full_length_practiced_questions":
+                                full_practiced_count,
+
+                            "full_length_practice_percent":
+                                full_practice_percent,
+
+                            "practice_test_practiced_questions":
+                                practice_practiced_count,
+
+                            "practice_test_practice_percent":
+                                practice_practice_percent,
+
+                            "full_length_accuracy":
+                                full_accuracy_percent,
+
+                            "practice_test_accuracy":
+                                practice_accuracy_percent,
+
+                            "full_length_avg_time":
+                                full_avg_time,
+
+                            "practice_test_avg_time":
+                                practice_avg_time,
+                        })
+
+                    topic_block["subtopics"].append(
+                        subtopic_response
+                    )
+
+                subject_block["topics"].append(
+                    topic_block
+                )
+
+            final_response.append(
+                subject_block
+            )
+
+        return Response(
+            final_response
+        )
     
     @action(
     detail=False,
@@ -10849,6 +12670,304 @@ class ResultViewSet(viewsets.ModelViewSet):
         })
 
 
+    @action(
+    detail=False,
+    methods=["GET"],
+    permission_classes=[IsAuthenticated],
+    url_path="utilisation-overall"
+    )
+    def utilisation_overall(self, request):
+
+        student_id = request.GET.get("student_id")
+        course_id = request.GET.get("course_id")
+
+        if not student_id or not course_id:
+            return Response(
+                {
+                    "error": "student_id and course_id are required"
+                },
+                status=400
+            )
+
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
+
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
+
+        # ==========================================================
+        # DISPLAY VALUE
+        # 0       -> 10.5
+        # 10.5    -> 11
+        # 10.6    -> 11
+        # 10.4    -> 10
+        # ==========================================================
+
+        def display_value(value):
+
+            value = float(value or 0)
+
+            if value == 0:
+                return 10.5
+
+            return round(value)
+
+        # ==========================================================
+        # 1️⃣ FULL LENGTH TOTALS
+        # ==========================================================
+
+        full_length_totals = (
+            Question.objects
+            .filter(
+                course_subject__course=course,
+                test_type=Question.FULL_LENGTH_TEST_TYPE,
+                is_active=True
+            )
+            .values(
+                "course_subject__subject__name"
+            )
+            .annotate(
+                total=Count("id")
+            )
+        )
+
+        full_total_map = {
+            row["course_subject__subject__name"]: row["total"]
+            for row in full_length_totals
+        }
+
+        # ==========================================================
+        # 2️⃣ FULL LENGTH ANSWERED
+        # ==========================================================
+
+        full_attempted_qs = (
+            QuestionAnswer.objects
+            .filter(
+                result__test_submission__student=student,
+                result__test_submission__test__course=course,
+                result__test_submission__test__test_type=Test.EXAM,
+                is_skipped=False,
+                question__is_active=True
+            )
+            .values(
+                "course_subject__subject__name",
+                "question"
+            )
+            .distinct()
+        )
+
+        full_answered_map = {}
+
+        for row in full_attempted_qs:
+
+            subject = row[
+                "course_subject__subject__name"
+            ]
+
+            full_answered_map[subject] = (
+                full_answered_map.get(subject, 0) + 1
+            )
+
+        # ==========================================================
+        # 3️⃣ PRACTICE TOTALS
+        # ==========================================================
+
+        practice_totals = (
+            Question.objects
+            .filter(
+                course_subject__course=course,
+                test_type=Question.SELF_PRACTICE_TEST_TYPE,
+                is_active=True
+            )
+            .values(
+                "course_subject__subject__name"
+            )
+            .annotate(
+                total=Count("id")
+            )
+        )
+
+        practice_total_map = {
+            row["course_subject__subject__name"]: row["total"]
+            for row in practice_totals
+        }
+
+        # ==========================================================
+        # 4️⃣ PRACTICE ANSWERED
+        # ==========================================================
+
+        practice_attempted_qs = (
+            PracticeQuestionAnswer.objects
+            .filter(
+                practice_test_result__practice_test__student=student,
+                practice_test_result__practice_test__course_subject__course=course,
+                is_skipped=False,
+                question__is_active=True
+            )
+            .values(
+                "practice_test_result__practice_test__course_subject__subject__name",
+                "question"
+            )
+            .distinct()
+        )
+
+        practice_answered_map = {}
+
+        for row in practice_attempted_qs:
+
+            subject = row[
+                "practice_test_result__practice_test__course_subject__subject__name"
+            ]
+
+            practice_answered_map[subject] = (
+                practice_answered_map.get(subject, 0) + 1
+            )
+
+        # ==========================================================
+        # 5️⃣ BUILD OVERALL RESPONSE
+        # ==========================================================
+
+        response = {}
+
+        for cs in CourseSubjects.objects.filter(
+            course=course
+        ):
+
+            subject = cs.subject.name
+
+            # ------------------------------------------------------
+            # FULL LENGTH
+            # ------------------------------------------------------
+
+            full_total = full_total_map.get(
+                subject,
+                0
+            )
+
+            full_answered = full_answered_map.get(
+                subject,
+                0
+            )
+
+            full_pending = max(
+                0,
+                full_total - full_answered
+            )
+
+            # ------------------------------------------------------
+            # PRACTICE
+            # ------------------------------------------------------
+
+            practice_total = practice_total_map.get(
+                subject,
+                0
+            )
+
+            practice_answered = practice_answered_map.get(
+                subject,
+                0
+            )
+
+            practice_pending = max(
+                0,
+                practice_total - practice_answered
+            )
+
+            # ------------------------------------------------------
+            # OVERALL RAW VALUES
+            # ------------------------------------------------------
+
+            overall_total = (
+                full_total
+                + practice_total
+            ) / 2
+
+            overall_answered = (
+                full_answered
+                + practice_answered
+            ) / 2
+
+            overall_pending = (
+                full_pending
+                + practice_pending
+            ) / 2
+
+            overall_done = (
+                full_answered
+                + practice_answered
+            ) / 2
+
+            # ------------------------------------------------------
+            # RESPONSE
+            # ------------------------------------------------------
+
+            response[subject] = {
+
+                # Overall values
+                "total": display_value(
+                    overall_total
+                ),
+
+                "answered": display_value(
+                    overall_answered
+                ),
+
+                "unanswered": display_value(
+                    overall_pending
+                ),
+
+                "pending": display_value(
+                    overall_pending
+                ),
+
+                "done": display_value(
+                    overall_done
+                ),
+
+                # ==================================================
+                # FULL LENGTH REFERENCE
+                # ==================================================
+
+                "full_length_total": full_total,
+
+                "full_length_answered": full_answered,
+
+                "full_length_unanswered": full_pending,
+
+                "full_length_pending": full_pending,
+
+                "full_length_done": full_answered,
+
+                # ==================================================
+                # PRACTICE REFERENCE
+                # ==================================================
+
+                "practice_test_total": practice_total,
+
+                "practice_test_answered": practice_answered,
+
+                "practice_test_unanswered": practice_pending,
+
+                "practice_test_pending": practice_pending,
+
+                "practice_test_done": practice_answered,
+            }
+
+        # ==========================================================
+        # FINAL RESPONSE
+        # ==========================================================
+
+        return Response(
+            {
+                "test_type": "overall",
+                "subjects": response
+            }
+        )
+
 
     @action(
     detail=False,
@@ -10957,7 +13076,7 @@ class ResultViewSet(viewsets.ModelViewSet):
     methods=["GET"],
     permission_classes=[IsAuthenticated],
     url_path="topic-wise-progress"
-)
+    )
     def topic_wise_progress_average(self, request):
 
         student_id = request.GET.get("student_id")
@@ -10965,14 +13084,31 @@ class ResultViewSet(viewsets.ModelViewSet):
         subject_name = request.GET.get("subject")
         test_type = request.GET.get("test_type")
 
-        if not all([student_id, course_id, subject_name, test_type]):
+        if not all([
+            student_id,
+            course_id,
+            subject_name,
+            test_type
+        ]):
             return Response(
-                {"error": "student_id, course_id, subject and test_type are required"},
+                {
+                    "error": (
+                        "student_id, course_id, subject and "
+                        "test_type are required"
+                    )
+                },
                 status=400
             )
 
-        student = get_object_or_404(User, id=student_id)
-        course = get_object_or_404(Course, id=course_id)
+        student = get_object_or_404(
+            User,
+            id=student_id
+        )
+
+        course = get_object_or_404(
+            Course,
+            id=course_id
+        )
 
         course_subject = CourseSubjects.objects.filter(
             course=course,
@@ -10980,136 +13116,801 @@ class ResultViewSet(viewsets.ModelViewSet):
         ).first()
 
         if not course_subject:
-            return Response({"results": []})
+            return Response({
+                "results": []
+            })
 
-        topic_map = defaultdict(lambda: {
-            "correct": 0,
-            "total": 0,
-            "sub_topics": defaultdict(lambda: {"correct": 0, "total": 0})
-        })
+        # ==========================================================
+        # HELPER FUNCTION
+        # ==========================================================
 
-        total_questions = 0
-        total_correct = 0
-        total_attempted = 0
+        def get_progress_data(answers):
 
-        # ================= FULL LENGTH =================
+            topic_map = defaultdict(
+                lambda: {
+                    "correct": 0,
+                    "total": 0,
+                    "sub_topics": defaultdict(
+                        lambda: {
+                            "correct": 0,
+                            "total": 0
+                        }
+                    )
+                }
+            )
+
+            total_questions = 0
+            total_correct = 0
+            total_attempted = 0
+
+            for ans in answers:
+
+                total_questions += 1
+
+                if not ans.is_skipped:
+                    total_attempted += 1
+
+                if ans.is_correct:
+                    total_correct += 1
+
+                # Do not include skipped questions
+                # in topic progress
+                if ans.is_skipped:
+                    continue
+
+                question = ans.question
+
+                topic = (
+                    question.topic.name
+                    if question.topic
+                    else "General"
+                )
+
+                sub_topic = (
+                    question.sub_topic.name
+                    if question.sub_topic
+                    else "General"
+                )
+
+                topic_map[topic]["total"] += 1
+
+                if ans.is_correct:
+                    topic_map[topic]["correct"] += 1
+
+                topic_map[topic]["sub_topics"][
+                    sub_topic
+                ]["total"] += 1
+
+                if ans.is_correct:
+                    topic_map[topic]["sub_topics"][
+                        sub_topic
+                    ]["correct"] += 1
+
+            return (
+                topic_map,
+                total_questions,
+                total_correct,
+                total_attempted
+            )
+
+        # ==========================================================
+        # FULL LENGTH
+        # ==========================================================
+
         if test_type == "FULL_LENGTH":
 
-            submissions = TestSubmission.objects.filter(
-                student=student,
-                test__course=course,
-                status=TestSubmission.COMPLETED
-            ).select_related("result")
+            submissions = (
+                TestSubmission.objects
+                .filter(
+                    student=student,
+                    test__course=course,
+                    status=TestSubmission.COMPLETED
+                )
+                .select_related("result")
+            )
 
             if not submissions.exists():
-                return Response({"results": []})
+                return Response({
+                    "results": []
+                })
 
-            answers = QuestionAnswer.objects.filter(
-                result__in=submissions.values("result"),
-                course_subject=course_subject
-            ).select_related("question", "question__topic", "question__sub_topic")
+            answers = (
+                QuestionAnswer.objects
+                .filter(
+                    result__in=submissions.values("result"),
+                    course_subject=course_subject
+                )
+                .select_related(
+                    "question",
+                    "question__topic",
+                    "question__sub_topic"
+                )
+            )
 
-        # ================= PRACTICE =================
+            (
+                topic_map,
+                total_questions,
+                total_correct,
+                total_attempted
+            ) = get_progress_data(answers)
+
+            # ======================================================
+            # FORMAT FULL LENGTH
+            # ======================================================
+
+            chart_data = []
+            accordion_data = []
+
+            strong_topics = 0
+            weak_topics = 0
+
+            for topic, data in topic_map.items():
+
+                score = (
+                    round(
+                        (data["correct"] / data["total"]) * 100
+                    )
+                    if data["total"]
+                    else 0
+                )
+
+                if score >= 75:
+                    strong_topics += 1
+                else:
+                    weak_topics += 1
+
+                chart_data.append({
+                    "shortName": topic.split()[0],
+                    "fullName": topic,
+                    "value": score
+                })
+
+                accordion_data.append({
+                    "title": topic,
+                    "score": score,
+                    "subTopics": [
+                        {
+                            "name": sub,
+                            "score": (
+                                round(
+                                    (
+                                        v["correct"]
+                                        / v["total"]
+                                    ) * 100
+                                )
+                                if v["total"]
+                                else 0
+                            ),
+                            "status": (
+                                "Strong"
+                                if (
+                                    v["correct"]
+                                    / v["total"]
+                                ) >= 0.75
+                                else
+                                "On Track"
+                                if (
+                                    v["correct"]
+                                    / v["total"]
+                                ) >= 0.5
+                                else
+                                "Needs Improvement"
+                            )
+                        }
+                        for sub, v
+                        in data["sub_topics"].items()
+                    ]
+                })
+
+            accuracy = (
+                round(
+                    (total_correct / total_attempted) * 100
+                )
+                if total_attempted
+                else 0
+            )
+
+            attempt_rate = (
+                round(
+                    (total_attempted / total_questions) * 100
+                )
+                if total_questions
+                else 0
+            )
+
+            skills_data = [
+                {
+                    "name": "Accuracy",
+                    "value": accuracy
+                },
+                {
+                    "name": "Attempt Rate",
+                    "value": attempt_rate
+                },
+                {
+                    "name": "Strong Topics",
+                    "value": strong_topics
+                },
+                {
+                    "name": "Weak Topics",
+                    "value": weak_topics
+                },
+            ]
+
+            return Response({
+                "mode": "AVERAGE",
+                "test_type": test_type,
+                "chartData": chart_data,
+                "skillsData": skills_data,
+                "accordionData": accordion_data,
+            })
+
+        # ==========================================================
+        # PRACTICE
+        # ==========================================================
+
         elif test_type == "PRACTICE":
 
-            practice_results = PracticeTestResult.objects.filter(
-                practice_test__student=student,
-                practice_test__course_subject=course_subject
+            practice_results = (
+                PracticeTestResult.objects
+                .filter(
+                    practice_test__student=student,
+                    practice_test__course_subject=course_subject
+                )
             )
 
             if not practice_results.exists():
-                return Response({"results": []})
+                return Response({
+                    "results": []
+                })
 
-            answers = PracticeQuestionAnswer.objects.filter(
-                practice_test_result__in=practice_results
-            ).select_related("question", "question__topic", "question__sub_topic")
+            answers = (
+                PracticeQuestionAnswer.objects
+                .filter(
+                    practice_test_result__in=practice_results
+                )
+                .select_related(
+                    "question",
+                    "question__topic",
+                    "question__sub_topic"
+                )
+            )
+
+            (
+                topic_map,
+                total_questions,
+                total_correct,
+                total_attempted
+            ) = get_progress_data(answers)
+
+            # ======================================================
+            # FORMAT PRACTICE
+            # ======================================================
+
+            chart_data = []
+            accordion_data = []
+
+            strong_topics = 0
+            weak_topics = 0
+
+            for topic, data in topic_map.items():
+
+                score = (
+                    round(
+                        (data["correct"] / data["total"]) * 100
+                    )
+                    if data["total"]
+                    else 0
+                )
+
+                if score >= 75:
+                    strong_topics += 1
+                else:
+                    weak_topics += 1
+
+                chart_data.append({
+                    "shortName": topic.split()[0],
+                    "fullName": topic,
+                    "value": score
+                })
+
+                accordion_data.append({
+                    "title": topic,
+                    "score": score,
+                    "subTopics": [
+                        {
+                            "name": sub,
+                            "score": (
+                                round(
+                                    (
+                                        v["correct"]
+                                        / v["total"]
+                                    ) * 100
+                                )
+                                if v["total"]
+                                else 0
+                            ),
+                            "status": (
+                                "Strong"
+                                if (
+                                    v["correct"]
+                                    / v["total"]
+                                ) >= 0.75
+                                else
+                                "On Track"
+                                if (
+                                    v["correct"]
+                                    / v["total"]
+                                ) >= 0.5
+                                else
+                                "Needs Improvement"
+                            )
+                        }
+                        for sub, v
+                        in data["sub_topics"].items()
+                    ]
+                })
+
+            accuracy = (
+                round(
+                    (total_correct / total_attempted) * 100
+                )
+                if total_attempted
+                else 0
+            )
+
+            attempt_rate = (
+                round(
+                    (total_attempted / total_questions) * 100
+                )
+                if total_questions
+                else 0
+            )
+
+            skills_data = [
+                {
+                    "name": "Accuracy",
+                    "value": accuracy
+                },
+                {
+                    "name": "Attempt Rate",
+                    "value": attempt_rate
+                },
+                {
+                    "name": "Strong Topics",
+                    "value": strong_topics
+                },
+                {
+                    "name": "Weak Topics",
+                    "value": weak_topics
+                },
+            ]
+
+            return Response({
+                "mode": "AVERAGE",
+                "test_type": test_type,
+                "chartData": chart_data,
+                "skillsData": skills_data,
+                "accordionData": accordion_data,
+            })
+
+        # ==========================================================
+        # OVERALL
+        # ==========================================================
+
+        elif test_type == "OVERALL":
+
+            # ======================================================
+            # FULL LENGTH ANSWERS
+            # ======================================================
+
+            submissions = (
+                TestSubmission.objects
+                .filter(
+                    student=student,
+                    test__course=course,
+                    status=TestSubmission.COMPLETED
+                )
+                .select_related("result")
+            )
+
+            full_answers = (
+                QuestionAnswer.objects
+                .filter(
+                    result__in=submissions.values("result"),
+                    course_subject=course_subject
+                )
+                .select_related(
+                    "question",
+                    "question__topic",
+                    "question__sub_topic"
+                )
+            )
+
+            (
+                full_topic_map,
+                full_total_questions,
+                full_total_correct,
+                full_total_attempted
+            ) = get_progress_data(full_answers)
+
+            # ======================================================
+            # PRACTICE ANSWERS
+            # ======================================================
+
+            practice_results = (
+                PracticeTestResult.objects
+                .filter(
+                    practice_test__student=student,
+                    practice_test__course_subject=course_subject
+                )
+            )
+
+            practice_answers = (
+                PracticeQuestionAnswer.objects
+                .filter(
+                    practice_test_result__in=practice_results
+                )
+                .select_related(
+                    "question",
+                    "question__topic",
+                    "question__sub_topic"
+                )
+            )
+
+            (
+                practice_topic_map,
+                practice_total_questions,
+                practice_total_correct,
+                practice_total_attempted
+            ) = get_progress_data(practice_answers)
+
+            # ======================================================
+            # NO DATA
+            # ======================================================
+
+            if (
+                not full_topic_map
+                and not practice_topic_map
+            ):
+                return Response({
+                    "results": []
+                })
+
+            # ======================================================
+            # ALL TOPICS
+            #
+            # Important:
+            # We are NOT merging answers.
+            #
+            # Full Length score is calculated separately.
+            # Practice score is calculated separately.
+            #
+            # Overall = (Full Length + Practice) / 2
+            # ======================================================
+
+            all_topics = set(
+                full_topic_map.keys()
+            ) | set(
+                practice_topic_map.keys()
+            )
+
+            chart_data = []
+            accordion_data = []
+
+            strong_topics = 0
+            weak_topics = 0
+
+            for topic in sorted(all_topics):
+
+                # --------------------------------------------------
+                # FULL LENGTH TOPIC SCORE
+                # --------------------------------------------------
+
+                full_data = full_topic_map.get(
+                    topic,
+                    {
+                        "correct": 0,
+                        "total": 0,
+                        "sub_topics": {}
+                    }
+                )
+
+                full_score = (
+                    round(
+                        (
+                            full_data["correct"]
+                            / full_data["total"]
+                        ) * 100
+                    )
+                    if full_data["total"]
+                    else 0
+                )
+
+                # --------------------------------------------------
+                # PRACTICE TOPIC SCORE
+                # --------------------------------------------------
+
+                practice_data = practice_topic_map.get(
+                    topic,
+                    {
+                        "correct": 0,
+                        "total": 0,
+                        "sub_topics": {}
+                    }
+                )
+
+                practice_score = (
+                    round(
+                        (
+                            practice_data["correct"]
+                            / practice_data["total"]
+                        ) * 100
+                    )
+                    if practice_data["total"]
+                    else 0
+                )
+
+                # --------------------------------------------------
+                # OVERALL TOPIC SCORE
+                # --------------------------------------------------
+
+                overall_score = round(
+                    (
+                        full_score
+                        + practice_score
+                    ) / 2
+                )
+
+                if overall_score >= 75:
+                    strong_topics += 1
+                else:
+                    weak_topics += 1
+
+                chart_data.append({
+                    "shortName": topic.split()[0],
+                    "fullName": topic,
+                    "value": overall_score,
+
+                    # Reference values
+                    "fullLengthValue": full_score,
+                    "practiceValue": practice_score,
+                })
+
+                # ==================================================
+                # SUB TOPICS
+                # ==================================================
+
+                all_sub_topics = set(
+                    full_data["sub_topics"].keys()
+                ) | set(
+                    practice_data["sub_topics"].keys()
+                )
+
+                sub_topics_data = []
+
+                for sub in sorted(all_sub_topics):
+
+                    full_sub = full_data[
+                        "sub_topics"
+                    ].get(
+                        sub,
+                        {
+                            "correct": 0,
+                            "total": 0
+                        }
+                    )
+
+                    practice_sub = practice_data[
+                        "sub_topics"
+                    ].get(
+                        sub,
+                        {
+                            "correct": 0,
+                            "total": 0
+                        }
+                    )
+
+                    full_sub_score = (
+                        round(
+                            (
+                                full_sub["correct"]
+                                / full_sub["total"]
+                            ) * 100
+                        )
+                        if full_sub["total"]
+                        else 0
+                    )
+
+                    practice_sub_score = (
+                        round(
+                            (
+                                practice_sub["correct"]
+                                / practice_sub["total"]
+                            ) * 100
+                        )
+                        if practice_sub["total"]
+                        else 0
+                    )
+
+                    overall_sub_score = round(
+                        (
+                            full_sub_score
+                            + practice_sub_score
+                        ) / 2
+                    )
+
+                    sub_topics_data.append({
+                        "name": sub,
+                        "score": overall_sub_score,
+
+                        # Reference values
+                        "fullLengthScore":
+                            full_sub_score,
+
+                        "practiceScore":
+                            practice_sub_score,
+
+                        "status": (
+                            "Strong"
+                            if overall_sub_score >= 75
+                            else
+                            "On Track"
+                            if overall_sub_score >= 50
+                            else
+                            "Needs Improvement"
+                        )
+                    })
+
+                accordion_data.append({
+                    "title": topic,
+                    "score": overall_score,
+
+                    # Reference values
+                    "fullLengthScore": full_score,
+                    "practiceScore": practice_score,
+
+                    "subTopics": sub_topics_data
+                })
+
+            # ======================================================
+            # OVERALL ACCURACY
+            # ======================================================
+
+            full_accuracy = (
+                round(
+                    (
+                        full_total_correct
+                        / full_total_attempted
+                    ) * 100
+                )
+                if full_total_attempted
+                else 0
+            )
+
+            practice_accuracy = (
+                round(
+                    (
+                        practice_total_correct
+                        / practice_total_attempted
+                    ) * 100
+                )
+                if practice_total_attempted
+                else 0
+            )
+
+            overall_accuracy = round(
+                (
+                    full_accuracy
+                    + practice_accuracy
+                ) / 2
+            )
+
+            # ======================================================
+            # OVERALL ATTEMPT RATE
+            # ======================================================
+
+            full_attempt_rate = (
+                round(
+                    (
+                        full_total_attempted
+                        / full_total_questions
+                    ) * 100
+                )
+                if full_total_questions
+                else 0
+            )
+
+            practice_attempt_rate = (
+                round(
+                    (
+                        practice_total_attempted
+                        / practice_total_questions
+                    ) * 100
+                )
+                if practice_total_questions
+                else 0
+            )
+
+            overall_attempt_rate = round(
+                (
+                    full_attempt_rate
+                    + practice_attempt_rate
+                ) / 2
+            )
+
+            # ======================================================
+            # SKILLS DATA
+            # ======================================================
+
+            skills_data = [
+                {
+                    "name": "Accuracy",
+                    "value": overall_accuracy
+                },
+                {
+                    "name": "Attempt Rate",
+                    "value": overall_attempt_rate
+                },
+                {
+                    "name": "Strong Topics",
+                    "value": strong_topics
+                },
+                {
+                    "name": "Weak Topics",
+                    "value": weak_topics
+                },
+            ]
+
+            # ======================================================
+            # RESPONSE
+            # ======================================================
+
+            return Response({
+                "mode": "AVERAGE",
+                "test_type": "OVERALL",
+
+                "chartData": chart_data,
+
+                "skillsData": skills_data,
+
+                "accordionData": accordion_data,
+
+                # Reference values
+                "fullLengthAccuracy":
+                    full_accuracy,
+
+                "practiceAccuracy":
+                    practice_accuracy,
+
+                "overallAccuracy":
+                    overall_accuracy,
+
+                "fullLengthAttemptRate":
+                    full_attempt_rate,
+
+                "practiceAttemptRate":
+                    practice_attempt_rate,
+
+                "overallAttemptRate":
+                    overall_attempt_rate,
+            })
+
+        # ==========================================================
+        # INVALID TEST TYPE
+        # ==========================================================
 
         else:
-            return Response({"error": "Invalid test_type"}, status=400)
 
-        # ================= AGGREGATION =================
-        for ans in answers:
-
-            total_questions += 1
-
-            if not ans.is_skipped:
-                total_attempted += 1
-
-            if ans.is_correct:
-                total_correct += 1
-
-            if ans.is_skipped:
-                continue
-
-            question = ans.question
-            topic = question.topic.name if question.topic else "General"
-            sub_topic = question.sub_topic.name if question.sub_topic else "General"
-
-            topic_map[topic]["total"] += 1
-            if ans.is_correct:
-                topic_map[topic]["correct"] += 1
-
-            topic_map[topic]["sub_topics"][sub_topic]["total"] += 1
-            if ans.is_correct:
-                topic_map[topic]["sub_topics"][sub_topic]["correct"] += 1
-
-        # ================= FORMAT =================
-        chart_data = []
-        accordion_data = []
-
-        strong_topics = 0
-        weak_topics = 0
-
-        for topic, data in topic_map.items():
-
-            score = round((data["correct"] / data["total"]) * 100) if data["total"] else 0
-
-            if score >= 75:
-                strong_topics += 1
-            else:
-                weak_topics += 1
-
-            chart_data.append({
-                "shortName": topic.split()[0],
-                "fullName": topic,
-                "value": score
-            })
-
-            accordion_data.append({
-                "title": topic,
-                "score": score,
-                "subTopics": [
-                    {
-                        "name": sub,
-                        "score": round((v["correct"] / v["total"]) * 100) if v["total"] else 0,
-                        "status": (
-                            "Strong" if (v["correct"] / v["total"]) >= 0.75
-                            else "On Track" if (v["correct"] / v["total"]) >= 0.5
-                            else "Needs Improvement"
-                        )
-                    }
-                    for sub, v in data["sub_topics"].items()
-                ]
-            })
-
-        # ================= SKILLS DATA =================
-        accuracy = round((total_correct / total_attempted) * 100) if total_attempted else 0
-        attempt_rate = round((total_attempted / total_questions) * 100) if total_questions else 0
-
-        skills_data = [
-            {"name": "Accuracy", "value": accuracy},
-            {"name": "Attempt Rate", "value": attempt_rate},
-            {"name": "Strong Topics", "value": strong_topics},
-            {"name": "Weak Topics", "value": weak_topics},
-        ]
-
-        return Response({
-            "mode": "AVERAGE",
-            "test_type": test_type,
-            "chartData": chart_data,
-            "skillsData": skills_data,
-            "accordionData": accordion_data,
-        })
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use FULL_LENGTH, PRACTICE or OVERALL."
+                    )
+                },
+                status=400
+            )
 
     
     @action(
@@ -11117,18 +13918,22 @@ class ResultViewSet(viewsets.ModelViewSet):
     methods=["GET"],
     permission_classes=[IsAuthenticated],
     url_path="score-analysis"
-)
+    )
     def score_analysis(self, request):
 
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
-        test_type = request.GET.get("test_type")  # FULL_LENGTH | PRACTICE
+        test_type = request.GET.get("test_type")
 
         if not student_id or not course_id or not test_type:
             return Response(
-                {"error": "student_id, course_id and test_type are required"},
+                {
+                    "error": "student_id, course_id and test_type are required"
+                },
                 status=400
             )
+
+        test_type = test_type.upper()
 
         student = get_object_or_404(User, id=student_id)
         course = get_object_or_404(Course, id=course_id)
@@ -11139,12 +13944,130 @@ class ResultViewSet(viewsets.ModelViewSet):
             "english_score": 0,
             "highest_score": 0,
             "improvement": 0,
+
+            "total_questions": 0,
+            "total_correct": 0,
+            "total_incorrect": 0,
+            "overall_accuracy": 0,
+
+            "total_full_length_tests": 0,
+            "total_practice_tests": 0,
+            "total_tests": 0,
+
             "tests": []
         }
 
-        # =====================================================
-        # ✅ FULL LENGTH TESTS (SAT / DSAT)
-        # =====================================================
+        # =========================================================
+        # HELPER
+        # =========================================================
+
+        def get_full_length_result_data(submission):
+
+            test = submission.test
+            result = submission.result
+
+            math_score = 0
+            english_score = 0
+
+            total_questions = 0
+            total_correct = 0
+            total_incorrect = 0
+
+            sections = Section.objects.filter(
+                test=test
+            ).select_related(
+                "course_subject",
+                "course_subject__subject"
+            ).order_by("order")
+
+            processed_subjects = set()
+
+            for section in sections:
+
+                course_subject = section.course_subject
+
+                subject_name = (
+                    course_subject.subject.name
+                    if course_subject.subject
+                    else ""
+                )
+
+                subject_key = subject_name.lower()
+
+                # Prevent duplicate processing if needed
+                if subject_key not in ["math", "english"]:
+                    continue
+
+                section_1_correct = 0
+                section_2_correct = 0
+
+                for sub_section in section.sub_sections or []:
+
+                    section_id = sub_section.get("id")
+
+                    # ---------------------------------------------
+                    # All questions in this subsection
+                    # ---------------------------------------------
+                    question_answers = QuestionAnswer.objects.filter(
+                        result=result,
+                        course_subject=course_subject,
+                        section_id=section_id
+                    )
+
+                    section_total = question_answers.count()
+
+                    section_correct = question_answers.filter(
+                        is_correct=True,
+                        is_skipped=False
+                    ).count()
+
+                    section_incorrect = question_answers.filter(
+                        is_correct=False,
+                        is_skipped=False
+                    ).count()
+
+                    total_questions += section_total
+                    total_correct += section_correct
+                    total_incorrect += section_incorrect
+
+                    # ---------------------------------------------
+                    # CombinedScore
+                    # ---------------------------------------------
+                    if section_id == 1:
+                        section_1_correct = section_correct
+
+                    elif section_id == 2:
+                        section_2_correct = section_correct
+
+                score_record = CombinedScore.objects.filter(
+                    subject_name__iexact=subject_name,
+                    section1_correct=section_1_correct,
+                    section2_correct=section_2_correct
+                ).first()
+
+                if score_record:
+
+                    if subject_key == "math":
+                        math_score = score_record.total_score
+
+                    elif subject_key == "english":
+                        english_score = score_record.total_score
+
+            overall_score = math_score + english_score
+
+            return {
+                "math_score": math_score,
+                "english_score": english_score,
+                "overall_score": overall_score,
+                "total_questions": total_questions,
+                "correct": total_correct,
+                "incorrect": total_incorrect,
+            }
+
+        # =========================================================
+        # FULL LENGTH TESTS
+        # =========================================================
+
         if test_type == "FULL_LENGTH":
 
             submissions = (
@@ -11154,102 +14077,123 @@ class ResultViewSet(viewsets.ModelViewSet):
                     test__course=course,
                     status=TestSubmission.COMPLETED
                 )
-                .select_related("test", "result")
+                .select_related(
+                    "test",
+                    "result"
+                )
                 .order_by("completion_date")
             )
 
             previous_overall = None
-            total_full_length_tests = 0
 
             for submission in submissions:
-                total_full_length_tests += 1
 
-                test = submission.test
-                result = submission.result
+                if not hasattr(submission, "result") or not submission.result:
+                    continue
 
-                math_score = 0
-                english_score = 0
+                data = get_full_length_result_data(
+                    submission
+                )
 
-                sections = Section.objects.filter(test=test).order_by("order")
-
-                for section in sections:
-                    course_subject = section.course_subject
-                    subject_name = course_subject.subject.name.lower()
-
-                    section_1_correct = 0
-                    section_2_correct = 0
-
-                    for sub_section in section.sub_sections:
-                        correct_count = QuestionAnswer.objects.filter(
-                            result=result,
-                            course_subject=course_subject,
-                            section_id=sub_section["id"],
-                            is_correct=True
-                        ).count()
-
-                        if sub_section["id"] == 1:
-                            section_1_correct = correct_count
-                        elif sub_section["id"] == 2:
-                            section_2_correct = correct_count
-
-                    score_record = CombinedScore.objects.filter(
-                        subject_name__iexact=subject_name,
-                        section1_correct=section_1_correct,
-                        section2_correct=section_2_correct
-                    ).first()
-
-                    if score_record:
-                        if subject_name == "math":
-                            math_score = score_record.total_score
-                        else:
-                            english_score = score_record.total_score
-
-                overall = math_score + english_score
+                overall = data["overall_score"]
 
                 response["tests"].append({
+                    "id": submission.id,
+
+                    "source": "FULL_LENGTH",
+
                     "test_submission_id": submission.id,
-                    "test_name": test.name,
-                    "math_score": math_score,
-                    "english_score": english_score,
+
+                    "full_length_test_id": submission.test.id,
+
+                    "practice_test_id": None,
+
+                    "test_name": submission.test.name,
+
+                    "subject": "All",
+
+                    "math_score": data["math_score"],
+
+                    "english_score": data["english_score"],
+
                     "overall_score": overall,
 
-                    # ✅ DATE ADDED
+                    "total_questions": data["total_questions"],
+
+                    "correct": data["correct"],
+
+                    "incorrect": data["incorrect"],
+
+                    "accuracy": (
+                        round(
+                            (
+                                data["correct"]
+                                / data["total_questions"]
+                            ) * 100
+                        )
+                        if data["total_questions"] > 0
+                        else 0
+                    ),
+
                     "date": (
                         submission.completion_date.strftime("%Y-%m-%d")
                         if submission.completion_date
                         else submission.assigned_date.strftime("%Y-%m-%d")
-                    )
+                    ),
+
+                    "date_time": (
+                        submission.completion_date.isoformat()
+                        if submission.completion_date
+                        else submission.assigned_date.isoformat()
+                    ),
+
+                    "test_type_label": "Full Length Test",
                 })
 
-                response["highest_score"] = max(response["highest_score"], overall)
+                response["math_score"] = data["math_score"]
+                response["english_score"] = data["english_score"]
+                response["overall_score"] = overall
+
+                response["highest_score"] = max(
+                    response["highest_score"],
+                    overall
+                )
+
+                response["total_questions"] += data["total_questions"]
+                response["total_correct"] += data["correct"]
+                response["total_incorrect"] += data["incorrect"]
 
                 if previous_overall is not None:
-                    response["improvement"] = overall - previous_overall
+                    response["improvement"] = (
+                        overall - previous_overall
+                    )
 
                 previous_overall = overall
-                response["overall_score"] = overall
-                response["math_score"] = math_score
-                response["english_score"] = english_score
 
-            response["total_full_length_tests"] = total_full_length_tests
+            response["total_full_length_tests"] = len(
+                response["tests"]
+            )
 
-        # =====================================================
-        # ✅ PRACTICE TEST
-        # =====================================================
+            response["total_tests"] = len(
+                response["tests"]
+            )
+
+        # =========================================================
+        # PRACTICE TESTS
+        # =========================================================
+
         elif test_type == "PRACTICE":
-
-            total_correct = 0
-            total_incorrect = 0
-            total_questions = 0
 
             practice_results = (
                 PracticeTestResult.objects
                 .filter(
                     practice_test__student=student,
-                    practice_test__course_subject__course=course
+                    practice_test__course_subject__course=course,
+                    status="COMPLETED"
                 )
                 .select_related(
                     "practice_test",
+                    "practice_test__course_subject",
                     "practice_test__course_subject__subject"
                 )
                 .order_by("created_at")
@@ -11257,65 +14201,457 @@ class ResultViewSet(viewsets.ModelViewSet):
 
             previous_score = None
 
-            for r in practice_results:
-                subject_name = r.practice_test.course_subject.subject.name.lower()
+            for result in practice_results:
 
-                test_total_questions = PracticeQuestionAnswer.objects.filter(
-                    practice_test_result=r
+                practice_test = result.practice_test
+
+                subject_name = (
+                    practice_test
+                    .course_subject
+                    .subject
+                    .name
+                )
+
+                subject_key = subject_name.lower()
+
+                answers = PracticeQuestionAnswer.objects.filter(
+                    practice_test_result=result
+                )
+
+                test_total_questions = answers.count()
+
+                test_correct = answers.filter(
+                    is_correct=True,
+                    is_skipped=False
                 ).count()
 
-                test_correct = PracticeQuestionAnswer.objects.filter(
-                    practice_test_result=r,
-                    is_correct=True
-                ).count()
-
-                test_incorrect = PracticeQuestionAnswer.objects.filter(
-                    practice_test_result=r,
+                test_incorrect = answers.filter(
                     is_correct=False,
                     is_skipped=False
                 ).count()
 
-                accuracy = round(
-                    (test_correct / test_total_questions) * 100
-                ) if test_total_questions > 0 else 0
+                accuracy = (
+                    round(
+                        (
+                            test_correct
+                            / test_total_questions
+                        ) * 100
+                    )
+                    if test_total_questions > 0
+                    else 0
+                )
 
-                if subject_name == "math":
+                if subject_key == "math":
                     response["math_score"] += test_correct
-                elif subject_name == "english":
+
+                elif subject_key == "english":
                     response["english_score"] += test_correct
 
-                response["highest_score"] = max(response["highest_score"], test_correct)
+                response["tests"].append({
+                    "id": practice_test.id,
+
+                    "source": "PRACTICE",
+
+                    "test_submission_id": None,
+
+                    "full_length_test_id": None,
+
+                    "practice_test_id": practice_test.id,
+
+                    "test_name": (
+                        f"Practice Test - {practice_test.id}"
+                    ),
+
+                    "subject": subject_name.title(),
+
+                    "math_score": (
+                        test_correct
+                        if subject_key == "math"
+                        else 0
+                    ),
+
+                    "english_score": (
+                        test_correct
+                        if subject_key == "english"
+                        else 0
+                    ),
+
+                    "overall_score": test_correct,
+
+                    "total_questions": test_total_questions,
+
+                    "correct": test_correct,
+
+                    "incorrect": test_incorrect,
+
+                    "accuracy": accuracy,
+
+                    "date": result.created_at.strftime(
+                        "%Y-%m-%d"
+                    ),
+
+                    "date_time": result.created_at.isoformat(),
+
+                    "test_type_label": "Practice Test",
+                })
+
+                response["total_questions"] += (
+                    test_total_questions
+                )
+
+                response["total_correct"] += test_correct
+
+                response["total_incorrect"] += test_incorrect
+
+                response["highest_score"] = max(
+                    response["highest_score"],
+                    test_correct
+                )
 
                 if previous_score is not None:
-                    response["improvement"] = test_correct - previous_score
+                    response["improvement"] = (
+                        test_correct - previous_score
+                    )
 
                 previous_score = test_correct
 
-                total_correct += test_correct
-                total_incorrect += test_incorrect
-                total_questions += test_total_questions
+            response["overall_score"] = (
+                response["total_correct"]
+            )
+
+            response["total_practice_tests"] = len(
+                response["tests"]
+            )
+
+            response["total_tests"] = len(
+                response["tests"]
+            )
+
+        # =========================================================
+        # OVERALL
+        # =========================================================
+
+        elif test_type == "OVERALL":
+
+            # -----------------------------------------------------
+            # 1. FULL LENGTH TESTS
+            # -----------------------------------------------------
+
+            full_length_submissions = (
+                TestSubmission.objects
+                .filter(
+                    student=student,
+                    test__course=course,
+                    status=TestSubmission.COMPLETED
+                )
+                .select_related(
+                    "test",
+                    "result"
+                )
+                .order_by("completion_date")
+            )
+
+            for submission in full_length_submissions:
+
+                if not hasattr(submission, "result") or not submission.result:
+                    continue
+
+                data = get_full_length_result_data(
+                    submission
+                )
 
                 response["tests"].append({
-                    "practice_test_id": r.practice_test.id,
-                    "subject": subject_name.title(),
-                    "total_questions": test_total_questions,
-                    "correct": test_correct,
-                    "incorrect": test_incorrect,
-                    "accuracy": accuracy,
-                    "date": r.created_at.strftime("%Y-%m-%d"),
+                    "id": submission.id,
+
+                    "source": "FULL_LENGTH",
+
+                    "test_submission_id": submission.id,
+
+                    "full_length_test_id": submission.test.id,
+
+                    "practice_test_id": None,
+
+                    "test_name": submission.test.name,
+
+                    "subject": "All",
+
+                    "math_score": data["math_score"],
+
+                    "english_score": data["english_score"],
+
+                    "overall_score": data["overall_score"],
+
+                    "total_questions": data["total_questions"],
+
+                    "correct": data["correct"],
+
+                    "incorrect": data["incorrect"],
+
+                    "accuracy": (
+                        round(
+                            (
+                                data["correct"]
+                                / data["total_questions"]
+                            ) * 100
+                        )
+                        if data["total_questions"] > 0
+                        else 0
+                    ),
+
+                    "date": (
+                        submission.completion_date.strftime("%Y-%m-%d")
+                        if submission.completion_date
+                        else submission.assigned_date.strftime("%Y-%m-%d")
+                    ),
+
+                    "date_time": (
+                        submission.completion_date.isoformat()
+                        if submission.completion_date
+                        else submission.assigned_date.isoformat()
+                    ),
+
+                    "test_type_label": "Full Length Test",
                 })
 
-            response["overall_score"] = total_correct
-            response["total_practice_tests"] = len(response["tests"])
-            response["total_correct"] = total_correct
-            response["total_incorrect"] = total_incorrect
+                response["total_questions"] += (
+                    data["total_questions"]
+                )
 
-            response["overall_accuracy"] = round(
-                (total_correct / total_questions) * 100
-            ) if total_questions > 0 else 0
+                response["total_correct"] += (
+                    data["correct"]
+                )
+
+                response["total_incorrect"] += (
+                    data["incorrect"]
+                )
+
+                response["math_score"] += (
+                    data["math_score"]
+                )
+
+                response["english_score"] += (
+                    data["english_score"]
+                )
+
+            # -----------------------------------------------------
+            # 2. PRACTICE TESTS
+            # -----------------------------------------------------
+
+            practice_results = (
+                PracticeTestResult.objects
+                .filter(
+                    practice_test__student=student,
+                    practice_test__course_subject__course=course,
+                    status="COMPLETED"
+                )
+                .select_related(
+                    "practice_test",
+                    "practice_test__course_subject",
+                    "practice_test__course_subject__subject"
+                )
+                .order_by("created_at")
+            )
+
+            for result in practice_results:
+
+                practice_test = result.practice_test
+
+                subject_name = (
+                    practice_test
+                    .course_subject
+                    .subject
+                    .name
+                )
+
+                subject_key = subject_name.lower()
+
+                answers = PracticeQuestionAnswer.objects.filter(
+                    practice_test_result=result
+                )
+
+                test_total_questions = answers.count()
+
+                test_correct = answers.filter(
+                    is_correct=True,
+                    is_skipped=False
+                ).count()
+
+                test_incorrect = answers.filter(
+                    is_correct=False,
+                    is_skipped=False
+                ).count()
+
+                accuracy = (
+                    round(
+                        (
+                            test_correct
+                            / test_total_questions
+                        ) * 100
+                    )
+                    if test_total_questions > 0
+                    else 0
+                )
+
+                response["tests"].append({
+                    "id": practice_test.id,
+
+                    "source": "PRACTICE",
+
+                    "test_submission_id": None,
+
+                    "full_length_test_id": None,
+
+                    "practice_test_id": practice_test.id,
+
+                    "test_name": (
+                        f"Practice Test - {practice_test.id}"
+                    ),
+
+                    "subject": subject_name.title(),
+
+                    "math_score": (
+                        test_correct
+                        if subject_key == "math"
+                        else 0
+                    ),
+
+                    "english_score": (
+                        test_correct
+                        if subject_key == "english"
+                        else 0
+                    ),
+
+                    "overall_score": test_correct,
+
+                    "total_questions": test_total_questions,
+
+                    "correct": test_correct,
+
+                    "incorrect": test_incorrect,
+
+                    "accuracy": accuracy,
+
+                    "date": result.created_at.strftime(
+                        "%Y-%m-%d"
+                    ),
+
+                    "date_time": result.created_at.isoformat(),
+
+                    "test_type_label": "Practice Test",
+                })
+
+                response["total_questions"] += (
+                    test_total_questions
+                )
+
+                response["total_correct"] += (
+                    test_correct
+                )
+
+                response["total_incorrect"] += (
+                    test_incorrect
+                )
+
+            # -----------------------------------------------------
+            # 3. SORT COMBINED DATA
+            # -----------------------------------------------------
+
+            response["tests"].sort(
+                key=lambda x: x.get("date_time") or ""
+            )
+
+            # -----------------------------------------------------
+            # 4. TOTAL COUNTS
+            # -----------------------------------------------------
+
+            response["total_full_length_tests"] = sum(
+                1
+                for test in response["tests"]
+                if test["source"] == "FULL_LENGTH"
+            )
+
+            response["total_practice_tests"] = sum(
+                1
+                for test in response["tests"]
+                if test["source"] == "PRACTICE"
+            )
+
+            response["total_tests"] = len(
+                response["tests"]
+            )
+
+            # -----------------------------------------------------
+            # 5. OVERALL SCORE
+            # -----------------------------------------------------
+
+            response["overall_score"] = (
+                response["total_correct"]
+            )
+
+            # -----------------------------------------------------
+            # 6. OVERALL ACCURACY
+            # -----------------------------------------------------
+
+            if response["total_questions"] > 0:
+
+                response["overall_accuracy"] = round(
+                    (
+                        response["total_correct"]
+                        / response["total_questions"]
+                    ) * 100
+                )
+
+            # -----------------------------------------------------
+            # 7. HIGHEST SCORE
+            # -----------------------------------------------------
+
+            if response["tests"]:
+
+                response["highest_score"] = max(
+                    test["overall_score"]
+                    for test in response["tests"]
+                )
+
+            # -----------------------------------------------------
+            # 8. IMPROVEMENT
+            # -----------------------------------------------------
+
+            if len(response["tests"]) >= 2:
+
+                response["improvement"] = (
+                    response["tests"][-1]["overall_score"]
+                    -
+                    response["tests"][-2]["overall_score"]
+                )
+
+        # =========================================================
+        # INVALID TYPE
+        # =========================================================
 
         else:
-            return Response({"error": "Invalid test_type"}, status=400)
+
+            return Response(
+                {
+                    "error": (
+                        "Invalid test_type. "
+                        "Use FULL_LENGTH, PRACTICE or OVERALL."
+                    )
+                },
+                status=400
+            )
+
+        # =========================================================
+        # FINAL COMMON VALUES
+        # =========================================================
+
+        if response["total_questions"] > 0:
+
+            response["overall_accuracy"] = round(
+                (
+                    response["total_correct"]
+                    / response["total_questions"]
+                ) * 100
+            )
 
         return Response(response)
 

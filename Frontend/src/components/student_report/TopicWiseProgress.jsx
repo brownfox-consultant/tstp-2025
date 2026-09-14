@@ -101,8 +101,20 @@ export default function TopicWiseProgress({
   useEffect(() => {
     if (!student_id || !course_id || !test_type) return;
 
-    const apiTestType =
-      test_type === "fullLength" ? "FULL_LENGTH" : "PRACTICE";
+    
+
+    
+      let apiTestType;
+
+      if (test_type === "fullLength") {
+        apiTestType = "FULL_LENGTH";
+      } else if (test_type === "practiceTest") {
+        apiTestType = "PRACTICE";
+      } else if (test_type === "overall") {
+        apiTestType = "OVERALL";
+      } else {
+        return;
+      }
 
     setLoading(true);
 

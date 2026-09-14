@@ -34,11 +34,18 @@ import TopicWiseProgress from "@/components/student_report/TopicWiseProgress";
 import ScoreAnalysis_FullLengthTest from "@/components/student_report/ScoreAnalysis_FullLengthTest";
 import ScoreAnalysis_PracticeTest from "@/components/student_report/ScoreAnalysis_PracticeTest";
 import StudentActivityLog from "@/components/report-module/StudentActivityLog";
+import ScoreAnalysis_overall from "@/components/student_report/ScoreAnalysis_overall";
 
 
-function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) {
+function StudentReportDashboard({
+  studentIdProp,
+  studentNameProp,
+  hideHeader,
+}) {
+
   const [testType, setTestType] = useState("fullLength");
   const [activeReportTab, setActiveReportTab] = useState("score-analysis");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [coursesList, setCoursesList] = useState([]);
@@ -55,6 +62,17 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
 
   const params = useParams();
   const studentId = studentIdProp || params.id;
+
+
+  
+
+useEffect(() => {
+  const storedRole = localStorage.getItem("role_name");
+
+  console.log("User role from localStorage:", storedRole);
+
+  setIsAdmin(storedRole?.toLowerCase() === "admin");
+}, []);
 
   // ============================
   // LOAD COURSES
@@ -264,6 +282,18 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
     }));
   }, [timeData]);
 
+  const handleViewReport = () => {
+  if (!isAdmin || !studentId) return;
+
+  const reportUrl =
+    `${BASE_URL}/tstp/admin/2/users` +
+    `?action=viewStudentResults` +
+    `&studentId=${encodeURIComponent(studentId)}` +
+    `&studentName=${encodeURIComponent(studentNameProp || "")}`;
+
+  window.open(reportUrl, "_blank", "noopener,noreferrer");
+};
+
   return (
     <div >
       {!hideHeader && <Header studentName={studentNameProp} />}
@@ -306,31 +336,59 @@ function StudentReportDashboard({ studentIdProp, studentNameProp, hideHeader }) 
             { value: 'pattern', label: 'Pattern of Usage' },
             { value: 'doubts', label: 'Status of Doubts' },
             { value: 'topicwise-english', label: 'Topic Progress - English' },
-            { value: 'topicwise-math', label: 'Topic Progress - Math' }
-          ]}
-          activeTab={activeReportTab}
-          onChange={setActiveReportTab}
-          variant="pills"
-          className="report-tabs"
+            { value: 'topicwise-math', label: 'Topic Progress - Math' },
+             // ONLY ADMIN
+    ...(isAdmin
+      ? [
+          {
+            value: "view-report",
+            label: "View Report",
+          },
+        ]
+      : []),
+  ]}
+  activeTab={activeReportTab}
+  onChange={(tab) => {
+    if (tab === "view-report") {
+      handleViewReport();
+      return;
+    }
+
+    setActiveReportTab(tab);
+  }}
+  variant="pills"
+  className="report-tabs"
         />
       </div>
 
 
-      {activeReportTab === "score-analysis" && (
-        testType === "practiceTest" ? (
-          <ScoreAnalysis_PracticeTest
-            student_id={studentId}
-            course_id={selectedCourse}
-            courseName={selectedCourseName}
-          />
-        ) : (
-          <ScoreAnalysis_FullLengthTest
-            student_id={studentId}
-            course_id={selectedCourse}
-            courseName={selectedCourseName}
-          />
-        )
-      )}
+    
+{activeReportTab === "score-analysis" && (
+  testType === "practiceTest" ? (
+    <ScoreAnalysis_PracticeTest
+      student_id={studentId}
+      course_id={selectedCourse}
+      courseName={selectedCourseName}
+      test_type={testType}
+    />
+  ) : testType === "overall" ? (
+    <ScoreAnalysis_overall
+      student_id={studentId}
+      course_id={selectedCourse}
+      courseName={selectedCourseName}
+      test_type={testType}
+    />
+  ) : (
+    <ScoreAnalysis_FullLengthTest
+      student_id={studentId}
+      course_id={selectedCourse}
+      courseName={selectedCourseName}
+      test_type={testType}
+    />
+  )
+)}
+
+
 
       {activeReportTab === "subject" && (
         <div className="grid grid-cols-2 gap-[25px] max-[1200px]:grid-cols-1">

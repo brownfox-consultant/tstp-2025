@@ -27,9 +27,49 @@ export default function StatusOfDoubts({
     test_type === "practiceTest" ? "PRACTICE" : "EXAM";
 
   useEffect(() => {
-    if (!student_id || !course_id) return;
-    fetchStatusOfDoubts();
-  }, [student_id, course_id, test_type]);
+  if (!student_id || !course_id || !test_type) return;
+
+  if (test_type === "overall") {
+    setDoubtsData([]);
+    setSummary({
+      total_raised: 0,
+      total_solved: 0,
+      resolution_rate: 0,
+    });
+    setAvgResolutionTime(0);
+    setLoading(false);
+    return;
+  }
+
+  fetchStatusOfDoubts();
+}, [student_id, course_id, test_type]);
+
+
+  /* ================= OVERALL NOT SUPPORTED ================= */
+
+if (test_type === "overall") {
+  return (
+    <div className="w-full">
+      <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
+
+        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
+          <FaQuestionCircle className="text-4xl text-blue-400" />
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-700 mb-2">
+          Overall Performance Not Supported
+        </h3>
+
+        <p className="text-gray-500 max-w-md leading-relaxed">
+          Overall Performance is not supported for Status of Doubts.
+          Please select Full Length Test or Practice Test to view
+          your doubt analytics.
+        </p>
+
+      </div>
+    </div>
+  );
+}
 
   const fetchStatusOfDoubts = async () => {
     try {

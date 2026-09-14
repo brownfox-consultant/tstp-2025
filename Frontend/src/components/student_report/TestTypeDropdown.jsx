@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 const testTypeOptions = [
   { value: "fullLength", label: "Full Length Test" },
   { value: "practiceTest", label: "Practice Test" },
+  { value: "overall", label: "Overall Performance" },
 ];
 
 export default function TestTypeDropdown({ testType, setTestType }) {
