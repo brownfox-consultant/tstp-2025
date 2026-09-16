@@ -5179,16 +5179,48 @@ class TestViewSet(viewsets.ModelViewSet):
                     )
 
                     question_ids = self.select_questions_for_section(
-                        course_subject_id, section, section_id,
-                        sub_section, test, test_submission,
+                        course_subject_id,
+                        section,
+                        section_id,
+                        sub_section,
+                        test,
+                        test_submission,
                         excluded_question_ids=excluded_question_ids
                     )
 
-                    # RC last
-                    question_objs = Question.objects.filter(id__in=question_ids)
-                    rc_questions = [q.id for q in question_objs if q.question_subtype == "READING_COMPREHENSION"]
-                    other_questions = [q.id for q in question_objs if q.question_subtype != "READING_COMPREHENSION"]
-                    question_ids = other_questions + rc_questions
+                    # ---------------------------------------------------------
+                    # RC LAST ONLY FOR NON-ENGLISH DYNAMIC TESTS
+                    # ---------------------------------------------------------
+                    subject_name = (
+                        section.course_subject.subject.name
+                        if section and section.course_subject
+                        else ""
+                    )
+
+                    is_english_exam = (
+                        subject_name
+                        and subject_name.strip().lower() == "english"
+                        and test.test_type == Test.EXAM
+                    )
+
+                    if not is_english_exam:
+                        question_objs = Question.objects.filter(
+                            id__in=question_ids
+                        )
+
+                        rc_questions = [
+                            q.id
+                            for q in question_objs
+                            if q.question_subtype == "READING_COMPREHENSION"
+                        ]
+
+                        other_questions = [
+                            q.id
+                            for q in question_objs
+                            if q.question_subtype != "READING_COMPREHENSION"
+                        ]
+
+                        question_ids = other_questions + rc_questions
 
                     # Save
                     test_submission.selected_question_ids[section_key] = question_ids
@@ -5232,11 +5264,302 @@ class TestViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    def select_questions_for_section(self, course_subject_id, section, section_id, sub_section, test, test_submission,
-                                     excluded_question_ids):
+    def get_dynamic_topic_questions(
+    self,
+    course_subject_id,
+    result,
+    num_questions,
+    excluded_question_ids,
+    allowed_topics=None,
+    allowed_subtopics=None
+    ):
+        """
+        Select dynamic questions from a specific topic group.
+
+        Used by English:
+
+        Group 1:
+            16 questions
+
+        Group 2:
+            11 questions
+        """
+
+        correct_ratio = result.correct_answer_count / max(
+            (
+                result.correct_answer_count +
+                result.incorrect_answer_count
+            ),
+            1
+        )
+
+        difficulty_ratios = (
+            self.get_difficulty_ratios_by_performance(
+                correct_ratio
+            )
+        )
+
+        # =========================================================
+        # NEW / UNUSED QUESTIONS
+        # =========================================================
+
+        question_queryset = Question.objects.filter(
+            course_subject_id=course_subject_id,
+            test_type=Question.FULL_LENGTH_TEST_TYPE,
+            is_active=True
+        ).exclude(
+            id__in=excluded_question_ids
+        )
+
+        # Topic restriction
+        if allowed_topics:
+            question_queryset = question_queryset.filter(
+                topic__name__in=allowed_topics
+            )
+
+        if allowed_subtopics:
+            question_queryset = question_queryset.filter(
+                sub_topic__name__in=allowed_subtopics
+            )
+
+        new_questions = list(question_queryset)
+
+        print(
+            f"TOPIC GROUP => "
+            f"Topics={allowed_topics}, "
+            f"Required={num_questions}, "
+            f"New={len(new_questions)}"
+        )
+
+        selected_questions = []
+
+        # =========================================================
+        # DIFFICULTY SELECTION
+        # =========================================================
+
+        for difficulty, ratio in difficulty_ratios.items():
+
+            num_to_select = int(
+                num_questions * ratio
+            )
+
+            questions_of_difficulty = [
+                q.id
+                for q in new_questions
+                if q.difficulty == difficulty
+            ]
+
+            if questions_of_difficulty:
+
+                take_count = min(
+                    num_to_select,
+                    len(questions_of_difficulty)
+                )
+
+                selected_questions.extend(
+                    random.sample(
+                        questions_of_difficulty,
+                        take_count
+                    )
+                )
+
+        # =========================================================
+        # FILL REMAINING FROM NEW QUESTIONS
+        # =========================================================
+
+        remaining_new = [
+            q.id
+            for q in new_questions
+            if q.id not in selected_questions
+        ]
+
+        random.shuffle(remaining_new)
+
+        while (
+            len(selected_questions) < num_questions
+            and remaining_new
+        ):
+            selected_questions.append(
+                remaining_new.pop()
+            )
+
+        print(
+            f"Selected NEW = {len(selected_questions)}"
+        )
+
+        # =========================================================
+        # FALLBACK 1
+        # PREVIOUSLY SKIPPED / INCORRECT
+        # =========================================================
+
+        remaining_needed = (
+            num_questions -
+            len(selected_questions)
+        )
+
+        if remaining_needed > 0:
+
+            previous_question_ids = (
+                self.get_previous_fallback_questions(
+                    result.test_submission.student,
+                    course_subject_id,
+                    excluded_ids=set(selected_questions)
+                    | set(excluded_question_ids),
+                    allowed_topics=allowed_topics
+                )
+            )
+
+            random.shuffle(previous_question_ids)
+
+            selected_questions.extend(
+                previous_question_ids[:remaining_needed]
+            )
+
+        # =========================================================
+        # FALLBACK 2
+        # ANY PREVIOUS QUESTION
+        # =========================================================
+
+        remaining_needed = (
+            num_questions -
+            len(selected_questions)
+        )
+
+        if remaining_needed > 0:
+
+            all_previous_questions = (
+                self.get_all_previous_question_ids(
+                    result.test_submission.student,
+                    course_subject_id,
+                    excluded_ids=set(selected_questions)
+                    | set(excluded_question_ids),
+                    allowed_topics=allowed_topics
+                )
+            )
+
+            random.shuffle(all_previous_questions)
+
+            selected_questions.extend(
+                all_previous_questions[:remaining_needed]
+            )
+
+        # =========================================================
+        # FINAL
+        # =========================================================
+
+        return selected_questions[:num_questions]
+
+    def get_english_dynamic_questions(
+    self,
+    course_subject_id,
+    result,
+    excluded_question_ids
+    ):
+        selected_questions = []
+        used_question_ids = set(excluded_question_ids)
+
+        distribution = [
+            # =====================================================
+            # GROUP 1: Q1-Q16
+            # =====================================================
+            {
+                "topic": "Craft & Structure",
+                "subtopics": ["Words in Context"],
+                "count": 4,
+            },
+            {
+                "topic": "Craft & Structure",
+                "subtopics": ["Text Structure and Purpose"],
+                "count": 2,
+            },
+            {
+                "topic": "Craft & Structure",
+                "subtopics": ["Cross-Text Questions"],
+                "count": 2,
+            },
+            {
+                "topic": "Information and Ideas",
+                "subtopics": ["Central Ideas and Details"],
+                "count": 3,
+            },
+            {
+                "topic": "Information and Ideas",
+                "subtopics": ["Inferences"],
+                "count": 3,
+            },
+            {
+                "topic": "Information and Ideas",
+                "subtopics": ["Command of Evidence"],
+                "count": 2,
+            },
+
+            # =====================================================
+            # GROUP 2: Q17-Q27
+            # =====================================================
+            {
+                "topic": "Standard English Conventions",
+                "subtopics": ["Form, Structure, & Sense"],
+                "count": 3,
+            },
+            {
+                "topic": "Standard English Conventions",
+                "subtopics": ["Boundaries"],
+                "count": 2,
+            },
+            {
+                "topic": "Expression of Ideas",
+                "subtopics": ["Transitions"],
+                "count": 3,
+            },
+            {
+                "topic": "Expression of Ideas",
+                "subtopics": ["Rhetorical Synthesis"],
+                "count": 3,
+            },
+        ]
+
+        for item in distribution:
+
+            questions = self.get_dynamic_topic_questions(
+                course_subject_id=course_subject_id,
+                result=result,
+                num_questions=item["count"],
+                excluded_question_ids=used_question_ids,
+                allowed_topics=[item["topic"]],
+                allowed_subtopics=item["subtopics"],
+            )
+
+            selected_questions.extend(questions)
+            used_question_ids.update(questions)
+
+            print(
+                f"SUBTOPIC: {item['subtopics']} | "
+                f"Required: {item['count']} | "
+                f"Selected: {len(questions)}"
+            )
+
+        print(
+            f"ENGLISH FINAL => "
+            f"Total={len(selected_questions)}"
+        )
+
+        return selected_questions[:27]
+
+    def select_questions_for_section(
+    self,
+    course_subject_id,
+    section,
+    section_id,
+    sub_section,
+    test,
+    test_submission,
+    excluded_question_ids
+    ):
         question_ids = []
+
         if test.format_type == Test.LINEAR:
             question_ids = sub_section.get('questions', [])
+
         elif test.format_type == Test.DYNAMIC:
 
             result = Result.objects.get(
@@ -5244,13 +5567,86 @@ class TestViewSet(viewsets.ModelViewSet):
             ) if test_submission else None
 
             if result:
-                question_ids = self.get_dynamic_section_questions(
-                    course_subject_id,
-                    result,
-                    sub_section['no_of_questions'],
-                    excluded_question_ids
+
+                # Default
+                num_questions = sub_section.get('no_of_questions', 0)
+
+                subject_name = (
+                    section.course_subject.subject.name
+                    if section and section.course_subject
+                    else ""
                 )
 
+                sub_section_name = (
+                    sub_section.get("name", "").strip().lower()
+                    if sub_section
+                    else ""
+                )
+
+                print(
+                    f"Subject name: {subject_name}, "
+                    f"Test type: {test.test_type}"
+                )
+
+                print(
+                    f"Section name: "
+                    f"{section.name if section else None}"
+                )
+
+                print(
+                    f"Sub-section name: {sub_section_name}"
+                )
+
+                # =====================================================
+                # ENGLISH FULL LENGTH TEST
+                # =====================================================
+                if (
+                    subject_name
+                    and subject_name.strip().lower() == "english"
+                    and test.test_type == Test.EXAM
+                ):
+
+                    # BOTH SEC A AND SEC B HAVE 27 QUESTIONS
+                    # -----------------------------------------
+                    # Q1-Q16  -> Group 1
+                    # Q17-Q27 -> Group 2
+
+                    num_questions = 27
+
+                    print(
+                        "ENGLISH SECTION => 27 QUESTIONS"
+                    )
+
+                    print(
+                        "Q1-Q16  => Craft & Structure + Information and Ideas"
+                    )
+
+                    print(
+                        "Q17-Q27 => Standard English Conventions + Expression of Ideas"
+                    )
+
+                    question_ids = self.get_english_dynamic_questions(
+                        course_subject_id=course_subject_id,
+                        result=result,
+                        excluded_question_ids=excluded_question_ids
+                    )
+
+                else:
+
+                    # =================================================
+                    # OTHER SUBJECTS
+                    # =================================================
+                    question_ids = self.get_dynamic_section_questions(
+                        course_subject_id,
+                        result,
+                        num_questions,
+                        excluded_question_ids,
+                        allowed_topics=None
+                    )
+
+                # -----------------------------------------------------
+                # UPDATE SECTION STATS
+                # -----------------------------------------------------
                 section_stats, created = SectionStats.objects.get_or_create(
                     result=result,
                     course_subject_id=course_subject_id,
@@ -5265,24 +5661,10 @@ class TestViewSet(viewsets.ModelViewSet):
 
                 if not created:
                     section_stats.total_questions = len(question_ids)
-                    section_stats.save(update_fields=["total_questions"])
-                    
-                    section_stats, created = SectionStats.objects.get_or_create(
-                        result=result,
-                        course_subject_id=course_subject_id,
-                        section_id=section_id,
-                        defaults={
-                            "time_taken": 0,
-                             "last_sync_at": timezone.now(),
-                            "started_at": timezone.now()
-                        }
+                    section_stats.save(
+                        update_fields=["total_questions"]
                     )
 
-                    if created:
-                        section_stats.total_questions = len(question_ids)
-                        section_stats.save()
-                    section_stats.total_questions = len(question_ids)
-                    section_stats.save()
         return question_ids
 
     def get_first_section_questions(self, course_subject_id, num_questions, excluded_question_ids):
@@ -5333,7 +5715,9 @@ class TestViewSet(viewsets.ModelViewSet):
         course_subject_id,
         result,
         num_questions,
-        excluded_question_ids
+        excluded_question_ids,
+        allowed_topics=None,
+        allowed_subtopics=None
     ):
         """
         Dynamic question selection.
@@ -5359,14 +5743,28 @@ class TestViewSet(viewsets.ModelViewSet):
         # ---------------------------------------------------------
         # 1. NEW / UNUSED QUESTIONS
         # ---------------------------------------------------------
-        new_questions = list(
-            Question.objects.filter(
-                course_subject_id=course_subject_id,
-                test_type=Question.FULL_LENGTH_TEST_TYPE,
-                is_active=True
-            )
-            .exclude(id__in=excluded_question_ids)
+        question_queryset = Question.objects.filter(
+            course_subject_id=course_subject_id,
+            test_type=Question.FULL_LENGTH_TEST_TYPE,
+            is_active=True
+        ).exclude(
+            id__in=excluded_question_ids
         )
+
+        # ---------------------------------------------------------
+        # ENGLISH DOMAIN RESTRICTION
+        # ---------------------------------------------------------
+        if allowed_topics:
+            question_queryset = question_queryset.filter(
+                topic__name__in=allowed_topics
+            )
+
+        if allowed_subtopics:
+                    question_queryset = question_queryset.filter(
+                        sub_topic__name__in=allowed_subtopics
+                    )
+
+        new_questions = list(question_queryset)
 
         print(
             f"DYNAMIC SECTION => Required={num_questions}, "
@@ -5442,6 +5840,9 @@ class TestViewSet(viewsets.ModelViewSet):
             result.test_submission.student,
             course_subject_id,
             excluded_ids=set(selected_questions)
+            | set(excluded_question_ids),
+            allowed_topics=allowed_topics,
+            allowed_subtopics=allowed_subtopics,
         )
 
         print(
@@ -5476,6 +5877,9 @@ class TestViewSet(viewsets.ModelViewSet):
                 result.test_submission.student,
                 course_subject_id,
                 excluded_ids=set(selected_questions)
+                | set(excluded_question_ids),
+                allowed_topics=allowed_topics,
+                allowed_subtopics=allowed_subtopics,
             )
 
             random.shuffle(all_previous_questions)
@@ -5514,7 +5918,10 @@ class TestViewSet(viewsets.ModelViewSet):
         self,
         student,
         course_subject_id,
-        excluded_ids=None
+        excluded_ids=None,
+        allowed_topics=None,
+        allowed_subtopics=None
+        
     ):
         """
         Return previously used questions that the student either:
@@ -5570,13 +5977,25 @@ class TestViewSet(viewsets.ModelViewSet):
         # ---------------------------------------------------------
         # ONLY ACTIVE QUESTIONS
         # ---------------------------------------------------------
+        fallback_queryset = Question.objects.filter(
+            id__in=fallback_ids,
+            course_subject_id=course_subject_id,
+            test_type=Question.FULL_LENGTH_TEST_TYPE,
+            is_active=True
+        )
+
+        if allowed_topics:
+            fallback_queryset = fallback_queryset.filter(
+                topic__name__in=allowed_topics
+            )
+        
+        if allowed_subtopics:
+                    question_queryset = question_queryset.filter(
+                        sub_topic__name__in=allowed_subtopics
+                    )
+
         active_ids = set(
-            Question.objects.filter(
-                id__in=fallback_ids,
-                course_subject_id=course_subject_id,
-                test_type=Question.FULL_LENGTH_TEST_TYPE,
-                is_active=True
-            ).values_list("id", flat=True)
+            fallback_queryset.values_list("id", flat=True)
         )
 
         return list(active_ids)
@@ -5585,7 +6004,9 @@ class TestViewSet(viewsets.ModelViewSet):
         self,
         student,
         course_subject_id,
-        excluded_ids=None
+        excluded_ids=None,
+        allowed_topics=None,
+        allowed_subtopics=None
     ):
         """
         Return any previously used active questions for this student
@@ -5639,17 +6060,29 @@ class TestViewSet(viewsets.ModelViewSet):
         previous_ids -= excluded_ids
 
         # Only active questions belonging to this subject
-        previous_ids = Question.objects.filter(
+        previous_queryset = Question.objects.filter(
             id__in=previous_ids,
             course_subject_id=course_subject_id,
             test_type=Question.FULL_LENGTH_TEST_TYPE,
             is_active=True
-        ).values_list(
-            "id",
-            flat=True
         )
 
-        return list(previous_ids)
+        if allowed_topics:
+            previous_queryset = previous_queryset.filter(
+                topic__name__in=allowed_topics
+            )
+
+        if allowed_subtopics:
+                    question_queryset = question_queryset.filter(
+                        sub_topic__name__in=allowed_subtopics
+                    )
+
+        return list(
+            previous_queryset.values_list(
+                "id",
+                flat=True
+            )
+        )
 
     def get_difficulty_ratios_by_performance(self, correct_ratio):
         # GMAT-like performance-based difficulty ratios
