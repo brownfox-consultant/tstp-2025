@@ -16,6 +16,7 @@ function AdminUsersComponent() {
   const studentNameParam = searchParams.get("studentName");
   const router = useRouter();
   const pathname = usePathname();
+  const subActionParam = searchParams.get("subAction");
 
   const userTabItems = [
     {
@@ -59,7 +60,12 @@ function AdminUsersComponent() {
 
         <div className="bg-white px-4 md:px-6 pb-4 md:pb-6 pt-0 md:pt-0 rounded-2xl shadow-sm border border-gray-100 min-h-[70vh]">
           <Tabs
-            defaultActiveKey="1"
+  key={subActionParam}
+  defaultActiveKey={
+    subActionParam === "viewTestReportAdmin"
+      ? "2"
+      : "1"
+  }
             tabBarStyle={{ marginBottom: '8px' }}
             items={[
               {

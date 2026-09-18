@@ -348,17 +348,15 @@ export default function Dashboard() {
   const [notificationCounts, setNotificationCounts] = useState({});
   const [todayCounts, setTodayCounts] = useState({});
 const [activityFeed, setActivityFeed] = useState({
-  today: [],
-  previous_day: [],
+  activities: [],
+  start_date: null,
+  end_date: null,
+  count: 0,
 });
-  const [loadingActivity, setLoadingActivity] = useState(false);
-  const [activityDayTab, setActivityDayTab] = useState("today"); // "today" or "prev_day"
 
-  const displayActivities = useMemo(() => {
-  return activityDayTab === "today"
-    ? activityFeed.today
-    : activityFeed.previous_day;
-}, [activityDayTab, activityFeed]);
+const [loadingActivity, setLoadingActivity] = useState(false);
+
+const displayActivities = activityFeed.activities || [];
   const [courseChartData, setCourseChartData] = useState([]);
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
@@ -580,28 +578,56 @@ const [activityFeed, setActivityFeed] = useState({
     fetchUnreadNotifications();
   }, [selectedFilter, customStartDate, customEndDate]);
 
- useEffect(() => {
+useEffect(() => {
   const fetchActivityFeed = async () => {
+    if (
+      selectedFilter === "custom" &&
+      (!customStartDate || !customEndDate)
+    ) {
+      setActivityFeed({
+        activities: [],
+        start_date: null,
+        end_date: null,
+        count: 0,
+      });
+      return;
+    }
+
     setLoadingActivity(true);
 
     try {
+      const params =
+        selectedFilter === "custom"
+          ? {
+              start_date: customStartDate,
+              end_date: customEndDate,
+            }
+          : {
+              filter: selectedFilter,
+            };
+
       const { data } = await axios.get(
         `${BASE_URL}/api/doubt/activity-feed/`,
         {
+          params,
           withCredentials: true,
         }
       );
 
       setActivityFeed({
-        today: data.today || [],
-        previous_day: data.previous_day || [],
+        activities: data.activities || [],
+        start_date: data.start_date || null,
+        end_date: data.end_date || null,
+        count: data.count || 0,
       });
     } catch (err) {
       console.error("Activity Feed Error:", err);
 
       setActivityFeed({
-        today: [],
-        previous_day: [],
+        activities: [],
+        start_date: null,
+        end_date: null,
+        count: 0,
       });
     } finally {
       setLoadingActivity(false);
@@ -609,7 +635,7 @@ const [activityFeed, setActivityFeed] = useState({
   };
 
   fetchActivityFeed();
-}, []);
+}, [selectedFilter, customStartDate, customEndDate]);
 
   useEffect(() => {
     if (
@@ -691,6 +717,101 @@ const [activityFeed, setActivityFeed] = useState({
       setIsLoading(false);
     }, 600);
   };
+
+ const handleActivityClick = (activity) => {
+  console.log("FULL ACTIVITY DATA:", activity);
+  const adminId =
+    typeof window !== "undefined"
+      ? localStorage.getItem("id")
+      : null;
+
+  if (!adminId) {
+    console.error("Admin ID not found in localStorage");
+    return;
+  }
+
+  const baseUrl =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "";
+
+  let targetUrl = "";
+
+  switch (activity.type) {
+    case "fl-test": {
+      const studentId =
+        activity.student_id || activity.studentId;
+
+      const studentName =
+        activity.student_name ||
+        activity.studentName ||
+        "";
+
+      const reportSubmissionId =
+        activity.record_id
+
+      targetUrl =
+        `${baseUrl}/tstp/admin/${adminId}/users` +
+        `?action=viewStudentResults` +
+        `&studentId=${encodeURIComponent(studentId)}` +
+        `&studentName=${encodeURIComponent(studentName)}` +
+        `&subAction=viewTestReportAdmin` +
+        `&reportSubmissionId=${encodeURIComponent(reportSubmissionId)}`;
+
+      break;
+    }
+
+    case "pr-test": {
+      const studentId =
+        activity.student_id || activity.studentId;
+
+      const studentName =
+        activity.student_name ||
+        activity.studentName ||
+        "";
+
+      const practiceTestId =
+        activity.report_practice_test_id ||
+        activity.reportPracticeTestId ||
+        activity.practice_test_id;
+
+      targetUrl =
+        `${baseUrl}/tstp/admin/${adminId}/users` +
+        `?action=viewStudentResults` +
+        `&studentId=${encodeURIComponent(studentId)}` +
+        `&studentName=${encodeURIComponent(studentName)}` +
+        `&subAction=viewPracticeTestReportAdmin` +
+        `&reportPracticeTestId=${encodeURIComponent(practiceTestId)}`;
+
+      break;
+    }
+
+    case "concern":
+      targetUrl = `${baseUrl}/tstp/admin/${adminId}/concerns`;
+      break;
+
+    case "doubt":
+      targetUrl = `${baseUrl}/tstp/admin/${adminId}/doubts`;
+      break;
+
+    case "meeting":
+      targetUrl = `${baseUrl}/tstp/admin/${adminId}/meetings`;
+      break;
+
+    case "issue":
+      targetUrl = `${baseUrl}/tstp/admin/${adminId}/issues`;
+      break;
+
+    case "suggestion":
+      targetUrl = `${baseUrl}/tstp/admin/${adminId}/suggestions`;
+      break;
+
+    default:
+      return;
+  }
+
+  window.open(targetUrl, "_blank", "noopener,noreferrer");
+};
 
   return (
     <div>
@@ -1000,29 +1121,18 @@ const [activityFeed, setActivityFeed] = useState({
                   </div>
                 </div>
 
-                {/* Today vs Prev Day Tabs */}
-                <div className="flex items-center bg-gray-100/90 p-1 rounded-xl gap-1">
-                  <button
-                    onClick={() => setActivityDayTab("today")}
-                    className={`px-4 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
-                      activityDayTab === "today"
-                        ? "bg-[#F59403] text-white shadow-xs"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    Today
-                  </button>
-                  <button
-                    onClick={() => setActivityDayTab("prev_day")}
-                    className={`px-4 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
-                      activityDayTab === "prev_day"
-                        ? "bg-[#F59403] text-white shadow-xs"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    Prev Day
-                  </button>
-                </div>
+                {/* Activity Count and Date Range */}
+<div className="flex items-center gap-2 flex-wrap">
+  <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+    {activityFeed.count || 0} activities
+  </span>
+
+  {activityFeed.start_date && activityFeed.end_date && (
+    <span className="hidden sm:inline-flex text-xs text-[#805830] bg-[#FFF8F0] border border-orange-100 px-3 py-1.5 rounded-full">
+      {activityFeed.start_date} → {activityFeed.end_date}
+    </span>
+  )}
+</div>
               </div>
 
               {/* Content Body */}
@@ -1049,6 +1159,8 @@ const [activityFeed, setActivityFeed] = useState({
     badge: "bg-gray-50 text-gray-700 border border-gray-200",
 };
 
+
+
                       return (
                         <div key={activity.id} className="relative flex gap-3.5 group items-center">
                           {/* Timeline Node */}
@@ -1060,9 +1172,12 @@ const [activityFeed, setActivityFeed] = useState({
                           </div>
 
                           {/* Activity Card - Single Responsive Line */}
-                          <div className="flex-1">
+                          <div
+  className="flex-1 cursor-pointer"
+  onClick={() => handleActivityClick(activity)}
+>
                             {isDoubtPending ? (
-                              <div className="bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-white border border-amber-200/70 rounded-md px-4 py-2.5 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                             <div className="bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-white border border-amber-200/70 rounded-md px-4 py-2.5 shadow-xs hover:shadow-sm cursor-pointer transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                                 <div className="flex flex-wrap items-center gap-2 text-xs">
                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300/60 whitespace-nowrap">
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
@@ -1080,7 +1195,7 @@ const [activityFeed, setActivityFeed] = useState({
                                 </span>
                               </div>
                             ) : (
-                              <div className="bg-white hover:bg-slate-50/80 border border hover:border-orange-200/80 rounded-md px-4 py-2.5 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="bg-white hover:bg-slate-50/80 border border-gray-100 hover:border-orange-200/80 rounded-md px-4 py-2.5 shadow-xs hover:shadow-sm cursor-pointer transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                                 <div className="flex flex-wrap items-center gap-2.5 text-xs">
                                  <span
   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide whitespace-nowrap ${config.badge}`}

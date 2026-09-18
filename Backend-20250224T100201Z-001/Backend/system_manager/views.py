@@ -194,245 +194,606 @@ class DoubtViewSet(viewsets.ModelViewSet):
     methods=["GET"],
     permission_classes=[IsAuthenticated],
     url_path="activity-feed"
-)
+    )
     def activity_feed(self, request):
 
+        # =====================================================
+        # DATE FILTER
+        # =====================================================
+
+        date_filter = request.GET.get("filter", "today")
+
+        start_date_param = request.GET.get("start_date")
+        end_date_param = request.GET.get("end_date")
+
         today = timezone.localdate()
-        previous_day = today - timedelta(days=1)
 
-        today_start = timezone.make_aware(
-            timezone.datetime.combine(today, timezone.datetime.min.time())
+        # -----------------------------------------------------
+        # Determine Date Range
+        # -----------------------------------------------------
+
+        if start_date_param and end_date_param:
+
+            try:
+                start_date = datetime.strptime(
+                    start_date_param,
+                    "%Y-%m-%d"
+                ).date()
+
+                end_date = datetime.strptime(
+                    end_date_param,
+                    "%Y-%m-%d"
+                ).date()
+
+            except ValueError:
+
+                return Response(
+                    {
+                        "error": "Invalid date format. Use YYYY-MM-DD."
+                    },
+                    status=400
+                )
+
+            if start_date > end_date:
+
+                return Response(
+                    {
+                        "error": "start_date cannot be greater than end_date."
+                    },
+                    status=400
+                )
+
+        else:
+
+            if date_filter == "today":
+
+                start_date = today
+                end_date = today
+
+            elif date_filter == "last_week":
+
+                start_date = today - timedelta(days=6)
+                end_date = today
+
+            elif date_filter == "last_month":
+
+                start_date = today.replace(day=1)
+                end_date = today
+
+            elif date_filter == "yesterday":
+
+                start_date = today - timedelta(days=1)
+                end_date = start_date
+
+            else:
+
+                return Response(
+                    {
+                        "error": (
+                            "Invalid filter. Use today, last_week, "
+                            "last_month, or yesterday."
+                        )
+                    },
+                    status=400
+                )
+
+        # =====================================================
+        # TIMEZONE-AWARE DATE RANGE
+        # =====================================================
+
+        start_datetime = timezone.make_aware(
+            datetime.combine(
+                start_date,
+                datetime.min.time()
+            )
         )
 
-        previous_start = timezone.make_aware(
-            timezone.datetime.combine(previous_day, timezone.datetime.min.time())
+        # Exclusive end boundary (next day at midnight)
+        end_datetime = timezone.make_aware(
+            datetime.combine(
+                end_date + timedelta(days=1),
+                datetime.min.time()
+            )
         )
 
-        previous_end = today_start
+        # =====================================================
+        # BUILD ACTIVITY
+        # =====================================================
 
-        def build_activity(day_start, day_end=None):
+        def build_activity():
 
             activities = []
 
-            # --------------------------
-            # Pending Doubts
-            # --------------------------
+            # =================================================
+            # 1. PENDING DOUBTS
+            # =================================================
+
             pending_queryset = Doubt.objects.filter(
                 status=Doubt.RAISED,
-                created_at__gte=day_start,
-            )
+                created_at__gte=start_datetime,
+                created_at__lt=end_datetime
+            ).select_related(
+                "student"
+            ).order_by("-created_at")
 
-            if day_end:
-                pending_queryset = pending_queryset.filter(
-                    created_at__lt=day_end
-                )
+            for obj in pending_queryset:
 
-            pending_doubts = pending_queryset.count()
-            latest_pending_doubt = pending_queryset.order_by("-created_at").first()
+                student = getattr(obj, "student", None)
 
-            if pending_doubts:
+                student_id = getattr(student, "id", None)
+                student_name = getattr(student, "name", "Unknown Student")
+
                 activities.append({
-                    "id": "pending-doubts",
+
+                    "id": f"doubt-{obj.id}",
+
                     "type": "doubt",
-                    "title": "Pending Doubts",
-                    "description": f"{pending_doubts} doubts are waiting for faculty response.",
-                    "meta": f"{pending_doubts} Pending",
+
+                    "title": "Pending Doubt",
+
+                    "description": (
+                        f"{student_name} submitted a doubt."
+                    ),
+
+                    "meta": "Pending",
+
                     "status": "warning",
+
                     "icon": "question-circle",
+
                     "color": "#faad14",
-                    "time": latest_pending_doubt.created_at,
+
+                    "time": obj.created_at,
+
+                    # Navigation information
+                    "link_type": "doubt",
+
+                    "record_id": obj.id,
+
+                    "student_id": student_id,
+
+                    "student_name": student_name,
+
                 })
 
-            # --------------------------
-            # Full Length Tests
-            # --------------------------
+            # =================================================
+            # 2. FULL LENGTH TESTS
+            # =================================================
 
             fl_queryset = TestSubmission.objects.filter(
                 status=TestSubmission.COMPLETED,
-                completion_date__gte=day_start
-            )
+                completion_date__gte=start_datetime,
+                completion_date__lt=end_datetime
+            ).select_related(
+                "student",
+                "test"
+            ).order_by("-completion_date")
 
-            if day_end:
-                fl_queryset = fl_queryset.filter(
-                    completion_date__lt=day_end
-                )
+            for obj in fl_queryset:
 
-            for obj in fl_queryset.select_related("student", "test"):
+                student = getattr(obj, "student", None)
+                test = getattr(obj, "test", None)
+
+                student_id = getattr(student, "id", None)
+                student_name = getattr(student, "name", "Unknown Student")
+
+                test_name = getattr(test, "name", "Full Length Test")
+
                 score = self.calculate_flt_score(obj)
 
                 activities.append({
-                    "id": obj.id,
+
+                    "id": f"fl-test-{obj.id}",
+
                     "type": "fl-test",
+
                     "title": "Full Length Test Completed",
-                    "description": f"{obj.student.name} completed '{obj.test.name}'.",
+
+                    "description": (
+                        f"{student_name} completed '{test_name}'."
+                    ),
+
                     "meta": f"Score: {score}",
+
                     "status": "success",
+
                     "icon": "file-done",
+
                     "color": "#52c41a",
+
                     "time": obj.completion_date,
+
+                    # Navigation information
+                    "link_type": "fl-test",
+
+                    "record_id": obj.id,
+
+                    "student_id": student_id,
+
+                    "student_name": student_name,
+
+                    "test_id": getattr(test, "id", None),
+
                 })
 
-            # --------------------------
-            # Practice Tests
-            # --------------------------
-
-            
+            # =================================================
+            # 3. PRACTICE TESTS
+            # =================================================
 
             practice_queryset = PracticeTestResult.objects.filter(
-                created_at__gte=day_start
-            )
-
-            if day_end:
-                practice_queryset = practice_queryset.filter(
-                    created_at__lt=day_end
-                )
-
-            practice_queryset = practice_queryset.select_related(
+                created_at__gte=start_datetime,
+                created_at__lt=end_datetime
+            ).select_related(
                 "practice_test",
                 "practice_test__student",
                 "practice_test__course_subject",
                 "practice_test__course_subject__subject",
-            )
+            ).order_by("-created_at")
 
             for obj in practice_queryset:
 
-                student_name = obj.practice_test.student.name
-                subject_name = obj.practice_test.course_subject.subject.name
+                practice_test = getattr(obj, "practice_test", None)
+
+                student = getattr(
+                    practice_test,
+                    "student",
+                    None
+                )
+
+                course_subject = getattr(
+                    practice_test,
+                    "course_subject",
+                    None
+                )
+
+                subject = getattr(
+                    course_subject,
+                    "subject",
+                    None
+                )
+
+                student_id = getattr(student, "id", None)
+
+                student_name = getattr(
+                    student,
+                    "name",
+                    "Unknown Student"
+                )
+
+                subject_name = getattr(
+                    subject,
+                    "name",
+                    "Unknown Subject"
+                )
 
                 activities.append({
+
                     "id": f"practice-{obj.id}",
+
                     "type": "pr-test",
+
                     "title": "Practice Test Completed",
+
                     "description": (
-                        f"{student_name} completed {subject_name} Practice Test."
+                        f"{student_name} completed "
+                        f"{subject_name} Practice Test."
                     ),
-                    "meta": f"Correct Answers: {obj.correct_answer_count}",
+
+                    "meta": (
+                        f"Correct Answers: "
+                        f"{obj.correct_answer_count}"
+                    ),
+
                     "status": "success",
+
                     "icon": "read",
+
                     "color": "#1890ff",
+
                     "time": obj.created_at,
+
+                    # Navigation information
+                    "link_type": "pr-test",
+
+                    "record_id": obj.id,
+
+                    "student_id": student_id,
+
+                    "student_name": student_name,
+
+                    "practice_test_id": getattr(
+                        practice_test,
+                        "id",
+                        None
+                    ),
+
                 })
 
-                
-
-            # --------------------------
-            # Issues
-            # --------------------------
+            # =================================================
+            # 4. ISSUES
+            # =================================================
 
             issue_queryset = Issue.objects.filter(
-                created_at__gte=day_start
-            )
+                created_at__gte=start_datetime,
+                created_at__lt=end_datetime
+            ).select_related(
+                "student"
+            ).order_by("-created_at")
 
-            if day_end:
-                issue_queryset = issue_queryset.filter(
-                    created_at__lt=day_end
+            for obj in issue_queryset:
+
+                student = getattr(obj, "student", None)
+
+                student_id = getattr(student, "id", None)
+
+                student_name = getattr(
+                    student,
+                    "name",
+                    "Unknown Student"
                 )
 
-            for obj in issue_queryset.select_related("student"):
-
                 activities.append({
+
                     "id": f"issue-{obj.id}",
+
                     "type": "issue",
+
                     "title": "Issue Raised",
-                    "description": f"{obj.student.name} submitted a support issue.",
-                    "meta": obj.status.replace("_", " ").title(),
+
+                    "description": (
+                        f"{student_name} submitted a support issue."
+                    ),
+
+                    "meta": obj.status.replace(
+                        "_",
+                        " "
+                    ).title(),
+
                     "status": "error",
+
                     "icon": "warning",
+
                     "color": "#ff4d4f",
+
                     "time": obj.created_at,
+
+                    # Navigation information
+                    "link_type": "issue",
+
+                    "record_id": obj.id,
+
+                    "student_id": student_id,
+
+                    "student_name": student_name,
+
                 })
 
-            # --------------------------
-            # Concerns
-            # --------------------------
+            # =================================================
+            # 5. CONCERNS
+            # =================================================
 
             concern_queryset = Concern.objects.filter(
-                created_at__gte=day_start
-            )
+                created_at__gte=start_datetime,
+                created_at__lt=end_datetime
+            ).select_related(
+                "parent"
+            ).order_by("-created_at")
 
-            if day_end:
-                concern_queryset = concern_queryset.filter(
-                    created_at__lt=day_end
+            for obj in concern_queryset:
+
+                parent = getattr(obj, "parent", None)
+
+                parent_id = getattr(parent, "id", None)
+
+                parent_name = getattr(
+                    parent,
+                    "name",
+                    "Unknown Parent"
                 )
 
-            for obj in concern_queryset.select_related("parent"):
-
                 activities.append({
+
                     "id": f"concern-{obj.id}",
+
                     "type": "concern",
+
                     "title": "Concern Submitted",
-                    "description": f"{obj.parent.name} submitted a concern.",
-                    "meta": obj.status.replace("_", " ").title(),
+
+                    "description": (
+                        f"{parent_name} submitted a concern."
+                    ),
+
+                    "meta": obj.status.replace(
+                        "_",
+                        " "
+                    ).title(),
+
                     "status": "warning",
+
                     "icon": "exclamation-circle",
+
                     "color": "#faad14",
+
                     "time": obj.created_at,
+
+                    # Navigation information
+                    "link_type": "concern",
+
+                    "record_id": obj.id,
+
+                    "parent_id": parent_id,
+
+                    "parent_name": parent_name,
+
                 })
 
-            # --------------------------
-            # Suggestions
-            # --------------------------
+            # =================================================
+            # 6. SUGGESTIONS
+            # =================================================
 
             suggestion_queryset = Suggestion.objects.filter(
-                created_at__gte=day_start
-            )
+                created_at__gte=start_datetime,
+                created_at__lt=end_datetime
+            ).select_related(
+                "created_by"
+            ).order_by("-created_at")
 
-            if day_end:
-                suggestion_queryset = suggestion_queryset.filter(
-                    created_at__lt=day_end
+            for obj in suggestion_queryset:
+
+                created_by = getattr(
+                    obj,
+                    "created_by",
+                    None
                 )
 
-            for obj in suggestion_queryset.select_related("created_by"):
+                created_by_id = getattr(
+                    created_by,
+                    "id",
+                    None
+                )
+
+                created_by_name = getattr(
+                    created_by,
+                    "name",
+                    "Unknown User"
+                )
 
                 activities.append({
+
                     "id": f"suggestion-{obj.id}",
+
                     "type": "suggestion",
+
                     "title": "Suggestion Submitted",
-                    "description": f"{obj.created_by.name} submitted a suggestion.",
-                    "meta": obj.status.replace("_", " ").title(),
+
+                    "description": (
+                        f"{created_by_name} submitted a suggestion."
+                    ),
+
+                    "meta": obj.status.replace(
+                        "_",
+                        " "
+                    ).title(),
+
                     "status": "info",
+
                     "icon": "bulb",
+
                     "color": "#722ed1",
+
                     "time": obj.created_at,
+
+                    # Navigation information
+                    "link_type": "suggestion",
+
+                    "record_id": obj.id,
+
+                    "created_by_id": created_by_id,
+
+                    "created_by_name": created_by_name,
+
                 })
 
-            # --------------------------
-            # Meetings
-            # --------------------------
+            # =================================================
+            # 7. MEETINGS
+            # =================================================
 
             meeting_queryset = Meeting.objects.filter(
-                created_at__gte=day_start
-            )
+                created_at__gte=start_datetime,
+                created_at__lt=end_datetime
+            ).select_related(
+                "requested_by"
+            ).order_by("-created_at")
 
-            if day_end:
-                meeting_queryset = meeting_queryset.filter(
-                    created_at__lt=day_end
+            for obj in meeting_queryset:
+
+                requested_by = getattr(
+                    obj,
+                    "requested_by",
+                    None
                 )
 
-            for obj in meeting_queryset.select_related("requested_by"):
+                requested_by_id = getattr(
+                    requested_by,
+                    "id",
+                    None
+                )
+
+                requested_by_name = getattr(
+                    requested_by,
+                    "name",
+                    "Unknown User"
+                )
 
                 activities.append({
+
                     "id": f"meeting-{obj.id}",
+
                     "type": "meeting",
+
                     "title": "Meeting Requested",
-                    "description": f"{obj.requested_by.name} requested a meeting.",
-                    "meta": obj.status.replace("_", " ").title(),
+
+                    "description": (
+                        f"{requested_by_name} requested a meeting."
+                    ),
+
+                    "meta": obj.status.replace(
+                        "_",
+                        " "
+                    ).title(),
+
                     "status": "info",
+
                     "icon": "calendar",
+
                     "color": "#13c2c2",
+
                     "time": obj.created_at,
+
+                    # Navigation information
+                    "link_type": "meeting",
+
+                    "record_id": obj.id,
+
+                    "requested_by_id": requested_by_id,
+
+                    "requested_by_name": requested_by_name,
+
                 })
 
+            # =================================================
+            # SORT ACTIVITIES
+            # =================================================
+
             activities.sort(
-                key=lambda x: x["time"],
+                key=lambda x: x["time"] or timezone.now(),
                 reverse=True
             )
 
             return activities
 
+        # =====================================================
+        # RESPONSE
+        # =====================================================
+
+        activities = build_activity()
+
         return Response({
-            "today": build_activity(today_start),
-            "previous_day": build_activity(previous_start, previous_end)
+
+            "start_date": start_date.isoformat(),
+
+            "end_date": end_date.isoformat(),
+
+            "filter": (
+                "custom"
+                if start_date_param and end_date_param
+                else date_filter
+            ),
+
+            "count": len(activities),
+
+            "activities": activities,
+
         })
 
     @action(
