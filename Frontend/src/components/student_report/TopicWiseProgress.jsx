@@ -92,63 +92,108 @@ export default function TopicWiseProgress({
   test_type, // fullLength | practiceTest
 }) {
 
+  const [needsImprovementTopics, setNeedsImprovementTopics] = useState([]);  
   const [chartData, setChartData] = useState([]);
   const [accordionData, setAccordionData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [skillsData, setSkillsData] = useState([]);
+  const [strongTopics, setStrongTopics] = useState([]);
+
 
   /* ================= FETCH API ================= */
-  useEffect(() => {
-    if (!student_id || !course_id || !test_type) return;
+ useEffect(() => {
+  if (!student_id || !course_id || !test_type || !subject) return;
 
-    
+  let apiTestType;
 
-    
-      let apiTestType;
+  if (test_type === "fullLength") {
+    apiTestType = "fullLength";
+  } else if (test_type === "practiceTest") {
+    apiTestType = "practiceTest";
+  } else if (test_type === "overall") {
+    apiTestType = "overall";
+  } else {
+    return;
+  }
 
-      if (test_type === "fullLength") {
-        apiTestType = "FULL_LENGTH";
-      } else if (test_type === "practiceTest") {
-        apiTestType = "PRACTICE";
-      } else if (test_type === "overall") {
-        apiTestType = "OVERALL";
-      } else {
-        return;
-      }
+  setLoading(true);
 
-    setLoading(true);
+  Promise.all([
+    // Existing Topic Wise Progress API
+    axios.get(`${BASE_URL}/api/result/topic-wise-progress/`, {
+      params: {
+        student_id,
+        course_id,
+        subject,
+        test_type:
+          apiTestType === "fullLength"
+            ? "FULL_LENGTH"
+            : apiTestType === "practiceTest"
+            ? "PRACTICE"
+            : "OVERALL",
+      },
+      withCredentials: true,
+    }),
 
-    axios.get(
-      `${BASE_URL}/api/result/topic-wise-progress/`,
-      {
-        params: {
-          student_id,
-          course_id,
-          subject,
-          test_type: apiTestType,
-        },
-        withCredentials: true,
-      }
-    )
-      .then(res => {
-        setChartData(res.data.chartData || []);
-        setSkillsData(res.data.skillsData || []);
-        setAccordionData(
-          (res.data.accordionData || []).map(topic => ({
-            ...topic,
-            icon: ICON_MAP[topic.title] || FaRegFileAlt,
-            iconBg: topic.score >= 75
+    // Student Improvement API
+    axios.get(`${BASE_URL}/api/result/student-improvement/`, {
+      params: {
+        student_id,
+        course_id,
+        test_type: apiTestType,
+      },
+      withCredentials: true,
+    }),
+  ])
+    .then(([topicProgressResponse, improvementResponse]) => {
+      const topicProgressData = topicProgressResponse.data;
+
+      setChartData(topicProgressData.chartData || []);
+      setSkillsData(topicProgressData.skillsData || []);
+
+      setAccordionData(
+        (topicProgressData.accordionData || []).map((topic) => ({
+          ...topic,
+          icon: ICON_MAP[topic.title] || FaRegFileAlt,
+          iconBg:
+            topic.score >= 75
               ? "bg-emerald-50 text-emerald-600"
-              : "bg-orange-50 text-orange-600"
-          }))
-        );
-      })
-      .catch(err => {
-        console.error("Topic-wise progress API error:", err);
-      })
-      .finally(() => setLoading(false));
+              : "bg-orange-50 text-orange-600",
+        }))
+      );
 
-  }, [student_id, course_id, subject, test_type]);
+      // Find selected subject from student-improvement API
+      const subjects = improvementResponse.data.subjects || [];
+
+      const selectedSubject = subjects.find(
+        (item) =>
+          item.subject?.toUpperCase() === subject.toUpperCase() ||
+          item.name?.toUpperCase() === subject.toUpperCase()
+      );
+
+      // Get topics below 70%
+      const improvementTopics =
+  selectedSubject?.needs_improvement || [];
+
+const goodTopics =
+  selectedSubject?.good_at || [];
+
+setNeedsImprovementTopics(
+  [...improvementTopics].sort((a, b) => a.score - b.score)
+);
+
+setStrongTopics(
+  [...goodTopics].sort((a, b) => b.score - a.score)
+);
+    })
+    .catch((error) => {
+      console.error("Topic-wise progress API error:", error);
+      setNeedsImprovementTopics([]);
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+}, [student_id, course_id, subject, test_type]);
 
   /* ================= EMPTY STATE ================= */
   if ((!chartData || chartData.length === 0) && (!accordionData || accordionData.length === 0)) {
@@ -173,6 +218,12 @@ export default function TopicWiseProgress({
   return (
     <div className="space-y-5">
 
+      {/* ================= NEEDS IMPROVEMENT ================= */}
+      <NeedsImprovementTopics
+  strongTopics={strongTopics}
+  weakTopics={needsImprovementTopics}
+/>
+
       {/* ================= TOP CHARTS ================= */}
       <ChartsSection chartData={chartData} skillsData={skillsData} />
 
@@ -183,8 +234,12 @@ export default function TopicWiseProgress({
         ))}
       </div>
 
+        
+
       {/* ================= LEADERBOARD ================= */}
       <TopicLeaderboard allData={accordionData} />
+
+      
 
     </div>
   );
@@ -390,6 +445,157 @@ const TopicCard = ({ topic }) => {
           })}
         </div>
       )}
+    </div>
+  );
+};
+
+
+const NeedsImprovementTopics = ({
+  strongTopics,
+  weakTopics,
+}) => {
+  const formatScore = (score) =>
+    Math.round(Number(score) || 0);
+
+  const TopicCard = ({ topic, strong }) => {
+    const score = formatScore(topic.score);
+
+    return (
+      <div
+        className={`rounded-xl p-4 border ${
+          strong
+            ? "bg-emerald-50 border-emerald-200"
+            : "bg-orange-50 border-orange-200"
+        }`}
+      >
+        <div className="flex justify-between items-start gap-3">
+          <div>
+            <h3 className="font-bold text-gray-800">
+              {topic.name}
+            </h3>
+
+            <p className="text-xs text-gray-500 mt-1">
+              {strong
+                ? "Excellent performance"
+                : "Practice recommended"}
+            </p>
+          </div>
+
+          <span
+            className={`text-lg font-bold ${
+              strong
+                ? "text-emerald-600"
+                : "text-orange-600"
+            }`}
+          >
+            {score}%
+          </span>
+        </div>
+
+        <div
+          className={`w-full h-2 rounded-full mt-4 ${
+            strong ? "bg-emerald-200" : "bg-orange-200"
+          }`}
+        >
+          <div
+            className={`h-2 rounded-full ${
+              strong
+                ? "bg-emerald-500"
+                : "bg-orange-500"
+            }`}
+            style={{
+              width: `${Math.min(Math.max(score, 0), 100)}%`,
+            }}
+          />
+        </div>
+
+        <div className="flex justify-between text-xs text-gray-500 mt-2">
+          <span>Correct: {Math.round(topic.correct)}</span>
+          <span>Attempted: {Math.round(topic.total_attempted)}</span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6 mt-6">
+
+      {/* ================= STRONG TOPICS ================= */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-emerald-200">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Strong Topics
+            </h2>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Topics where your score is 70% or above
+            </p>
+          </div>
+
+          <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-sm font-semibold">
+            {strongTopics.length} Topics
+          </span>
+        </div>
+
+        {strongTopics.length === 0 ? (
+          <p className="text-center text-gray-500 py-5">
+            No strong topics yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {strongTopics.map((topic) => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                strong={true}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ================= WEAK TOPICS ================= */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-orange-200">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Weak Topics
+            </h2>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Topics where your score is below 70%
+            </p>
+          </div>
+
+          <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-semibold">
+            {weakTopics.length} Topics
+          </span>
+        </div>
+
+        {weakTopics.length === 0 ? (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center">
+            <h3 className="font-bold text-emerald-700">
+              Great job!
+            </h3>
+
+            <p className="text-sm text-emerald-600 mt-1">
+              You have no topics that need improvement.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {weakTopics.map((topic) => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                strong={false}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };
