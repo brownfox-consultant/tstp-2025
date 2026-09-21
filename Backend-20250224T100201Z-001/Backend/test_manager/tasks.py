@@ -255,7 +255,7 @@ def send_test_completion_email(test_submission_id):
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[student.email],
             cc=admin_emails,
-            bcc=["vijayaluguvelli@gmail.com"],
+            bcc=["vijayaluguvelli@gmail.com","surya2254@gmail.com"],
         )
 
         msg.attach_alternative(html_content, "text/html")
