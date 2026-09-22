@@ -565,7 +565,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
         />
       </div>
       <Modal
-        width={modalData.question_type === "MCQ" ? "80rem" : "64rem"}
+        width="80rem"
         open={showModal}
        title={
   <div className="w-full pr-5">
@@ -647,7 +647,7 @@ function ReportTable({ sectionData, testSubmissionId }) {
                 font-semibold
                 transition-all
                 duration-150
-                hover:scale-105
+                
 
                 ${circleClass}
 
@@ -677,7 +677,16 @@ function ReportTable({ sectionData, testSubmissionId }) {
           setSelectedOptions([]);
           setCurrentQuestionIndex(null);
         }}
-        style={{ height: "85vh" }}
+        styles={{
+  content: {
+    height: "85vh",
+  },
+  body: {
+    height: "calc(85vh - 150px)",
+    overflowY: "auto",
+    overflowX: "hidden",
+  },
+}}
         footer={
           <div className="flex justify-between items-center w-full">
             <button
