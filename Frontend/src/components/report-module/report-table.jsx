@@ -86,6 +86,14 @@ function ReportTable({ sectionData, testSubmissionId }) {
     }
   };
 
+
+  const handleQuestionNumberClick = (question, index) => {
+  setShowModal(question.sr_no);
+  setCurrentQuestionId(question.question_id);
+  setCurrentQuestionIndex(index);
+  setSelectedOptions(question.selected_options || []);
+};
+
   const questionViewCols = [
     role !== "student" && {
       title: "Question Id",
@@ -559,17 +567,108 @@ function ReportTable({ sectionData, testSubmissionId }) {
       <Modal
         width={modalData.question_type === "MCQ" ? "80rem" : "64rem"}
         open={showModal}
-        title={
-          <div className="flex items-center gap-2">
-            <span>Reviewing Question {currentQuestionIndex + 1}</span>
-            {role !== "student" && modalData?.srno && (
-              <>
-                <span className="text-gray-400">|</span>
-                <span className="text-sm text-gray-500">Question Id: {modalData.srno}</span>
-              </>
-            )}
-          </div>
-        }
+       title={
+  <div className="w-full pr-5">
+
+    {/* Title */}
+    <div className="flex items-center gap-2 text-sm font-medium mb-2">
+      <span>
+        Reviewing Question {currentQuestionIndex + 1}
+      </span>
+
+      {role !== "student" && modalData?.srno && (
+        <>
+          <span className="text-gray-400">|</span>
+
+          <span className="text-sm text-gray-500">
+            Question Id: {modalData.srno}
+          </span>
+        </>
+      )}
+    </div>
+
+    {/* Question Number Navigation */}
+    <div className="w-full border-b border-gray-300 pb-3">
+      <div className="flex justify-center items-center gap-2 overflow-x-auto">
+
+        {questions_data.map((question, index) => {
+
+          const isCurrent =
+            index === currentQuestionIndex;
+
+          const isSkipped =
+            question.is_skipped === true;
+
+          const isCorrect =
+            question.result === true &&
+            !isSkipped;
+
+          const isWrong =
+            question.result === false &&
+            !isSkipped;
+
+          let circleClass =
+            "bg-gray-300 text-white";
+
+          if (isCorrect) {
+            circleClass =
+              "bg-green-500 text-white";
+          }
+
+          if (isWrong) {
+            circleClass =
+              "bg-red-500 text-white";
+          }
+
+          if (isSkipped) {
+            circleClass =
+              "bg-gray-400 text-white";
+          }
+
+          return (
+            <button
+              key={question.question_id}
+              type="button"
+              onClick={() =>
+                handleQuestionNumberClick(
+                  question,
+                  index
+                )
+              }
+              className={`
+                flex-shrink-0
+                w-7
+                h-7
+                rounded-full
+                flex
+                items-center
+                justify-center
+                text-xs
+                font-semibold
+                transition-all
+                duration-150
+                hover:scale-105
+
+                ${circleClass}
+
+                ${
+                  isCurrent
+                    ? "ring-4 ring-yellow-300"
+                    : ""
+                }
+              `}
+              title={`Question ${index + 1}`}
+            >
+              {index + 1}
+            </button>
+          );
+        })}
+
+      </div>
+    </div>
+
+  </div>
+}
         centered
         onCancel={() => {
           setShowModal(false);
