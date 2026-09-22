@@ -110,43 +110,69 @@ function ReportTable({ sectionData, testSubmissionId }) {
       ),
     },
     {
-      title: "Difficulty",
-      dataIndex: "difficulty",
-      key: "difficulty",
-      align: "center",
+  title: "Difficulty",
+  dataIndex: "difficulty",
+  key: "difficulty",
+  align: "center",
+  filterMultiple: true,
 
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-        <div style={{ padding: 8 }}>
-          <Radio.Group
-            value={selectedKeys[0]}
-            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-            style={{ display: "flex", flexDirection: "column", gap: 4 }}
-          >
-            <Radio value="VERY_EASY">Very Easy</Radio>
-            <Radio value="EASY">Easy</Radio>
-            <Radio value="MODERATE">Moderate</Radio>
-            <Radio value="HARD">Hard</Radio>
-            <Radio value="VERY_HARD">Very Hard</Radio>
-          </Radio.Group>
-          <div style={{ marginTop: 8, textAlign: "right" }}>
-            <Button
-              size="small"
-              onClick={() => {
-                clearFilters();
-                confirm();
-              }}
-              style={{ marginRight: 8 }}
-            >
-              Reset
-            </Button>
-            <Button type="primary" size="small" onClick={() => confirm()}>
-              OK
-            </Button>
-          </div>
-        </div>
-      ),
-      onFilter: (value, record) => record.difficulty === value,
-    },
+  filterDropdown: ({
+    setSelectedKeys,
+    selectedKeys,
+    confirm,
+    clearFilters,
+  }) => (
+    <div style={{ padding: 8, width: 180 }}>
+      <Checkbox.Group
+        value={selectedKeys}
+        options={[
+          { label: "Very Easy", value: "VERY_EASY" },
+          { label: "Easy", value: "EASY" },
+          { label: "Moderate", value: "MODERATE" },
+          { label: "Hard", value: "HARD" },
+          { label: "Very Hard", value: "VERY_HARD" },
+        ]}
+        onChange={(values) => setSelectedKeys(values)}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}
+      />
+
+      <div
+        style={{
+          marginTop: 10,
+          textAlign: "right",
+          borderTop: "1px solid #f0f0f0",
+          paddingTop: 8,
+        }}
+      >
+        <Button
+          size="small"
+          onClick={() => {
+            clearFilters();
+            confirm();
+          }}
+          style={{ marginRight: 8 }}
+        >
+          Reset
+        </Button>
+
+        <Button
+          type="primary"
+          size="small"
+          onClick={() => confirm()}
+        >
+          OK
+        </Button>
+      </div>
+    </div>
+  ),
+
+  onFilter: (value, record) =>
+    record.difficulty === value,
+},
     // {
     //     title: "Test Type",
     //     dataIndex: "test_type",
@@ -181,33 +207,69 @@ function ReportTable({ sectionData, testSubmissionId }) {
     //     onFilter: (value, record) => record.test_type === value,
     //   },
 
-    {
-      title: "Sub Topic",
-      dataIndex: "sub_topic",
-      key: "sub_topic",
-      align: "center",
+   {
+  title: "Sub Topic",
+  dataIndex: "sub_topic",
+  key: "sub_topic",
+  align: "center",
+  filterMultiple: true,
 
-      render: (value) => value || "-",
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-        <div style={{ padding: 8, width: 200 }}>
-          <Checkbox.Group
-            value={selectedKeys}
-            options={buildOptions(questions_data, "sub_topic")}
-            onChange={(vals) => setSelectedKeys(vals)}
-            style={{ display: "flex", flexDirection: "column", gap: 4 }}
-          />
-          <div style={{ marginTop: 8, textAlign: "right" }}>
-            <Button size="small" onClick={() => { clearFilters(); confirm(); }} style={{ marginRight: 8 }}>
-              Reset
-            </Button>
-            <Button type="primary" size="small" onClick={() => confirm()}>
-              OK
-            </Button>
-          </div>
-        </div>
-      ),
-      onFilter: (value, record) => record.sub_topic === value,
-    },
+  render: (value) => value || "-",
+
+  filterDropdown: ({
+    setSelectedKeys,
+    selectedKeys,
+    confirm,
+    clearFilters,
+  }) => (
+    <div style={{ padding: 8, width: 200 }}>
+      <Checkbox.Group
+        value={selectedKeys}
+        options={buildOptions(
+          questions_data,
+          "sub_topic"
+        )}
+        onChange={(vals) =>
+          setSelectedKeys(vals)
+        }
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+        }}
+      />
+
+      <div
+        style={{
+          marginTop: 8,
+          textAlign: "right",
+        }}
+      >
+        <Button
+          size="small"
+          onClick={() => {
+            clearFilters();
+            confirm();
+          }}
+          style={{ marginRight: 8 }}
+        >
+          Reset
+        </Button>
+
+        <Button
+          type="primary"
+          size="small"
+          onClick={() => confirm()}
+        >
+          OK
+        </Button>
+      </div>
+    </div>
+  ),
+
+  onFilter: (value, record) =>
+    record.sub_topic === value,
+},
 
     {
       title: "Question Type",
@@ -263,55 +325,105 @@ function ReportTable({ sectionData, testSubmissionId }) {
       onFilter: (value, record) => record.topic === value,
     },
     {
-      title: "Result",
-      dataIndex: "result",
-      key: "result",
-      align: "center",
+  title: "Result",
+  dataIndex: "result",
+  key: "result",
+  align: "center",
+  filterMultiple: true,
 
-      render: (value, rowData) => {
-        return rowData.is_skipped ? (
-          <div className="h-3 w-3 border border-black rounded-full mx-auto"></div>
-        ) : value ? (
-          <CheckCircleTwoTone twoToneColor="#52c41a" />
-        ) : (
-          <CloseCircleTwoTone twoToneColor="#ff0000" />
-        );
-      },
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-        <div style={{ padding: 8 }}>
-          <Radio.Group
-            value={selectedKeys[0]}
-            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-            style={{ display: "flex", flexDirection: "column", gap: 4 }}
-          >
-            <Radio value="CORRECT">Correct</Radio>
-            <Radio value="WRONG">Wrong</Radio>
-            <Radio value="SKIPPED">Skipped</Radio>
-          </Radio.Group>
-          <div style={{ marginTop: 8, textAlign: "right" }}>
-            <Button
-              size="small"
-              onClick={() => {
-                clearFilters();
-                confirm();
-              }}
-              style={{ marginRight: 8 }}
-            >
-              Reset
-            </Button>
-            <Button type="primary" size="small" onClick={() => confirm()}>
-              OK
-            </Button>
-          </div>
-        </div>
-      ),
-      onFilter: (value, record) => {
-        if (value === "CORRECT") return record.result === true && !record.is_skipped;
-        if (value === "WRONG") return record.result === false && !record.is_skipped;
-        if (value === "SKIPPED") return record.is_skipped === true;
-        return true;
-      },
-    },
+  render: (value, rowData) => {
+    return rowData.is_skipped ? (
+      <div className="h-3 w-3 border border-black rounded-full mx-auto"></div>
+    ) : value ? (
+      <CheckCircleTwoTone twoToneColor="#52c41a" />
+    ) : (
+      <CloseCircleTwoTone twoToneColor="#ff0000" />
+    );
+  },
+
+  filterDropdown: ({
+    setSelectedKeys,
+    selectedKeys,
+    confirm,
+    clearFilters,
+  }) => (
+    <div style={{ padding: 8, width: 140 }}>
+      <Checkbox.Group
+        value={selectedKeys}
+        options={[
+          {
+            label: "Correct",
+            value: "CORRECT",
+          },
+          {
+            label: "Wrong",
+            value: "WRONG",
+          },
+          {
+            label: "Skipped",
+            value: "SKIPPED",
+          },
+        ]}
+        onChange={(values) => setSelectedKeys(values)}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}
+      />
+
+      <div
+        style={{
+          marginTop: 10,
+          textAlign: "right",
+          borderTop: "1px solid #f0f0f0",
+          paddingTop: 8,
+        }}
+      >
+        <Button
+          size="small"
+          onClick={() => {
+            clearFilters();
+            confirm();
+          }}
+          style={{ marginRight: 8 }}
+        >
+          Reset
+        </Button>
+
+        <Button
+          type="primary"
+          size="small"
+          onClick={() => confirm()}
+        >
+          OK
+        </Button>
+      </div>
+    </div>
+  ),
+
+  onFilter: (value, record) => {
+    if (value === "CORRECT") {
+      return (
+        record.result === true &&
+        !record.is_skipped
+      );
+    }
+
+    if (value === "WRONG") {
+      return (
+        record.result === false &&
+        !record.is_skipped
+      );
+    }
+
+    if (value === "SKIPPED") {
+      return record.is_skipped === true;
+    }
+
+    return true;
+  },
+},
     {
       title: "Times Viewed",
       dataIndex: "times_visited",
