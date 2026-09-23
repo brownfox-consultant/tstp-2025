@@ -7,6 +7,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import CurrentTab_New from "./CurrentTab_New";
 import ReportTable from "./report-table";
 import StudentActivityLog from "./StudentActivityLog";
+import axios from "axios";
+import { BASE_URL } from "@/app/constants/apiConstants";
 import { Spin } from "antd";
 import {
   ArrowLeftOutlined,
@@ -34,12 +36,15 @@ import {
   TargetIcon
 } from "./icons";
 
-const Admin_Report_New = ({ testSubmissionId, onClose }) => {
+const Admin_Report_New = ({  testSubmissionId,
+  onClose, }) => {
   const [activeTab, setActiveTab] = useState("english");
   const [questionMainTab, setQuestionMainTab] = useState("english");
   const [englishSubTab, setEnglishSubTab] = useState("sectionA");
   const [resultData, setResultData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [improvementData, setImprovementData] = useState(null);
+const [loadingImprovement, setLoadingImprovement] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
 
   const searchParams = useSearchParams();
@@ -62,6 +67,7 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       test_submission_id: testSubmissionId || test_submission_id,
     }).then((res) => {
       setResultData(res.data);
+      
       setLoading(false);
     });
   }, []);
@@ -104,6 +110,48 @@ const Admin_Report_New = ({ testSubmissionId, onClose }) => {
       }
     }
   }, [activeTab, resultData, selectedFlowSection]);
+
+  useEffect(() => {
+  const loadImprovementData = async () => {
+    const studentId = resultData?.student_id;
+    const selectedCourseId = resultData?.course_id;
+
+    if (!studentId || !selectedCourseId) {
+      return;
+    }
+
+    try {
+      setLoadingImprovement(true);
+
+      const response = await axios.get(
+        `${BASE_URL}/api/result/student-improvement/`,
+        {
+          params: {
+            student_id: studentId,
+            course_id: selectedCourseId,
+            test_type: "fullLength",
+          },
+          withCredentials: true,
+        }
+      );
+
+      console.log("Student Improvement API:", response.data);
+
+      setImprovementData(response.data);
+    } catch (error) {
+      console.error(
+        "Error loading improvement data:",
+        error
+      );
+
+      setImprovementData(null);
+    } finally {
+      setLoadingImprovement(false);
+    }
+  };
+
+  loadImprovementData();
+}, [resultData]);
 
   const getSubjectIcon = (subjectName) => {
     const name = subjectName?.toLowerCase();
@@ -2104,6 +2152,7 @@ const renderQuestionTimeGraph = (flow) => {
             testSubmissionId={
               testSubmissionId
             }
+            improvementData={improvementData}
           />
         </>
       )}
@@ -2122,6 +2171,7 @@ const renderQuestionTimeGraph = (flow) => {
             testSubmissionId={
               testSubmissionId
             }
+            improvementData={improvementData}
           />
         </>
       )}

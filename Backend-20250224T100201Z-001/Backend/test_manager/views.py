@@ -9497,7 +9497,9 @@ class ResultViewSet(viewsets.ModelViewSet):
         response_data = {
             'testName': f'Test - {test.name}',
             'testDate': test_submission.assigned_date.strftime('%Y-%m-%d'),
+            'student_id': test_submission.student_id,
             'studentName': student.name,
+            'course_id': test.course_id,
             'total_score': 0,
             'subjects': [],
             'navigation_pattern': self._get_navigation_pattern_summary(test_submission),

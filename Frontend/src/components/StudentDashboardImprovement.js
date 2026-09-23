@@ -201,12 +201,12 @@ function TopicRow({
 
 function RadarChart({ topics }) {
 
-  const size = 520;
+  const size = 500;
 
   const center =
     size / 2;
 
-  const radius = 175;
+  const radius = 125;
 
   const maxScore = 100;
 
@@ -338,7 +338,7 @@ function RadarChart({ topics }) {
 
         <svg
           viewBox={`0 0 ${size} ${size}`}
-          className="h-auto w-full max-w-[500px]"
+         className="h-auto w-full max-w-[500px]"
         >
 
           {/* Radar levels */}
@@ -1472,7 +1472,7 @@ export default function StudentDashboardImprovement() {
               SUBJECT HEADER
           ================================================== */}
 
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-6">
 
             <div>
 
@@ -1488,25 +1488,7 @@ export default function StudentDashboardImprovement() {
             </div>
 
 
-            <div
-              className={`flex items-center gap-2 rounded-full px-3.5 py-2 ${performanceStatus.bg}`}
-            >
-
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  averageScore >= 70
-                    ? "bg-emerald-500"
-                    : "bg-orange-500"
-                }`}
-              />
-
-              <span
-                className={`text-xs font-semibold ${performanceStatus.text}`}
-              >
-                {performanceStatus.label}
-              </span>
-
-            </div>
+            
 
           </div>
 
@@ -1552,14 +1534,14 @@ export default function StudentDashboardImprovement() {
               MAIN PERFORMANCE GRID
           ================================================== */}
 
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
 
 
             {/* =================================================
                 GOOD AT
             ================================================= */}
 
-            <div className="xl:col-span-2 overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/30">
+            <div className="xl:col-span-1 overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/30">
 
               <div className="border-b border-emerald-100 bg-emerald-50/60 px-5 py-4">
 
@@ -1574,7 +1556,7 @@ export default function StudentDashboardImprovement() {
                     <div>
 
                       <h4 className="font-bold text-gray-900">
-                        Good At
+                        Strong
                       </h4>
 
                       <p className="mt-0.5 text-xs text-gray-500">
@@ -1644,7 +1626,7 @@ export default function StudentDashboardImprovement() {
                 NEEDS IMPROVEMENT
             ================================================= */}
 
-            <div className="xl:col-span-2 overflow-hidden rounded-2xl border border-orange-100 bg-orange-50/30">
+           <div className="xl:col-span-1 overflow-hidden rounded-2xl border border-orange-100 bg-orange-50/30">
 
               <div className="border-b border-orange-100 bg-orange-50/60 px-5 py-4">
 
@@ -1659,7 +1641,7 @@ export default function StudentDashboardImprovement() {
                     <div>
 
                       <h4 className="font-bold text-gray-900">
-                        Needs Improvement
+                        Weak
                       </h4>
 
                       <p className="mt-0.5 text-xs text-gray-500">

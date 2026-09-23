@@ -458,7 +458,7 @@ function DashboardPage() {
             onClick={() => handleNavigation("/report")}
           >
             <ReportIcon />
-            <span className="whitespace-nowrap">View Reports</span>
+            <span className="whitespace-nowrap">View AI generated Reports</span>
           </button>
         </div>
       </div>

@@ -497,13 +497,19 @@ function CreateUserForm() {
                 rules={[{ required: true, message: "Please select date" }]}
               >
                 <DatePicker
-                  className="w-full h-11 rounded-lg"
-                  format="YYYY-MM-DD"
-                  placeholder="Select date"
-                  disabledDate={(current) =>
-                    current && current > dayjs().endOf("day")
-                  }
-                />
+  className="w-full h-11 rounded-lg"
+  format="YYYY-MM-DD"
+  placeholder="Select date"
+  disabledDate={(current) =>
+    current && current > dayjs().endOf("day")
+  }
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }}
+/>
               </Form.Item>
 
               {/* Blood Group */}

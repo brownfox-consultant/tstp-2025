@@ -9,20 +9,17 @@ import { getQuestionDetails } from "@/app/services/authService";
 import RaiseDoubtModal from "../RaiseDoubtModal";
 import { usePathname } from "next/navigation";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Area, AreaChart, Tooltip } from "recharts";
+import TopicStrengthWeakness from "./TopicStrengthWeakness";
 
-function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
-  const currentSubject = data.subjects[selectedSubject];
-  
-  if (!currentSubject) return <div className="p-4 text-center text-gray-500">No data available for this subject.</div>;
-
-  const { sections } = currentSubject;
+function CurrentTab_New({ selectedSubject, data, testSubmissionId , improvementData}) {
   const pathname = usePathname();
   const role = pathname.split("/")[2];
-  const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'correct', 'incorrect', 'blank'
 
+  const [filterStatus, setFilterStatus] = useState("all");
   const [selectedSection, setSelectedSection] = useState(0);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+
   const [reviewInfo, setReviewInfo] = useState({
     questionId: null,
     selectedOptions: [],
@@ -31,6 +28,24 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
     testId: null,
     questionsList: [],
   });
+
+  const currentSubject = data?.subjects?.[selectedSubject];
+
+  const sections = currentSubject?.sections || [];
+
+  useEffect(() => {
+    setSelectedSection(0);
+  }, [selectedSubject]);
+
+  if (!currentSubject) {
+    return (
+      <div className="p-4 text-center text-gray-500">
+        No data available for this subject.
+      </div>
+    );
+  }
+
+  
   // modal state
   console.log("Current Subject:", currentSubject);
   console.log("Data:", data);
@@ -229,10 +244,22 @@ function CurrentTab_New({ selectedSubject, data, testSubmissionId }) {
         </div>
       </div>
 
+      {/* =====================================================
+          COMBINED TOPIC STRENGTH / WEAKNESS
+      ====================================================== */}
+
+      <TopicStrengthWeakness
+        sections={sections}
+      />
+
       {/* Tabs */}
       <ReportTabs
         options={sections.map((section, index) => ({
-          label: <SectionSegmentLabel data={section} />,
+          label: <SectionSegmentLabel
+    data={section}
+     improvementData={improvementData}
+    
+  />,
           value: index,
         }))}
         selectedValue={selectedSection}

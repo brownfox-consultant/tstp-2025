@@ -29,7 +29,7 @@ const getTopicWiseDataset = (questions = []) => {
   return { labels, data, backgroundColor };
 };
 
-const SectionSegmentLabel = ({ data }) => {
+const SectionSegmentLabel = ({ data ,improvementData,}) => {
   const {
   name,
   section_correct_count,
