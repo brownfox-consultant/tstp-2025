@@ -64,7 +64,9 @@ function AdminUsersComponent() {
   defaultActiveKey={
     subActionParam === "viewTestReportAdmin"
       ? "2"
-      : "1"
+      : subActionParam === "viewPracticeTestReportAdmin"
+      ? "1"
+      : "2"
   }
             tabBarStyle={{ marginBottom: '8px' }}
             items={[
