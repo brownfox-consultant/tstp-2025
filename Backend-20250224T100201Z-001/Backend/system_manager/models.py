@@ -219,3 +219,58 @@ class StudentFeedback(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+class DoubtComment(models.Model):
+
+    TEXT = "text"
+    IMAGE = "image"
+    VIDEO = "video"
+    AUDIO = "audio"
+    DOCUMENT = "document"
+
+    MESSAGE_TYPE_CHOICES = [
+        (TEXT, "Text"),
+        (IMAGE, "Image"),
+        (VIDEO, "Video"),
+        (AUDIO, "Audio"),
+        (DOCUMENT, "Document"),
+    ]
+
+    doubt = models.ForeignKey(
+        Doubt,
+        on_delete=models.CASCADE,
+        related_name="comments"
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="doubt_comments"
+    )
+
+    message = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    message_type = models.CharField(
+        max_length=20,
+        choices=MESSAGE_TYPE_CHOICES,
+        default=TEXT
+    )
+
+    attachment = models.FileField(
+        upload_to="doubt_comments/%Y/%m/%d/",
+        blank=True,
+        null=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.doubt_id} - {self.user_id} - {self.message_type}"
+

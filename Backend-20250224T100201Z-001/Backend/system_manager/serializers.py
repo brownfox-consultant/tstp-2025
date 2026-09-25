@@ -2,7 +2,16 @@ from rest_framework import serializers
 
 from course_manager.models import Topic, Question, SubTopic
 from course_manager.serializers import QuestionListSerializer
-from system_manager.models import Doubt, FacultyTimeSlot, Issue, Concern, Meeting, Suggestion, StudentFeedback
+from system_manager.models import (
+    Doubt,
+    DoubtComment,
+    FacultyTimeSlot,
+    Issue,
+    Concern,
+    Meeting,
+    Suggestion,
+    StudentFeedback
+)
 from test_manager.models import TestSubmission, Result
 from django.utils import timezone
 from course_manager.models import Question, CourseSubjects, Topic, SubTopic
@@ -545,3 +554,60 @@ class CreateFacultyTimeSlotSerializer(serializers.ModelSerializer):
         if data['start_time'] >= data['end_time']:
             raise serializers.ValidationError("start_time must be before end_time.")
         return data
+
+class DoubtCommentSerializer(serializers.ModelSerializer):
+
+    user = serializers.SerializerMethodField()
+    user_id = serializers.IntegerField(
+        source="user.id",
+        read_only=True
+    )
+
+    attachment_url = serializers.SerializerMethodField()
+
+    created_at = serializers.DateTimeField(
+        read_only=True
+    )
+
+    class Meta:
+        model = DoubtComment
+
+        fields = [
+            "id",
+            "doubt",
+            "user_id",
+            "user",
+            "message",
+            "message_type",
+            "attachment",
+            "attachment_url",
+            "created_at",
+        ]
+
+        read_only_fields = [
+            "user",
+            "user_id",
+            "attachment_url",
+            "created_at",
+        ]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "name": obj.user.name,
+            "role": obj.user.role.name if obj.user.role else None,
+        }
+
+    def get_attachment_url(self, obj):
+
+        if not obj.attachment:
+            return None
+
+        request = self.context.get("request")
+
+        if request:
+            return request.build_absolute_uri(
+                obj.attachment.url
+            )
+
+        return obj.attachment.url

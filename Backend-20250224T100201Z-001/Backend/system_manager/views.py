@@ -20,7 +20,7 @@ from .serializers import RaiseDoubtSerializer, AssignFacultySerializer, ResolveD
     IssueResolveSerializer, ConcernSerializer, ConcernResolveSerializer, MeetingSerializer, \
     RaiseIssueSerializer, DoubtListSerializer, CreateSuggestionSerializer, SetTimeSlotSerializer, SuggestionListSerializer, \
     RaiseConcernSerializer, ScheduleMeetingSerializer, CreateStudentFeedbackSerializer, StudentFeedbackSerializer, \
-    ApproveMeetingSerializer
+    ApproveMeetingSerializer,DoubtCommentSerializer
 from .filters import ConcernFilter
 from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
@@ -74,6 +74,7 @@ from django.utils import timezone
 from test_manager.models import TestSubmission, PracticeTestResult
 from system_manager.models import (
     Doubt,
+    DoubtComment,
     Issue,
     Concern,
     Meeting,
@@ -1154,6 +1155,276 @@ class DoubtViewSet(viewsets.ModelViewSet):
 
         # Return the paginated response
         return paginator.get_paginated_response(serializer.data)
+
+
+
+class DoubtCommentViewSet(viewsets.ModelViewSet):
+
+    queryset = DoubtComment.objects.all()
+    serializer_class = DoubtCommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_doubt(self, doubt_id):
+
+        try:
+            doubt = Doubt.objects.select_related(
+                "student",
+                "faculty"
+            ).get(id=doubt_id)
+
+        except Doubt.DoesNotExist:
+            return None
+
+        return doubt
+
+    def has_access(self, doubt, user):
+
+        if not doubt:
+            return False
+
+        role = (
+            user.role.name.lower()
+            if hasattr(user, "role") and user.role
+            else ""
+        )
+
+        # Admin can access all doubts
+        if role == "admin":
+            return True
+
+        # Student can access own doubt
+        if role == "student":
+            return doubt.student_id == user.id
+
+        # Assigned faculty can access doubt
+        if role == "faculty":
+            return doubt.faculty_id == user.id
+
+        return False
+
+    def get_queryset(self):
+
+        user = self.request.user
+
+        role = (
+            user.role.name.lower()
+            if hasattr(user, "role") and user.role
+            else ""
+        )
+
+        if role == "admin":
+
+            return DoubtComment.objects.select_related(
+                "user",
+                "user__role",
+                "doubt"
+            ).all()
+
+        if role == "student":
+
+            return DoubtComment.objects.select_related(
+                "user",
+                "user__role",
+                "doubt"
+            ).filter(
+                doubt__student=user
+            )
+
+        if role == "faculty":
+
+            return DoubtComment.objects.select_related(
+                "user",
+                "user__role",
+                "doubt"
+            ).filter(
+                doubt__faculty=user
+            )
+
+        return DoubtComment.objects.none()
+
+    def list(self, request, *args, **kwargs):
+
+        doubt_id = request.query_params.get("doubt_id")
+
+        if not doubt_id:
+            return Response(
+                {
+                    "error": "doubt_id is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        doubt = self.get_doubt(doubt_id)
+
+        if not doubt:
+            return Response(
+                {
+                    "error": "Doubt not found."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not self.has_access(
+            doubt,
+            request.user
+        ):
+            return Response(
+                {
+                    "detail": "You do not have access to this doubt."
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        comments = self.get_queryset().filter(
+            doubt=doubt
+        ).order_by("created_at")
+
+        serializer = self.get_serializer(
+            comments,
+            many=True
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
+
+    def create(self, request, *args, **kwargs):
+
+        doubt_id = request.data.get("doubt")
+
+        if not doubt_id:
+            return Response(
+                {
+                    "error": "doubt is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        doubt = self.get_doubt(doubt_id)
+
+        if not doubt:
+            return Response(
+                {
+                    "error": "Doubt not found."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not self.has_access(
+            doubt,
+            request.user
+        ):
+            return Response(
+                {
+                    "detail": "You do not have access to this doubt."
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        message = request.data.get(
+            "message",
+            ""
+        )
+
+        attachment = request.FILES.get(
+            "attachment"
+        )
+
+        if not message and not attachment:
+            return Response(
+                {
+                    "error": "Message or attachment is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # -----------------------------------------
+        # Determine message type
+        # -----------------------------------------
+
+        message_type = "text"
+
+        if attachment:
+
+            content_type = (
+                attachment.content_type or ""
+            ).lower()
+
+            if content_type.startswith("image/"):
+                message_type = "image"
+
+            elif content_type.startswith("video/"):
+                message_type = "video"
+
+            elif content_type.startswith("audio/"):
+                message_type = "audio"
+
+            else:
+                message_type = "document"
+
+        # -----------------------------------------
+        # Create comment
+        # -----------------------------------------
+
+        comment = DoubtComment.objects.create(
+            doubt=doubt,
+            user=request.user,
+            message=message,
+            message_type=message_type,
+            attachment=attachment,
+        )
+
+        serializer = self.get_serializer(
+            comment
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+    def destroy(self, request, *args, **kwargs):
+
+        comment = self.get_object()
+
+        user = request.user
+
+        role = (
+            user.role.name.lower()
+            if hasattr(user, "role") and user.role
+            else ""
+        )
+
+        # Admin can delete
+        if role == "admin":
+            comment.delete()
+
+            return Response(
+                {
+                    "detail": "Comment deleted successfully."
+                },
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        # User can delete own comment
+        if comment.user_id == user.id:
+
+            comment.delete()
+
+            return Response(
+                {
+                    "detail": "Comment deleted successfully."
+                },
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        return Response(
+            {
+                "detail": "You cannot delete this comment."
+            },
+            status=status.HTTP_403_FORBIDDEN
+        )
 
 
 

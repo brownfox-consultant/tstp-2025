@@ -551,6 +551,55 @@ export const getDoubtsList = (params) => {
     .catch(handleAPIError);
 };
 
+// =====================================================
+// DOUBT COMMENTS
+// =====================================================
+
+// Get comments for a specific doubt
+export const getDoubtComments = (doubtId) => {
+  return axios
+    .get(`${BASE_URL}/api/doubt-comments/`, {
+      params: {
+        doubt_id: doubtId,
+      },
+      withCredentials: true,
+      headers: {
+        "ngrok-skip-browser-warning": "69420",
+      },
+    })
+    .catch(handleAPIError);
+};
+
+
+// Create a new doubt comment
+// Supports text + image/video/audio/document
+export const createDoubtComment = (formData) => {
+  return axios
+    .post(`${BASE_URL}/api/doubt-comments/`, formData, {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+        "Content-Type": "multipart/form-data",
+        "ngrok-skip-browser-warning": "69420",
+      },
+    })
+    .catch(handleAPIError);
+};
+
+
+// Delete a doubt comment
+export const deleteDoubtComment = (commentId) => {
+  return axios
+    .delete(`${BASE_URL}/api/doubt-comments/${commentId}/`, {
+      withCredentials: true,
+      headers: {
+        "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+        "ngrok-skip-browser-warning": "69420",
+      },
+    })
+    .catch(handleAPIError);
+};
+
 export const patchAssignFaculty = (id, payload) => {
   return axios
     .patch(`${DOUBT_BASE}${id}/assign_faculty/`, payload, {
