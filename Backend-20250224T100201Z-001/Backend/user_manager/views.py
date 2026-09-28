@@ -450,6 +450,278 @@ class UserViewSet(viewsets.ModelViewSet):
         )
     
 
+    @action(
+    detail=False,
+    methods=['get'],
+    permission_classes=[IsAdmin],
+    url_path='download-student-details/(?P<student_id>[^/.]+)'
+    )
+    def download_student_details(self, request, student_id):
+
+        try:
+            student = User.objects.select_related(
+                'role'
+            ).get(
+                id=student_id,
+                role__name='student'
+            )
+
+        except User.DoesNotExist:
+            return get_error_response(
+                "Student not found"
+            )
+
+        # ---------------------------------------------------------
+        # STUDENT METADATA
+        # ---------------------------------------------------------
+
+        try:
+            metadata = StudentMetadata.objects.select_related(
+                'mentor',
+                'father',
+                'mother'
+            ).prefetch_related(
+                'faculties'
+            ).get(
+                student=student
+            )
+
+        except StudentMetadata.DoesNotExist:
+            metadata = None
+
+        # ---------------------------------------------------------
+        # FACULTIES
+        # ---------------------------------------------------------
+
+        faculties = []
+
+        if metadata:
+            faculties = list(
+                metadata.faculties.all()
+            )
+
+        # ---------------------------------------------------------
+        # MENTOR
+        # ---------------------------------------------------------
+
+        mentor = (
+            metadata.mentor
+            if metadata
+            else None
+        )
+
+        # ---------------------------------------------------------
+        # PARENTS
+        # ---------------------------------------------------------
+
+        father = (
+            metadata.father
+            if metadata
+            else None
+        )
+
+        mother = (
+            metadata.mother
+            if metadata
+            else None
+        )
+
+        # ---------------------------------------------------------
+        # COURSES
+        # ---------------------------------------------------------
+
+        enrollments = CourseEnrollment.objects.filter(
+            student=student
+        ).select_related(
+            'course'
+        )
+
+        # ---------------------------------------------------------
+        # CSV RESPONSE
+        # ---------------------------------------------------------
+
+        response = HttpResponse(
+            content_type='text/csv; charset=utf-8'
+        )
+
+        response[
+            'Content-Disposition'
+        ] = (
+            f'attachment; '
+            f'filename="student_{student.id}_details.csv"'
+        )
+
+        writer = csv.writer(response)
+
+        # ---------------------------------------------------------
+        # STUDENT INFORMATION
+        # ---------------------------------------------------------
+
+        writer.writerow([
+            'STUDENT INFORMATION'
+        ])
+
+        writer.writerow([
+            'Student ID',
+            'Name',
+            'Email',
+            'Phone Number',
+            'Alternative Number',
+            'Date of Birth',
+            'Blood Group',
+            'Address',
+            'Role',
+            'Status',
+            'Created At',
+            'Updated At',
+        ])
+
+        writer.writerow([
+            student.id,
+            student.name or '',
+            student.email or '',
+            student.phone_number or '',
+            student.alternative_number or '',
+            student.dob or '',
+            student.blood_group or '',
+            student.address or '',
+            student.role.name if student.role else '',
+            'Active' if student.is_active else 'Inactive',
+            student.created_at or '',
+            student.updated_at or '',
+        ])
+
+        writer.writerow([])
+
+        # ---------------------------------------------------------
+        # COURSE INFORMATION
+        # ---------------------------------------------------------
+
+        writer.writerow([
+            'COURSE INFORMATION'
+        ])
+
+        writer.writerow([
+            'Course',
+            'Subscription Type',
+            'Subscription Start Date',
+            'Subscription End Date',
+        ])
+
+        for enrollment in enrollments:
+
+            writer.writerow([
+                enrollment.course.name
+                if enrollment.course
+                else '',
+
+                enrollment.subscription_type or '',
+
+                enrollment.subscription_start_date
+                or '',
+
+                enrollment.subscription_end_date
+                or '',
+            ])
+
+        writer.writerow([])
+
+        # ---------------------------------------------------------
+        # FACULTY INFORMATION
+        # ---------------------------------------------------------
+
+        writer.writerow([
+            'FACULTY INFORMATION'
+        ])
+
+        writer.writerow([
+            'Name',
+            'Email',
+            'Phone Number',
+        ])
+
+        for faculty in faculties:
+
+            writer.writerow([
+                faculty.name or '',
+                faculty.email or '',
+                faculty.phone_number or '',
+            ])
+
+        writer.writerow([])
+
+        # ---------------------------------------------------------
+        # MENTOR INFORMATION
+        # ---------------------------------------------------------
+
+        writer.writerow([
+            'MENTOR INFORMATION'
+        ])
+
+        writer.writerow([
+            'Name',
+            'Email',
+            'Phone Number',
+        ])
+
+        if mentor:
+
+            writer.writerow([
+                mentor.name or '',
+                mentor.email or '',
+                mentor.phone_number or '',
+            ])
+
+        writer.writerow([])
+
+        # ---------------------------------------------------------
+        # FATHER INFORMATION
+        # ---------------------------------------------------------
+
+        writer.writerow([
+            'FATHER INFORMATION'
+        ])
+
+        writer.writerow([
+            'Name',
+            'Email',
+            'Phone Number',
+        ])
+
+        if father:
+
+            writer.writerow([
+                father.name or '',
+                father.email or '',
+                father.phone_number or '',
+            ])
+
+        writer.writerow([])
+
+        # ---------------------------------------------------------
+        # MOTHER INFORMATION
+        # ---------------------------------------------------------
+
+        writer.writerow([
+            'MOTHER INFORMATION'
+        ])
+
+        writer.writerow([
+            'Name',
+            'Email',
+            'Phone Number',
+        ])
+
+        if mother:
+
+            writer.writerow([
+                mother.name or '',
+                mother.email or '',
+                mother.phone_number or '',
+            ])
+
+        return response
+
     @action(detail=False, methods=['get'], permission_classes=[IsAdmin], url_path='export')
     def export_users(self, request):
         role = request.query_params.get("role", None)

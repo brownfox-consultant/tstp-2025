@@ -23,10 +23,26 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'phone_number', 'name',
-            'role','course', 'role_name','user_type', 'role_label', 'created_at', 'updated_at',
-            'course_details', 'parent_details', 'faculty_details', 'mentor_details',
-            'is_active'
+           'id',
+    'email',
+    'phone_number',
+    'alternative_number',
+    'name',
+    'role',
+    'course',
+    'role_name',
+    'user_type',
+    'role_label',
+    'created_at',
+    'updated_at',
+    'course_details',
+    'parent_details',
+    'faculty_details',
+    'mentor_details',
+    'address',
+    'dob',
+    'blood_group',
+    'is_active',
         ]
         read_only_fields = ('created_at', 'updated_at', 'is_active')
         extra_kwargs = {'password': {'write_only': True, 'required': False}}
@@ -319,8 +335,39 @@ class LoginSerializer(serializers.ModelSerializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email', 'phone_number', 'name']
-        extra_kwargs = {'email': {'required': False}, 'phone_number': {'required': False}, 'name': {'required': False}}
+        fields = [
+            'email',
+            'phone_number',
+            'alternative_number',
+            'name',
+            'address',
+            'dob',
+            'blood_group',
+        ]
+
+        extra_kwargs = {
+            'email': {'required': False},
+            'phone_number': {'required': False},
+            'alternative_number': {
+                'required': False,
+                'allow_null': True,
+                'allow_blank': True,
+            },
+            'name': {'required': False},
+            'address': {
+                'required': False,
+                'allow_blank': True,
+            },
+            'dob': {
+                'required': False,
+                'allow_null': True,
+            },
+            'blood_group': {
+                'required': False,
+                'allow_blank': True,
+                'allow_null': True,
+            },
+        }
 
 
 class StudentUpdateSerializer(serializers.Serializer):

@@ -444,6 +444,74 @@ function AllUsersTable({ tabKey, api }) {
   }
 };
 
+const downloadStudentDetails = async (
+  studentId,
+  studentName
+) => {
+  try {
+    setLoading(true);
+
+    message.loading({
+      content: `Downloading details for ${studentName}...`,
+      key: "studentDetails",
+    });
+
+    const response = await axios.get(
+      `${BASE_URL}/api/user/download-student-details/${studentId}/`,
+      {
+        responseType: "blob",
+        withCredentials: true,
+      }
+    );
+
+    const blob = new Blob(
+      [response.data],
+      {
+        type: "text/csv;charset=utf-8;",
+      }
+    );
+
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+      `${studentName}_student_details.csv`;
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    message.success({
+      content:
+        "Student details downloaded successfully.",
+      key: "studentDetails",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Download student details failed:",
+      error
+    );
+
+    message.error({
+      content:
+        "Failed to download student details.",
+      key: "studentDetails",
+    });
+
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 const downloadMultipleStudentReports = async () => {
   if (!selectedStudentIds.length) {
@@ -1232,6 +1300,27 @@ const downloadMultipleStudentReports = async () => {
     },
 
   });
+
+  // =====================================================
+// DOWNLOAD STUDENT DETAILS
+// =====================================================
+
+menuItems.push({
+
+  key: "download_student_details",
+
+  label: "Download Student Details",
+
+  onClick: () => {
+
+    downloadStudentDetails(
+      record.id,
+      record.name
+    );
+
+  },
+
+});
 
 
   menuItems.push({
