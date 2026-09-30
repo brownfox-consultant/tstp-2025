@@ -1106,7 +1106,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return get_error_response_for_serializer(logger=self.logger, serializer=serializer, data=request.data)
 
     @permission_classes([IsAdminOrContentDeveloper])
-    @action(detail=False, methods=['post'], url_path='create-multiple')
+    @action(
+        detail=False,
+        methods=['post'],
+        url_path='create-multiple'
+    )
     def create_multiple_questions(self, request, *args, **kwargs):
 
         data = request.data
@@ -1136,6 +1140,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
         created_questions = []
 
         srno_tracker = {}
+
+        # Keep serializer available for error handling
+        serializer = None
 
         try:
 
@@ -1182,7 +1189,10 @@ class QuestionViewSet(viewsets.ModelViewSet):
                             question_data.get('topic'),
 
                         'sub_topic':
-                            question_data.get('sub_topic', None),
+                            question_data.get(
+                                'sub_topic',
+                                None
+                            ),
 
                         'created_by':
                             request.user.id,
@@ -1225,11 +1235,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
                     validated_data = serializer.validated_data
 
-                    # ------------------------------------------
+                    # ==================================================
                     # DUPLICATE VALIDATION
-                    # ------------------------------------------
-
-                    
+                    # ==================================================
 
                     course_subject = validated_data.get(
                         'course_subject'
@@ -1251,30 +1259,50 @@ class QuestionViewSet(viewsets.ModelViewSet):
                         'options'
                     )
 
-                    existing_questions = Question.objects.filter(
-                        course_subject=course_subject,
-                        description=description,
-                    ).select_related(
-                        'topic',
-                        'sub_topic'
+                    existing_questions = (
+                        Question.objects
+                        .filter(
+                            description=description
+                        )
+                        .select_related(
+                            'course_subject__course',
+                            'course_subject__subject',
+                            'topic',
+                            'sub_topic'
+                        )
                     )
 
-                    duplicate_exists = False
+                    duplicate_question = None
 
                     for existing_question in existing_questions:
 
                         # ------------------------------------------
+                        # SAME COURSE + SUBJECT
+                        # ------------------------------------------
+
+                        if (
+                            existing_question.course_subject_id
+                            != course_subject.id
+                        ):
+                            continue
+
+                        # ------------------------------------------
                         # SAME TOPIC
                         # ------------------------------------------
-                        if (
-                            not existing_question.topic
-                            or existing_question.topic.name != topic
-                        ):
+
+                        existing_topic_name = (
+                            existing_question.topic.name
+                            if existing_question.topic
+                            else None
+                        )
+
+                        if existing_topic_name != topic:
                             continue
 
                         # ------------------------------------------
                         # SAME SUB TOPIC
                         # ------------------------------------------
+
                         existing_sub_topic_name = (
                             existing_question.sub_topic.name
                             if existing_question.sub_topic
@@ -1287,31 +1315,79 @@ class QuestionViewSet(viewsets.ModelViewSet):
                         # ------------------------------------------
                         # SAME OPTIONS
                         # ------------------------------------------
+
                         if existing_question.options != options:
                             continue
 
-                        duplicate_exists = True
+                        # ------------------------------------------
+                        # DUPLICATE FOUND
+                        # ------------------------------------------
+
+                        duplicate_question = existing_question
                         break
 
-                    if duplicate_exists:
+                    # ==================================================
+                    # RETURN DUPLICATE DETAILS
+                    # ==================================================
 
-                        return get_error_response(
-                            "Duplicate question already exists "
-                            "for the selected Course, Subject, "
-                            "Topic and Sub-Topic."
+                    if duplicate_question:
+
+                        duplicate_course = (
+                            duplicate_question
+                            .course_subject
+                            .course
                         )
 
-                    if duplicate_exists:
-
-                        return get_error_response(
-                            "Duplicate question already exists "
-                            "for the selected Course, Subject, "
-                            "Topic and Sub-Topic."
+                        duplicate_subject = (
+                            duplicate_question
+                            .course_subject
+                            .subject
                         )
 
-                    # ------------------------------------------
+                        return Response(
+                            {
+                                'success': False,
+                                'message': (
+                                    'Duplicate question already exists.'
+                                ),
+                                'duplicate_question': {
+                                    'id': duplicate_question.id,
+                                    'srno': duplicate_question.srno,
+
+                                    'course': {
+                                        'id': duplicate_course.id,
+                                        'name': duplicate_course.name
+                                    },
+
+                                    'subject': {
+                                        'id': duplicate_subject.id,
+                                        'name': duplicate_subject.name
+                                    },
+
+                                    'course_subject_id': (
+                                        duplicate_question
+                                        .course_subject_id
+                                    ),
+
+                                    'topic': (
+                                        duplicate_question.topic.name
+                                        if duplicate_question.topic
+                                        else None
+                                    ),
+
+                                    'sub_topic': (
+                                        duplicate_question.sub_topic.name
+                                        if duplicate_question.sub_topic
+                                        else None
+                                    )
+                                }
+                            },
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # ==================================================
                     # CREATE QUESTION
-                    # ------------------------------------------
+                    # ==================================================
 
                     created_question = serializer.save()
 
@@ -1319,12 +1395,20 @@ class QuestionViewSet(viewsets.ModelViewSet):
                         created_question
                     )
 
+                    # ==================================================
+                    # QUESTION LOG
+                    # ==================================================
+
                     QuestionLog.objects.create(
                         question=created_question,
                         user=request.user,
                         action='ADD',
                         ip_address=self.get_client_ip(request)
                     )
+
+            # ==========================================================
+            # SUCCESS RESPONSE
+            # ==========================================================
 
             return Response(
                 CreateQuestionSerializer(
