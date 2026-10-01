@@ -1191,78 +1191,87 @@ function QuestionsList({
   // TABLE CHANGE
   // =========================================================
 
-  const handleTableChange = (
-    pagination,
-    tableFilters
-  ) => {
-    const currentFilters = {
-      difficulty:
-        searchParams
-          .get("difficulty")
-          ?.split(",") || [],
+ const handleTableChange = (
+  pagination,
+  tableFilters
+) => {
+  // Always start from the filters currently stored in the URL.
+  // This is important because Advanced Search stores its filters
+  // in the URL, and pagination should NOT remove them.
 
-      question_type:
-        searchParams
-          .get("question_type")
-          ?.split(",") || [],
+  const currentFilters = {
+    difficulty:
+      searchParams.get("difficulty")?.split(",") || [],
 
-      test_type:
-        searchParams
-          .get("test_type")
-          ?.split(",") || [],
+    question_type:
+      searchParams.get("question_type")?.split(",") || [],
 
-      topic:
-        searchParams
-          .get("topic")
-          ?.split(",") || [],
+    test_type:
+      searchParams.get("test_type")?.split(",") || [],
 
-      sub_topic:
-        searchParams
-          .get("sub_topic")
-          ?.split(",") || [],
+    topic:
+      searchParams
+        .get("topic")
+        ?.split(",")
+        .map(Number)
+        .filter((v) => !isNaN(v)) || [],
 
-      question_subtype:
-        searchParams
-          .get("question_subtype")
-          ?.split(",") || [],
+    sub_topic:
+      searchParams
+        .get("sub_topic")
+        ?.split(",")
+        .map(Number)
+        .filter((v) => !isNaN(v)) || [],
 
-      has_explanation:
-        searchParams.get(
-          "has_explanation"
-        ) || "",
+    question_subtype:
+      searchParams.get("question_subtype")?.split(",") || [],
 
-      is_active:
-        searchParams.get(
-          "is_active"
-        )
-          ? [
-              searchParams.get(
-                "is_active"
-              ) === "true",
-            ]
-          : [],
-    };
+    option_text:
+      searchParams.get("option_text") || "",
 
+    question_text:
+      searchParams.get("question_text") || "",
 
-    const mergedFilters = {
-      ...currentFilters,
-    };
+    srno:
+      searchParams.get("srno") || "",
 
+    has_explanation:
+      searchParams.get("has_explanation") || "",
 
-    Object.keys(
-      tableFilters
-    ).forEach((key) => {
-      mergedFilters[key] =
-        tableFilters[key];
-    });
-
-
-    updateURL(
-      pagination.current,
-      mergedFilters,
-      searchText
-    );
+    is_active:
+      searchParams.get("is_active")
+        ? [
+            searchParams.get("is_active") === "true",
+          ]
+        : [],
   };
+
+  const mergedFilters = {
+    ...currentFilters,
+  };
+
+  /*
+   * Only replace URL filters with Table filters when Ant Design
+   * actually provides a value.
+   *
+   * This prevents pagination from clearing Advanced Search filters.
+   */
+  Object.keys(tableFilters).forEach((key) => {
+    const value = tableFilters[key];
+
+    // null / undefined means the table did not provide
+    // a new filter value. Keep the existing URL filter.
+    if (value !== null && value !== undefined) {
+      mergedFilters[key] = value;
+    }
+  });
+
+  updateURL(
+    pagination.current,
+    mergedFilters,
+    searchText
+  );
+};
 
 
   // =========================================================
