@@ -684,6 +684,161 @@ const downloadMultipleStudentReports = async () => {
   }
 };
 
+const downloadMultipleStudentDetails = async () => {
+  if (!selectedStudentIds.length) {
+    message.warning(
+      "Please select at least one student."
+    );
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const studentCount = selectedStudentIds.length;
+
+    message.loading({
+      content:
+        studentCount === 1
+          ? "Downloading student details..."
+          : `Downloading details for ${studentCount} student(s)...`,
+      key: "multipleStudentDetails",
+    });
+
+    const response = await axios.get(
+      `${BASE_URL}/api/user/download-multiple-student-details/`,
+      {
+        params: {
+          student_ids: selectedStudentIds.join(","),
+        },
+
+        responseType: "blob",
+
+        withCredentials: true,
+      }
+    );
+
+    // ---------------------------------------------------------
+    // GET CONTENT TYPE
+    // ---------------------------------------------------------
+
+    const contentType =
+      response.headers["content-type"] ||
+      response.data?.type ||
+      "text/csv;charset=utf-8;";
+
+    // ---------------------------------------------------------
+    // GET FILENAME
+    // ---------------------------------------------------------
+
+    let filename =
+      "selected_students_details.csv";
+
+    const contentDisposition =
+      response.headers["content-disposition"];
+
+    if (contentDisposition) {
+      const filenameMatch =
+        contentDisposition.match(
+          /filename="([^"]+)"/
+        );
+
+      if (filenameMatch?.[1]) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    // ---------------------------------------------------------
+    // CREATE BLOB
+    // ---------------------------------------------------------
+
+    const blob = new Blob(
+      [response.data],
+      {
+        type: contentType,
+      }
+    );
+
+    const url =
+      window.URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    // ---------------------------------------------------------
+    // CLEAR SELECTION
+    // ---------------------------------------------------------
+
+    setSelectedStudentIds([]);
+
+    // ---------------------------------------------------------
+    // SUCCESS
+    // ---------------------------------------------------------
+
+    message.success({
+      content:
+        "Student details downloaded successfully.",
+      key: "multipleStudentDetails",
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Student details download failed:",
+      error
+    );
+
+    let errorMessage =
+      "Failed to download student details.";
+
+    try {
+
+      if (
+        error?.response?.data instanceof Blob
+      ) {
+
+        const text =
+          await error.response.data.text();
+
+        const data =
+          JSON.parse(text);
+
+        errorMessage =
+          data?.detail ||
+          data?.error ||
+          errorMessage;
+      }
+
+    } catch (parseError) {
+
+      console.error(
+        "Error parsing error response:",
+        parseError
+      );
+    }
+
+    message.error({
+      content: errorMessage,
+      key: "multipleStudentDetails",
+    });
+
+  } finally {
+
+    setLoading(false);
+  }
+};
+
 
 
   const exportToCSV = async () => {
@@ -1514,20 +1669,34 @@ menuItems.push({
 
 
     {selectedStudentIds.length > 0 && (
-      <Button
-        size="large"
-        type="primary"
-        loading={loading}
-        onClick={
-          downloadMultipleStudentReports
-        }
-        className="h-10 px-4 bg-blue-600 hover:bg-blue-700 border-none rounded-lg font-medium"
-      >
-        Download Reports (
-        {selectedStudentIds.length}
-        )
-      </Button>
-    )}
+  <>
+    {/* DOWNLOAD TEST REPORTS */}
+    <Button
+      size="large"
+      type="primary"
+      loading={loading}
+      onClick={downloadMultipleStudentReports}
+      className="h-10 px-4 bg-blue-600 hover:bg-blue-700 border-none rounded-lg font-medium"
+    >
+      Download Reports (
+      {selectedStudentIds.length}
+      )
+    </Button>
+
+    {/* DOWNLOAD STUDENT DETAILS */}
+    <Button
+      size="large"
+      type="primary"
+      loading={loading}
+      onClick={downloadMultipleStudentDetails}
+      className="h-10 px-4 bg-green-600 hover:bg-green-700 border-none rounded-lg font-medium"
+    >
+      Download Student Details (
+      {selectedStudentIds.length}
+      )
+    </Button>
+  </>
+)}
 
 
     <Button

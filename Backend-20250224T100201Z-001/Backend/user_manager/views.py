@@ -48,6 +48,14 @@ from test_manager.serializers import TestSerializer, TestListSerializer, Existin
     TestSubmissionSerializer, PracticeTestListSerializer, EligibleStudentSerializer, SectionSerializer, \
     TestFeedbackSerializer
 from course_manager.models import Question, CourseSubjects, CombinedScore
+
+import csv
+import io
+import zipfile
+
+from django.http import HttpResponse
+from rest_framework.decorators import action
+
 from test_manager.utils import calculate_total_questions_required
 IMPERSONATOR_ID = "_impersonator_id"
 
@@ -718,6 +726,276 @@ class UserViewSet(viewsets.ModelViewSet):
                 mother.name or '',
                 mother.email or '',
                 mother.phone_number or '',
+            ])
+
+        return response
+
+
+    @action(
+    detail=False,
+    methods=['get'],
+    permission_classes=[IsAdmin],
+    url_path='download-multiple-student-details'
+    )
+    def download_multiple_student_details(self, request):
+
+        student_ids_param = request.query_params.get('student_ids', '')
+
+        if not student_ids_param:
+            return get_error_response(
+                "Please select at least one student."
+            )
+
+        try:
+            student_ids = [
+                int(student_id.strip())
+                for student_id in student_ids_param.split(',')
+                if student_id.strip()
+            ]
+        except ValueError:
+            return get_error_response(
+                "Invalid student IDs."
+            )
+
+        students = User.objects.select_related(
+            'role'
+        ).filter(
+            id__in=student_ids,
+            role__name='student'
+        ).order_by('id')
+
+        if not students.exists():
+            return get_error_response(
+                "No students found."
+            )
+
+        # ---------------------------------------------------------
+        # CSV RESPONSE
+        # ---------------------------------------------------------
+
+        response = HttpResponse(
+            content_type='text/csv; charset=utf-8'
+        )
+
+        response['Content-Disposition'] = (
+            'attachment; '
+            'filename="selected_students_details.csv"'
+        )
+
+        # UTF-8 BOM for Excel
+        response.write('\ufeff')
+
+        writer = csv.writer(response)
+
+        # ---------------------------------------------------------
+        # HEADER
+        # ---------------------------------------------------------
+
+        writer.writerow([
+            'Student ID',
+            'Name',
+            'Email',
+            'Phone Number',
+            'Alternative Number',
+            'Date of Birth',
+            'Blood Group',
+            'Address',
+            'Role',
+            'Status',
+            'Created At',
+            'Updated At',
+
+            'Courses',
+            'Subscription Types',
+            'Subscription Start Dates',
+            'Subscription End Dates',
+
+            'Faculty Names',
+            'Faculty Emails',
+            'Faculty Phone Numbers',
+
+            'Mentor Name',
+            'Mentor Email',
+            'Mentor Phone Number',
+
+            'Father Name',
+            'Father Email',
+            'Father Phone Number',
+
+            'Mother Name',
+            'Mother Email',
+            'Mother Phone Number',
+        ])
+
+        # ---------------------------------------------------------
+        # STUDENTS
+        # ---------------------------------------------------------
+
+        for student in students:
+
+            # -----------------------------------------------------
+            # METADATA
+            # -----------------------------------------------------
+
+            try:
+                metadata = StudentMetadata.objects.select_related(
+                    'mentor',
+                    'father',
+                    'mother'
+                ).prefetch_related(
+                    'faculties'
+                ).get(
+                    student=student
+                )
+
+            except StudentMetadata.DoesNotExist:
+                metadata = None
+
+            # -----------------------------------------------------
+            # FACULTIES
+            # -----------------------------------------------------
+
+            faculties = []
+
+            if metadata:
+                faculties = list(
+                    metadata.faculties.all()
+                )
+
+            faculty_names = "; ".join(
+                faculty.name or ''
+                for faculty in faculties
+            )
+
+            faculty_emails = "; ".join(
+                faculty.email or ''
+                for faculty in faculties
+            )
+
+            faculty_phones = "; ".join(
+                faculty.phone_number or ''
+                for faculty in faculties
+            )
+
+            # -----------------------------------------------------
+            # MENTOR
+            # -----------------------------------------------------
+
+            mentor = (
+                metadata.mentor
+                if metadata
+                else None
+            )
+
+            # -----------------------------------------------------
+            # FATHER
+            # -----------------------------------------------------
+
+            father = (
+                metadata.father
+                if metadata
+                else None
+            )
+
+            # -----------------------------------------------------
+            # MOTHER
+            # -----------------------------------------------------
+
+            mother = (
+                metadata.mother
+                if metadata
+                else None
+            )
+
+            # -----------------------------------------------------
+            # COURSES
+            # -----------------------------------------------------
+
+            enrollments = CourseEnrollment.objects.filter(
+                student=student
+            ).select_related(
+                'course'
+            )
+
+            courses = []
+            subscription_types = []
+            start_dates = []
+            end_dates = []
+
+            for enrollment in enrollments:
+
+                if enrollment.course:
+                    courses.append(
+                        enrollment.course.name or ''
+                    )
+
+                subscription_types.append(
+                    enrollment.subscription_type or ''
+                )
+
+                start_dates.append(
+                    str(
+                        enrollment.subscription_start_date
+                        or ''
+                    )
+                )
+
+                end_dates.append(
+                    str(
+                        enrollment.subscription_end_date
+                        or ''
+                    )
+                )
+
+            # -----------------------------------------------------
+            # ONE ROW PER STUDENT
+            # -----------------------------------------------------
+
+            writer.writerow([
+
+                # Student
+                student.id,
+                student.name or '',
+                student.email or '',
+                student.phone_number or '',
+                student.alternative_number or '',
+                student.dob or '',
+                student.blood_group or '',
+                student.address or '',
+                student.role.name
+                if student.role
+                else '',
+                'Active'
+                if student.is_active
+                else 'Inactive',
+                student.created_at or '',
+                student.updated_at or '',
+
+                # Courses
+                '; '.join(courses),
+                '; '.join(subscription_types),
+                '; '.join(start_dates),
+                '; '.join(end_dates),
+
+                # Faculties
+                faculty_names,
+                faculty_emails,
+                faculty_phones,
+
+                # Mentor
+                mentor.name if mentor else '',
+                mentor.email if mentor else '',
+                mentor.phone_number if mentor else '',
+
+                # Father
+                father.name if father else '',
+                father.email if father else '',
+                father.phone_number if father else '',
+
+                # Mother
+                mother.name if mother else '',
+                mother.email if mother else '',
+                mother.phone_number if mother else '',
             ])
 
         return response
