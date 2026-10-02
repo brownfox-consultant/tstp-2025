@@ -18,6 +18,8 @@ import {
 
 import { BASE_URL } from "@/app/constants/apiConstants";
 import axios from "axios";
+import { Modal } from "antd";
+import PracticeTestReport from "@/components/report-module/PracticeTestReport_admin_user";
 
 export default function ScoreAnalysis_PracticeTest({
   student_id,
@@ -30,6 +32,8 @@ export default function ScoreAnalysis_PracticeTest({
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(6);
   const [hideButtons, setHideButtons] = useState(false);
+  const [selectedPracticeTestId, setSelectedPracticeTestId] = useState(null);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   
   const [apiData, setApiData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -103,6 +107,9 @@ export default function ScoreAnalysis_PracticeTest({
         Incorrect: t.incorrect,
         subject: t.subject,
         date: t.date_time,
+        practice_test_id: t.practice_test_id || t.id,
+        id: t.id || t.practice_test_id,
+        ...t,
     }));
   }, [apiData, selectedSubject]);
 
@@ -155,19 +162,38 @@ export default function ScoreAnalysis_PracticeTest({
     }
   };
 
-  const renderCustomTick = ({ x, y, payload }) => {
-    const data = displayData[payload.index];
+  const handleTestClick = (item) => {
+    const practiceId = item?.practice_test_id || item?.id;
+    if (!practiceId) return;
+    setSelectedPracticeTestId(practiceId);
+    setIsResultModalOpen(true);
+  };
+
+  const renderCustomTick = ({ x, y, payload, index }) => {
+    const data =
+      displayData[payload?.index ?? index] ||
+      displayData.find((d) => d.name === payload?.value);
     if (!data) return null;
 
     return (
-      <g transform={`translate(${x},${y})`}>
+      <g
+        transform={`translate(${x},${y})`}
+        style={{ cursor: "pointer", pointerEvents: "all" }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleTestClick(data);
+        }}
+      >
         <text
           dy={14}
           textAnchor="middle"
           fontSize={12}
           fontWeight={600}
-          fill="#374151"
+          fill="#2563eb"
+          className="clickable-test-name"
+          style={{ cursor: "pointer", pointerEvents: "all" }}
         >
+          <title>{`Click to view result for ${data.name}`}</title>
           {data.name}
         </text>
         <text
@@ -621,6 +647,50 @@ export default function ScoreAnalysis_PracticeTest({
         </div>
 
       </div>
+
+      <Modal
+        width={1300}
+        open={isResultModalOpen}
+        footer={null}
+        onCancel={() => {
+          setIsResultModalOpen(false);
+          setSelectedPracticeTestId(null);
+        }}
+        style={{ top: "20px" }}
+        bodyStyle={{
+          padding: "1rem",
+          overflowY: "auto",
+          maxHeight: "700px",
+        }}
+        styles={{
+          body: {
+            padding: "1rem",
+            overflowY: "auto",
+            maxHeight: "700px",
+          },
+        }}
+        destroyOnClose
+      >
+        {selectedPracticeTestId && (
+          <PracticeTestReport
+            practiceTestId={selectedPracticeTestId}
+            onClose={() => {
+              setIsResultModalOpen(false);
+              setSelectedPracticeTestId(null);
+            }}
+          />
+        )}
+      </Modal>
+
+      <style>{`
+        .clickable-test-name {
+          transition: fill 0.2s ease, text-decoration 0.2s ease;
+        }
+        .clickable-test-name:hover {
+          fill: #1d4ed8 !important;
+          text-decoration: underline !important;
+        }
+      `}</style>
     </div>
   );
 }
