@@ -381,11 +381,11 @@ useEffect(() => {
   return (
     <div>
       {/* Page Header */}
-      <div className="max-w-7xl  mb-6">
+      <div className="max-w-7xl">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="lg:text-2xl text-xl font-bold text-gray-900 mb-2">Create Custom Practice</h1>
-            <p className="text-gray-600 hidden lg:block">Customize your practice test by selecting topics and difficulties</p>
+            <h1 className="text-xl font-bold text-gray-900 mb-2">Create Custom Practice</h1>
+            {/* <p className="text-gray-600 hidden lg:block">Customize your practice test by selecting topics and difficulties</p> */}
           </div>
           <Button
             onClick={() => window.location.reload()}
@@ -401,14 +401,14 @@ useEffect(() => {
       <Form form={form} onFinish={handleSubmit} onFieldsChange={onFieldsChange}>
         <div className="max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Course Selection & Topic Filtering */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4">
             {/* Subject & Course Selection Card */}
-            <div className="bg-white rounded-xl shadow-sm">
-              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl bg-[#805B36]">
+            <div className="bg-white rounded-md shadow-sm">
+              <div className="px-2 py-1 flex items-center gap-3 rounded-t-md bg-[#805B36]">
                 <SubjectSelectionIcon />
                 <h2 className="text-lg font-semibold text-white">Subject & Course Selection</h2>
               </div>
-              <div className="p-6">
+              <div className="p-3">
                 <Row gutter={[16, 16]}>
                   <Col span={24} md={12}>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Course</label>
@@ -460,8 +460,8 @@ useEffect(() => {
             </div>
 
             {/* Topic & Difficulty Filtering Card */}
-            <div className="bg-white rounded-xl shadow-sm">
-              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl bg-[#805B36]">
+            <div className="bg-white rounded-md shadow-sm">
+              <div className="px-2 py-1 flex items-center gap-3 rounded-t-md bg-[#805B36]">
                 <TopicFilterIcon />
                 <h2 className="text-lg font-semibold text-white">Topic & Difficulty Filtering</h2>
               </div>
@@ -618,12 +618,12 @@ useEffect(() => {
               </div>
             </div>
             {/* Test Parameters Card */}
-            <div className="bg-white rounded-xl shadow-sm">
-              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl bg-[#805B36]">
+            <div className="bg-white rounded-md shadow-sm">
+              <div className="px-2 py-1 flex items-center gap-3 rounded-t-md bg-[#805B36]">
                 <TestParametersIcon />
                 <h2 className="text-lg font-semibold text-white">Test Parameters</h2>
               </div>
-              <div className="p-6">
+              <div className="p-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     <span className="text-red-500">*</span> Question Mode
@@ -693,18 +693,21 @@ useEffect(() => {
                     </Radio.Group>
                   </Form.Item>
                 </div>
-
-                {availableCount !== null && (
-                  <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 mt-4">
-                    📊 <strong>{availableCount}</strong> questions available for selected criteria
-                  </div>
-                )}
               </div>
             </div>
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm sticky top-6 p-6 space-y-6">              <div>
+            
+            <div className="bg-white rounded-md shadow-sm sticky top-6 p-4 space-y-3">           
+              
+              {availableCount !== null && (
+                  <div className="text-sm">
+                    📊 <strong>{availableCount}</strong> questions available for selected criteria
+                  </div>
+                )} 
+                
+                <div>
                 <label className="block text-base md:text-lg font-semibold text-gray-800 mb-2">
                   <span className="text-red-500">*</span> Number of Questions
                 </label>

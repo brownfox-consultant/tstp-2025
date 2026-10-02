@@ -638,7 +638,7 @@ function QuestionsList({
   ]);
 
   // Helper to update URL with filters and page
-  const updateURL = (page = 1, filtersObj = {}, query = searchText) => {
+  const updateURL = (page = 1, filtersObj = {}, query = searchParams.get("query")) => {
     const newParams = new URLSearchParams(searchParams.toString());
 
     // Set filters
@@ -692,7 +692,7 @@ function QuestionsList({
     mergedFilters[key] = tableFilters[key];
   });
 
-  updateURL(pagination.current, mergedFilters, searchText);
+  updateURL(pagination.current, mergedFilters, searchParams.get("query"));
 };
 
 
