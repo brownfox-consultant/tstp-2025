@@ -80,7 +80,7 @@ function Report({ testSubmissionId }) {
                 <span className="text-sm font-semibold">
                   You took this test on:{" "}
                 </span>{" "}
-                <span>{new Date(resultData.testDate).toDateString()}</span>
+                <span>{new Date(resultData.completion_date || resultData.testDate).toDateString()}</span>
               </div>
             </div>
             <div className="text-right">

@@ -1,4 +1,4 @@
-import { Button, Col, Input, Popover, Row, Space, Table, Tag } from "antd";
+import { Button, Col, Input, Popover, Row, Space, Table, Tag, message } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import {
   addQuestionsService,
@@ -22,6 +22,7 @@ import { difficultyTagsMap } from "@/utils/utils";
 import DOMPurify from "dompurify";
 
 function EmptyTableComponent({
+  testDetails,
   sectionDetails,
   dataSource,
   selectedRowKeys,
@@ -42,7 +43,18 @@ function EmptyTableComponent({
 }) {
   const { no_of_questions } = sectionDetails;
 
+  const formatType = (testDetails?.format_type || sectionDetails?.format_type)?.toUpperCase();
+  const testType = (testDetails?.test_type || sectionDetails?.test_type)?.toUpperCase();
+  const isFullLengthTest = !testType || testType === "EXAM" || testType === "FULL_LENGTH_TEST";
+  const isLinearFormat = formatType === "LINEAR";
+  const isFullLengthLinear = isFullLengthTest && isLinearFormat;
+
+  const assignedQuestionsCount = sectionDetails?.questions?.length || 0;
+  const isQuotaReached = assignedQuestionsCount >= 27 || (no_of_questions && assignedQuestionsCount >= no_of_questions);
+  const isAssignedState = isFullLengthLinear && isQuotaReached;
+
   const [testQuestions, setTestQuestions] = useState([]);
+  const selectActionRef = useRef(null);
 
   const [expandedRowKeys, setExpandedRowKeys] = useState([]);
 
@@ -57,8 +69,42 @@ function EmptyTableComponent({
     setExpandedRowKeys(newExpandedRowKeys);
   };
 
-  const onSelectChange = (newSelectedRowKeys) => {
-    if (newSelectedRowKeys.length > no_of_questions) {
+  const onSelectChange = (newSelectedRowKeys, selectedRows, info) => {
+    if (isAssignedState) return;
+
+    const maxQuestions = no_of_questions || 27;
+    const currentKeys = selectedRowKeys || [];
+    const prevKeySet = new Set(currentKeys);
+    const newKeySet = new Set(newSelectedRowKeys);
+
+    const addedKeys = newSelectedRowKeys.filter((key) => !prevKeySet.has(key));
+
+    const retainedKeys = currentKeys.filter((key) => newKeySet.has(key));
+
+    const actionType = selectActionRef.current || info?.type;
+    selectActionRef.current = null;
+
+    if (addedKeys.length > 0) {
+      const remainingQuota = Math.max(0, maxQuestions - retainedKeys.length);
+
+      if (actionType === "all" || addedKeys.length > 1) {
+        if (remainingQuota <= 0) {
+          setSelectedRowKeys(retainedKeys);
+          return;
+        }
+        const allowedAddedKeys = addedKeys.slice(0, remainingQuota);
+        setSelectedRowKeys([...retainedKeys, ...allowedAddedKeys]);
+        return;
+      }
+
+      if (remainingQuota <= 0) {
+        setSelectedRowKeys(retainedKeys);
+        message.error("Maximum no.of questions have been already selected.");
+        return;
+      }
+
+      setSelectedRowKeys([...retainedKeys, addedKeys[0]]);
+      return;
     }
 
     setSelectedRowKeys(newSelectedRowKeys);
@@ -68,8 +114,18 @@ function EmptyTableComponent({
   const rowSelection = {
     selectedRowKeys,
     onChange: onSelectChange,
+    onSelect: () => {
+      selectActionRef.current = "single";
+    },
+    onSelectAll: () => {
+      selectActionRef.current = "all";
+    },
     preserveSelectedRowKeys: true,
     // onselect: onSelectChangeNew,
+    getCheckboxProps: (record) => ({
+      disabled: isAssignedState,
+      name: record.name,
+    }),
   };
 
   const [searchText, setSearchText] = useState(descSearch);
@@ -257,6 +313,7 @@ function EmptyTableComponent({
           <Space>
             <QuestionEditModal
               data={record}
+              questionId={record.srno || record.db_Srno || record.id}
               courseSubId={sectionDetails.course_subject_id}
               updated={updated}
               setUpdated={setUpdated}
@@ -351,12 +408,16 @@ function EmptyTableComponent({
       rowSelection={rowSelection}
       dataSource={dataSource}
       columns={columns}
-      hideSelectAll={false}
+      hideSelectAll={isAssignedState ? true : false}
 
       footer={() => {
         const isComplete = selectedRowKeys.length === no_of_questions;
         const isExceeded = selectedRowKeys.length > no_of_questions;
         
+        const showUpdateButton = isFullLengthLinear
+          ? !isQuotaReached
+          : true;
+
         return (
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 py-2">
             {isExceeded && (
@@ -373,7 +434,7 @@ function EmptyTableComponent({
                 <ArrowLeftOutlined />
                 Back
               </button>
-              <button
+              {/* <button
                 disabled={!isComplete}
                 onClick={handleUpdateClick}
                 className={`h-11 px-8 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
@@ -384,7 +445,21 @@ function EmptyTableComponent({
               >
                 <SaveOutlined />
                 Update Questions
-              </button>
+              </button> */}
+              {showUpdateButton && (
+                <button
+                  disabled={!isComplete}
+                  onClick={handleUpdateClick}
+                  className={`h-11 px-8 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    isComplete
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg hover:shadow-xl hover:shadow-blue-500/30'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <SaveOutlined />
+                  Update Questions
+                </button>
+              )}
             </div>
           </div>
         );

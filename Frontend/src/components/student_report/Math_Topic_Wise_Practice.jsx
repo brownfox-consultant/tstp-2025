@@ -2,16 +2,27 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Pie } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Cell,
+} from "recharts";
 import { BASE_URL } from "@/app/constants/apiConstants";
-
-ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function Math_Topic_Wise_Practice({
   student_id,
   course_id,
   test_type,
+  graphPattern = "bar",
 }) {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +37,7 @@ export default function Math_Topic_Wise_Practice({
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(
         `${BASE_URL}/api/result/Topic_Wise_Practice/?student_id=${student_id}&course_id=${course_id}&test_type=${test_type}`,
         { withCredentials: true }
@@ -38,18 +50,19 @@ export default function Math_Topic_Wise_Practice({
       setTopics(mathData?.topics || []);
     } catch (err) {
       console.error("Math Topic Practice API Error:", err);
+      setTopics([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const hasNoData = !topics.length || topics.every((t) => t.practice_percent === 0);
+  const hasNoData = !topics.length || topics.every((t) => (t.practice_percent || 0) === 0);
 
   if (hasNoData) {
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-extrabold text-gray-800 mb-6">
-          Topic Wise Practice
+          Topic Wise Practice — Math
         </h3>
         <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100 rounded-xl border border-gray-200 p-10 text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-slate-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
@@ -67,44 +80,197 @@ export default function Math_Topic_Wise_Practice({
     );
   }
 
-  const data = {
-    labels: topics.map(
-      (t) => `${t.topic} ${Math.round(t.practice_percent)}%`
-    ),
-    datasets: [
-      {
-        data: topics.map((t) => Math.round(t.practice_percent)),
-        backgroundColor: colors,
-        borderWidth: 0,
-        color: "#fff",
-      },
-    ],
+  const chartData = topics.map((t, i) => {
+    const val = Math.round(t.practice_percent || 0);
+    return {
+      topic: t.topic,
+      shortTopic: t.topic.length > 16 ? t.topic.slice(0, 14) + "…" : t.topic,
+      value: val,
+      color: colors[i % colors.length],
+    };
+  });
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-xl border border-gray-100 text-xs z-50">
+          <p className="font-bold text-gray-800 mb-1">{data.topic}</p>
+          <div className="flex items-center gap-2">
+            <span
+              className="w-2.5 h-2.5 rounded-full inline-block"
+              style={{ backgroundColor: data.color }}
+            />
+            <span className="text-gray-600">Practice Share:</span>
+            <span className="font-extrabold text-orange-600">{data.value}%</span>
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
+
+  const renderBarLabel = (props) => {
+    const { x, y, width, value } = props;
+    if (value === undefined || value === null) return null;
+    const isZero = Number(value) === 0;
+    const labelY = isZero ? y - 6 : y < 20 ? y + 16 : y - 8;
+    const fill = !isZero && y < 20 ? "#ffffff" : "#4b5563";
+
+    return (
+      <text
+        x={x + width / 2}
+        y={labelY}
+        fill={fill}
+        textAnchor="middle"
+        fontSize={11}
+        fontWeight={700}
+      >
+        {`${Math.round(value)}%`}
+      </text>
+    );
+  };
+
+  const activePattern =
+    graphPattern === "stepLine"
+      ? "stepLine"
+      : graphPattern === "area"
+      ? "area"
+      : "bar";
 
   return (
     <div className="card-layout">
-      <h3 className="text-xl font-extrabold text-gray-800 mb-6 text-center">Topic Wise Practice</h3>
-
-      {/* PIE */}
-      <div className="w-[300px] mx-auto pb-3">
-        <Pie
-          data={data}
-          options={{
-            plugins: { legend: { display: false } },
-            cutout: "60%",
-          }}
-        />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+        <h3 className="text-lg font-extrabold text-gray-800">
+          Topic Wise Practice — Math
+        </h3>
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100 self-start sm:self-auto capitalize">
+          {activePattern === "stepLine" ? "Step Line" : activePattern === "area" ? "Area Chart" : "Bar Graph"}
+        </span>
       </div>
 
-      {/* LEGEND WITH COLOR DOTS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1.5 mt-2.5 text-center">
-        {topics.map((t, i) => (
-          <div key={i} className="text-[13px] font-semibold text-gray-900 whitespace-nowrap flex items-center">
+      <div style={{ width: "100%", height: 320 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {activePattern === "bar" ? (
+            <BarChart
+              data={chartData}
+              margin={{ top: 25, right: 25, left: 10, bottom: 15 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <XAxis
+                dataKey="shortTopic"
+                tick={{ fontSize: 11, fill: "#4b5563" }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={false}
+                interval={0}
+              />
+              <YAxis
+                domain={[0, 100]}
+                width={38}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+                ticks={[0, 20, 40, 60, 80, 100]}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+              <Bar
+                dataKey="value"
+                isAnimationActive={true}
+                radius={[6, 6, 0, 0]}
+                maxBarSize={44}
+                label={renderBarLabel}
+              >
+                {chartData.map((item, i) => (
+                  <Cell key={i} fill={item.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          ) : activePattern === "stepLine" ? (
+            <LineChart
+              data={chartData}
+              margin={{ top: 30, right: 25, left: 10, bottom: 15 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <XAxis
+                dataKey="shortTopic"
+                tick={{ fontSize: 11, fill: "#4b5563" }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={false}
+                interval={0}
+              />
+              <YAxis
+                domain={[0, 100]}
+                width={38}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+                ticks={[0, 20, 40, 60, 80, 100]}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Line
+                type="stepAfter"
+                dataKey="value"
+                stroke="#F59403"
+                strokeWidth={2.5}
+                dot={{ r: 4.5, stroke: "#F59403", strokeWidth: 2, fill: "#fff" }}
+                activeDot={{ r: 6.5, fill: "#F59403" }}
+              />
+            </LineChart>
+          ) : (
+            <AreaChart
+              data={chartData}
+              margin={{ top: 25, right: 25, left: 10, bottom: 15 }}
+            >
+              <defs>
+                <linearGradient id="mathAreaPracticeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#F59403" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#F59403" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <XAxis
+                dataKey="shortTopic"
+                tick={{ fontSize: 11, fill: "#4b5563" }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={false}
+                interval={0}
+              />
+              <YAxis
+                domain={[0, 100]}
+                width={38}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+                ticks={[0, 20, 40, 60, 80, 100]}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="linear"
+                dataKey="value"
+                stroke="#F59403"
+                strokeWidth={2.5}
+                fillOpacity={1}
+                fill="url(#mathAreaPracticeGrad)"
+                dot={{ r: 4, stroke: "#F59403", strokeWidth: 2, fill: "#fff" }}
+              />
+            </AreaChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+
+      <div className="flex flex-wrap gap-2.5 mt-3 justify-center">
+        {chartData.map((item, i) => (
+          <div key={i} className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
             <span
-              className="w-2.5 h-2.5 rounded-full inline-block mr-2"
-              style={{ backgroundColor: colors[i % colors.length] }}
-            ></span>
-            {t.topic} {Math.round(t.practice_percent)}%
+              className="w-2.5 h-2.5 rounded-full shadow-sm"
+              style={{ backgroundColor: item.color }}
+            />
+            <span className="text-xs text-gray-700">
+              {item.topic} <strong className="text-gray-900 font-extrabold">{item.value}%</strong>
+            </span>
           </div>
         ))}
       </div>

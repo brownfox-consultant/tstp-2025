@@ -34,113 +34,43 @@ function PracticeTestReport({ practiceTestId, onClose }) {
   ) : (
     <div>
       {/* Header Card */}
-      <div className="bg-gray-100 rounded-2xl p-4 md:p-6 shadow-md mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-          
-          {/* Header Card (Left Side) */}
-          <div className="lg:col-span-1 flex flex-col justify-center">
+      <div className="bg-gray-200 rounded-2xl shadow-sm border border-gray-100 p-6 mb-2">
+        {/* Top Row - Title and Student Info */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          {/* Left Side - Back + Title */}
+          <div className="flex items-start gap-3">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors mt-1"
+            >
+              <BackIcon />
+            </button>
             <div>
-              {/* Date */}
-              {resultData?.testDate && (
-                <div className="inline-flex items-center gap-1.5 text-sm text-black mb-2">
-                  <CalendarIcon />
-                  <span className="font-medium">
-                    {new Date(resultData.testDate).toDateString()}
-                  </span>
-                </div>
-              )}
-
-              {/* Title */}
-              <h1 className="text-2xl font-bold text-[#F59403] mb-3">
-                {resultData.name || "Practice Test Results"}
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <span className="text-[#F59403]">{resultData.name}</span>
               </h1>
-
-              {/* Student info */}
-              <div className="flex flex-wrap gap-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-900 text-white w-fit">
-                  <UserIcon className="w-3 h-3 text-white" />
-                  <span>{resultData?.student_name}</span>
-                </div>
+              <div className="flex items-center gap-2 mt-1 text-gray-500 text-sm">
+                <CalendarIcon />
+                <span>Student took this test on:</span>
+                <span className="font-medium text-gray-700">
+                  {new Date(resultData.testDate).toDateString()}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Topics (Center) */}
-          <div className="lg:col-span-2 md:col-span-2 col-span-2 flex flex-col justify-center">
-            <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 h-full flex flex-col justify-center">
-              <span className="text-sm font-bold text-gray-700 uppercase tracking-wide block mb-2">
-                Topics Covered
-              </span>
-              <p className="text-md font-semibold text-gray-800 leading-relaxed">
-                {(() => {
-                  const uniqueTopics = [...new Set((resultData?.questions_data || []).map(q => q.topic).filter(Boolean))];
-                  return uniqueTopics.length > 0 ? uniqueTopics.join(', ') : 'N/A';
-                })()}
-              </p>
+          {/* Right Side - Student Info */}
+          <div className="flex items-center gap-3 bg-gray-50 px-4 py-3 rounded-xl">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-400 rounded-full flex items-center justify-center text-white font-bold">
+              {resultData.student_name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="text-right">
+              <p className="text-xs uppercase tracking-wider text-gray-500 font-medium">Student Name</p>
+              <p className="font-semibold text-gray-800">{resultData.student_name}</p>
             </div>
           </div>
-
-          {/* Accuracy Score */}
-          <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-                Accuracy
-              </span>
-              <span className="text-md font-bold text-gray-800">
-                {(() => {
-                  const total = resultData.questions_data?.length || 0;
-                  const correct = resultData.section_correct_count || 0;
-                  return total > 0 ? Math.round((correct / total) * 100) : 0;
-                })()}%
-              </span>
-            </div>
-            
-            <div className="mb-2">
-              {(() => {
-                const total = resultData.questions_data?.length || 0;
-                const correct = resultData.section_correct_count || 0;
-                const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
-                const colorClass = percent >= 75 ? "text-green-500" : percent >= 50 ? "text-orange-500" : "text-red-500";
-                
-                return (
-                  <>
-                    <span className={`text-4xl font-black ${colorClass}`}>
-                      {correct}
-                    </span>
-                    <span className="text-[14px] text-black font-bold uppercase ml-1">
-                      OUT OF {total}
-                    </span>
-                  </>
-                );
-              })()}
-            </div>
-
-            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  (() => {
-                    const total = resultData.questions_data?.length || 0;
-                    const correct = resultData.section_correct_count || 0;
-                    const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
-                    return percent >= 75 ? "bg-gradient-to-r from-green-400 to-green-500" : percent >= 50 ? "bg-gradient-to-r from-orange-400 to-orange-500" : "bg-gradient-to-r from-red-400 to-red-500";
-                  })()
-                }`}
-                style={{
-                  width: `${(() => {
-                    const total = resultData.questions_data?.length || 0;
-                    const correct = resultData.section_correct_count || 0;
-                    return total > 0 ? Math.round((correct / total) * 100) : 0;
-                  })()}%`
-                }}
-              />
-            </div>
-          </div>
-
         </div>
-      </div>
 
-      {/* Filter and Time Stats Box */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4">
         {/* Stats Row */}
         <div className="flex flex-wrap">
           {/* Left - Score Stats */}

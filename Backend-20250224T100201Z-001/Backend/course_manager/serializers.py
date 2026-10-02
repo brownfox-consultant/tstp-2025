@@ -244,6 +244,7 @@ class QuestionListSerializer(serializers.ModelSerializer):
     updated_at = serializers.SerializerMethodField()
 
     time_taken = serializers.SerializerMethodField()
+    fastest_solve_time = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
@@ -253,7 +254,7 @@ class QuestionListSerializer(serializers.ModelSerializer):
             'question_subtype', 'options', 'has_suggestion',
             'topic', 'sub_topic', 'difficulty', 'test_type',
             'is_active', 'show_calculator', 'directions',
-            'explanation', 'time_taken',
+            'explanation', 'time_taken', 'fastest_solve_time',
             'created_by', 'created_at',
             'updated_by', 'updated_at',
             'available_in_other_courses',
@@ -316,6 +317,62 @@ class QuestionListSerializer(serializers.ModelSerializer):
             ).first()
 
             return ans.time_taken if ans else 0
+
+        return 0
+
+    def get_fastest_solve_time(self, obj):
+        test_submission_id = self.context.get("test_submission_id")
+        practice_test_result_id = self.context.get("practice_test_result_id")
+
+        if test_submission_id:
+            try:
+                from test_manager.models import QuestionAnswer, TestSubmission
+                from django.db.models import Min
+
+                min_time = QuestionAnswer.objects.filter(
+                    question=obj,
+                    is_correct=True,
+                    is_skipped=False,
+                    time_taken__gt=0,
+                    result__test_submission__status=TestSubmission.COMPLETED,
+                ).aggregate(min_time=Min("time_taken"))["min_time"]
+
+                if min_time is None:
+                    min_time = QuestionAnswer.objects.filter(
+                        question=obj,
+                        is_correct=True,
+                        is_skipped=False,
+                        time_taken__gt=0,
+                    ).aggregate(min_time=Min("time_taken"))["min_time"]
+
+                return min_time if min_time is not None else 0
+            except Exception:
+                return 0
+
+        if practice_test_result_id:
+            try:
+                from test_manager.models import PracticeQuestionAnswer
+                from django.db.models import Min
+
+                min_time = PracticeQuestionAnswer.objects.filter(
+                    question=obj,
+                    is_correct=True,
+                    is_skipped=False,
+                    time_taken__gt=0,
+                    practice_test_result__status="COMPLETED",
+                ).aggregate(min_time=Min("time_taken"))["min_time"]
+
+                if min_time is None:
+                    min_time = PracticeQuestionAnswer.objects.filter(
+                        question=obj,
+                        is_correct=True,
+                        is_skipped=False,
+                        time_taken__gt=0,
+                    ).aggregate(min_time=Min("time_taken"))["min_time"]
+
+                return min_time if min_time is not None else 0
+            except Exception:
+                return 0
 
         return 0
 

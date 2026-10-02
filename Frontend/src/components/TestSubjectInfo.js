@@ -165,6 +165,8 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
             questions,
             no_of_questions,
             duration,
+            format_type,
+            test_type,
           });
           setSelectedRowKeys(questions.map((val) => Number(val)));
         }}
@@ -310,6 +312,7 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
 
           {dataSource.length === 0 ? (
             <EmptyTableComponent
+              testDetails={testDetails}
               sectionDetails={selectedSection}
               dataSource={dataSource}
               selectedRowKeys={selectedRowKeys}
@@ -331,6 +334,7 @@ function TestSubjectInfo({ testDetails, setTestReady, updated, setUpdated }) {
             />
           ) : (
             <TableComponent
+              testDetails={testDetails}
               sectionDetails={selectedSection}
               dataSource={dataSource}
               selectedRowKeys={selectedRowKeys}

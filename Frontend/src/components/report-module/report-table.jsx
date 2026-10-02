@@ -15,6 +15,7 @@ import Image from "next/image";
 import RaiseDoubtModal from "../RaiseDoubtModal";
 import { usePathname } from "next/navigation";
 import GridInOptions from "../question-list/gridin-options";
+import "./ReportNew.css";
 
 const buildOptions = (data, field) =>
   [...new Set(data.map((q) => q[field]).filter(Boolean))].map((t) => ({
@@ -555,10 +556,15 @@ function ReportTable({ sectionData, testSubmissionId }) {
       <div className="overflow-x-auto">
         <Table
           pagination={false}
-          className="border-gray-200 border rounded"
+          className="border-gray-200 border rounded report-table-custom [&_.ant-table-thead>tr>th]:!py-1.5 [&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-1.5 [&_.ant-table-tbody>tr.ant-table-measure-row>td]:!p-0 [&_.ant-table-tbody>tr.ant-table-measure-row]:!h-0 [&_.ant-table-tbody>tr.report-row-white>td]:!bg-white [&_.ant-table-tbody>tr.report-row-orange>td]:!bg-[#FFF8EB] [&_.ant-table-tbody>tr.report-row-white:hover>td]:!bg-[#F9FAFB] [&_.ant-table-tbody>tr.report-row-orange:hover>td]:!bg-[#FFEED4]"
           columns={questionViewCols}
           dataSource={questions_data}
           scroll={{ x: 'max-content' }}
+          rowClassName={(record, index) =>
+            index % 2 === 0
+              ? "report-row-white cursor-pointer"
+              : "report-row-orange cursor-pointer"
+          }
           onRow={(record, rowIndex) => ({
             onClick: () => handleQuestionClick(record, rowIndex),
           })}
@@ -735,43 +741,56 @@ function ReportTable({ sectionData, testSubmissionId }) {
 
             {/* Question Metadata */}
             <div className="border-b border-gray-200 pb-3 mb-4">
-              <div className="flex items-center flex-wrap gap-6 text-sm text-gray-700">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center flex-wrap gap-x-3 gap-y-1.5 text-sm text-gray-700">
+                <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-gray-900">Difficulty:</span>
-                  <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium">
+                  <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">
                     {modalData.difficulty || "N/A"}
                   </span>
                 </div>
 
                 <span className="text-gray-300">•</span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-gray-900">Question Type:</span>
                   <span>{modalData.question_type || "N/A"}</span>
                 </div>
 
                 <span className="text-gray-300">•</span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-gray-900">Topic:</span>
                   <span>{modalData.topic || "N/A"}</span>
                 </div>
 
                 <span className="text-gray-300">•</span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-gray-900">Sub Topic:</span>
                   <span>{modalData.sub_topic || "N/A"}</span>
                 </div>
 
                 <span className="text-gray-300">•</span>
 
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-900">Total Time:</span>
-                  <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-gray-900">Time Taken:</span>
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">
                     {modalData.time_taken ? timeInMMSS(modalData.time_taken) : "0s"}
                   </span>
                 </div>
+
+                {(test_type === "FULL_LENGTH_TEST" || sectionData?.test_type === "FULL_LENGTH_TEST" || sectionData?.test_type === "PRACTICE_TEST" || modalData.fastest_solve_time !== undefined) && (
+                  <>
+                    <span className="text-gray-300">•</span>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-gray-900">Fastest Solve Time:</span>
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">
+                        {modalData.fastest_solve_time ? timeInMMSS(modalData.fastest_solve_time) : "-"}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

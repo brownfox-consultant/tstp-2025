@@ -9494,9 +9494,21 @@ class ResultViewSet(viewsets.ModelViewSet):
 
         self.logger.info(f"🧩 Fetching result details for TestSubmission ID: {test_submission_id}, Test: {test.name}")
 
+        taken_date = test_submission.completion_date or test_submission.assigned_date
+        test_date_str = None
+        if taken_date:
+            try:
+                from django.utils import timezone
+                taken_date = timezone.localtime(taken_date)
+            except Exception:
+                pass
+            test_date_str = taken_date.strftime('%Y-%m-%d')
+
         response_data = {
             'testName': f'Test - {test.name}',
-            'testDate': test_submission.assigned_date.strftime('%Y-%m-%d'),
+            'testDate': test_date_str,
+            'completion_date': test_submission.completion_date.strftime('%Y-%m-%d') if test_submission.completion_date else None,
+            'assigned_date': test_submission.assigned_date.strftime('%Y-%m-%d') if test_submission.assigned_date else None,
             'student_id': test_submission.student_id,
             'studentName': student.name,
             'course_id': test.course_id,

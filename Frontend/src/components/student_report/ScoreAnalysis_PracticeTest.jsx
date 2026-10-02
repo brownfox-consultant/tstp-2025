@@ -2,8 +2,12 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import {
+  ComposedChart,
   BarChart,
   Bar,
+  LineChart,
+  Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -21,6 +25,7 @@ export default function ScoreAnalysis_PracticeTest({
   courseName = "Course",
 }) {
   const [selectedSubject, setSelectedSubject] = useState("All");
+  const [chartView, setChartView] = useState("bar");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(6);
@@ -150,6 +155,33 @@ export default function ScoreAnalysis_PracticeTest({
     }
   };
 
+  const renderCustomTick = ({ x, y, payload }) => {
+    const data = displayData[payload.index];
+    if (!data) return null;
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text
+          dy={14}
+          textAnchor="middle"
+          fontSize={12}
+          fontWeight={600}
+          fill="#374151"
+        >
+          {data.name}
+        </text>
+        <text
+          dy={30}
+          textAnchor="middle"
+          fontSize={10}
+          fill="#9ca3af"
+        >
+          {data.dateLabel}
+        </text>
+      </g>
+    );
+  };
+
   /* ================= CALCULATE SUMMARY ================= */
   const totalQuestions = chartData.reduce((sum, d) => sum + d.Total, 0);
   const totalCorrect = chartData.reduce((sum, d) => sum + d.Correct, 0);
@@ -181,63 +213,106 @@ export default function ScoreAnalysis_PracticeTest({
       {/* ================= SCORE CHART ================= */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         
-        {/* Header: Title on Left, Dropdown on Right */}
+        {/* Header: Title on Left, Controls on Right */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h3 className="text-xl font-bold text-gray-800">
-            Practice Test - {courseName} Analysis
-          </h3>
-          
-          {/* Subject Filter - Custom Dropdown */}
-          {subjectOptions.length > 2 && (
-            <div className="flex gap-1 align-baseline">
-              <span className="text-sm font-semibold text-amber-500 uppercase tracking-wide flex items-center align-baseline me-2">Subject</span>
-              <div className="relative">
-                {/* Dropdown Button */}
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
-                  className="flex items-center justify-between gap-4 px-3 py-2 min-w-[120px] bg-white border border-gray-200 rounded-md text-gray-800 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 cursor-pointer transition-all duration-200 hover:border-amber-100"
-                >
-                  <span>{selectedOption?.label}</span>
-                  <svg 
-                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <h3 className="lg:text-xl text-base font-bold text-gray-800">
+              Practice Test - {courseName} Analysis
+            </h3>
+          </div>
 
-                {/* Dropdown Options */}
-                {isDropdownOpen && (
-                  <div className="absolute top-full left-0 w-full bg-white rounded-md shadow-md overflow-hidden z-50 border border-gray-100">
-                    {subjectOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setSelectedSubject(option.value);
-                          setIsDropdownOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2 text-left font-medium transition-all duration-150 cursor-pointer
-                          ${selectedSubject === option.value 
-                            ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-white' 
-                            : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                      >
-                        <span>{option.label}</span>
-                        {selectedSubject === option.value && (
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setChartView("bar")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "bar"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Bar
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartView("line")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "line"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Line
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartView("stepLine")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "stepLine"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Step Line
+              </button>
             </div>
-          )}
+
+            {/* Subject Filter - Custom Dropdown */}
+            {subjectOptions.length > 2 && (
+              <div className="flex gap-1 align-baseline items-center">
+                <span className="text-sm font-semibold text-amber-500 uppercase tracking-wide flex items-center align-baseline me-2">Subject</span>
+                <div className="relative">
+                  {/* Dropdown Button */}
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
+                    className="flex items-center justify-between gap-4 px-3 py-2 min-w-[120px] bg-white border border-gray-200 rounded-md text-gray-800 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 cursor-pointer transition-all duration-200 hover:border-amber-100"
+                  >
+                    <span>{selectedOption?.label}</span>
+                    <svg 
+                      className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown Options */}
+                  {isDropdownOpen && (
+                    <div className="absolute top-full left-0 w-full bg-white rounded-md shadow-md overflow-hidden z-50 border border-gray-100 mt-1">
+                      {subjectOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setSelectedSubject(option.value);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-left font-medium transition-all duration-150 cursor-pointer
+                            ${selectedSubject === option.value 
+                              ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-white' 
+                              : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                          <span>{option.label}</span>
+                          {selectedSubject === option.value && (
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Chart Area */}
@@ -271,82 +346,184 @@ export default function ScoreAnalysis_PracticeTest({
 
             {/* Chart */}
             <div className={`h-[350px] w-full flex justify-center ${hideButtons ? 'px-2' : 'px-12'}`}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={displayData} barGap={2} barCategoryGap="15%">
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-     <XAxis
-  dataKey="name"
-  interval={0}
-  height={65}
-  axisLine={false}
-  tickLine={false}
-  tick={({ x, y, payload }) => {
-    const data = displayData[payload.index];
-
-    if (!data) return null;
-
-    return (
-      <g transform={`translate(${x},${y})`}>
-        {/* PT-40 */}
-        <text
-          dy={14}
-          textAnchor="middle"
-          fontSize={12}
-          fontWeight={600}
-          fill="#374151"
-        >
-          {data.name}
-        </text>
-
-        {/* Date */}
-        <text
-          dy={30}
-          textAnchor="middle"
-          fontSize={10}
-          fill="#9ca3af"
-        >
-          {data.dateLabel}
-        </text>
-      </g>
-    );
-  }}
-/>
-
-
-
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    domain={[0, 'auto']}
-                    fontSize={11}
-                  />
-                  <Tooltip cursor={{ fill: 'transparent' }} />
-                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                  
-                  {/* Grouped Bars: Total, Correct, Incorrect */}
-                  <Bar
-                    dataKey="Total"
-                    fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
-                    barSize={18}
-                    name="Total Questions"
-                  />
-                  <Bar
-                    dataKey="Correct"
-                    fill="#10b981"
-                    radius={[4, 4, 0, 0]}
-                    barSize={18}
-                    name="Correct"
-                  />
-                  <Bar
-                    dataKey="Incorrect"
-                    fill="#ef4444"
-                    radius={[4, 4, 0, 0]}
-                    barSize={18}
-                    name="Incorrect"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {chartView === "bar" ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={displayData} barGap={2} barCategoryGap="15%">
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                    <XAxis
+                      dataKey="name"
+                      interval={0}
+                      height={65}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={renderCustomTick}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, 'auto']}
+                      fontSize={11}
+                    />
+                    <Tooltip cursor={{ fill: 'transparent' }} />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    
+                    {/* Grouped Bars: Total, Correct, Incorrect */}
+                    <Bar
+                      dataKey="Total"
+                      fill="#3b82f6"
+                      radius={[4, 4, 0, 0]}
+                      barSize={18}
+                      name="Total Questions"
+                    />
+                    <Bar
+                      dataKey="Correct"
+                      fill="#10b981"
+                      radius={[4, 4, 0, 0]}
+                      barSize={18}
+                      name="Correct"
+                    />
+                    <Bar
+                      dataKey="Incorrect"
+                      fill="#ef4444"
+                      radius={[4, 4, 0, 0]}
+                      barSize={18}
+                      name="Incorrect"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : chartView === "line" ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={displayData} margin={{ top: 25, right: 30, bottom: 10, left: 10 }}>
+                    <defs>
+                      <linearGradient id="colorTotalComboPT" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.03} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                    <XAxis
+                      dataKey="name"
+                      interval={0}
+                      height={65}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={renderCustomTick}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, 'auto']}
+                      fontSize={11}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      iconType="circle"
+                      iconSize={9}
+                      wrapperStyle={{ paddingTop: '10px', fontSize: '12px', fontWeight: '500', color: '#4b5563' }}
+                    />
+                    <Bar
+                      dataKey="Correct"
+                      name="Correct"
+                      fill="#10b981"
+                      fillOpacity={0.85}
+                      radius={[4, 4, 0, 0]}
+                      barSize={hideButtons ? 24 : 36}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Incorrect"
+                      name="Incorrect"
+                      stroke="#ef4444"
+                      strokeWidth={4.5}
+                      dot={{ r: 3.5, fill: '#ef4444', strokeWidth: 0 }}
+                      activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="Total"
+                      name="Total Questions"
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
+                      fill="url(#colorTotalComboPT)"
+                      dot={{ r: 3.5, fill: '#3b82f6', strokeWidth: 0 }}
+                      activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={displayData} margin={{ top: 20, right: 30, bottom: 10, left: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                    <XAxis
+                      dataKey="name"
+                      interval={0}
+                      height={65}
+                      padding={{ left: 35, right: 35 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={renderCustomTick}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, 'auto']}
+                      fontSize={11}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      iconType="circle"
+                      iconSize={9}
+                      wrapperStyle={{ paddingTop: '10px', fontSize: '12px', fontWeight: '500', color: '#4b5563' }}
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="Total"
+                      name="Total Questions"
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
+                      dot={{ r: 3.5, fill: '#3b82f6', strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 2 }}
+                      isAnimationActive={true}
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="Correct"
+                      name="Correct"
+                      stroke="#10b981"
+                      strokeWidth={2.5}
+                      dot={{ r: 3.5, fill: '#10b981', strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 2 }}
+                      isAnimationActive={true}
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="Incorrect"
+                      name="Incorrect"
+                      stroke="#ef4444"
+                      strokeWidth={2.5}
+                      dot={{ r: 3.5, fill: '#ef4444', strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: '#ef4444', stroke: '#ffffff', strokeWidth: 2 }}
+                      isAnimationActive={true}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
             {/* Right Arrow - Only show when pagination is needed AND can go right */}

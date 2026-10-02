@@ -5,6 +5,10 @@ import axios from "axios";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,6 +23,7 @@ export default function Math_SubTopicPracticeStyled({
   student_id,
   course_id,
   test_type,
+  graphPattern = "bar",
 }) {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,14 +58,6 @@ export default function Math_SubTopicPracticeStyled({
     }
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center py-20">
-  //       <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
-  //     </div>
-  //   );
-  // }
-
   if (!topics.length) {
     return (
       <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
@@ -69,7 +66,14 @@ export default function Math_SubTopicPracticeStyled({
     );
   }
 
-  /* ---------------- RENDER HORIZONTAL BAR CHART ---------------- */
+  const activePattern =
+    graphPattern === "stepLine"
+      ? "stepLine"
+      : graphPattern === "area"
+      ? "area"
+      : "bar";
+
+  /* ---------------- 1. HORIZONTAL BAR CHART ---------------- */
   const renderBarChart = (section, index) => {
     const chartData = section.subtopics.map((sub) => ({
       name: sub.subtopic,
@@ -84,8 +88,11 @@ export default function Math_SubTopicPracticeStyled({
     return (
       <div key={index} className="card-layout">
         {/* Section Header */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
           <h3 className="text-xl font-bold text-gray-800">{section.topic}</h3>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+            Bar Graph
+          </span>
         </div>
 
         {/* Legend */}
@@ -136,7 +143,7 @@ export default function Math_SubTopicPracticeStyled({
                   if (name === 'avgTime') return [`${value}s`, 'Avg Time'];
                   return [value, name];
                 }}
-                 cursor={{ fill: 'transparent' }} 
+                cursor={{ fill: 'transparent' }} 
               />
 
               <Bar
@@ -254,6 +261,235 @@ export default function Math_SubTopicPracticeStyled({
     );
   };
 
+  /* ---------------- 2. STEP LINE CHART PATTERN ---------------- */
+  const renderStepLineChart = (section, index) => {
+    const chartData = (section.subtopics || []).map((sub) => ({
+      name: sub.subtopic,
+      shortName: sub.subtopic.length > 15 ? sub.subtopic.slice(0, 13) + "…" : sub.subtopic,
+      accuracy: sub.accuracy_percent || 0,
+      questions: sub.practiced_questions || 0,
+      avgTime: sub.avg_time_seconds || 0,
+    }));
+
+    return (
+      <div key={index} className="card-layout">
+        {/* Section Header */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+          <h3 className="text-xl font-bold text-gray-800">{section.topic}</h3>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+            Step Line
+          </span>
+        </div>
+
+        {/* Legend */}
+        <div className="flex justify-center gap-4 md:gap-6 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+            <span className="text-xs md:text-sm font-medium text-gray-600">Accuracy %</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-orange-500 rounded-full"></span>
+            <span className="text-xs md:text-sm font-medium text-gray-600">Questions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <span className="text-xs md:text-sm font-medium text-gray-600">Avg Time (sec)</span>
+          </div>
+        </div>
+
+        <div className="w-full h-[360px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={chartData}
+              margin={{ top: 25, right: 25, left: 10, bottom: 25 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <XAxis
+                dataKey="shortName"
+                tick={{ fontSize: 11, fill: "#4b5563" }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={false}
+                interval={0}
+                padding={{ left: 15, right: 15 }}
+              />
+              <YAxis
+                domain={[0, 100]}
+                width={38}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+                ticks={[0, 20, 40, 60, 80, 100]}
+              />
+              <Tooltip
+                formatter={(value, name) => {
+                  if (name === "Accuracy %") return [`${value}%`, name];
+                  if (name === "Questions") return [value, name];
+                  if (name === "Avg Time (sec)") return [`${value}s`, name];
+                  return [value, name];
+                }}
+                labelFormatter={(label, payload) => {
+                  const item = payload && payload[0]?.payload;
+                  return item ? item.name : label;
+                }}
+              />
+              <Line
+                type="stepAfter"
+                name="Accuracy %"
+                dataKey="accuracy"
+                stroke="#10b981"
+                strokeWidth={2.5}
+                dot={{ r: 4.5, stroke: "#10b981", strokeWidth: 2, fill: "#fff" }}
+                activeDot={{ r: 6.5 }}
+              />
+              <Line
+                type="stepAfter"
+                name="Questions"
+                dataKey="questions"
+                stroke="#f97316"
+                strokeWidth={2.5}
+                dot={{ r: 4, stroke: "#f97316", strokeWidth: 2, fill: "#fff" }}
+                activeDot={{ r: 6 }}
+              />
+              <Line
+                type="stepAfter"
+                name="Avg Time (sec)"
+                dataKey="avgTime"
+                stroke="#3b82f6"
+                strokeWidth={2.5}
+                dot={{ r: 4, stroke: "#3b82f6", strokeWidth: 2, fill: "#fff" }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  };
+
+  /* ---------------- 3. AREA CHART PATTERN ---------------- */
+  const renderAreaChart = (section, index) => {
+    const chartData = (section.subtopics || []).map((sub) => ({
+      name: sub.subtopic,
+      shortName: sub.subtopic.length > 15 ? sub.subtopic.slice(0, 13) + "…" : sub.subtopic,
+      accuracy: sub.accuracy_percent || 0,
+      questions: sub.practiced_questions || 0,
+      avgTime: sub.avg_time_seconds || 0,
+    }));
+
+    return (
+      <div key={index} className="card-layout">
+        {/* Section Header */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+          <h3 className="text-xl font-bold text-gray-800">{section.topic}</h3>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+            Area Chart
+          </span>
+        </div>
+
+        {/* Legend */}
+        <div className="flex justify-center gap-4 md:gap-6 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+            <span className="text-xs md:text-sm font-medium text-gray-600">Accuracy %</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-orange-500 rounded-full"></span>
+            <span className="text-xs md:text-sm font-medium text-gray-600">Questions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <span className="text-xs md:text-sm font-medium text-gray-600">Avg Time (sec)</span>
+          </div>
+        </div>
+
+        <div className="w-full h-[360px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={chartData}
+              margin={{ top: 25, right: 25, left: 10, bottom: 25 }}
+            >
+              <defs>
+                <linearGradient id={`mathAreaAccGrad_${index}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id={`mathAreaQGrad_${index}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f97316" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#f97316" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id={`mathAreaTGrad_${index}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <XAxis
+                dataKey="shortName"
+                tick={{ fontSize: 11, fill: "#4b5563" }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={false}
+                interval={0}
+                padding={{ left: 15, right: 15 }}
+              />
+              <YAxis
+                domain={[0, 100]}
+                width={38}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+                ticks={[0, 20, 40, 60, 80, 100]}
+              />
+              <Tooltip
+                formatter={(value, name) => {
+                  if (name === "Accuracy %") return [`${value}%`, name];
+                  if (name === "Questions") return [value, name];
+                  if (name === "Avg Time (sec)") return [`${value}s`, name];
+                  return [value, name];
+                }}
+                labelFormatter={(label, payload) => {
+                  const item = payload && payload[0]?.payload;
+                  return item ? item.name : label;
+                }}
+              />
+              <Area
+                type="linear"
+                name="Accuracy %"
+                dataKey="accuracy"
+                stroke="#10b981"
+                strokeWidth={2.5}
+                fillOpacity={1}
+                fill={`url(#mathAreaAccGrad_${index})`}
+                dot={{ r: 4, stroke: "#10b981", strokeWidth: 2, fill: "#fff" }}
+              />
+              <Area
+                type="linear"
+                name="Questions"
+                dataKey="questions"
+                stroke="#f97316"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill={`url(#mathAreaQGrad_${index})`}
+                dot={{ r: 3.5, stroke: "#f97316", strokeWidth: 1.5, fill: "#fff" }}
+              />
+              <Area
+                type="linear"
+                name="Avg Time (sec)"
+                dataKey="avgTime"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill={`url(#mathAreaTGrad_${index})`}
+                dot={{ r: 3.5, stroke: "#3b82f6", strokeWidth: 1.5, fill: "#fff" }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  };
+
   /* ---------------- UI ---------------- */
   return (
     <div className="space-y-4">
@@ -275,10 +511,11 @@ export default function Math_SubTopicPracticeStyled({
               <button
                 key={i}
                 onClick={() => setActiveSection(i)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${activeSection === i
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${
+                  activeSection === i
                     ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md'
                     : 'bg-white text-black hover:bg-gray-200'
-                  }`}
+                }`}
               >
                 {t.topic}
               </button>
@@ -287,11 +524,25 @@ export default function Math_SubTopicPracticeStyled({
         )}
       </div>
 
-      {/* Render Active Section */}
-      {topics.length > 1 ? (
-        renderBarChart(topics[activeSection], activeSection)
+      {/* Render Active Section according to pattern */}
+      {activePattern === "bar" ? (
+        topics.length > 1 ? (
+          renderBarChart(topics[activeSection], activeSection)
+        ) : (
+          topics.map((section, index) => renderBarChart(section, index))
+        )
+      ) : activePattern === "stepLine" ? (
+        topics.length > 1 ? (
+          renderStepLineChart(topics[activeSection], activeSection)
+        ) : (
+          topics.map((section, index) => renderStepLineChart(section, index))
+        )
       ) : (
-        topics.map((section, index) => renderBarChart(section, index))
+        topics.length > 1 ? (
+          renderAreaChart(topics[activeSection], activeSection)
+        ) : (
+          topics.map((section, index) => renderAreaChart(section, index))
+        )
       )}
     </div>
   );

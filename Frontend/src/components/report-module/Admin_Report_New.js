@@ -1811,13 +1811,13 @@ const renderQuestionTimeGraph = (flow) => {
             <div>
 
               {/* Date */}
-              {resultData?.testDate && (
+              {(resultData?.completion_date || resultData?.testDate) && (
                 <div className="inline-flex items-center gap-1.5 text-sm text-black mb-2">
                   <CalendarIcon />
 
                   <span className="font-medium">
                     {new Date(
-                      resultData.testDate
+                      resultData.completion_date || resultData.testDate
                     ).toDateString()}
                   </span>
                 </div>

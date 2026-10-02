@@ -9,8 +9,12 @@ import React, {
 import axios from "axios";
 
 import {
+  ComposedChart,
   BarChart,
   Bar,
+  LineChart,
+  Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -34,6 +38,9 @@ export default function ScoreAnalysis_overall({
 
   const [selectedSubject, setSelectedSubject] =
     useState("All");
+
+  const [chartView, setChartView] =
+    useState("bar");
 
   const [isDropdownOpen, setIsDropdownOpen] =
     useState(false);
@@ -494,6 +501,55 @@ export default function ScoreAnalysis_overall({
 
   };
 
+  const renderCustomTick = ({
+    x,
+    y,
+    payload,
+  }) => {
+    const data =
+      displayData[
+        payload.index
+      ];
+
+    if (!data) {
+      return null;
+    }
+
+    return (
+      <g
+        transform={`translate(${x},${y})`}
+      >
+        <text
+          dy={14}
+          textAnchor="middle"
+          fontSize={12}
+          fontWeight={600}
+          fill="#374151"
+        >
+          {data.name}
+        </text>
+
+        <text
+          dy={30}
+          textAnchor="middle"
+          fontSize={10}
+          fill="#9ca3af"
+        >
+          {data.dateLabel}
+        </text>
+
+        <text
+          dy={44}
+          textAnchor="middle"
+          fontSize={9}
+          fill="#f59e0b"
+        >
+          {data.testTypeLabel}
+        </text>
+      </g>
+    );
+  };
+
 
   // =========================================================
   // SUMMARY
@@ -747,28 +803,61 @@ export default function ScoreAnalysis_overall({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
 
 
-          <div>
-
-            <h3 className="text-xl font-bold text-gray-800">
-
-              Overall Performance -{" "}
-              {courseName} Analysis
-
-            </h3>
-
-
-            <p className="text-sm text-gray-500 mt-1">
-
-              Combined Full Length Test + Practice Test
-
-            </p>
-
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <div>
+              <h3 className="lg:text-xl text-base font-bold text-gray-800">
+                Overall Performance - {courseName} Analysis
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Combined Full Length Test + Practice Test
+              </p>
+            </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Chart Type Toggle - Bar first as requested */}
+            <div className="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setChartView("bar")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "bar"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Bar
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartView("line")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "line"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Line
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartView("stepLine")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "stepLine"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Step Line
+              </button>
+            </div>
 
-          {/* =================================================
-              SUBJECT DROPDOWN
-          ================================================= */}
+            {/* =================================================
+                SUBJECT DROPDOWN
+            ================================================= */}
 
           {subjectOptions.length > 1 && (
 
@@ -906,6 +995,8 @@ export default function ScoreAnalysis_overall({
 
           )}
 
+          </div>
+
         </div>
 
 
@@ -1009,172 +1100,244 @@ export default function ScoreAnalysis_overall({
               }`}
             >
 
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-
-                <BarChart
-                  data={displayData}
-                  barGap={2}
-                  barCategoryGap="15%"
+              {chartView === "bar" ? (
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
                 >
 
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="#eee"
-                  />
+                  <BarChart
+                    data={displayData}
+                    barGap={2}
+                    barCategoryGap="15%"
+                  >
+
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="#eee"
+                    />
 
 
-                  <XAxis
-                    dataKey="name"
-                    interval={0}
-                    height={65}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={({
-                      x,
-                      y,
-                      payload,
-                    }) => {
-
-                      const data =
-                        displayData[
-                          payload.index
-                        ];
-
-                      if (!data) {
-                        return null;
-                      }
+                    <XAxis
+                      dataKey="name"
+                      interval={0}
+                      height={65}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={renderCustomTick}
+                    />
 
 
-                      return (
-
-                        <g
-                          transform={`translate(${x},${y})`}
-                        >
-
-                          <text
-                            dy={14}
-                            textAnchor="middle"
-                            fontSize={12}
-                            fontWeight={600}
-                            fill="#374151"
-                          >
-
-                            {data.name}
-
-                          </text>
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[
+                        0,
+                        "auto",
+                      ]}
+                      fontSize={11}
+                    />
 
 
-                          <text
-                            dy={30}
-                            textAnchor="middle"
-                            fontSize={10}
-                            fill="#9ca3af"
-                          >
-
-                            {data.dateLabel}
-
-                          </text>
-
-
-                          <text
-                            dy={44}
-                            textAnchor="middle"
-                            fontSize={9}
-                            fill="#f59e0b"
-                          >
-
-                            {data.testTypeLabel}
-
-                          </text>
-
-                        </g>
-
-                      );
-
-                    }}
-                  />
+                    <Tooltip
+                      cursor={{
+                        fill: "transparent",
+                      }}
+                      formatter={(
+                        value,
+                        name
+                      ) => [
+                        value,
+                        name,
+                      ]}
+                    />
 
 
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    domain={[
-                      0,
-                      "auto",
-                    ]}
-                    fontSize={11}
-                  />
+                    <Legend
+                      wrapperStyle={{
+                        paddingTop: "10px",
+                      }}
+                    />
 
 
-                  <Tooltip
-                    cursor={{
-                      fill: "transparent",
-                    }}
-                    formatter={(
-                      value,
-                      name
-                    ) => [
-                      value,
-                      name,
-                    ]}
-                  />
+                    <Bar
+                      dataKey="Total"
+                      fill="#3b82f6"
+                      radius={[
+                        4,
+                        4,
+                        0,
+                        0,
+                      ]}
+                      barSize={18}
+                      name="Total Questions"
+                    />
 
 
-                  <Legend
-                    wrapperStyle={{
-                      paddingTop: "10px",
-                    }}
-                  />
+                    <Bar
+                      dataKey="Correct"
+                      fill="#10b981"
+                      radius={[
+                        4,
+                        4,
+                        0,
+                        0,
+                      ]}
+                      barSize={18}
+                      name="Correct"
+                    />
 
 
-                  <Bar
-                    dataKey="Total"
-                    fill="#3b82f6"
-                    radius={[
-                      4,
-                      4,
-                      0,
-                      0,
-                    ]}
-                    barSize={18}
-                    name="Total Questions"
-                  />
+                    <Bar
+                      dataKey="Incorrect"
+                      fill="#ef4444"
+                      radius={[
+                        4,
+                        4,
+                        0,
+                        0,
+                      ]}
+                      barSize={18}
+                      name="Incorrect"
+                    />
 
+                  </BarChart>
 
-                  <Bar
-                    dataKey="Correct"
-                    fill="#10b981"
-                    radius={[
-                      4,
-                      4,
-                      0,
-                      0,
-                    ]}
-                    barSize={18}
-                    name="Correct"
-                  />
-
-
-                  <Bar
-                    dataKey="Incorrect"
-                    fill="#ef4444"
-                    radius={[
-                      4,
-                      4,
-                      0,
-                      0,
-                    ]}
-                    barSize={18}
-                    name="Incorrect"
-                  />
-
-                </BarChart>
-
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              ) : chartView === "line" ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={displayData} margin={{ top: 25, right: 30, bottom: 10, left: 10 }}>
+                    <defs>
+                      <linearGradient id="colorTotalComboOverall" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.03} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                    <XAxis
+                      dataKey="name"
+                      interval={0}
+                      height={65}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={renderCustomTick}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, "auto"]}
+                      fontSize={11}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: "none",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      iconType="circle"
+                      iconSize={9}
+                      wrapperStyle={{ paddingTop: "10px", fontSize: "12px", fontWeight: "500", color: "#4b5563" }}
+                    />
+                    <Bar
+                      dataKey="Correct"
+                      name="Correct"
+                      fill="#10b981"
+                      fillOpacity={0.85}
+                      radius={[4, 4, 0, 0]}
+                      barSize={hideButtons ? 24 : 36}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Incorrect"
+                      name="Incorrect"
+                      stroke="#ef4444"
+                      strokeWidth={4.5}
+                      dot={{ r: 3.5, fill: "#ef4444", strokeWidth: 0 }}
+                      activeDot={{ r: 6, stroke: "#ffffff", strokeWidth: 2 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="Total"
+                      name="Total Questions"
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
+                      fill="url(#colorTotalComboOverall)"
+                      dot={{ r: 3.5, fill: "#3b82f6", strokeWidth: 0 }}
+                      activeDot={{ r: 6, stroke: "#ffffff", strokeWidth: 2 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={displayData} margin={{ top: 20, right: 30, bottom: 10, left: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                    <XAxis
+                      dataKey="name"
+                      interval={0}
+                      height={65}
+                      padding={{ left: 35, right: 35 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={renderCustomTick}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, "auto"]}
+                      fontSize={11}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: "none",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      iconType="circle"
+                      iconSize={9}
+                      wrapperStyle={{ paddingTop: "10px", fontSize: "12px", fontWeight: "500", color: "#4b5563" }}
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="Total"
+                      name="Total Questions"
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
+                      dot={{ r: 3.5, fill: "#3b82f6", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "#3b82f6", stroke: "#ffffff", strokeWidth: 2 }}
+                      isAnimationActive={true}
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="Correct"
+                      name="Correct"
+                      stroke="#10b981"
+                      strokeWidth={2.5}
+                      dot={{ r: 3.5, fill: "#10b981", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "#10b981", stroke: "#ffffff", strokeWidth: 2 }}
+                      isAnimationActive={true}
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="Incorrect"
+                      name="Incorrect"
+                      stroke="#ef4444"
+                      strokeWidth={2.5}
+                      dot={{ r: 3.5, fill: "#ef4444", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "#ef4444", stroke: "#ffffff", strokeWidth: 2 }}
+                      isAnimationActive={true}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
 
             </div>
 

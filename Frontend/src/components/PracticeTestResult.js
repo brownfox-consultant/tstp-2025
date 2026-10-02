@@ -435,9 +435,20 @@ function PracticeTestResult() {
                 </span>
                 <span className="text-gray-400">|</span>
                 <span className="flex items-center gap-1">
-                  <span className="font-bold">Total Time:</span>
+                  <span className="font-bold">Time Taken:</span>
                   {modalData.time_taken ? timeInMMSS(modalData.time_taken) : "0s"}
                 </span>
+                {modalData.fastest_solve_time !== undefined && (
+                  <>
+                    <span className="text-gray-400">|</span>
+                    <span className="flex items-center gap-1">
+                      <span className="font-bold">Fastest Solve Time:</span>
+                      <span className={modalData.fastest_solve_time ? "text-emerald-600 font-bold" : ""}>
+                        {modalData.fastest_solve_time ? timeInMMSS(modalData.fastest_solve_time) : "-"}
+                      </span>
+                    </span>
+                  </>
+                )}
               </div>
               <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
 

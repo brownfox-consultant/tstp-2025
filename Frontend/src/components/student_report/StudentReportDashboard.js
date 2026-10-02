@@ -59,6 +59,8 @@ function StudentReportDashboard({
   const [englishTopicData, setEnglishTopicData] = useState({ practice: [], accuracy: [], subtopic: [] });
   const [mathTopicData, setMathTopicData] = useState({ practice: [], accuracy: [], subtopic: [] });
   const [topicDataLoading, setTopicDataLoading] = useState(false);
+  const [englishGraphPattern, setEnglishGraphPattern] = useState("bar");
+  const [mathGraphPattern, setMathGraphPattern] = useState("bar");
 
   const params = useParams();
   const studentId = studentIdProp || params.id;
@@ -418,12 +420,48 @@ useEffect(() => {
             </div>
           ) : (
             <>
+              <div className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-orange-500/20">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-gray-800 tracking-tight">English Topic Wise Report</h3>
+                    <p className="text-xs text-gray-500">Common Pattern Controller &bull; Updates All Graphs Together</p>
+                  </div>
+                </div>
+
+                <div className="inline-flex flex-wrap items-center bg-gray-100/90 p-1.5 rounded-xl border border-gray-200/80 gap-1 self-stretch md:self-auto justify-center">
+                  {[
+                    { id: "bar", label: "Bar Graph" },
+                    { id: "stepLine", label: "Step Line" },
+                    { id: "area", label: "Area Chart" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setEnglishGraphPattern(tab.id)}
+                      className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                        englishGraphPattern === tab.id
+                          ? "bg-white text-orange-600 shadow-sm border border-gray-200/70"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/60"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-[25px] max-[1300px]:grid-cols-1">
                 <Topic_Wise_Practice
                   student_id={studentId}
                   course_id={selectedCourse}
                   test_type={testType}
                   subject="English"
+                  graphPattern={englishGraphPattern}
                 />
 
                 <TopicAccuracy
@@ -431,6 +469,7 @@ useEffect(() => {
                   course_id={selectedCourse}
                   test_type={testType}
                   subject="English"
+                  graphPattern={englishGraphPattern}
                 />
               </div>
 
@@ -440,6 +479,7 @@ useEffect(() => {
                   course_id={selectedCourse}
                   test_type={testType}
                   subject="English"
+                  graphPattern={englishGraphPattern}
                 />
               </div>
             </>
@@ -466,18 +506,55 @@ useEffect(() => {
             </div>
           ) : (
             <>
+              <div className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-orange-500/20">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-gray-800 tracking-tight">Math Topic Wise Report</h3>
+                    <p className="text-xs text-gray-500">Common Pattern Controller &bull; Updates All Graphs Together</p>
+                  </div>
+                </div>
+
+                <div className="inline-flex flex-wrap items-center bg-gray-100/90 p-1.5 rounded-xl border border-gray-200/80 gap-1 self-stretch md:self-auto justify-center">
+                  {[
+                    { id: "bar", label: "Bar Graph" },
+                    { id: "stepLine", label: "Step Line" },
+                    { id: "area", label: "Area Chart" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setMathGraphPattern(tab.id)}
+                      className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                        mathGraphPattern === tab.id
+                          ? "bg-white text-orange-600 shadow-sm border border-gray-200/70"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/60"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* TOP ROW (2 COLUMNS) */}
               <div className="grid grid-cols-2 gap-[25px] max-[1300px]:grid-cols-1">
                 <Math_Topic_Wise_Practice
                   student_id={studentId}
                   course_id={selectedCourse}
                   test_type={testType}
+                  graphPattern={mathGraphPattern}
                 />
                 <TopicAccuracy
                   student_id={studentId}
                   course_id={selectedCourse}
                   test_type={testType}
                   subject="Math"
+                  graphPattern={mathGraphPattern}
                 />
               </div>
 
@@ -487,6 +564,7 @@ useEffect(() => {
                   student_id={studentId}
                   course_id={selectedCourse}
                   test_type={testType}
+                  graphPattern={mathGraphPattern}
                 />
               </div>
             </>

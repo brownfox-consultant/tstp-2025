@@ -816,110 +816,147 @@ useEffect(() => {
   return (
     <div>
       {/* Global Filters */}
-      <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100 mb-6">
-        <div className="flex items-center bg-gray-50 rounded-xl p-1 flex-wrap gap-3">
-          {["last_month", "last_week", "today"].map((val) => (
-            <button
-              key={val}
-              onClick={() => handleFilterChange(val)}
-              className={`dashboard-tab-button ${
-                selectedFilter === val
-                  ? "dashboard-tab-active"
-                  : "dashboard-tab-inactive"
-              }`}
-            >
-              {val === "last_month"
-                ? "This Month"
-                : val === "last_week"
-                  ? "This Week"
-                  : "Today"}
-            </button>
-          ))}
+      <div className="bg-white rounded-xl p-3.5 shadow-md border border-gray-100 mb-6 transition-all duration-300">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFF6E9] to-[#FFE8C8] border border-[#F59403]/30 flex items-center justify-center text-[#F59403] shadow-xs flex-shrink-0">
+              <svg
+                className="w-5 h-5 text-[#F59403]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-[#2E2725] m-0 tracking-tight">
+              Global Filter
+            </h3>
+          </div>
 
-          {/* Custom Date Button */}
-          <div className="relative" ref={datePickerRef}>
-            <button
-              onClick={() => {
-                setShowDatePicker(!showDatePicker);
-                setSelectedFilter("custom");
-              }}
-              className={`px-4 py-1 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${
-                selectedFilter === "custom"
-                  ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
-                  : "text-[#805830] hover:bg-gray-100"
-              }`}
-            >
-              <CalendarIcon className="w-4 h-4" />
-              Custom
-            </button>
-
-            {showDatePicker && (
-              <div className="absolute z-50 mt-2 w-80 bg-gradient-to-br from-white to-[#FFF8F0] border border-gray-200 shadow-md rounded-md p-5 space-y-4 right-0 md:left-0">
-                <h4 className="font-semibold text-[#2E2725]">
-                  Select Date Range
-                </h4>
-                <ConfigProvider
-                  theme={{
-                    token: {
-                      colorPrimary: "#F59403",
-                      borderRadius: 8,
-                    },
-                  }}
+          <div className="flex items-center flex-wrap gap-3">
+            <div className="flex items-center bg-gray-50 rounded-xl p-1 flex-wrap gap-2 border border-gray-200/60">
+              {["last_month", "last_week", "today"].map((val) => (
+                <button
+                  key={val}
+                  onClick={() => handleFilterChange(val)}
+                  className={`dashboard-tab-button ${
+                    selectedFilter === val
+                      ? "dashboard-tab-active"
+                      : "dashboard-tab-inactive"
+                  }`}
                 >
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-[#805830] font-medium block mb-1">
-                        Start Date
-                      </label>
-                      <DatePicker
-                        value={customStartDate ? dayjs(customStartDate) : null}
-                        onChange={(date, dateString) =>
-                          setCustomStartDate(dateString)
-                        }
-                        className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
-                        format="YYYY-MM-DD"
-                        placeholder="Select start date"
-                        getPopupContainer={(trigger) => trigger.parentNode}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-[#805830] font-medium block mb-1">
-                        End Date
-                      </label>
-                      <DatePicker
-                        value={customEndDate ? dayjs(customEndDate) : null}
-                        onChange={(date, dateString) =>
-                          setCustomEndDate(dateString)
-                        }
-                        className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
-                        format="YYYY-MM-DD"
-                        placeholder="Select end date"
-                        getPopupContainer={(trigger) => trigger.parentNode}
-                      />
+                  {val === "last_month"
+                    ? "This Month"
+                    : val === "last_week"
+                      ? "This Week"
+                      : "Today"}
+                </button>
+              ))}
+
+              <div className="relative" ref={datePickerRef}>
+                <button
+                  onClick={() => {
+                    setShowDatePicker(!showDatePicker);
+                    setSelectedFilter("custom");
+                  }}
+                  className={`px-4 py-1 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-2 ${
+                    selectedFilter === "custom"
+                      ? "bg-gradient-to-r from-[#F59403] to-[#FFD36A] text-white shadow-md"
+                      : "text-[#805830] hover:bg-gray-100"
+                  }`}
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  Custom
+                </button>
+
+                {showDatePicker && (
+                  <div className="absolute z-50 mt-2 w-80 bg-gradient-to-br from-white to-[#FFF8F0] border border-gray-200 shadow-xl rounded-xl p-5 space-y-4 right-0">
+                    <h4 className="font-semibold text-[#2E2725]">
+                      Select Date Range
+                    </h4>
+                    <ConfigProvider
+                      theme={{
+                        token: {
+                          colorPrimary: "#F59403",
+                          borderRadius: 8,
+                        },
+                      }}
+                    >
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm text-[#805830] font-medium block mb-1">
+                            Start Date
+                          </label>
+                          <DatePicker
+                            value={customStartDate ? dayjs(customStartDate) : null}
+                            onChange={(date, dateString) =>
+                              setCustomStartDate(dateString)
+                            }
+                            className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
+                            format="YYYY-MM-DD"
+                            placeholder="Select start date"
+                            getPopupContainer={(trigger) => trigger.parentNode}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-[#805830] font-medium block mb-1">
+                            End Date
+                          </label>
+                          <DatePicker
+                            value={customEndDate ? dayjs(customEndDate) : null}
+                            onChange={(date, dateString) =>
+                              setCustomEndDate(dateString)
+                            }
+                            className="w-full border border-gray-200 rounded-md p-2.5 shadow-none hover:border-[#F59403] focus:border-[#F59403]"
+                            format="YYYY-MM-DD"
+                            placeholder="Select end date"
+                            getPopupContainer={(trigger) => trigger.parentNode}
+                          />
+                        </div>
+                      </div>
+                    </ConfigProvider>
+                    <div className="flex justify-between pt-2">
+                      <button
+                        onClick={() => {
+                          setCustomStartDate("");
+                          setCustomEndDate("");
+                          setSelectedFilter("last_month");
+                          setShowDatePicker(false);
+                        }}
+                        className="text-sm text-gray-500 hover:text-[#805830] transition-colors bg-transparent cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        onClick={() => setShowDatePicker(false)}
+                        className="px-4 py-1.5 bg-[#2E2725] text-white text-sm rounded-lg hover:bg-[#805830] transition-colors cursor-pointer"
+                      >
+                        Apply
+                      </button>
                     </div>
                   </div>
-                </ConfigProvider>
-                <div className="flex justify-between pt-2">
-                  <button
-                    onClick={() => {
-                      setCustomStartDate("");
-                      setCustomEndDate("");
-                      setSelectedFilter("last_month");
-                      setShowDatePicker(false);
-                    }}
-                    className="text-sm text-gray-500 hover:text-[#805830] transition-colors bg-transparent"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    onClick={() => setShowDatePicker(false)}
-                    className="px-4 py-1.5 bg-[#2E2725] text-white text-sm rounded-lg hover:bg-[#805830] transition-colors"
-                  >
-                    Apply
-                  </button>
-                </div>
+                )}
               </div>
-            )}
+            </div>
+
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200/70 text-xs text-[#805830]">
+              <span className="text-gray-400 font-normal">Active:</span>
+              <span className="font-semibold text-[#2E2725]">
+                {selectedFilter === "last_month"
+                  ? "This Month"
+                  : selectedFilter === "last_week"
+                    ? "This Week"
+                    : selectedFilter === "today"
+                      ? "Today"
+                      : customStartDate && customEndDate
+                        ? `${customStartDate} → ${customEndDate}`
+                        : "Custom Range"}
+              </span>
+            </div>
           </div>
         </div>
       </div>

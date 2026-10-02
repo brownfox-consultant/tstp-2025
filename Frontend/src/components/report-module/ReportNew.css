@@ -25,3 +25,39 @@
     max-width: none !important;
   }
 }
+
+/* Alternate Row Colors */
+.report-table-custom .ant-table-tbody > tr.report-row-white > td {
+  background-color: #ffffff !important;
+}
+
+.report-table-custom .ant-table-tbody > tr.report-row-orange > td {
+  background-color: #fff8eb !important;
+}
+
+.report-table-custom .ant-table-tbody > tr.report-row-white:hover > td {
+  background-color: #f9fafb !important;
+}
+
+.report-table-custom .ant-table-tbody > tr.report-row-orange:hover > td {
+  background-color: #ffeed4 !important;
+}
+
+.report-table-custom .ant-table-tbody > tr:not(.ant-table-measure-row) > td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.report-table-custom .ant-table-tbody > tr.ant-table-measure-row,
+.report-table-custom .ant-table-tbody > tr.ant-table-measure-row > td {
+  padding: 0 !important;
+  border: 0 !important;
+  height: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+.report-table-custom .ant-table-thead > tr > th {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}

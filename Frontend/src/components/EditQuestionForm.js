@@ -93,6 +93,7 @@ const FormReactSelect = ({
 
 function EditQuestionForm({
   initialValues = {},
+  // questionId,
   action = "create",
   topicOptionsParam = [],
   subTopicOptionsParam = [],
@@ -102,10 +103,6 @@ function EditQuestionForm({
   hideButtons = false,
   closeModal,
   setUpdated,
-  onNextQuestion,
-  onPreviousQuestion,
-  hasNextQuestion = false,
-  hasPreviousQuestion = false,
 }) {
   console.log("page", page)
   const [form] = useForm();
@@ -736,246 +733,116 @@ form.setFieldsValue({
       },
     });
 
-    } catch (error) {
+  } catch (error) {
     console.error(
       "ADD NEW QUESTION ERROR:",
       error
     );
 
-    // ---------------------------------------------
-    // ANT DESIGN FORM VALIDATION ERROR
-    // ---------------------------------------------
+    // Ant Design validation error
     if (error?.errorFields) {
       return;
     }
 
-    const responseData = error?.response?.data;
-
-    // ---------------------------------------------
-    // DUPLICATE QUESTION
-    // ---------------------------------------------
-    if (responseData?.duplicate_question) {
-      const duplicate = responseData.duplicate_question;
-
-      Modal.error({
-        title: "Duplicate Question Found",
-
-        width: 500,
-
-        content: (
-          <div className="mt-4">
-
-            <p className="text-gray-600 mb-4">
-              This question already exists in the database.
-            </p>
-
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-
-              {/* SR NO */}
-              <div className="flex justify-between py-2 border-b border-red-100">
-                <span className="font-semibold text-gray-700">
-                  SR No
-                </span>
-
-                <span className="font-bold text-red-600">
-                  {duplicate.srno ?? "-"}
-                </span>
-              </div>
-
-              {/* COURSE */}
-              <div className="flex justify-between py-2 border-b border-red-100">
-                <span className="font-semibold text-gray-700">
-                  Course
-                </span>
-
-                <span className="font-medium text-gray-900">
-                  {duplicate.course?.name ?? "-"}
-                </span>
-              </div>
-
-              {/* SUBJECT */}
-              <div className="flex justify-between py-2">
-                <span className="font-semibold text-gray-700">
-                  Subject
-                </span>
-
-                <span className="font-medium text-gray-900">
-                  {duplicate.subject?.name ?? "-"}
-                </span>
-              </div>
-
-            </div>
-
-            <p className="text-sm text-gray-500 mt-4">
-              Please check the existing question before adding it
-              again.
-            </p>
-
-          </div>
-        ),
-
-        okText: "OK",
-      });
-
-      return;
-    }
-
-    // ---------------------------------------------
-    // NORMAL ERROR
-    // ---------------------------------------------
     Modal.error({
       title: "Failed to add question",
-
       content:
-        responseData?.detail ||
-        responseData?.message ||
-        responseData?.error ||
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         "Something went wrong while creating the question.",
     });
   }
 };
 
-  const onSubmit = async (values, navigationDirection = null) => {
-  try {
+  const onSubmit = (values) => {
     const options =
       selectedRange == "OPEN RANGE"
         ? transformExpressions(expressions)
         : [
-            {
-              [inverseOperatorMapping[formState.operator1]]:
-                formState.value1,
-              [normalOperatorMapping[formState.operator2]]:
-                formState.value2,
-            },
-          ];
-
-    const payload = {
+          {
+            [inverseOperatorMapping[formState.operator1]]: formState.value1,
+            [normalOperatorMapping[formState.operator2]]: formState.value2,
+          },
+        ];
+    let payload = {
       ...values,
       ...(selectedSubQuestionType == "RANGE_BASED_ANSWER" && {
         options,
       }),
     };
 
+    // if (pathname.includes("admin")) {
+    //   editQuestionService(initialValues.id, {
+    //     ...payload,
+    //     course_subject: courseSubId,
+    //   }).then((res) => {
+    //     Modal.success({
+    //       title: "Edited successfully",
+    //       onOk: () => {
+    //         if (closeModal) {
+    //           closeModal();
+    //         } else {
+    //           router.push(
+    //             `/tstp/admin/questions/questions?course_subject_id=${courseSubjectId}&page=${page}`
+    //           );
+    //         }
+    //       },
+    //     });
+    //   });
+    // }
     if (pathname.includes("admin")) {
-      const questions_data = values.additional_courses_data || [];
+  const questions_data = values.additional_courses_data || [];
+  const course_updates = Object.entries(courseStatusMap).map(
+    ([course_subject_id, is_active]) => ({
+      course_subject_id: Number(course_subject_id),
+      is_active,
+    })
+  );
 
-      const course_updates = Object.entries(courseStatusMap).map(
-        ([course_subject_id, is_active]) => ({
-          course_subject_id: Number(course_subject_id),
-          is_active,
-        })
-      );
+  editQuestionService(initialValues.id, {
+  ...payload,
+  course_updates,
+  questions_data,
+}).then(() => {
 
-      await editQuestionService(initialValues.id, {
+  // 🔁 refresh doubts + suggestions
+  if (setUpdated) {
+    setUpdated(prev => !prev);
+  }
+
+  Modal.success({
+    title: "Question updated successfully",
+    content: `Updated in ${course_updates.length} course(s)`,
+    onOk: () => {
+      closeModal?.();
+    },
+  });
+});
+}
+
+    
+    else {
+      makeSuggestion({
         ...payload,
-        course_updates,
-        questions_data,
+        question: initialValues.id,
+      }).then((res) => {
+        Modal.success({
+          title: "Suggestion raised",
+          onOk: () => {
+            if (closeModal) {
+              closeModal();
+            } else {
+              router.back();
+            }
+          },
+        });
       });
-
-      if (setUpdated) {
-        setUpdated((prev) => !prev);
-      }
-
-      // Move to previous question after saving
-      if (navigationDirection === "previous") {
-        onPreviousQuestion?.();
-        return;
-      }
-
-      // Move to next question after saving
-      if (navigationDirection === "next") {
-        onNextQuestion?.();
-        return;
-      }
-
-      // Normal Update Question button
-      Modal.success({
-        title: "Question updated successfully",
-        content: `Updated in ${course_updates.length} course(s)`,
-        onOk: () => {
-          closeModal?.();
-        },
-      });
-
-      return;
     }
-
-    // Non-admin suggestion flow
-    await makeSuggestion({
-      ...payload,
-      question: initialValues.id,
-    });
-
-    Modal.success({
-      title: "Suggestion raised",
-      onOk: () => {
-        if (closeModal) {
-          closeModal();
-        } else {
-          router.back();
-        }
-      },
-    });
-  } catch (error) {
-    console.error("Question submit error:", error);
-
-    Modal.error({
-      title: "Failed to update question",
-      content:
-        error?.response?.data?.detail ||
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Something went wrong while updating the question.",
-    });
-  }
-};
-
-const handlePreviousNavigation = async () => {
-  if (!hasPreviousQuestion) {
-    return;
-  }
-
-  try {
-    const values = await form.validateFields();
-
-    await onSubmit(values, "previous");
-  } catch (error) {
-    // Ant Design validation errors are already displayed
-    // beside the fields.
-    if (!error?.errorFields) {
-      console.error(
-        "Previous question navigation error:",
-        error
-      );
-    }
-  }
-};
-
-const handleNextNavigation = async () => {
-  if (!hasNextQuestion) {
-    return;
-  }
-
-  try {
-    const values = await form.validateFields();
-
-    await onSubmit(values, "next");
-  } catch (error) {
-    // Ant Design validation errors are already displayed
-    // beside the fields.
-    if (!error?.errorFields) {
-      console.error(
-        "Next question navigation error:",
-        error
-      );
-    }
-  }
-};
+  };
 
   return (
     <>
-    
       <Form
         form={form}
         onFinish={onSubmit}
@@ -2036,97 +1903,65 @@ const handleNextNavigation = async () => {
         )}
 
         {/* Action Buttons */}
-        {/* Action Buttons */}
-<div className="!mt-6">
-  <div className="flex flex-wrap justify-center items-center gap-4">
+        <div className="!mt-6">
+          <div className="flex flex-wrap justify-center gap-4">
+            {!hideButtons && (
+              <Button
+                size="large"
+                className="min-w-[120px] h-12 rounded-xl font-semibold border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-700"
+                onClick={() => {
+                  if (closeModal) {
+                    closeModal();
+                  } else {
+                    router.back();
+                  }
+                }}
+              >
+                Cancel
+              </Button>
+            )}
 
-    {/* BACK / NEXT QUESTION */}
-    {action === "edit" && !hideButtons && (
-      <>
-        <Button
-          size="large"
-          disabled={!hasPreviousQuestion}
-          onClick={handlePreviousNavigation}
-          className="min-w-[130px] h-12 rounded-xl font-semibold border-[#007FBC] text-[#007FBC] hover:bg-[#007FBC] hover:text-white disabled:border-gray-300 disabled:text-gray-400"
-        >
-          ← Back
-        </Button>
-
-        <Button
-          size="large"
-          disabled={!hasNextQuestion}
-          onClick={handleNextNavigation}
-          className="min-w-[130px] h-12 rounded-xl font-semibold border-[#007FBC] text-[#007FBC] hover:bg-[#007FBC] hover:text-white disabled:border-gray-300 disabled:text-gray-400"
-        >
-          Next →
-        </Button>
-      </>
-    )}
-
-    {/* CANCEL */}
-    {!hideButtons && (
-      <Button
-        size="large"
-        className="min-w-[120px] h-12 rounded-xl font-semibold border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-700"
-        onClick={() => {
-          if (closeModal) {
-            closeModal();
-          } else {
-            router.back();
-          }
-        }}
-      >
-        Cancel
-      </Button>
-    )}
-
-    {/* PREVIEW */}
+            <Button
+              size="large"
+              className="min-w-[120px] h-12 rounded-xl font-semibold border-[#007FBC] text-[#007FBC] hover:bg-[#007FBC] hover:text-white"
+              onClick={handlePreview}
+            >
+              Preview
+            </Button>
+            {action === "edit" ? (
+  <>
     <Button
-      size="large"
-      className="min-w-[120px] h-12 rounded-xl font-semibold border-[#007FBC] text-[#007FBC] hover:bg-[#007FBC] hover:text-white"
-      onClick={handlePreview}
-    >
-      Preview
-    </Button>
+  type="primary"
+  htmlType="submit"
+  disabled={isAddingAnotherCourse}
+  size="large"
+  className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
+>
+  Update Question
+</Button>
 
-    {/* UPDATE / CREATE */}
-    {action === "edit" ? (
-      <>
-        <Button
-          type="primary"
-          htmlType="submit"
-          disabled={isAddingAnotherCourse}
-          size="large"
-          className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
-        >
-          Update Question
-        </Button>
-
-        <Button
-          type="primary"
-          disabled={!isAddingAnotherCourse}
-          size="large"
-          onClick={handleAddNewQuestion}
-          className="min-w-[160px] h-12 rounded-xl bg-gradient-to-r from-[#007FBC] to-[#00A3E0] border-none font-bold"
-        >
-          Add New Question
-        </Button>
-      </>
-    ) : (
-      <Button
-        type="primary"
-        htmlType="submit"
-        size="large"
-        className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
-      >
-        Create Question
-      </Button>
-    )}
-
-  </div>
-</div>
-
-        
+<Button
+  type="primary"
+  disabled={!isAddingAnotherCourse}
+  size="large"
+  onClick={handleAddNewQuestion}
+  className="min-w-[160px] h-12 rounded-xl bg-gradient-to-r from-[#007FBC] to-[#00A3E0] border-none font-bold"
+>
+  Add New Question
+</Button>
+  </>
+) : (
+  <Button
+    type="primary"
+    htmlType="submit"
+    size="large"
+    className="min-w-[140px] h-12 rounded-xl bg-gradient-to-r from-[#F59405] to-[#FF7A00] border-none font-bold shadow-lg shadow-orange-200"
+  >
+    Create Question
+  </Button>
+)}
+          </div>
+        </div>
       </Form>
       {previewData && (
         <PreviewQuestionModal

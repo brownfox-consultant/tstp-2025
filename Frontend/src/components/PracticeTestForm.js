@@ -617,146 +617,169 @@ useEffect(() => {
                 </Row>
               </div>
             </div>
-          </div>
-
-          {/* Right Column - Test Parameters */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm sticky top-6">
-              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl" style={{ backgroundColor: '#F59405' }}>
+            {/* Test Parameters Card */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="px-6 py-4 flex items-center gap-3 rounded-t-xl bg-[#805B36]">
                 <TestParametersIcon />
                 <h2 className="text-lg font-semibold text-white">Test Parameters</h2>
               </div>
-              <div className="p-6 space-y-6">
-                {/* Question Mode */}
+              <div className="p-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     <span className="text-red-500">*</span> Question Mode
                   </label>
                   <Form.Item
-  name="question_mode"
-  rules={[{ required: true, message: "Please select a question mode" }]}
-  className="!mb-0"
->
-                    <Radio.Group className="w-full space-y-3"
-                    onChange={(e) => setQuestionMode(e.target.value)}
+                    name="question_mode"
+                    rules={[{ required: true, message: "Please select a question mode" }]}
+                    className="!mb-0"
+                  >
+                    <Radio.Group
+                      className="w-full"
+                      value={questionMode}
+                      onChange={(e) => setQuestionMode(e.target.value)}
                     >
-                      
-                      <div className="border border-gray-200 rounded-lg p-4 transition-all cursor-pointer" style={{ '--hover-border': '#F59405', '--hover-bg': '#FFF5E6' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F59405'; e.currentTarget.style.backgroundColor = '#FFF5E6'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                        <Radio value="INCORRECT" className="w-full">
-                          <div>
-                            <div className="font-medium text-gray-900">Incorrect Only</div>
-                            <div className="text-sm text-gray-500">Re-attempt incorrectly answered questions</div>
-                          </div>
-                        </Radio>
-                      </div>
-                      <div className="border border-gray-200 rounded-lg p-4 transition-all cursor-pointer" onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F59405'; e.currentTarget.style.backgroundColor = '#FFF5E6'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                        <Radio value="UNANSWERED" className="w-full">
-                          <div>
-                            <div className="font-medium text-gray-900">Unanswered Only</div>
-                            <div className="text-sm text-gray-500">Questions you haven't attempted yet</div>
-                          </div>
-                        </Radio>
-                      </div>
-                      <div className="border border-gray-200 rounded-lg p-4 transition-all cursor-pointer" onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F59405'; e.currentTarget.style.backgroundColor = '#FFF5E6'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                        <Radio value="BOTH" className="w-full">
-                          <div>
-                            <div className="font-medium text-gray-900">Answered + Unanswered</div>
-                            <div className="text-sm text-gray-500">Mix of Answered and Unanswered questions</div>
-                          </div>
-                        </Radio>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div
+                          className={`question-mode-card ${
+                            questionMode === "INCORRECT" ? "is-selected" : ""
+                          }`}
+                          onClick={() => {
+                            setQuestionMode("INCORRECT");
+                            form.setFieldValue("question_mode", "INCORRECT");
+                          }}
+                        >
+                          <Radio value="INCORRECT" className="w-full">
+                            <div>
+                              <div className="font-medium text-gray-900">Incorrect Only</div>
+                              <div className="text-sm text-gray-500 mt-1">Re-attempt incorrectly answered questions</div>
+                            </div>
+                          </Radio>
+                        </div>
+
+                        <div
+                          className={`question-mode-card ${
+                            questionMode === "UNANSWERED" ? "is-selected" : ""
+                          }`}
+                          onClick={() => {
+                            setQuestionMode("UNANSWERED");
+                            form.setFieldValue("question_mode", "UNANSWERED");
+                          }}
+                        >
+                          <Radio value="UNANSWERED" className="w-full">
+                            <div>
+                              <div className="font-medium text-gray-900">Unanswered Only</div>
+                              <div className="text-sm text-gray-500 mt-1">Questions you haven't attempted yet</div>
+                            </div>
+                          </Radio>
+                        </div>
+
+                        <div
+                          className={`question-mode-card ${
+                            questionMode === "BOTH" ? "is-selected" : ""
+                          }`}
+                          onClick={() => {
+                            setQuestionMode("BOTH");
+                            form.setFieldValue("question_mode", "BOTH");
+                          }}
+                        >
+                          <Radio value="BOTH" className="w-full">
+                            <div>
+                              <div className="font-medium text-gray-900">Answered + Unanswered</div>
+                              <div className="text-sm text-gray-500 mt-1">Mix of Answered and Unanswered questions</div>
+                            </div>
+                          </Radio>
+                        </div>
                       </div>
                     </Radio.Group>
                   </Form.Item>
                 </div>
 
                 {availableCount !== null && (
-  <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3">
-    📊 <strong>{availableCount}</strong> questions available for selected criteria
-  </div>
-)}
+                  <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 mt-4">
+                    📊 <strong>{availableCount}</strong> questions available for selected criteria
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-
-                {/* Number of Questions */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <span className="text-red-500">*</span> Number of Questions
-                  </label>
-                  <Form.Item
-                    name="no_of_questions"
-                    rules={[
-                      { required: true, message: "Enter number of questions" },
-                      {
-                        validator(_, value) {
-                          if (!value || (value > 0 && value <= 90)) {
-                            return Promise.resolve();
-                          }
-                          return Promise.reject(new Error("Enter between 1 and 90 questions"));
-                        },
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm sticky top-6 p-6 space-y-6">              <div>
+                <label className="block text-base md:text-lg font-semibold text-gray-800 mb-2">
+                  <span className="text-red-500">*</span> Number of Questions
+                </label>
+                <Form.Item
+                  name="no_of_questions"
+                  rules={[
+                    { required: true, message: "Enter number of questions" },
+                    {
+                      validator(_, value) {
+                        if (!value || (value > 0 && value <= 90)) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error("Enter between 1 and 90 questions"));
                       },
-                    ]}
-                    className="!mb-0"
-                  >
-                    <Input
-                      type="number"
-                      min={1}
-                      max={90}
-                      placeholder="e.g. 20"
-                      prefix={<span className="text-gray-400">📝</span>}
-                      className="w-full h-12"
-                      size="large"
-                    />
-                  </Form.Item>
-                </div>
-
-                {/* Timer */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <span className="text-red-500">*</span> Timer (Minutes)
-                  </label>
-                  <Form.Item
-                    name="timer"
-                    rules={[
-                      { required: true, message: "Enter timer in minutes" },
-                      {
-                        validator(_, value) {
-                          if (!value || (value > 0 && value <= 90)) {
-                            return Promise.resolve();
-                          }
-                          return Promise.reject(new Error("Enter between 1 and 90 minutes"));
-                        },
-                      },
-                    ]}
-                    className="!mb-0"
-                  >
-                    <Input
-                      type="number"
-                      min={1}
-                      max={90}
-                      placeholder="e.g. 30"
-                      prefix={<span className="text-gray-400">⏱️</span>}
-                      className="w-full h-12"
-                      size="large"
-                    />
-                  </Form.Item>
-                </div>
-
-                {/* Submit Button */}
-                <Form.Item className="!mb-0 !mt-8">
-                  <Button
-                    loading={practiceLoading}
-                    disabled={isSubmitDisabled}
-                    type="primary"
-                    htmlType="submit"
-                    className="w-full h-12 text-base font-semibold border-none rounded-lg shadow-md hover:shadow-lg transition-all"
-                    style={{ backgroundColor: '#F59405' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E08804'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F59405'}
+                    },
+                  ]}
+                  className="!mb-0"
+                >
+                  <Input
+                    type="number"
+                    min={1}
+                    max={90}
+                    placeholder="e.g. 20"
+                    prefix={<span className="text-gray-400">📝</span>}
+                    className="w-full h-12 text-base"
                     size="large"
-                  >
-                    {practiceLoading ? "Starting Practice..." : "Start Practice Test"}
-                  </Button>
+                  />
                 </Form.Item>
               </div>
+
+              <div>
+                <label className="block text-base md:text-lg font-semibold text-gray-800 mb-2">
+                  <span className="text-red-500">*</span> Timer (Minutes)
+                </label>
+                <Form.Item
+                  name="timer"
+                  rules={[
+                    { required: true, message: "Enter timer in minutes" },
+                    {
+                      validator(_, value) {
+                        if (!value || (value > 0 && value <= 90)) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error("Enter between 1 and 90 minutes"));
+                      },
+                    },
+                  ]}
+                  className="!mb-0"
+                >
+                  <Input
+                    type="number"
+                    min={1}
+                    max={90}
+                    placeholder="e.g. 30"
+                    prefix={<span className="text-gray-400">⏱️</span>}
+                    className="w-full h-12 text-base"
+                    size="large"
+                  />
+                </Form.Item>
+              </div>
+              <Form.Item className="!mb-0 !mt-8">
+                <Button
+                  loading={practiceLoading}
+                  disabled={isSubmitDisabled}
+                  type="primary"
+                  htmlType="submit"
+                  className="w-full h-12 text-base font-semibold border-none rounded-lg shadow-md hover:shadow-lg transition-all"
+                  style={{ backgroundColor: '#F59405' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E08804'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F59405'}
+                  size="large"
+                >
+                  {practiceLoading ? "Starting Practice..." : "Start Practice Test"}
+                </Button>
+              </Form.Item>
             </div>
           </div>
         </div>

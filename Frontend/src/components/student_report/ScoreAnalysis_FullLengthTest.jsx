@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import {
   ComposedChart,
+  BarChart,
+  LineChart,
   Area,
   Line,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -18,37 +21,68 @@ import {
 import { BASE_URL } from "@/app/constants/apiConstants";
 import SkeletonChart from "@/components/common/SkeletonChart";
 import EmptyState from "@/components/common/EmptyState";
+import { Modal } from "antd";
+import ReportNew from "@/components/report-module/Report_New";
 
 
-const EndLabel = (props) => {
-  const { x, y, stroke, value, index, dataLength, name, offsetY = 0 } = props;
-  if (index !== dataLength - 1) return null;
+
+
+const CustomStackedTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+
+  const data = payload[0]?.payload;
+  if (!data) return null;
+
+  const mathScore = data.Math;
+  const englishScore = data.English;
+  const overallScore = data.Overall || (Number(mathScore || 0) + Number(englishScore || 0));
+  const testTitle = label || data.name || "Test Details";
 
   return (
-    <g>
-      {/* Bullet point matching the line color */}
-      <circle
-        cx={x + 18}
-        cy={y + offsetY}
-        r={3}
-        fill={stroke}
-      />
-      {/* Label Text */}
-      <text
-        x={x + 26}
-        y={y + 4 + offsetY}
-        fill={stroke}
-        fontSize={10}
-        fontWeight="bold"
-        textAnchor="start"
-      >
-        {name}: {value}
-      </text>
-    </g>
+    <div
+      className="recharts-default-tooltip"
+      style={{
+        margin: 0,
+        padding: "10px",
+        backgroundColor: "#ffffff",
+        border: "none",
+        whiteSpace: "nowrap",
+        borderRadius: "12px",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+      }}
+    >
+      <p className="recharts-tooltip-label" style={{ margin: 0, color: "#374151" }}>
+        {testTitle}
+      </p>
+      <ul className="recharts-tooltip-item-list" style={{ padding: 0, margin: 0, listStyle: "none" }}>
+        <li
+          className="recharts-tooltip-item"
+          style={{ display: "block", paddingTop: 4, paddingBottom: 4, color: "#818cf8" }}
+        >
+          <span className="recharts-tooltip-item-name">Math Score</span>
+          <span className="recharts-tooltip-item-separator"> : </span>
+          <span className="recharts-tooltip-item-value">{mathScore}</span>
+        </li>
+        <li
+          className="recharts-tooltip-item"
+          style={{ display: "block", paddingTop: 4, paddingBottom: 4, color: "#fbbf24" }}
+        >
+          <span className="recharts-tooltip-item-name">English Score</span>
+          <span className="recharts-tooltip-item-separator"> : </span>
+          <span className="recharts-tooltip-item-value">{englishScore}</span>
+        </li>
+        <li
+          className="recharts-tooltip-item"
+          style={{ display: "block", paddingTop: 4, paddingBottom: 4, color: "#10b981" }}
+        >
+          <span className="recharts-tooltip-item-name">Total Score</span>
+          <span className="recharts-tooltip-item-separator"> : </span>
+          <span className="recharts-tooltip-item-value">{overallScore}</span>
+        </li>
+      </ul>
+    </div>
   );
 };
-
-
 
 export default function ScoreAnalysis_FullLengthTest({
   student_id,
@@ -57,11 +91,14 @@ export default function ScoreAnalysis_FullLengthTest({
 }) {
   const [chartData, setChartData] = useState([]);
   const [targetScore, setTargetScore] = useState(1400);
+  const [chartView, setChartView] = useState("line");
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(6);
   const [hideButtons, setHideButtons] = useState(false);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
   /* ================= RESPONSIVE VISIBLE COUNT ================= */
   useEffect(() => {
@@ -122,7 +159,11 @@ export default function ScoreAnalysis_FullLengthTest({
           Overall: test.overall_score,
           Math: test.math_score,
           English: test.english_score,
-          id: test.test_submission_id
+          id: test.test_submission_id,
+          test_submission_id: test.test_submission_id,
+          full_length_test_id: test.full_length_test_id,
+          student_id: student_id,
+          ...test,
         }));
       }
 
@@ -161,43 +202,202 @@ export default function ScoreAnalysis_FullLengthTest({
     }
   };
 
-  /* ================= NAVIGATION ================= */
+  /* ================= SLICED DISPLAY DATA ================= */
   const displayData = chartData.slice(startIndex, startIndex + visibleCount);
+
+  const handleTestClick = (item) => {
+    const submissionId = item?.test_submission_id || item?.id;
+    if (!submissionId) return;
+    setSelectedSubmissionId(submissionId);
+    setIsResultModalOpen(true);
+  };
+
+  const renderCustomAxisTick = ({ x, y, payload, index }) => {
+    const item =
+      displayData[payload?.index ?? index] ||
+      displayData.find((d) => d.name === payload?.value);
+
+    return (
+      <g
+        transform={`translate(${x},${y})`}
+        style={{ cursor: "pointer", pointerEvents: "all" }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (item) {
+            handleTestClick(item);
+          }
+        }}
+      >
+        <text
+          x={0}
+          y={0}
+          dy={14}
+          textAnchor="middle"
+          fill="#2563eb"
+          fontSize={hideButtons ? 10 : 11}
+          fontWeight="600"
+          className="clickable-test-name"
+          style={{ cursor: "pointer", pointerEvents: "all" }}
+        >
+          <title>{`Click to view result for ${payload?.value}`}</title>
+          {payload?.value}
+        </text>
+      </g>
+    );
+  };
+
+  const renderMathBarLabel = (props) => {
+    const { x, y, width, height, index } = props;
+    const item = displayData[index];
+    const score = item?.Math;
+    if (score == null || height < 18) return null;
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+
+    if (height < 36) {
+      return (
+        <text
+          x={centerX}
+          y={centerY + 4}
+          fill="#ffffff"
+          textAnchor="middle"
+          fontSize={hideButtons ? 9 : 10}
+          fontWeight="700"
+        >
+          {`Math: ${score}`}
+        </text>
+      );
+    }
+
+    return (
+      <g>
+        <text
+          x={centerX}
+          y={centerY - 6}
+          fill="#ffffff"
+          textAnchor="middle"
+          fontSize={hideButtons ? 9 : 10}
+          fontWeight="600"
+          letterSpacing="0.02em"
+        >
+          Math
+        </text>
+        <text
+          x={centerX}
+          y={centerY + 9}
+          fill="#ffffff"
+          textAnchor="middle"
+          fontSize={hideButtons ? 11 : 12}
+          fontWeight="800"
+        >
+          {score}
+        </text>
+      </g>
+    );
+  };
+
+  const renderEnglishAndTotalLabel = (props) => {
+    const { x, y, width, height, index } = props;
+    const item = displayData[index];
+    const englishScore = item?.English;
+    const overall = item?.Overall || (Number(item?.Math || 0) + Number(englishScore || 0));
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+
+    const scoreDiff = targetScore - overall;
+    const pixelsPerPoint = englishScore > 0 ? height / englishScore : 0.215;
+    const targetY = y - scoreDiff * pixelsPerPoint;
+
+    let labelY = y - 10;
+    if (overall >= targetScore) {
+      labelY = Math.min(y - 12, targetY - 16);
+    } else if (scoreDiff < 85) {
+      labelY = targetY - 14;
+    } else {
+      labelY = y - 10;
+    }
+
+    const isCompact = hideButtons || displayData.length > 6;
+    const fontSize = isCompact ? 9.5 : 11;
+
+    return (
+      <g>
+        {englishScore != null && height >= 18 && (
+          height < 36 ? (
+            <text
+              x={centerX}
+              y={centerY + 4}
+              fill="#78350f"
+              textAnchor="middle"
+              fontSize={hideButtons ? 9 : 10}
+              fontWeight="700"
+            >
+              {`English: ${englishScore}`}
+            </text>
+          ) : (
+            <g>
+              <text
+                x={centerX}
+                y={centerY - 6}
+                fill="#78350f"
+                textAnchor="middle"
+                fontSize={hideButtons ? 9 : 10}
+                fontWeight="700"
+                letterSpacing="0.02em"
+              >
+                English
+              </text>
+              <text
+                x={centerX}
+                y={centerY + 9}
+                fill="#78350f"
+                textAnchor="middle"
+                fontSize={hideButtons ? 11 : 12}
+                fontWeight="800"
+              >
+                {englishScore}
+              </text>
+            </g>
+          )
+        )}
+
+        {overall != null && (
+          <text
+            x={centerX}
+            y={labelY}
+            fill="#10b981"
+            textAnchor="middle"
+            fontSize={fontSize}
+            fontWeight="800"
+            className="select-none"
+            style={{
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {`Total Score: ${overall}`}
+          </text>
+        )}
+      </g>
+    );
+  };
+
+  /* ================= NAVIGATION ================= */
   const canGoLeft = startIndex > 0;
   const canGoRight = startIndex + visibleCount < chartData.length;
   const needsPagination = chartData.length > visibleCount;
 
-  // Calculate offsets for end labels
-  const lastPoint = displayData[displayData.length - 1];
-  const lastMath = lastPoint?.Math;
-  const lastEnglish = lastPoint?.English;
-
-  let mathLabelOffset = 0;
-  let englishLabelOffset = 0;
-  if (typeof lastMath === "number" && typeof lastEnglish === "number") {
-    const diff = lastMath - lastEnglish;
-    if (Math.abs(diff) < 50) {
-      if (diff >= 0) {
-        mathLabelOffset = -12;
-        englishLabelOffset = 12;
-      } else {
-        englishLabelOffset = -12;
-        mathLabelOffset = 12;
-      }
-    }
-  }
-
   const handlePrev = () => {
     if (canGoLeft) {
-      setStartIndex(prev => Math.max(0, prev - visibleCount));
+      setStartIndex((prev) => Math.max(0, prev - visibleCount));
     }
   };
 
   const handleNext = () => {
     if (canGoRight) {
-      setStartIndex(prev => Math.min(chartData.length - visibleCount, prev + visibleCount));
+      setStartIndex((prev) => Math.min(chartData.length - visibleCount, prev + visibleCount));
     }
   };
+
 
 
   /* ================= LOADING & EMPTY STATES ================= */
@@ -236,32 +436,69 @@ export default function ScoreAnalysis_FullLengthTest({
             </h3>
           </div>
 
-          {/* Interactive Target Score Controller */}
-          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 px-3 py-1.5 rounded-xl shadow-sm">
-            <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
-              Target Score:
-            </span>
-            <input
-              type="number"
-              min="400"
-              max="1600"
-              step="10"
-              value={targetScore}
-              onChange={(e) => {
-                const val = Math.max(400, Math.min(1600, Number(e.target.value)));
-                setTargetScore(val);
-              }}
-              className="w-16 px-2 py-0.5 text-sm font-black text-center text-blue-600 bg-white border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-            />
-            <input
-              type="range"
-              min="400"
-              max="1600"
-              step="20"
-              value={targetScore}
-              onChange={(e) => setTargetScore(Number(e.target.value))}
-              className="w-24 md:w-32 h-1.5 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
-            />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setChartView("line")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "line"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Line
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartView("stacked")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "stacked"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Stacked
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartView("stepLine")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "stepLine"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Step Line
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 px-3 py-1.5 rounded-xl shadow-sm">
+              <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                Target Score:
+              </span>
+              <input
+                type="number"
+                min="400"
+                max="1600"
+                step="10"
+                value={targetScore}
+                onChange={(e) => {
+                  const val = Math.max(400, Math.min(1600, Number(e.target.value)));
+                  setTargetScore(val);
+                }}
+                className="w-16 px-2 py-0.5 text-sm font-black text-center text-blue-600 bg-white border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              />
+              <input
+                type="range"
+                min="400"
+                max="1600"
+                step="20"
+                value={targetScore}
+                onChange={(e) => setTargetScore(Number(e.target.value))}
+                className="w-24 md:w-32 h-1.5 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+              />
+            </div>
           </div>
         </div>
 
@@ -282,110 +519,252 @@ export default function ScoreAnalysis_FullLengthTest({
 
           {/* Combined Chart */}
           <div className={`h-[400px] w-full flex justify-center ${hideButtons ? 'px-2' : 'px-12'}`}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={displayData} margin={{ top: 30, right: 115, bottom: 20, left: 20 }}>
-                <defs>
-                  <linearGradient id="colorOverallMixed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  dy={10}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  domain={[0, 1600]}
-                  ticks={[0, 400, 800, 1200, 1600]}
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                />
-                <Tooltip 
-                   contentStyle={{ 
-                     borderRadius: '12px', 
-                     border: 'none', 
-                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
-                   }}
-                />
-                
-                {/* Horizontal reference line for Target Score */}
-                <ReferenceLine
-                  y={targetScore}
-                  stroke="#ef4444"
-                  strokeDasharray="4 4"
-                  strokeWidth={2}
-                  label={{
-                    value: `Target: ${targetScore}`,
-                    position: "insideTopLeft",
-                    fill: "#ef4444",
-                    fontSize: 11,
-                    fontWeight: "bold",
-                    dy: 4
-                  }}
-                />
+            {chartView === "line" ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={displayData}
+                  margin={{ top: 30, right: 30, bottom: 10, left: 20 }}
+                >
+                  <defs>
+                    <linearGradient id="colorOverallCombo" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.03} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="name"
+                    interval={0}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={renderCustomAxisTick}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    domain={[0, 1600]}
+                    ticks={[0, 400, 800, 1200, 1600]}
+                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    align="center"
+                    iconType="circle"
+                    iconSize={9}
+                    wrapperStyle={{
+                      paddingTop: '10px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      color: '#4b5563',
+                    }}
+                  />
 
-                {/* Math and English as Lines */}
-                <Line
-                  type="monotone"
-                  dataKey="Math"
-                  stroke="#818cf8"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: "#818cf8", strokeWidth: 0 }}
-                  activeDot={{ r: 6 }}
-                  name="Math Score"
-                  label={
-                    <EndLabel
-                      dataLength={displayData.length}
-                      name="Math"
-                      stroke="#818cf8"
-                      offsetY={mathLabelOffset}
-                    />
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="English"
-                  stroke="#fbbf24"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: "#fbbf24", strokeWidth: 0 }}
-                  activeDot={{ r: 6 }}
-                  name="English Score"
-                  label={
-                    <EndLabel
-                      dataLength={displayData.length}
-                      name="English"
-                      stroke="#fbbf24"
-                      offsetY={englishLabelOffset}
-                    />
-                  }
-                />
+                  <ReferenceLine
+                    y={targetScore}
+                    stroke="#ef4444"
+                    strokeDasharray="4 4"
+                    strokeWidth={2}
+                    label={{
+                      value: `Target: ${targetScore}`,
+                      position: "insideTopLeft",
+                      fill: "#ef4444",
+                      fontSize: 11,
+                      fontWeight: "bold",
+                      dy: 4
+                    }}
+                  />
 
-                {/* Overall Score as Area/Line (Combined) */}
-                <Area 
-                  type="monotone" 
-                  dataKey="Overall" 
-                  fill="url(#colorOverallMixed)" 
-                  stroke="#10b981" 
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
-                  activeDot={{ r: 6 }}
-                  name="Overall Score"
-                  label={
-                    <EndLabel
-                      dataLength={displayData.length}
-                      name="Overall"
-                      stroke="#10b981"
-                      offsetY={0}
-                    />
-                  }
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+                  <Bar
+                    dataKey="Math"
+                    name="Math Score"
+                    fill="#818cf8"
+                    fillOpacity={0.85}
+                    radius={[4, 4, 0, 0]}
+                    barSize={hideButtons ? 24 : 36}
+                  />
+
+                  <Line
+                    type="monotone"
+                    dataKey="English"
+                    name="English Score"
+                    stroke="#fbbf24"
+                    strokeWidth={4.5}
+                    dot={{ r: 3, fill: '#fbbf24', strokeWidth: 0 }}
+                    activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+
+                  <Area
+                    type="monotone"
+                    dataKey="Overall"
+                    name="Total Score"
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    fill="url(#colorOverallCombo)"
+                    dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
+                    activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : chartView === "stacked" ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={displayData}
+                  margin={{ top: 45, right: 30, bottom: 20, left: 20 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="name"
+                    interval={0}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={renderCustomAxisTick}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    domain={[0, 1600]}
+                    ticks={[0, 400, 800, 1200, 1600]}
+                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                  />
+                  <Tooltip
+                    cursor={false}
+                    content={<CustomStackedTooltip />}
+                  />
+
+                  <ReferenceLine
+                    y={targetScore}
+                    stroke="#ef4444"
+                    strokeDasharray="4 4"
+                    strokeWidth={2}
+                    label={{
+                      value: `Target: ${targetScore}`,
+                      position: "insideTopLeft",
+                      fill: "#ef4444",
+                      fontSize: 11,
+                      fontWeight: "bold",
+                      dy: 4
+                    }}
+                  />
+
+                  <Bar
+                    dataKey="Math"
+                    name="Math Score"
+                    stackId="score"
+                    fill="#818cf8"
+                    barSize={hideButtons ? 36 : 56}
+                    label={renderMathBarLabel}
+                  />
+
+                  <Bar
+                    dataKey="English"
+                    name="English Score"
+                    stackId="score"
+                    fill="#fbbf24"
+                    radius={[6, 6, 0, 0]}
+                    barSize={hideButtons ? 36 : 56}
+                    label={renderEnglishAndTotalLabel}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={displayData}
+                  margin={{ top: 30, right: 30, bottom: 10, left: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="name"
+                    interval={0}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={renderCustomAxisTick}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    domain={[0, 1600]}
+                    ticks={[0, 400, 800, 1200, 1600]}
+                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    align="center"
+                    iconType="circle"
+                    iconSize={9}
+                    wrapperStyle={{
+                      paddingTop: '10px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      color: '#4b5563',
+                    }}
+                  />
+
+                  <ReferenceLine
+                    y={targetScore}
+                    stroke="#ef4444"
+                    strokeDasharray="4 4"
+                    strokeWidth={2}
+                    label={{
+                      value: `Target: ${targetScore}`,
+                      position: "insideTopLeft",
+                      fill: "#ef4444",
+                      fontSize: 11,
+                      fontWeight: "bold",
+                      dy: 4
+                    }}
+                  />
+
+                  <Line
+                    type="stepAfter"
+                    dataKey="Math"
+                    name="Math Score"
+                    stroke="#818cf8"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: "#818cf8", strokeWidth: 0 }}
+                    activeDot={{ r: 6.5, fill: "#818cf8", stroke: "#ffffff", strokeWidth: 2 }}
+                    isAnimationActive={true}
+                  />
+
+                  <Line
+                    type="stepAfter"
+                    dataKey="English"
+                    name="English Score"
+                    stroke="#fbbf24"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: "#fbbf24", strokeWidth: 0 }}
+                    activeDot={{ r: 6.5, fill: "#fbbf24", stroke: "#ffffff", strokeWidth: 2 }}
+                    isAnimationActive={true}
+                  />
+
+                  <Line
+                    type="stepAfter"
+                    dataKey="Overall"
+                    name="Total Score"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    dot={{ r: 4.5, fill: "#10b981", strokeWidth: 0 }}
+                    activeDot={{ r: 7, fill: "#10b981", stroke: "#ffffff", strokeWidth: 2 }}
+                    isAnimationActive={true}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Right Arrow */}
@@ -480,6 +859,44 @@ export default function ScoreAnalysis_FullLengthTest({
         </div>
 
       </div>
+
+      <Modal
+        width={1300}
+        open={isResultModalOpen}
+        footer={null}
+        onCancel={() => {
+          setIsResultModalOpen(false);
+          setSelectedSubmissionId(null);
+        }}
+        style={{ top: "20px" }}
+        bodyStyle={{
+          padding: "1rem",
+          overflowY: "auto",
+          maxHeight: "700px",
+        }}
+        destroyOnClose
+      >
+        {selectedSubmissionId && (
+          <ReportNew
+            testSubmissionId={selectedSubmissionId}
+            isAdmin={true}
+            onClose={() => {
+              setIsResultModalOpen(false);
+              setSelectedSubmissionId(null);
+            }}
+          />
+        )}
+      </Modal>
+
+      <style>{`
+        .clickable-test-name {
+          transition: fill 0.2s ease, text-decoration 0.2s ease;
+        }
+        .clickable-test-name:hover {
+          fill: #1d4ed8 !important;
+          text-decoration: underline !important;
+        }
+      `}</style>
 
     </div>
   );

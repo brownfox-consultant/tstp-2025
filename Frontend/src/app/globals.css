@@ -476,11 +476,50 @@ body.fullscreen-mode footer {
   transition: transform 0.3s ease;
 }
 
-.ant-select-arrow {
-  transition: transform 0.3s ease;
+/* Alternate Row Colors */
+.questions-table-custom .ant-table-tbody > tr.questions-row-white > td {
+  background-color: #ffffff !important;
 }
 
+.questions-table-custom .ant-table-tbody > tr.questions-row-orange > td {
+  background-color: #fff8eb !important;
+}
 
+.questions-table-custom .ant-table-tbody > tr.questions-row-white:hover > td {
+  background-color: #f9fafb !important;
+}
+
+.questions-table-custom .ant-table-tbody > tr.questions-row-orange:hover > td {
+  background-color: #ffeed4 !important;
+}
+
+.questions-table-custom .ant-table-tbody > tr.ant-table-measure-row,
+.questions-table-custom .ant-table-tbody > tr.ant-table-measure-row > td {
+  padding: 0 !important;
+  border: 0 !important;
+  height: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+.question-mode-card {
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.question-mode-card:hover {
+  border-color: #F59405 !important;
+  background-color: #FFF5E6 !important;
+}
+
+.question-mode-card.is-selected {
+  border-color: #F59405 !important;
+  background-color: #FFF5E6 !important;
+}
 
 @layer components {
   .input-field {

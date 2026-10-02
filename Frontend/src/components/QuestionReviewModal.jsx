@@ -156,8 +156,7 @@ function QuestionReviewModal({
             {/* Question / passage */}
             {/* Meta info - single line / compact */}
             <div className="w-full h-[2px] bg-gray-300 mt-2"></div>
-            <div className="flex items-center flex-wrap gap-10 my-2 text-xs md:text-sm text-gray-800">
-
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 my-2 text-xs md:text-sm text-gray-800">
               <span className="flex items-center gap-1">
                 <span className="font-bold">Difficulty:</span> {data.difficulty || "N/A"}
               </span>
@@ -183,10 +182,22 @@ function QuestionReviewModal({
               <span className="text-gray-400">|</span>
 
               <span className="flex items-center gap-1">
-                <span className="font-bold">Total Time:</span>
+                <span className="font-bold">Time Taken:</span>
                 {data.time_taken ? timeInMMSS(data.time_taken) : "0s"}
               </span>
 
+              {(testType === "FULL_LENGTH_TEST" || testType === "PRACTICE_TEST" || data?.fastest_solve_time !== undefined) && (
+                <>
+                  <span className="text-gray-400">|</span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="font-bold">Fastest Solve Time:</span>
+                    <span className={data.fastest_solve_time ? "text-emerald-600 font-bold" : ""}>
+                      {data.fastest_solve_time ? timeInMMSS(data.fastest_solve_time) : "-"}
+                    </span>
+                  </span>
+                </>
+              )}
             </div>
 
             <div className="w-full h-[2px] bg-gray-300 mt-2"></div>

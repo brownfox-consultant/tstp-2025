@@ -8,6 +8,7 @@ import EditQuestionForm from "./EditQuestionForm";
 
 function QuestionEditModal({
   data,
+  questionId,
   courseSubId = null,
   updated,
   setUpdated,
@@ -22,6 +23,8 @@ function QuestionEditModal({
   let subTopicOptions = topicOptions?.find(
     (topic) => topic.name == data.topic
   )?.subtopics;
+
+  const displayQuestionId = questionId || data?.srno || data?.db_Srno || data?.id;
 
   return (
     <div>
@@ -48,6 +51,7 @@ function QuestionEditModal({
         title={
           <div className="text-xl mb-5">
             {role == "admin" ? `Edit Question` : "Suggest changes to question"}
+            {displayQuestionId && ` (Question Id: ${displayQuestionId})`}
           </div>
         }
         onCancel={() => setIsOpen(false)}
@@ -56,6 +60,7 @@ function QuestionEditModal({
       >
         <EditQuestionForm
           initialValues={data}
+          questionId={displayQuestionId}
           action="edit"
           topicOptionsParam={topicOptions}
           subTopicOptionsParam={subTopicOptions}

@@ -5,6 +5,8 @@ import axios from "axios";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -27,6 +29,7 @@ export default function PatternOfUsage({
 }) {
   const [usageData, setUsageData] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [chartView, setChartView] = useState("bar");
   const [loading, setLoading] = useState(true);
   const [startIndex, setStartIndex] = useState(0);
 
@@ -180,38 +183,55 @@ export default function PatternOfUsage({
       payload &&
       payload.length
     ) {
+      const data = payload[0]?.payload;
+      const dateLabel = label || data?.date || "Details";
+      const timeVal =
+        data?.time ??
+        payload.find((p) => p.dataKey === "time")?.value ??
+        payload[0]?.value ??
+        0;
+      const questionsVal =
+        data?.questions ??
+        payload.find((p) => p.dataKey === "questions")?.value ??
+        payload[1]?.value ??
+        0;
+
       return (
-        <div className="bg-white p-4 shadow-xl rounded-xl border border-gray-200">
-          <p className="font-bold text-gray-800 mb-2">
-            {label}
-          </p>
+        <div className="bg-white p-4 shadow-xl rounded-xl border border-gray-100 min-w-[190px]">
+          <div className="border-b pb-2 mb-2.5">
+            <p className="font-bold text-gray-800 text-sm">
+              {dateLabel}
+            </p>
+          </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <FaClock
-                className="text-blue-500"
-                size={14}
-              />
-
-              <span className="text-sm">
-                Time:{" "}
-                <strong>
-                  {payload[0]?.value} mins
-                </strong>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/80 border border-emerald-100">
+              <div className="flex items-center gap-2">
+                <FaQuestionCircle
+                  className="text-[#2ca58d]"
+                  size={14}
+                />
+                <span className="text-xs font-semibold text-gray-700">
+                  Questions:
+                </span>
+              </div>
+              <span className="text-sm font-bold text-[#2ca58d]">
+                {questionsVal}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <FaQuestionCircle
-                className="text-green-500"
-                size={14}
-              />
-
-              <span className="text-sm">
-                Questions:{" "}
-                <strong>
-                  {payload[1]?.value}
-                </strong>
+            <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50/80 border border-blue-100">
+              <div className="flex items-center gap-2">
+                <FaClock
+                  className="text-blue-500"
+                  size={14}
+                />
+                <span className="text-xs font-semibold text-gray-700">
+                  Time:
+                </span>
+              </div>
+              <span className="text-sm font-bold text-blue-600">
+                {timeVal} mins
               </span>
             </div>
           </div>
@@ -241,6 +261,234 @@ export default function PatternOfUsage({
       >
         {value}
       </text>
+    );
+  };
+
+  const getDynamicLabelY = ({
+    currentKey,
+    currentVal,
+    item,
+    y,
+  }) => {
+    const timeVal = Number(item?.time) || 0;
+    const questionsVal = Number(item?.questions) || 0;
+
+    if (timeVal <= 0 && questionsVal <= 0) {
+      return currentKey === "time" ? y - 12 : y - 28;
+    }
+
+    if (currentVal <= 0) {
+      return y - 12;
+    }
+    const otherVal = currentKey === "questions" ? timeVal : questionsVal;
+    if (otherVal <= 0 && currentVal > 0) {
+      return y - 12;
+    }
+
+    let placeAbove = true;
+
+    if (currentKey === "questions") {
+      if (questionsVal > timeVal) {
+        placeAbove = true; 
+      } else if (questionsVal < timeVal) {
+        placeAbove = false; 
+      } else {
+        placeAbove = false; 
+      }
+    } else if (currentKey === "time") {
+      if (timeVal > questionsVal) {
+        placeAbove = true; 
+      } else if (timeVal < questionsVal) {
+        placeAbove = false; 
+      } else {
+        placeAbove = true; 
+      }
+    } else {
+      placeAbove = currentVal >= timeVal;
+    }
+
+    if (placeAbove && y < 22) {
+      placeAbove = false;
+    }
+    
+    else if (!placeAbove && (currentVal <= 2 || y > 290)) {
+      placeAbove = true;
+    }
+
+    return placeAbove ? y - 12 : y + 18;
+  };
+
+  const renderDynamicTimeLabel = (props) => {
+    const { x, y, value, index } = props;
+    if (value === undefined || value === null) return null;
+    const item = displayData[index];
+    const labelY = getDynamicLabelY({
+      currentKey: "time",
+      currentVal: Number(value) || 0,
+      item,
+      y,
+    });
+
+    return (
+      <text
+        x={x}
+        y={labelY}
+        fill="#1d4ed8"
+        textAnchor="middle"
+        fontSize={11.5}
+        fontWeight={700}
+      >
+        {value}
+      </text>
+    );
+  };
+
+  const renderDynamicQuestionsLabel = (props) => {
+    const { x, y, value, index } = props;
+    if (value === undefined || value === null) return null;
+    const item = displayData[index];
+    const labelY = getDynamicLabelY({
+      currentKey: "questions",
+      currentVal: Number(value) || 0,
+      item,
+      y,
+    });
+
+    return (
+      <text
+        x={x}
+        y={labelY}
+        fill="#047857"
+        textAnchor="middle"
+        fontSize={11.5}
+        fontWeight={700}
+      >
+        {value}
+      </text>
+    );
+  };
+
+  const renderCandlestickItem = (props) => {
+    const { x, y, width, height, index } = props;
+    const item = displayData[index];
+    if (!item) return null;
+
+    const time = Number(item.time) || 0;
+    const questions = Number(item.questions) || 0;
+
+    const prevQuestions =
+      index > 0
+        ? Number(displayData[index - 1].questions) || questions
+        : questions;
+    const color = "#2ca58d";
+
+    const baselineY = y + height;
+    const scale = time > 0 ? height / time : 1;
+
+    const highY = y;
+
+    const closeY = baselineY - (questions * scale);
+
+    let openVal = prevQuestions;
+    if (Math.abs(questions - openVal) * scale < 10) {
+      openVal = questions >= openVal ? questions - (10 / (scale || 1)) : questions + (10 / (scale || 1));
+    }
+    const openY = baselineY - (openVal * scale);
+
+    const bodyTop = Math.min(openY, closeY);
+    const bodyBottom = Math.max(openY, closeY);
+    const bodyHeight = Math.max(12, bodyBottom - bodyTop);
+
+    const lowVal = Math.max(10, Math.min(questions, openVal) - 16);
+    const lowY = Math.min(baselineY - 32, baselineY - (lowVal * scale));
+
+    const candleWidth = Math.min(24, Math.max(16, width * 0.42));
+    const centerX = x + width / 2;
+    const candleX = centerX - candleWidth / 2;
+
+    return (
+      <g
+        className="cursor-pointer group"
+        onClick={() => handleBarClick(item)}
+      >
+        <line
+          x1={centerX}
+          y1={highY}
+          x2={centerX}
+          y2={bodyTop}
+          stroke={color}
+          strokeWidth={1.8}
+        />
+
+        <line
+          x1={centerX}
+          y1={bodyBottom}
+          x2={centerX}
+          y2={lowY}
+          stroke={color}
+          strokeWidth={1.8}
+        />
+
+        <rect
+          x={candleX}
+          y={bodyTop}
+          width={candleWidth}
+          height={bodyHeight}
+          fill={color}
+          stroke={color}
+          strokeWidth={1}
+          rx={0}
+          className="transition-opacity group-hover:opacity-85"
+        />
+
+        <g>
+          <rect
+            x={centerX - 24}
+            y={highY - 24}
+            width={48}
+            height={20}
+            rx={5}
+            fill="#ffffff"
+            stroke="#3b82f6"
+            strokeWidth={1.2}
+            style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.06))" }}
+          />
+          <text
+            x={centerX}
+            y={highY - 10}
+            fill="#1d4ed8"
+            textAnchor="middle"
+            fontSize={11}
+            fontWeight={700}
+          >
+            {`${time}m`}
+          </text>
+        </g>
+
+        <g>
+          <rect
+            x={centerX - 27}
+            y={lowY + 6}
+            width={54}
+            height={22}
+            rx={5}
+            fill="#ffffff"
+            stroke={color}
+            strokeWidth={1.5}
+            style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.08))" }}
+          />
+          <text
+            x={centerX}
+            y={lowY + 21}
+            fill={color}
+            textAnchor="middle"
+            fontSize={11}
+            fontWeight={800}
+          >
+            {`${questions} Qs`}
+          </text>
+        </g>
+      </g>
     );
   };
 
@@ -299,6 +547,51 @@ export default function PatternOfUsage({
       <div>
         <div className="bg-white rounded-lg shadow p-8 border relative">
 
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <FaClock className="w-5 h-5 text-gray-600" />
+              <h3 className="lg:text-xl text-base font-bold text-gray-800">
+                Pattern of Usage
+              </h3>
+            </div>
+
+            <div className="inline-flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setChartView("bar")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "bar"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Bar
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartView("line")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "line"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Line
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartView("candlestick")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  chartView === "candlestick"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Candlestick
+              </button>
+            </div>
+          </div>
+
           {/* Left Arrow */}
 
           {canGoLeft && (
@@ -336,122 +629,290 @@ export default function PatternOfUsage({
           {/* LEGEND */}
 
           <div className="flex justify-center gap-8 mb-6">
-
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-gray-700">
                 Time (Minutes)
               </span>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-gray-700">
                 Questions
               </span>
             </div>
-
           </div>
 
-          {/* BAR CHART */}
+          {/* CHARTS CONTAINER */}
 
-          <div className="h-[420px] bg-gray-50 rounded-xl p-6 mx-10">
-
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
-              <BarChart
-                data={displayData}
-                margin={{
-                  top: 30,
-                  right: 30,
-                  left: 10,
-                  bottom: 20,
-                }}
-                barCategoryGap="20%"
-                barGap={2}
+          {chartView === "bar" ? (
+            <div className="h-[420px] bg-gray-50 rounded-xl p-6 mx-2 sm:mx-10">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
               >
-
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                />
-
-                <XAxis
-                  dataKey="date"
-                  tick={{
-                    fill: "#374151",
-                    fontSize: 12,
+                <BarChart
+                  data={displayData}
+                  margin={{
+                    top: 30,
+                    right: 30,
+                    left: 10,
+                    bottom: 20,
                   }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-
-                <YAxis
-                  tick={{
-                    fill: "#6b7280",
-                    fontSize: 12,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-
-                <Tooltip
-                  content={<CustomTooltip />}
-                  cursor={{
-                    fill: "transparent",
-                  }}
-                />
-
-                <Bar
-                  dataKey="time"
-                  fill="#3b82f6"
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={45}
-                  onClick={handleBarClick}
+                  barCategoryGap="20%"
+                  barGap={2}
                 >
-                  <LabelList
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#e5e7eb"
+                  />
+
+                  <XAxis
+                    dataKey="date"
+                    tick={{
+                      fill: "#374151",
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+
+                  <YAxis
+                    tick={{
+                      fill: "#6b7280",
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{
+                      fill: "transparent",
+                    }}
+                  />
+
+                  <Bar
                     dataKey="time"
-                    content={renderLabel}
-                  />
+                    name="Time (Minutes)"
+                    fill="#3b82f6"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={45}
+                    onClick={handleBarClick}
+                  >
+                    <LabelList
+                      dataKey="time"
+                      content={renderLabel}
+                    />
 
-                  {displayData.map(
-                    (_, index) => (
-                      <Cell
-                        key={`time-${index}`}
-                        className="cursor-pointer"
-                      />
-                    )
-                  )}
-                </Bar>
+                    {displayData.map(
+                      (_, index) => (
+                        <Cell
+                          key={`time-${index}`}
+                          className="cursor-pointer hover:opacity-85 transition-opacity"
+                        />
+                      )
+                    )}
+                  </Bar>
 
-                <Bar
-                  dataKey="questions"
-                  fill="#10b981"
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={45}
-                  onClick={handleBarClick}
-                >
-                  <LabelList
+                  <Bar
                     dataKey="questions"
-                    content={renderLabel}
+                    name="Questions"
+                    fill="#10b981"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={45}
+                    onClick={handleBarClick}
+                  >
+                    <LabelList
+                      dataKey="questions"
+                      content={renderLabel}
+                    />
+
+                    {displayData.map(
+                      (_, index) => (
+                        <Cell
+                          key={`q-${index}`}
+                          className="cursor-pointer hover:opacity-85 transition-opacity"
+                        />
+                      )
+                    )}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : chartView === "candlestick" ? (
+            <div className="h-[420px] bg-gray-50 rounded-xl p-6 mx-2 sm:mx-10">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
+                <BarChart
+                  data={displayData}
+                  margin={{
+                    top: 35,
+                    right: 30,
+                    left: 10,
+                    bottom: 25,
+                  }}
+                  barCategoryGap="25%"
+                  onClick={(e) => {
+                    if (e && e.activePayload && e.activePayload[0]) {
+                      handleBarClick(e.activePayload[0].payload);
+                    }
+                  }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="0"
+                    vertical={false}
+                    stroke="#e5e7eb"
                   />
 
-                  {displayData.map(
-                    (_, index) => (
-                      <Cell
-                        key={`q-${index}`}
-                        className="cursor-pointer"
-                      />
-                    )
-                  )}
-                </Bar>
+                  <XAxis
+                    dataKey="date"
+                    tick={{
+                      fill: "#374151",
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
 
-              </BarChart>
-            </ResponsiveContainer>
+                  <YAxis
+                    tick={{
+                      fill: "#6b7280",
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                    domain={[0, (dataMax) => Math.ceil(dataMax * 1.18)]}
+                  />
 
-          </div>
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{
+                      fill: "rgba(0,0,0,0.03)",
+                    }}
+                  />
+
+                  <Bar
+                    dataKey="time"
+                    name="Study Session Candle"
+                    shape={renderCandlestickItem}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-[420px] bg-gray-50 rounded-xl p-6 mx-2 sm:mx-10">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
+                <LineChart
+                  data={displayData}
+                  margin={{
+                    top: 35,
+                    right: 30,
+                    left: 15,
+                    bottom: 35,
+                  }}
+                  onClick={(e) => {
+                    if (e && e.activePayload && e.activePayload[0]) {
+                      handleBarClick(e.activePayload[0].payload);
+                    }
+                  }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#e5e7eb"
+                  />
+
+                  <XAxis
+                    dataKey="date"
+                    padding={{ left: 45, right: 30 }}
+                    tickMargin={12}
+                    tick={{
+                      fill: "#374151",
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+
+                  <YAxis
+                    tick={{
+                      fill: "#6b7280",
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{
+                      stroke: "#9ca3af",
+                      strokeDasharray: "3 3",
+                    }}
+                  />
+
+                  <Line
+                    type="monotone"
+                    dataKey="time"
+                    name="Time (Minutes)"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    dot={{
+                      r: 5,
+                      fill: "#3b82f6",
+                      stroke: "#ffffff",
+                      strokeWidth: 2,
+                    }}
+                    activeDot={{
+                      r: 7,
+                      fill: "#3b82f6",
+                      stroke: "#ffffff",
+                      strokeWidth: 3,
+                    }}
+                  >
+                    <LabelList
+                      dataKey="time"
+                      content={renderDynamicTimeLabel}
+                    />
+                  </Line>
+
+                  <Line
+                    type="monotone"
+                    dataKey="questions"
+                    name="Questions"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    dot={{
+                      r: 5,
+                      fill: "#10b981",
+                      stroke: "#ffffff",
+                      strokeWidth: 2,
+                    }}
+                    activeDot={{
+                      r: 7,
+                      fill: "#10b981",
+                      stroke: "#ffffff",
+                      strokeWidth: 3,
+                    }}
+                  >
+                    <LabelList
+                      dataKey="questions"
+                      content={renderDynamicQuestionsLabel}
+                    />
+                  </Line>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {/* Page Indicator */}
 
