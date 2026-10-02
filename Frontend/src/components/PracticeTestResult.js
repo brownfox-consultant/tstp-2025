@@ -163,7 +163,11 @@ function PracticeTestResult() {
   const handleBack = () => {
     if (role === "student") {
       router.push(`/tstp/${role}/${id}/test/practice`);
-    } else {
+    }
+    else if (role === "parent") {
+       router.push(`/tstp/${role}/${id}/test?tab=practice`);
+    }
+    else {
       router.push(`/tstp/${role}/${id}/practice`);
     }
   };

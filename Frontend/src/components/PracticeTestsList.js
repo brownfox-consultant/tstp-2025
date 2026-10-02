@@ -138,6 +138,7 @@ function PracticeTestsList() {
                 router.push(`/tstp/${role}/${userId}/practice/${id}/result`);
               }
             }}
+            
             className="font-semibold  hover:text-blue-600 hover:underline cursor-pointer text-left transition-colors duration-200 bg-transparent text-blue-600"
           >
             {highlightText(text || "-", debouncedSearchTerm)}
@@ -284,7 +285,13 @@ function PracticeTestsList() {
             router.push(
               `/tstp/${role}/${userId}/test/practice/${id}/result`
             );
-          } else {
+          }
+          else if (role === "parent") {
+            router.push(
+              `/tstp/${role}/${userId}/test/practice/${id}/result`
+            );
+          } 
+          else {
             router.push(
               `/tstp/${role}/${userId}/practice/${id}/result`
             );
@@ -312,6 +319,7 @@ function PracticeTestsList() {
     student: studentCols,
     mentor: facultyMentorCols,
     faculty: facultyMentorCols,
+    parent: facultyMentorCols,
   };
 
   const itemRender = (_, type, originalElement) => {

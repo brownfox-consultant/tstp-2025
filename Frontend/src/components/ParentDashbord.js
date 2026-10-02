@@ -408,12 +408,12 @@ export default function Dashbord() {
             result: res.data.practice_tests.change_percentage,
             gradient: "from-blue-500 to-cyan-400",
           },
-          {
-            title: "Avg score of all the tests",
-            count: res.data.overall_average_percentage.average_percentage,
-            result: res.data.overall_average_percentage.change_percentage,
-            gradient: "from-emerald-500 to-teal-400",
-          },
+          // {
+          //   title: "Avg score of all the tests",
+          //   count: res.data.overall_average_percentage.average_percentage,
+          //   result: res.data.overall_average_percentage.change_percentage,
+          //   gradient: "from-emerald-500 to-teal-400",
+          // },
         ]);
       })
       .catch((err) => console.error("Stats error:", err));
@@ -621,7 +621,7 @@ export default function Dashbord() {
       <div>
         <Row gutter={[16, 16]}>
           {stats.map((stat, i) => (
-            <Col xs={24} sm={12} md={8} key={i}>
+            <Col xs={24} sm={12} md={12} key={i}>
               <div className="relative group overflow-hidden rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer bg-white shadow-lg m-0 border border-gray-100">
                 {/* Gradient accent bar */}
                 <div
@@ -632,14 +632,21 @@ export default function Dashbord() {
                   <span className="text-base font-semibold text-gray-700">
                     {stat.title}
                   </span>
-                  {stat.title === "Full length tests" && (
-                    <button
-                      onClick={() => router.push(`/tstp/parent/${parentId}/test`)}
-                      className="text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent"
-                    >
-                      View all →
-                    </button>
-                  )}
+                 {(stat.title === "Full length tests" ||
+  stat.title === "Practice Questions") && (
+  <button
+    onClick={() => {
+      if (stat.title === "Practice Questions") {
+        router.push(`/tstp/parent/${parentId}/test?tab=practice`);
+      } else {
+        router.push(`/tstp/parent/${parentId}/test?tab=full-length`);
+      }
+    }}
+    className="text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors hover:underline bg-transparent"
+  >
+    View all →
+  </button>
+)}
                 </div>
                 <div className="flex justify-between items-center text-2xl mb-2">
                   <div className="text-left font-bold text-gray-900">
