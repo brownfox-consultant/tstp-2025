@@ -258,7 +258,7 @@ function PracticeTestsList({ studentId }) {
           </Button>
         </div>
 
-        <div className="bg-white p-2 rounded-2xl">
+        <div className="bg-white">
           <PracticeTestReport
             practiceTestId={reportPracticeTestIdParam}
             onClose={handleCloseModal}

@@ -1,17 +1,17 @@
 "use client";
 
 import { getPracticeResults, getQuestionDetails } from "@/app/services/authService";
-import useFullScreen from "@/utils/useFullScreen";
+// import useFullScreen from "@/utils/useFullScreen";
 import {
   CaretRightOutlined,
-  CheckCircleFilled,
-  CloseCircleFilled,
+  // CheckCircleFilled,
+  // CloseCircleFilled,
   LeftOutlined,
   ClockCircleOutlined,
   CheckOutlined,
   CloseOutlined,
-  QuestionCircleOutlined,
-  PieChartOutlined
+  // QuestionCircleOutlined,
+  // PieChartOutlined
 } from "@ant-design/icons";
 import { Collapse, Skeleton, Card, Tag, Divider, Row, Col, Modal, Button } from "antd";
 import { useParams, useRouter, usePathname } from "next/navigation";
@@ -22,6 +22,12 @@ import Loading from "@/app/loading";
 import RaiseDoubtModal from "./RaiseDoubtModal_qutions_review_model";
 
 import { alphatbetArray, timeInMMSS } from "@/utils/utils";
+import { 
+  ReportCalendarIcon as CalendarIcon, 
+  UserProfileIcon, 
+  DocumentIcon, 
+  ClockIcon 
+} from "@/components/icons/report-icons";
 
 
 
@@ -208,163 +214,275 @@ function PracticeTestResult() {
   });
 
   return (
-    <div className="min-h-screen pb-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen pb-6 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-              Practice Test Result
-            </h1>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3 mb-2">
           <button
             onClick={handleBack}
-            className="w-fit px-4 py-2 flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white border border-gray-200 text-gray-700 font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105 text-sm"
+            className="w-fit px-3 py-2 flex items-center justify-center gap-2 rounded bg-white hover:bg-white border border-gray-200 text-gray-700 font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105 text-sm"
           >
-            <LeftOutlined /> Back to Practice
+            <LeftOutlined /> Back
           </button>
         </div>
 
         <Skeleton active loading={skeletonLoading}>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 my-3">
-            {/* Correct */}
-            <Card 
-              className={`border-0 shadow-sm rounded-xl overflow-hidden relative cursor-pointer transition-all ${filterStatus === 'CORRECT' ? 'ring-2 ring-green-500 transform scale-105' : 'hover:scale-105'}`} 
-              bodyStyle={{ padding: '16px' }}
-              onClick={() => setFilterStatus(filterStatus === 'CORRECT' ? 'ALL' : 'CORRECT')}
-            >
-              <div className="absolute right-0 top-0 p-3 opacity-20">
-                <CheckCircleFilled className="text-5xl text-gray-300" />
-              </div>
-              <div className="relative z-10">
-                <div className="text-2xl font-bold text-green-600 mb-0.5">{correctCount}</div>
-                <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Correct</div>
-              </div>
-              <div className="h-1 w-full bg-green-100 absolute bottom-0 left-0">
-                <div className="h-full bg-green-500" style={{ width: `${(correctCount / totalQuestions) * 100}%` }}></div>
-              </div>
-            </Card>
-
-            {/* Incorrect */}
-            <Card 
-              className={`border-0 shadow-sm rounded-xl overflow-hidden relative cursor-pointer transition-all ${filterStatus === 'INCORRECT' ? 'ring-2 ring-red-500 transform scale-105' : 'hover:scale-105'}`}
-              bodyStyle={{ padding: '16px' }}
-              onClick={() => setFilterStatus(filterStatus === 'INCORRECT' ? 'ALL' : 'INCORRECT')}
-            >
-              <div className="absolute right-0 top-0 p-3 opacity-20">
-                <CloseCircleFilled className="text-5xl text-gray-300" />
-              </div>
-              <div className="relative z-10">
-                <div className="text-2xl font-bold text-red-600 mb-0.5">{incorrectCount}</div>
-                <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Incorrect</div>
-              </div>
-              <div className="h-1 w-full bg-red-100 absolute bottom-0 left-0">
-                <div className="h-full bg-red-500" style={{ width: `${(incorrectCount / totalQuestions) * 100}%` }}></div>
-              </div>
-            </Card>
-
-            {/* Unanswered */}
-            <Card 
-              className={`border-0 shadow-sm rounded-xl overflow-hidden relative cursor-pointer transition-all ${filterStatus === 'UNANSWERED' ? 'ring-2 ring-blue-500 transform scale-105' : 'hover:scale-105'}`}
-              bodyStyle={{ padding: '16px' }}
-              onClick={() => setFilterStatus(filterStatus === 'UNANSWERED' ? 'ALL' : 'UNANSWERED')}
-            >
-              <div className="absolute right-0 top-0 p-3 opacity-20">
-                <QuestionCircleOutlined className="text-5xl text-gray-300" />
-              </div>
-              <div className="relative z-10">
-                <div className="text-2xl font-bold text-blue-600 mb-0.5">{unansweredCount}</div>
-                <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Unanswered</div>
-              </div>
-              <div className="h-1 w-full bg-blue-100 absolute bottom-0 left-0">
-                <div className="h-full bg-blue-500" style={{ width: `${(unansweredCount / totalQuestions) * 100}%` }}></div>
-              </div>
-            </Card>
-
-            {/* Total Questions */}
-            <Card 
-              className={`border-0 shadow-sm rounded-xl overflow-hidden relative cursor-pointer transition-all ${filterStatus === 'ALL' ? 'ring-2 ring-purple-500 transform scale-105' : 'hover:scale-105'}`}
-              bodyStyle={{ padding: '16px' }}
-              onClick={() => setFilterStatus('ALL')}
-            >
-              <div className="absolute right-0 top-0 p-3 opacity-20">
-                <PieChartOutlined className="text-5xl text-gray-300" />
-              </div>
-              <div className="relative z-10">
-                <div className="text-2xl font-bold text-purple-600 mb-0.5">{totalQuestions}</div>
-                <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total Questions</div>
-              </div>
-              <div className="h-1 w-full bg-purple-100 absolute bottom-0 left-0">
-                <div className="h-full bg-purple-500" style={{ width: '100%' }}></div>
-              </div>
-            </Card>
-          </div>
-
-            {/* Detailed Question List */}
-            <Card
-              title={
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-1">
-                   <div className="flex items-center gap-3">
-                      <span className="font-bold text-gray-800 text-base">Question Analysis</span>
-                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
-                        {filteredQuestions.length} Items
-                      </span>
-                   </div>
-                   
-                   {/* Inline Filter Tabs */}
-                   <div className="flex p-1 bg-gray-100 rounded-lg">
-                      {['ALL', 'CORRECT', 'INCORRECT', 'UNANSWERED'].map((status) => {
-                        const isActive = filterStatus === status;
-                        let activeClass = "bg-white text-gray-800 shadow-sm";
-                        let inactiveClass = "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50";
-                        
-                        // Custom active colors
-                        if (isActive) {
-                          if (status === 'CORRECT') activeClass = "bg-green-100 text-green-700 shadow-sm ring-1 ring-green-200";
-                          if (status === 'INCORRECT') activeClass = "bg-red-100 text-red-700 shadow-sm ring-1 ring-red-200";
-                          if (status === 'UNANSWERED') activeClass = "bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200";
-                        }
-
-                        return (
-                          <button
-                            key={status}
-                            onClick={() => setFilterStatus(status)}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize duration-200 ${isActive ? activeClass : inactiveClass}`}
-                          >
-                            {status.toLowerCase()}
-                          </button>
-                        );
-                      })}
-                   </div>
-                </div>
-              }
-              className="shadow-sm border-gray-100 rounded-xl"
-              bodyStyle={{ padding: '16px' }}
-            >
-              <div className="space-y-3">
-                {filteredQuestions.length > 0 ? (
-                  filteredQuestions.map((question, index) => (
-                    <QuestionItem
-                      key={question.question_id || index}
-                      question={question}
-                      onClick={() => handleQuestionClick(question, index)}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                     <p className="text-gray-400 italic text-sm">No questions found for the filter "{filterStatus.toLowerCase()}".</p>
-                     <button 
-                        onClick={() => setFilterStatus('ALL')}
-                        className="mt-2 text-indigo-600 font-semibold text-xs hover:underline"
-                     >
-                        Clear Filter
-                     </button>
+          {/* ======================================================
+              HEADER / SCORE SECTION
+          ====================================================== */}
+          <div className="bg-gray-200 rounded-xl p-4 md:p-6 shadow-md mb-6 mt-4 border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* Header Card */}
+              <div className="lg:col-span-1 flex flex-col justify-center py-2">
+                {/* Date */}
+                {resultDetails?.testDate && (
+                  <div className="inline-flex items-center gap-1.5 text-sm text-black mb-2">
+                    <CalendarIcon />
+                    <span className="font-medium">
+                      {new Date(resultDetails.testDate).toDateString()}
+                    </span>
                   </div>
                 )}
+
+                {/* Title */}
+                <h1 className="text-xl lg:text-2xl font-bold text-[#F59403] mb-4">
+                  Practice Test Results
+                </h1>
+
+                {/* Student / Test */}
+                <div className="flex flex-wrap gap-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-900 text-white w-fit">
+                    <UserProfileIcon className="w-3 h-3 text-white" />
+                    <span className="truncate max-w-[120px]">{resultDetails?.student_name || "Student"}</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 w-fit">
+                    <DocumentIcon className="w-3 h-3" />
+                    <span className="truncate max-w-[120px]">{resultDetails?.name || "Practice Test"}</span>
+                  </div>
+                </div>
               </div>
-            </Card>
+
+              {/* Topics Card */}
+              {(() => {
+                const uniqueTopics = Array.from(new Set(resultDetails?.questions_data?.map(q => q.topic).filter(Boolean)));
+                if (uniqueTopics.length === 0) return null;
+                return (
+                  <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col hover:shadow-md transition-shadow lg:col-span-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                        Topics
+                      </span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto max-h-[100px] hide-scrollbar">
+                      <p className="text-sm text-gray-800 font-medium leading-relaxed">
+                        {uniqueTopics.join(", ")}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Accuracy Card */}
+              <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Accuracy
+                  </span>
+                  <span className="text-md font-bold text-gray-800">
+                    {(() => {
+                      const total = resultDetails?.section_correct_count || 0;
+                      const max = resultDetails?.questions_data?.length || 0;
+                      return max > 0 ? Math.round((total / max) * 100) : 0;
+                    })()}
+                    %
+                  </span>
+                </div>
+
+                <div className="mb-2">
+                  {(() => {
+                    const total = resultDetails?.section_correct_count || 0;
+                    const max = resultDetails?.questions_data?.length || 0;
+                    const percent = max > 0 ? (total / max) * 100 : 0;
+                    const colorClass = percent >= 75 ? "text-green-500" : percent >= 50 ? "text-orange-500" : "text-red-500";
+
+                    return (
+                      <>
+                        <span className={`text-4xl font-black ${colorClass}`}>
+                          {total}
+                        </span>
+                        <span className="text-[14px] text-black font-bold uppercase ml-1">
+                          OUT OF {max}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
+
+                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      (() => {
+                        const total = resultDetails?.section_correct_count || 0;
+                        const max = resultDetails?.questions_data?.length || 0;
+                        const percent = max > 0 ? (total / max) * 100 : 0;
+                        return percent >= 75
+                          ? "bg-gradient-to-r from-green-400 to-green-500"
+                          : percent >= 50
+                          ? "bg-gradient-to-r from-orange-400 to-orange-500"
+                          : "bg-gradient-to-r from-red-400 to-red-500";
+                      })()
+                    }`}
+                    style={{
+                      width: `${(() => {
+                        const total = resultDetails?.section_correct_count || 0;
+                        const max = resultDetails?.questions_data?.length || 0;
+                        return max > 0 ? Math.round((total / max) * 100) : 0;
+                      })()}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Time Stats Card */}
+              <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Time Management
+                  </span>
+                </div>
+                
+                <div className="flex flex-col justify-around h-full gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ClockIcon className="text-gray-500" />
+                      <span className="text-sm text-gray-600 font-medium">Total Time:</span>
+                    </div>
+                    <span className="text-sm font-bold text-gray-800">{timeInMMSS(resultDetails?.time_on_section || 0)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span className="text-sm text-gray-600 font-medium">On Correct:</span>
+                    </div>
+                    <span className="text-sm font-bold text-emerald-600">{timeInMMSS(resultDetails?.section_correct_time_taken || 0)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                      <span className="text-sm text-gray-600 font-medium">On Incorrect:</span>
+                    </div>
+                    <span className="text-sm font-bold text-red-600">{timeInMMSS(resultDetails?.section_incorrect_time_taken || 0)}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* ======================================================
+              ANALYSIS OVERVIEW
+          ====================================================== */}
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 w-full mb-6">
+            <div className="flex items-center gap-3 mb-6">
+              <h2 className="text-xl font-bold text-gray-800">
+                Analysis Overview
+              </h2>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+                {/* All */}
+                <button
+                  onClick={() => setFilterStatus("ALL")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === "ALL"
+                      ? "bg-white text-gray-800 shadow-sm border border-gray-200"
+                      : "text-gray-500 hover:text-gray-800 border border-transparent"
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === "ALL" ? "bg-gray-800" : "bg-gray-400"}`} />
+                  <span>All</span>
+                  <span className={`opacity-70 ${filterStatus === "ALL" ? "opacity-100 font-bold" : ""}`}>
+                    {totalQuestions}
+                  </span>
+                </button>
+
+                {/* Correct */}
+                <button
+                  onClick={() => setFilterStatus("CORRECT")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === "CORRECT"
+                      ? "bg-white text-gray-800 shadow-sm border border-gray-200"
+                      : "text-gray-500 hover:text-gray-800 border border-transparent"
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === "CORRECT" ? "bg-green-500" : "bg-gray-400"}`} />
+                  <span>Correct</span>
+                  <span className={`opacity-70 ${filterStatus === "CORRECT" ? "opacity-100 font-bold" : ""}`}>
+                    {correctCount}
+                  </span>
+                </button>
+
+                {/* Incorrect */}
+                <button
+                  onClick={() => setFilterStatus("INCORRECT")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === "INCORRECT"
+                      ? "bg-white text-gray-800 shadow-sm border border-gray-200"
+                      : "text-gray-500 hover:text-gray-800 border border-transparent"
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === "INCORRECT" ? "bg-red-500" : "bg-gray-400"}`} />
+                  <span>Incorrect</span>
+                  <span className={`opacity-70 ${filterStatus === "INCORRECT" ? "opacity-100 font-bold" : ""}`}>
+                    {incorrectCount}
+                  </span>
+                </button>
+
+                {/* Unanswered */}
+                <button
+                  onClick={() => setFilterStatus("UNANSWERED")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterStatus === "UNANSWERED"
+                      ? "bg-white text-gray-800 shadow-sm border border-gray-200"
+                      : "text-gray-500 hover:text-gray-800 border border-transparent"
+                  }`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${filterStatus === "UNANSWERED" ? "bg-blue-500" : "bg-gray-400"}`} />
+                  <span>Unanswered</span>
+                  <span className={`opacity-70 ${filterStatus === "UNANSWERED" ? "opacity-100 font-bold" : ""}`}>
+                    {unansweredCount}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Question List */}
+            <div className="space-y-3 mt-4">
+              {filteredQuestions.length > 0 ? (
+                filteredQuestions.map((question, index) => (
+                  <QuestionItem
+                    key={question.question_id || index}
+                    question={question}
+                    onClick={() => handleQuestionClick(question, index)}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                   <p className="text-gray-400 italic text-sm">No questions found for the filter "{filterStatus.toLowerCase()}".</p>
+                   <button 
+                      onClick={() => setFilterStatus('ALL')}
+                      className="mt-2 text-indigo-600 font-semibold text-xs hover:underline"
+                   >
+                      Clear Filter
+                   </button>
+                </div>
+              )}
+            </div>
+          </div>
         </Skeleton>
 
         {/* Question Review Modal */}
