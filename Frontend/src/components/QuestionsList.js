@@ -758,7 +758,7 @@ function QuestionsList({
         }
 
         onChange={handleTableChange}
-        // pagination={paginationConfig}
+        pagination={paginationConfig}
         scroll={{ x: "max-content" }}
         expandable={{
           expandedRowRender: (record) => {
