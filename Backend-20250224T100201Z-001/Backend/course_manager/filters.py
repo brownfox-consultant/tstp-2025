@@ -6,6 +6,9 @@ from django.db.models import Q
 
 from .models import Course, Question, Material
 
+import re
+from django.db.models import Q
+
 
 
 class IntegerListFilter(filters.BaseInFilter, filters.NumberFilter):
@@ -63,12 +66,73 @@ class QuestionFilter(filters.FilterSet):
         if self.data.get('srno'):
             return queryset
 
-        # If user entered a number in question_text, treat it as srno search
+        if not value:
+            return queryset
+
+        value = value.strip()
+
+        # ---------------------------------------------------------
+        # SRNO search
+        # ---------------------------------------------------------
         if value.isdigit():
             return queryset.filter(srno=value)
 
-        # Otherwise, perform normal text search
-        return queryset.filter(description__icontains=value).distinct()
+        # ---------------------------------------------------------
+        # Normalize search input
+        # ---------------------------------------------------------
+        search_text = re.sub(r'<[^>]+>', ' ', value)
+
+        search_text = (
+            search_text
+            .replace('&nbsp;', ' ')
+            .replace('&lt;', '<')
+            .replace('&gt;', '>')
+            .replace('&amp;', '&')
+            .replace('&minus;', '−')
+        )
+
+        search_text = re.sub(r'\s+', ' ', search_text).strip()
+
+        # ---------------------------------------------------------
+        # 1. Exact search first
+        # ---------------------------------------------------------
+        exact_qs = queryset.filter(
+            description__icontains=search_text
+        ).distinct()
+
+        if exact_qs.exists():
+            return exact_qs
+
+        # ---------------------------------------------------------
+        # 2. Flexible search
+        #
+        # Extract words only.
+        # This avoids problems with:
+        # < > − = + / mathematical symbols
+        # ---------------------------------------------------------
+        words = re.findall(r'[A-Za-z0-9]+', search_text)
+
+        if not words:
+            return queryset
+
+        # Remove very short words
+        words = [
+            word for word in words
+            if len(word) > 1
+        ]
+
+        if not words:
+            return queryset
+
+        # ---------------------------------------------------------
+        # Require all meaningful words
+        # ---------------------------------------------------------
+        query = Q()
+
+        for word in words:
+            query &= Q(description__icontains=word)
+
+        return queryset.filter(query).distinct()
 
 
     def filter_option_text(self, queryset, name, value):
