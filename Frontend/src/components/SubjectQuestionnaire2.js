@@ -20,19 +20,26 @@ function SubjectQuestionnaire2({ course, subjectsData, role }) {
   }, [searchParams]);
 
   const onChange = (val) => {
-    updatedSearchParams.set("course_subject_id", val.toString());
-    updatedSearchParams.set("page", "1");
-    updatedSearchParams.delete("query");
-    updatedSearchParams.delete("topic");
-    updatedSearchParams.delete("difficulty");
-    updatedSearchParams.delete("test_type");
-    updatedSearchParams.delete("sub_topic");
-    updatedSearchParams.delete("question_type");
-    updatedSearchParams.delete("question_subtype");
+  const newParams = new URLSearchParams(searchParams.toString());
 
-    router.replace(`${pathname}?${updatedSearchParams}`);
-    setCourseSubjectId(val);
-  };
+  newParams.set("course_subject_id", val.toString());
+  newParams.set("page", "1");
+
+  // Keep main search query
+  // DO NOT delete "query"
+
+  // Clear subject-specific filters
+  newParams.delete("topic");
+  newParams.delete("difficulty");
+  newParams.delete("test_type");
+  newParams.delete("sub_topic");
+  newParams.delete("question_type");
+  newParams.delete("question_subtype");
+
+  router.replace(`${pathname}?${newParams.toString()}`);
+
+  setCourseSubjectId(val);
+};
 
   const isSelected = Number(searchParams.get("course_subject_id"));
 

@@ -25,6 +25,9 @@ function QuestionsComponent2({ courses }) {
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("query") || "",
   );
+  useEffect(() => {
+  setSearchQuery(searchParams.get("query") || "");
+}, [searchParams]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -200,31 +203,76 @@ function QuestionsComponent2({ courses }) {
     return current_course?.name || "";
   };
 
-  const handleTabChange = (key) => {
-    console.log("heloooo");
-    let currentCourse = courses.find((course) => course.name === key);
-    let course_subject_id = currentCourse.subjects[0].course_subject_id;
+ const handleTabChange = (key) => {
+  const currentCourse = courses.find(
+    (course) => course.name === key
+  );
 
-    updatedSearchParams.set("course_subject_id", course_subject_id.toString());
-    updatedSearchParams.set("page", "1");
-    updatedSearchParams.delete("query");
-    updatedSearchParams.delete("topic");
-    updatedSearchParams.delete("sub_topic");
-    updatedSearchParams.delete("difficulty");
-    updatedSearchParams.delete("test_type");
-    updatedSearchParams.delete("question_type");
+  if (!currentCourse) return;
 
-    router.replace(`${pathname}?${updatedSearchParams.toString()}`);
-  };
+  const course_subject_id =
+    currentCourse.subjects[0].course_subject_id;
+
+  // Always create fresh params from CURRENT URL
+  const newSearchParams = new URLSearchParams(
+    searchParams.toString()
+  );
+
+  // Change subject
+  newSearchParams.set(
+    "course_subject_id",
+    String(course_subject_id)
+  );
+
+  // Reset page
+  newSearchParams.set("page", "1");
+
+  // IMPORTANT:
+  // Preserve the main search query
+  const currentQuery = searchParams.get("query");
+
+  if (currentQuery) {
+    newSearchParams.set("query", currentQuery);
+  }
+
+  // Remove only filters that should reset between tabs
+  newSearchParams.delete("topic");
+  newSearchParams.delete("sub_topic");
+  newSearchParams.delete("difficulty");
+  newSearchParams.delete("test_type");
+  newSearchParams.delete("question_type");
+
+  console.log(
+    "TAB CHANGE URL:",
+    `${pathname}?${newSearchParams.toString()}`
+  );
+
+  router.replace(
+    `${pathname}?${newSearchParams.toString()}`
+  );
+};
 
   const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    updatedSearchParams.set("query", value);
-    updatedSearchParams.set("page", "1");
-    router.replace(`${pathname}?${updatedSearchParams.toString()}`);
-  };
+  const value = e.target.value;
 
+  setSearchQuery(value);
+
+  const newSearchParams = new URLSearchParams(
+    searchParams.toString()
+  );
+
+  if (value) {
+    newSearchParams.set("query", value);
+  } else {
+    newSearchParams.delete("query");
+  }
+
+  newSearchParams.set("page", "1");
+
+  router.replace(
+    `${pathname}?${newSearchParams.toString()}`
+  );
+};
   const handleApplyAdvanced = (filters) => {
     console.log("Filters from modal:", filters);
     [
