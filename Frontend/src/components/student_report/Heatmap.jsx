@@ -567,25 +567,35 @@ export default function Heatmap({
                 {isHovered &&
                   d.testCount > 0 && (
 
-                    <div
-                      className="
-                        absolute
-                        z-[9999]
-                        left-1/2
-                        top-full
-                        mt-2
-                        -translate-x-1/2
-                        w-[350px]
-                        max-w-[calc(100vw-30px)]
-                        bg-white
-                        border
-                        border-gray-200
-                        rounded-xl
-                        shadow-2xl
-                        p-3
-                        text-left
-                      "
-                    >
+                   <div
+  className={`
+    absolute
+    z-[9999]
+    w-[350px]
+    max-w-[calc(100vw-30px)]
+    bg-white
+    border
+    border-gray-200
+    rounded-xl
+    shadow-2xl
+    p-3
+    text-left
+
+    ${
+      index % 7 >= 5
+        ? "right-0"
+        : index % 7 === 0
+        ? "left-0"
+        : "left-1/2 -translate-x-1/2"
+    }
+
+    ${
+      index >= days.length - 7
+        ? "bottom-full mb-2"
+        : "top-full mt-2"
+    }
+  `}
+>
 
                       {/* TOOLTIP HEADER */}
 
