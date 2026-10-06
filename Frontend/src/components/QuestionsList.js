@@ -87,6 +87,8 @@ function QuestionsList({
 
   const [updated, setUpdated] = useState(false);
 
+  const [sortOrder, setSortOrder] = useState(null);
+
   const router = useRouter();
 
   const pathname = usePathname();
@@ -820,16 +822,25 @@ function QuestionsList({
     },
 
     {
-      title: "Updated At",
-      dataIndex: "updated_at",
-      key: "updated_at",
-      align: "center",
+  title: "Updated At",
+  dataIndex: "updated_at",
+  key: "updated_at",
+  align: "center",
 
-      render: (text) =>
-        text
-          ? new Date(text).toLocaleString()
-          : "-",
-    },
+  sorter: true,
+
+  sortOrder:
+    searchParams.get("ordering") === "updated_at"
+      ? "ascend"
+      : searchParams.get("ordering") === "-updated_at"
+      ? "descend"
+      : null,
+
+  render: (text) =>
+    text
+      ? new Date(text).toLocaleString()
+      : "-",
+},
 
     // =====================================================
     // ACTION
@@ -1060,6 +1071,8 @@ function QuestionsList({
               ? "true"
               : "false"
             : "",
+
+            ordering: searchParams.get("ordering") || "",
       };
 
 
@@ -1121,7 +1134,8 @@ function QuestionsList({
   const updateURL = (
   page = 1,
   filtersObj = {},
-  query = searchParams.get("query") || searchText
+  query = searchParams.get("query") || searchText,
+  ordering = searchParams.get("ordering") || ""
 ) => {
     const newParams =
       new URLSearchParams(
@@ -1167,15 +1181,21 @@ function QuestionsList({
     );
 
 
-    if (query) {
+   if (query) {
   newParams.set("query", query);
 }
 
+// Keep server-side sorting in URL
+if (ordering) {
+  newParams.set("ordering", ordering);
+} else {
+  newParams.delete("ordering");
+}
 
-    newParams.set(
-      "page",
-      page
-    );
+newParams.set(
+  "page",
+  page
+);
 
 
     router.replace(
@@ -1190,12 +1210,9 @@ function QuestionsList({
 
  const handleTableChange = (
   pagination,
-  tableFilters
+  tableFilters,
+  sorter
 ) => {
-  // Always start from the filters currently stored in the URL.
-  // This is important because Advanced Search stores its filters
-  // in the URL, and pagination should NOT remove them.
-
   const currentFilters = {
     difficulty:
       searchParams.get("difficulty")?.split(",") || [],
@@ -1247,27 +1264,28 @@ function QuestionsList({
     ...currentFilters,
   };
 
-  /*
-   * Only replace URL filters with Table filters when Ant Design
-   * actually provides a value.
-   *
-   * This prevents pagination from clearing Advanced Search filters.
-   */
   Object.keys(tableFilters).forEach((key) => {
     const value = tableFilters[key];
 
-    // null / undefined means the table did not provide
-    // a new filter value. Keep the existing URL filter.
     if (value !== null && value !== undefined) {
       mergedFilters[key] = value;
     }
   });
 
+  let ordering = "";
+
+if (sorter?.order === "ascend") {
+  ordering = "updated_at";
+} else if (sorter?.order === "descend") {
+  ordering = "-updated_at";
+} 
+
   updateURL(
-  pagination.current,
-  mergedFilters,
-  searchParams.get("query") || ""
-);
+    pagination.current,
+    mergedFilters,
+    searchParams.get("query") || "",
+    ordering
+  );
 };
 
 

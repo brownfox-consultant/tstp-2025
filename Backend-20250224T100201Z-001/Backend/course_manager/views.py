@@ -370,6 +370,14 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         filtered_questions = filterset.qs
 
+        # 3️⃣1️⃣ APPLY SORTING
+        ordering = request.query_params.get("ordering")
+
+        if ordering in ["updated_at", "-updated_at"]:
+            filtered_questions = filtered_questions.order_by(ordering)
+
+        # 4️⃣ GLOBAL AVAILABILITY
+
         # 4️⃣ GLOBAL AVAILABILITY (ALL COURSES, SAME SUBJECT)
         all_course_subject_ids = CourseSubjects.objects.filter(
             subject=base_cs.subject
