@@ -244,39 +244,83 @@ function DashboardPage() {
    * Aggregates time spent by date and formats for heatmap display
    */
   useEffect(() => {
-    // Select data based on active tab
-    let dataToProcess = heatmapTab === "fullLength" ? fullLengthData : practiceData;
+  // Select data based on active tab
+  let dataToProcess = [];
 
-    // Apply course filter if specific course is selected
-    if (selectedCourseId !== "all") {
-      dataToProcess = dataToProcess.filter((item) => item.courseId === selectedCourseId);
+  if (heatmapTab === "fullLength") {
+    dataToProcess = fullLengthData || [];
+  } else if (heatmapTab === "practiceTest") {
+    dataToProcess = practiceData || [];
+  } else if (heatmapTab === "overall") {
+    dataToProcess = [
+      ...(fullLengthData || []),
+      ...(practiceData || []),
+    ];
+  }
+
+  // Apply course filter
+  if (selectedCourseId !== "all") {
+    dataToProcess = dataToProcess.filter(
+      (item) => String(item.courseId) === String(selectedCourseId)
+    );
+  }
+
+  const dateMap = {};
+
+  dataToProcess.forEach((item) => {
+    if (!item?.date) return;
+
+    // IMPORTANT:
+    // Keep date as YYYY-MM-DD to avoid timezone shifting
+    const dateKey = String(item.date).substring(0, 10);
+
+    if (!dateMap[dateKey]) {
+      dateMap[dateKey] = {
+        date: dateKey,
+        tests: [],
+        total_time_seconds: 0,
+      };
     }
 
-    // Aggregate data by date
-    const dateMap = {};
+    // Add individual tests
+    if (Array.isArray(item.tests)) {
+      dateMap[dateKey].tests.push(...item.tests);
+    }
 
-    dataToProcess.forEach((item) => {
-      const dateKey = new Date(item.date).toDateString();
-      
-      if (!dateMap[dateKey]) {
-        dateMap[dateKey] = { date: item.date, seconds: 0 };
-      }
-      
-      dateMap[dateKey].seconds += item.seconds;
-    });
+    // Add total time
+    dateMap[dateKey].total_time_seconds += Number(
+      item.total_time_seconds || 0
+    );
+  });
 
-    // Transform to heatmap format
-    const transformedData = Object.values(dateMap).map((item) => {
-      const date = new Date(item.date);
-      return {
-        dayLabel: date.getDate().toString(),
-        monthIndex: date.getMonth(),
-        seconds: item.seconds,
-      };
-    });
+  const transformedData = Object.values(dateMap).map((item) => {
+    const totalSeconds = Number(item.total_time_seconds || 0);
 
-    setHeatmapData(transformedData);
-  }, [fullLengthData, practiceData, heatmapTab, selectedCourseId]);
+    return {
+      date: item.date,
+
+      // Individual tests for tooltip
+      tests: item.tests,
+
+      // Number of tests
+      testCount: item.tests.length,
+
+      // Time
+      total_time_seconds: totalSeconds,
+
+      total_time_minutes: Math.round((totalSeconds / 60) * 10) / 10,
+    };
+  });
+
+  console.log("🔥 HEATMAP DATA:", transformedData);
+
+  setHeatmapData(transformedData);
+}, [
+  fullLengthData,
+  practiceData,
+  heatmapTab,
+  selectedCourseId,
+]);
 
   // ==================== NOTIFICATIONS ====================
 
@@ -475,20 +519,24 @@ function DashboardPage() {
 
         {/* Heatmap Controls (Tab & Course Filter) */}
         <div className="-mb-5 -mt-2 px-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <Tabs
-            activeKey={heatmapTab}
-            onChange={setHeatmapTab}
-            items={[
-              {
-                key: "fullLength",
-                label: "Full Length Test",
-              },
-              {
-                key: "practiceTest",
-                label: "Practice Test",
-              },
-            ]}
-          />
+         <Tabs
+  activeKey={heatmapTab}
+  onChange={setHeatmapTab}
+  items={[
+    {
+      key: "fullLength",
+      label: "Full Length Test",
+    },
+    {
+      key: "practiceTest",
+      label: "Practice Test",
+    },
+    {
+      key: "overall",
+      label: "Overall Performance",
+    },
+  ]}
+/>
 
           <Select
             value={selectedCourseId}

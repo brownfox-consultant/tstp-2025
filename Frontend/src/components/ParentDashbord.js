@@ -111,6 +111,16 @@ export default function Dashbord() {
   const [heatmapRawData, setHeatmapRawData] = useState({ fullLength: [], practice: [] });
   const [selectedCourseForHeatmap, setSelectedCourseForHeatmap] = useState(null);
 
+  useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  const storedName = localStorage.getItem("name");
+
+  if (storedName) {
+    setName(storedName);
+  }
+}, []);
+
   // const dummyKeyStrengths = [
   //   { name: 'Algebra', percent: 70 },
   //   { name: 'Problem Solving', percent: 85 },
@@ -564,38 +574,63 @@ export default function Dashbord() {
   }, [studentId, courses]);
 
   // ─── Process Heatmap Data ─────────────────────────────────────
-  useEffect(() => {
-    let data =
-      activityTab === "fullLength"
-        ? heatmapRawData.fullLength
-        : heatmapRawData.practice;
+useEffect(() => {
+  let data = [];
 
-    if (selectedCourseForHeatmap) {
-      data = data.filter((d) => d.courseId === selectedCourseForHeatmap);
-    }
+  // Select data based on active tab
+  if (activityTab === "fullLength") {
+    data = heatmapRawData.fullLength || [];
+  } else if (activityTab === "practiceTest") {
+    data = heatmapRawData.practice || [];
+  } else if (activityTab === "overall") {
+    data = [
+      ...(heatmapRawData.fullLength || []),
+      ...(heatmapRawData.practice || []),
+    ];
+  }
 
-    const dateMap = {};
-    if (data) {
-      data.forEach((item) => {
-        const dateKey = new Date(item.date).toDateString();
-        if (!dateMap[dateKey]) {
-          dateMap[dateKey] = { date: item.date, seconds: 0 };
-        }
-        dateMap[dateKey].seconds += item.seconds;
-      });
-    }
+  // Filter by selected course
+  if (selectedCourseForHeatmap) {
+    data = data.filter(
+      (item) => item.courseId === selectedCourseForHeatmap
+    );
+  }
 
-    const transformed = Object.values(dateMap).map((item) => {
-      const d = new Date(item.date);
-      return {
-        dayLabel: d.getDate().toString(),
-        monthIndex: d.getMonth(),
-        seconds: item.seconds,
+  const dateMap = {};
+
+  data.forEach((item) => {
+    if (!item?.date) return;
+
+    const dateKey = String(item.date).substring(0, 10);
+
+    if (!dateMap[dateKey]) {
+      dateMap[dateKey] = {
+        date: dateKey,
+        tests: [],
       };
-    });
+    }
 
-    setHeatmapData(transformed);
-  }, [heatmapRawData, activityTab, selectedCourseForHeatmap]);
+    // Add all tests from this date
+    if (Array.isArray(item.tests)) {
+      dateMap[dateKey].tests.push(...item.tests);
+    }
+  });
+
+  // Convert to Heatmap format
+  const transformed = Object.values(dateMap).map((item) => ({
+    date: item.date,
+    tests: item.tests,
+    testCount: item.tests.length,
+  }));
+
+  console.log("HEATMAP PROCESSED DATA:", transformed);
+
+  setHeatmapData(transformed);
+}, [
+  heatmapRawData,
+  activityTab,
+  selectedCourseForHeatmap,
+]);
 
   return (
     <div className="space-y-6">
@@ -693,6 +728,17 @@ export default function Dashbord() {
           >
             Practice Test
           </button>
+
+          <button
+  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+    activityTab === "overall"
+      ? "bg-white text-orange-600 shadow-sm"
+      : "text-gray-500 hover:text-gray-700"
+  }`}
+  onClick={() => setActivityTab("overall")}
+>
+  Overall Performance
+</button>
         </div>
 
         <div className="w-full md:w-64">

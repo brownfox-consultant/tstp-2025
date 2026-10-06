@@ -256,16 +256,36 @@ useEffect(() => {
   }, [practiceData]);
 
   const heatmapData = useMemo(() => {
-    if (!dateWiseData || dateWiseData.length === 0) return [];
-    return dateWiseData.map((item) => {
-      const d = new Date(item.date);
-      return {
-        dayLabel: d.getDate().toString(),
-        monthIndex: d.getMonth(),
-        seconds: item.seconds,
-      };
-    });
-  }, [dateWiseData]);
+  if (!dateWiseData || dateWiseData.length === 0) {
+    return [];
+  }
+
+  return dateWiseData.map((item) => {
+    return {
+      date: item.date,
+
+      // Individual tests for tooltip
+      tests: Array.isArray(item.tests) ? item.tests : [],
+
+      // Number of tests
+      testCount: Number(
+        item.test_count || item.tests?.length || 0
+      ),
+
+      // Total time
+      total_time_seconds: Number(
+        item.total_time_seconds || 0
+      ),
+
+      total_time_minutes: Number(
+        item.total_time_minutes || 0
+      ),
+
+      total_time_label:
+        item.total_time_label || "0 min",
+    };
+  });
+}, [dateWiseData]);
 
   const accuracy = useMemo(() => {
     return accuracyData.map((item) => ({

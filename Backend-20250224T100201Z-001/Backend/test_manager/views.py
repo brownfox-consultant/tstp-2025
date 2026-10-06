@@ -10844,6 +10844,7 @@ class ResultViewSet(viewsets.ModelViewSet):
 
         return Response(response)
 
+    
     @action(
     detail=False,
     methods=['GET'],
@@ -10855,6 +10856,10 @@ class ResultViewSet(viewsets.ModelViewSet):
         student_id = request.GET.get("student_id")
         course_id = request.GET.get("course_id")
         test_type = request.GET.get("test_type", "all")
+
+        # =========================================================
+        # VALIDATION
+        # =========================================================
 
         if not student_id or not course_id:
             return Response(
@@ -10893,10 +10898,14 @@ class ResultViewSet(viewsets.ModelViewSet):
             )
 
         # =========================================================
-        # FULL LENGTH DATE MAP
+        # DATE MAP
         # =========================================================
 
-        full_date_map = {}
+        date_map = {}
+
+        # =========================================================
+        # FULL LENGTH TESTS
+        # =========================================================
 
         if test_type in [
             "fullLength",
@@ -10904,40 +10913,349 @@ class ResultViewSet(viewsets.ModelViewSet):
             "all"
         ]:
 
-            full_qas = (
-                QuestionAnswer.objects
+            full_submissions = (
+                TestSubmission.objects
                 .filter(
-                    result__test_submission__student=student,
-                    course_subject__course=course
+                    student=student,
+                    test__course=course,
+                    result__isnull=False
                 )
-                .values(
-                    "result__test_submission__assigned_date__date",
-                    "time_taken"
+                .select_related(
+                    "test",
+                    "test__course",
+                    "result"
+                )
+                .order_by(
+                    "assigned_date"
                 )
             )
 
-            for item in full_qas:
+            for submission in full_submissions:
 
-                dt = (
-                    item[
-                        "result__test_submission__assigned_date__date"
-                    ]
+                if not submission.assigned_date:
+                    continue
+
+                date_key = (
+                    submission.assigned_date
+                    .date()
+                    .strftime("%Y-%m-%d")
                 )
 
-                seconds = (
-                    item["time_taken"] or 0
+                # ---------------------------------------------
+                # CREATE DATE ENTRY
+                # ---------------------------------------------
+
+                if date_key not in date_map:
+                    date_map[date_key] = {
+                        "date": date_key,
+                        "tests": []
+                    }
+
+                result = getattr(
+                    submission,
+                    "result",
+                    None
                 )
 
-                full_date_map[dt] = (
-                    full_date_map.get(dt, 0)
-                    + seconds
+                # ---------------------------------------------
+                # INITIAL VALUES
+                # ---------------------------------------------
+
+                total_score = 0
+                english_score = 0
+                math_score = 0
+
+                # =================================================
+                # TIME TAKEN
+                # =================================================
+
+                full_time_seconds = 0
+
+                if result:
+
+                    # Sum all QuestionAnswer time_taken
+                    # for this complete test result.
+                    question_answers = (
+                        QuestionAnswer.objects
+                        .filter(
+                            result=result
+                        )
+                        .values_list(
+                            "time_taken",
+                            flat=True
+                        )
+                    )
+
+                    for time_taken in question_answers:
+
+                        if time_taken is None:
+                            continue
+
+                        try:
+                            full_time_seconds += int(time_taken)
+                        except (
+                            TypeError,
+                            ValueError
+                        ):
+                            pass
+
+                # =================================================
+                # TOTAL SCORE
+                # =================================================
+
+                if result:
+
+                    sections = (
+                        Section.objects
+                        .filter(
+                            test=submission.test
+                        )
+                        .select_related(
+                            "course_subject",
+                            "course_subject__subject"
+                        )
+                    )
+
+                    subject_map = {}
+
+                    for section in sections:
+
+                        subject_name = (
+                            section
+                            .course_subject
+                            .subject
+                            .name
+                        )
+
+                        subject_map.setdefault(
+                            subject_name,
+                            []
+                        ).append(section)
+
+                    # ---------------------------------------------
+                    # SUBJECT SCORE
+                    # ---------------------------------------------
+
+                    for (
+                        subject_name,
+                        subject_sections
+                    ) in subject_map.items():
+
+                        section1_correct = 0
+                        section2_correct = 0
+
+                        for section in subject_sections:
+
+                            for sub_section in (
+                                section.sub_sections or []
+                            ):
+
+                                section_id = sub_section.get(
+                                    "id"
+                                )
+
+                                if not section_id:
+                                    continue
+
+                                correct_count = (
+                                    QuestionAnswer.objects
+                                    .filter(
+                                        result=result,
+                                        course_subject=(
+                                            section.course_subject
+                                        ),
+                                        section_id=section_id,
+                                        is_correct=True
+                                    )
+                                    .count()
+                                )
+
+                                # Same section split
+                                # used by existing score logic.
+                                if str(section_id) == "1":
+
+                                    section1_correct += (
+                                        correct_count
+                                    )
+
+                                else:
+
+                                    section2_correct += (
+                                        correct_count
+                                    )
+
+                        score_record = (
+                            CombinedScore.objects
+                            .filter(
+                                subject_name__iexact=subject_name,
+                                section1_correct=(
+                                    section1_correct
+                                ),
+                                section2_correct=(
+                                    section2_correct
+                                )
+                            )
+                            .first()
+                        )
+
+                        subject_score = (
+                            score_record.total_score
+                            if score_record
+                            else 0
+                        )
+
+                        total_score += subject_score
+
+                        # -----------------------------------------
+                        # ENGLISH
+                        # -----------------------------------------
+
+                        if (
+                            subject_name
+                            and subject_name.lower()
+                            == "english"
+                        ):
+
+                            english_score = (
+                                subject_score
+                            )
+
+                        # -----------------------------------------
+                        # MATH
+                        # -----------------------------------------
+
+                        elif (
+                            subject_name
+                            and subject_name.lower()
+                            == "math"
+                        ):
+
+                            math_score = (
+                                subject_score
+                            )
+
+                # ---------------------------------------------
+                # TEST NAME
+                # ---------------------------------------------
+
+                test_name = (
+                    submission.test.name
+                    if submission.test
+                    else f"Full Length Test - {submission.id}"
+                )
+
+                # ---------------------------------------------
+                # TIME MINUTES
+                # ---------------------------------------------
+
+                full_time_minutes = round(
+                    full_time_seconds / 60,
+                    1
+                )
+
+                # ---------------------------------------------
+                # TIME LABEL
+                # ---------------------------------------------
+
+                if full_time_seconds <= 0:
+
+                    full_time_label = "0 min"
+
+                elif full_time_seconds < 60:
+
+                    full_time_label = (
+                        f"{full_time_seconds} sec"
+                    )
+
+                else:
+
+                    total_minutes = full_time_seconds // 60
+                    remaining_seconds = (
+                        full_time_seconds % 60
+                    )
+
+                    if remaining_seconds > 0:
+
+                        full_time_label = (
+                            f"{total_minutes} min "
+                            f"{remaining_seconds} sec"
+                        )
+
+                    else:
+
+                        full_time_label = (
+                            f"{total_minutes} min"
+                        )
+
+                # ---------------------------------------------
+                # APPEND TEST
+                # ---------------------------------------------
+
+                date_map[date_key]["tests"].append(
+                    {
+                        "id": submission.id,
+
+                        "test_submission_id": (
+                            submission.id
+                        ),
+
+                        "type": "fullLength",
+
+                        "test_name": test_name,
+
+                        "total_score": total_score,
+
+                        "total_marks": 1600,
+
+                        "english_score": english_score,
+
+                        "math_score": math_score,
+
+                        "percentage": (
+                            round(
+                                (
+                                    total_score / 1600
+                                ) * 100
+                            )
+                            if total_score
+                            else 0
+                        ),
+
+                        # ==============================
+                        # TIME
+                        # ==============================
+
+                        "time_seconds": (
+                            full_time_seconds
+                        ),
+
+                        "time_minutes": (
+                            full_time_minutes
+                        ),
+
+                        "time_label": (
+                            full_time_label
+                        ),
+
+                        "assigned_date": (
+                            submission.assigned_date
+                            .isoformat()
+                            if submission.assigned_date
+                            else None
+                        ),
+
+                        "completion_date": (
+                            submission.completion_date
+                            .isoformat()
+                            if submission.completion_date
+                            else None
+                        ),
+                    }
                 )
 
         # =========================================================
-        # PRACTICE DATE MAP
+        # PRACTICE TESTS
         # =========================================================
-
-        practice_date_map = {}
 
         if test_type in [
             "practiceTest",
@@ -10945,179 +11263,358 @@ class ResultViewSet(viewsets.ModelViewSet):
             "all"
         ]:
 
-            practice_qas = (
-                PracticeQuestionAnswer.objects
+            practice_tests = (
+                PracticeTest.objects
                 .filter(
-                    practice_test_result__practice_test__student=student,
-                    practice_test_result__practice_test__course_subject__course=course
+                    student=student,
+                    course_subject__course=course,
+                    result__isnull=False
                 )
-                .values(
-                    "practice_test_result__created_at__date",
-                    "time_taken"
+                .select_related(
+                    "result",
+                    "course_subject",
+                    "course_subject__course",
+                    "course_subject__subject"
+                )
+                .order_by(
+                    "created_at"
                 )
             )
 
-            for item in practice_qas:
+            for practice_test in practice_tests:
 
-                dt = (
-                    item[
-                        "practice_test_result__created_at__date"
-                    ]
+                if not practice_test.created_at:
+                    continue
+
+                date_key = (
+                    practice_test.created_at
+                    .date()
+                    .strftime("%Y-%m-%d")
                 )
 
-                seconds = (
-                    item["time_taken"] or 0
+                # ---------------------------------------------
+                # CREATE DATE ENTRY
+                # ---------------------------------------------
+
+                if date_key not in date_map:
+                    date_map[date_key] = {
+                        "date": date_key,
+                        "tests": []
+                    }
+
+                result = (
+                    practice_test.result
                 )
 
-                practice_date_map[dt] = (
-                    practice_date_map.get(dt, 0)
-                    + seconds
+                # ---------------------------------------------
+                # SCORE
+                # ---------------------------------------------
+
+                correct_count = (
+                    result.correct_answer_count
+                    if result
+                    else 0
+                )
+
+                # ---------------------------------------------
+                # TOTAL QUESTIONS
+                # ---------------------------------------------
+
+                total_questions = (
+                    PracticeQuestionAnswer.objects
+                    .filter(
+                        practice_test_result=result
+                    )
+                    .count()
+                )
+
+                # ---------------------------------------------
+                # FALLBACK
+                # ---------------------------------------------
+
+                if total_questions <= 0:
+
+                    total_questions = (
+                        correct_count
+                        +
+                        (
+                            result.incorrect_answer_count
+                            if result
+                            else 0
+                        )
+                    )
+
+                # ---------------------------------------------
+                # PERCENTAGE
+                # ---------------------------------------------
+
+                percentage = 0
+
+                if total_questions > 0:
+
+                    percentage = round(
+                        (
+                            correct_count
+                            /
+                            total_questions
+                        ) * 100
+                    )
+
+                # =================================================
+                # TIME TAKEN
+                # =================================================
+
+                practice_time_seconds = 0
+
+                if result:
+
+                    practice_times = (
+                        PracticeQuestionAnswer.objects
+                        .filter(
+                            practice_test_result=result
+                        )
+                        .values_list(
+                            "time_taken",
+                            flat=True
+                        )
+                    )
+
+                    for time_taken in practice_times:
+
+                        if time_taken is None:
+                            continue
+
+                        try:
+                            practice_time_seconds += int(
+                                time_taken
+                            )
+                        except (
+                            TypeError,
+                            ValueError
+                        ):
+                            pass
+
+                # ---------------------------------------------
+                # TIME MINUTES
+                # ---------------------------------------------
+
+                practice_time_minutes = round(
+                    practice_time_seconds / 60,
+                    1
+                )
+
+                # ---------------------------------------------
+                # TIME LABEL
+                # ---------------------------------------------
+
+                if practice_time_seconds <= 0:
+
+                    practice_time_label = "0 min"
+
+                elif practice_time_seconds < 60:
+
+                    practice_time_label = (
+                        f"{practice_time_seconds} sec"
+                    )
+
+                else:
+
+                    total_minutes = (
+                        practice_time_seconds // 60
+                    )
+
+                    remaining_seconds = (
+                        practice_time_seconds % 60
+                    )
+
+                    if remaining_seconds > 0:
+
+                        practice_time_label = (
+                            f"{total_minutes} min "
+                            f"{remaining_seconds} sec"
+                        )
+
+                    else:
+
+                        practice_time_label = (
+                            f"{total_minutes} min"
+                        )
+
+                # ---------------------------------------------
+                # TEST NAME
+                # ---------------------------------------------
+
+                test_name = (
+                    f"Practice Test - {practice_test.id}"
+                )
+
+                # ---------------------------------------------
+                # APPEND TEST
+                # ---------------------------------------------
+
+                date_map[date_key]["tests"].append(
+                    {
+                        "id": practice_test.id,
+
+                        "practice_test_id": (
+                            practice_test.id
+                        ),
+
+                        "type": "practice",
+
+                        "test_name": test_name,
+
+                        "score": correct_count,
+
+                        "total_questions": (
+                            total_questions
+                        ),
+
+                        "percentage": percentage,
+
+                        # ==============================
+                        # TIME
+                        # ==============================
+
+                        "time_seconds": (
+                            practice_time_seconds
+                        ),
+
+                        "time_minutes": (
+                            practice_time_minutes
+                        ),
+
+                        "time_label": (
+                            practice_time_label
+                        ),
+
+                        "created_at": (
+                            practice_test.created_at
+                            .isoformat()
+                            if practice_test.created_at
+                            else None
+                        ),
+                    }
                 )
 
         # =========================================================
-        # FULL LENGTH ONLY
+        # SORT TESTS
         # =========================================================
-
-        if test_type == "fullLength":
-
-            response = []
-
-            for dt, total_seconds in sorted(
-                full_date_map.items()
-            ):
-
-                response.append({
-                    "date": (
-                        dt.strftime("%Y-%m-%d")
-                        if isinstance(dt, datetime)
-                        else str(dt)
-                    ),
-
-                    "seconds": total_seconds,
-
-                    "test_type_used": test_type
-                })
-
-            return Response(response)
-
-        # =========================================================
-        # PRACTICE ONLY
-        # =========================================================
-
-        if test_type == "practiceTest":
-
-            response = []
-
-            for dt, total_seconds in sorted(
-                practice_date_map.items()
-            ):
-
-                response.append({
-                    "date": (
-                        dt.strftime("%Y-%m-%d")
-                        if isinstance(dt, datetime)
-                        else str(dt)
-                    ),
-
-                    "seconds": total_seconds,
-
-                    "test_type_used": test_type
-                })
-
-            return Response(response)
-
-        # =========================================================
-        # OVERALL
-        #
-        # Overall = (FULL LENGTH + PRACTICE) / 2
-        # =========================================================
-
-        if test_type == "overall":
-
-            all_dates = (
-                set(full_date_map.keys()) |
-                set(practice_date_map.keys())
-            )
-
-            response = []
-
-            for dt in sorted(all_dates):
-
-                full_seconds = (
-                    full_date_map.get(dt, 0)
-                )
-
-                practice_seconds = (
-                    practice_date_map.get(dt, 0)
-                )
-
-                overall_seconds = round(
-                    (
-                        full_seconds +
-                        practice_seconds
-                    ) / 2,
-                    2
-                )
-
-                response.append({
-
-                    "date": (
-                        dt.strftime("%Y-%m-%d")
-                        if isinstance(dt, datetime)
-                        else str(dt)
-                    ),
-
-                    "seconds": overall_seconds,
-
-                    "test_type_used": "overall",
-
-                    "full_length_seconds": full_seconds,
-
-                    "practice_test_seconds": practice_seconds,
-
-                })
-
-            return Response(response)
-
-        # =========================================================
-        # OLD ALL BEHAVIOUR
-        # =========================================================
-
-        date_map = {}
-
-        all_dates = (
-            set(full_date_map.keys()) |
-            set(practice_date_map.keys())
-        )
-
-        for dt in all_dates:
-
-            date_map[dt] = (
-                full_date_map.get(dt, 0) +
-                practice_date_map.get(dt, 0)
-            )
 
         response = []
 
-        for dt, total_seconds in sorted(
-            date_map.items()
+        for date_key in sorted(
+            date_map.keys()
         ):
 
-            response.append({
+            day_data = date_map[
+                date_key
+            ]
 
-                "date": (
-                    dt.strftime("%Y-%m-%d")
-                    if isinstance(dt, datetime)
-                    else str(dt)
-                ),
+            tests = day_data.get(
+                "tests",
+                []
+            )
 
-                "seconds": total_seconds,
+            # Full Length first,
+            # Practice second.
+            tests = sorted(
+                tests,
+                key=lambda x: (
+                    0
+                    if x.get("type") == "fullLength"
+                    else 1,
+                    x.get("test_name", "")
+                )
+            )
 
-                "test_type_used": test_type
+            # =====================================================
+            # DAILY TOTAL TIME
+            # =====================================================
 
-            })
+            total_time_seconds = sum(
+                int(
+                    test.get(
+                        "time_seconds",
+                        0
+                    ) or 0
+                )
+                for test in tests
+            )
+
+            total_time_minutes = round(
+                total_time_seconds / 60,
+                1
+            )
+
+            # ---------------------------------------------
+            # DAILY TIME LABEL
+            # ---------------------------------------------
+
+            if total_time_seconds <= 0:
+
+                total_time_label = "0 min"
+
+            elif total_time_seconds < 60:
+
+                total_time_label = (
+                    f"{total_time_seconds} sec"
+                )
+
+            else:
+
+                total_minutes = (
+                    total_time_seconds // 60
+                )
+
+                remaining_seconds = (
+                    total_time_seconds % 60
+                )
+
+                if remaining_seconds > 0:
+
+                    total_time_label = (
+                        f"{total_minutes} min "
+                        f"{remaining_seconds} sec"
+                    )
+
+                else:
+
+                    total_time_label = (
+                        f"{total_minutes} min"
+                    )
+
+            # =====================================================
+            # RESPONSE
+            # =====================================================
+
+            response.append(
+                {
+                    "date": date_key,
+
+                    "test_count": len(tests),
+
+                    "tests": tests,
+
+                    # Daily total
+                    "total_time_seconds": (
+                        total_time_seconds
+                    ),
+
+                    "total_time_minutes": (
+                        total_time_minutes
+                    ),
+
+                    "total_time_label": (
+                        total_time_label
+                    ),
+
+                    "test_type_used": test_type,
+                }
+            )
 
         return Response(response)
+
     @action(
     detail=False,
     methods=['GET'],
