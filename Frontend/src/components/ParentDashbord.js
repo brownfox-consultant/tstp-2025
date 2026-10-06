@@ -598,34 +598,65 @@ useEffect(() => {
 
   const dateMap = {};
 
-  data.forEach((item) => {
-    if (!item?.date) return;
+data.forEach((item) => {
+  if (!item?.date) return;
 
-    const dateKey = String(item.date).substring(0, 10);
+  const dateKey = String(item.date).substring(0, 10);
 
-    if (!dateMap[dateKey]) {
-      dateMap[dateKey] = {
-        date: dateKey,
-        tests: [],
-      };
-    }
+  if (!dateMap[dateKey]) {
+    dateMap[dateKey] = {
+      date: dateKey,
+      tests: [],
+      total_time_seconds: 0,
+    };
+  }
 
-    // Add all tests from this date
-    if (Array.isArray(item.tests)) {
-      dateMap[dateKey].tests.push(...item.tests);
-    }
-  });
+  // Add all tests from this date
+  if (Array.isArray(item.tests)) {
+    dateMap[dateKey].tests.push(...item.tests);
+  }
 
-  // Convert to Heatmap format
-  const transformed = Object.values(dateMap).map((item) => ({
+  // Add total time for this date
+  dateMap[dateKey].total_time_seconds += Number(
+    item.total_time_seconds || 0
+  );
+});
+
+// Convert to Heatmap format
+const transformed = Object.values(dateMap).map((item) => {
+  const totalTimeSeconds = Number(
+    item.total_time_seconds || 0
+  );
+
+  return {
     date: item.date,
+
+    // Individual tests for tooltip
     tests: item.tests,
+
+    // Number of tests
     testCount: item.tests.length,
-  }));
 
-  console.log("HEATMAP PROCESSED DATA:", transformed);
+    // Total time for this date
+    total_time_seconds: totalTimeSeconds,
 
-  setHeatmapData(transformed);
+    total_time_minutes:
+      Math.round((totalTimeSeconds / 60) * 10) / 10,
+
+    total_time_label:
+      totalTimeSeconds > 0
+        ? `${Math.floor(totalTimeSeconds / 60)} min${
+            totalTimeSeconds % 60 > 0
+              ? ` ${totalTimeSeconds % 60} sec`
+              : ""
+          }`
+        : "0 min",
+  };
+});
+
+console.log("HEATMAP PROCESSED DATA:", transformed);
+
+setHeatmapData(transformed);
 }, [
   heatmapRawData,
   activityTab,
