@@ -53,10 +53,16 @@ const [detailedLoading, setDetailedLoading] = useState(true);
 
 const [modalQuestions, setModalQuestions] = useState([]);
 const [modalLoading, setModalLoading] = useState(false);
+
+
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState(null);
+
+  // Question navigation inside Detailed Topic Analysis popup
+// Topic navigation inside Detailed Topic Analysis popup
+const [selectedTopicIndex, setSelectedTopicIndex] = useState(0);
 
   const [focusTopics, setFocusTopics] = useState([]);
 const [quickWins, setQuickWins] = useState([]);
@@ -216,9 +222,9 @@ const fetchDetailedTopics = async () => {
   setDetailedLoading(false);
 };
 
-
-const openTopicModal = async (record) => {
+const openTopicModal = async (record, index = 0) => {
   setSelectedTopic(record);
+  setSelectedTopicIndex(index);
   setIsModalOpen(true);
   setModalLoading(true);
 
@@ -227,10 +233,10 @@ const openTopicModal = async (record) => {
       `${BASE_URL}/api/test/topic-question-analysis/`,
       {
         params: {
-  student_id: studentId,
-  topic: record.topic,
-  sub_topic: record.sub_topic,
-},
+          student_id: studentId,
+          topic: record.topic,
+          sub_topic: record.sub_topic || record.subTopic,
+        },
         withCredentials: true,
       }
     );
@@ -238,9 +244,88 @@ const openTopicModal = async (record) => {
     setModalQuestions(res.data || []);
   } catch (err) {
     console.error("Modal API Error:", err);
+    setModalQuestions([]);
   }
 
   setModalLoading(false);
+};
+const handlePreviousTopic = async () => {
+  if (selectedTopicIndex <= 0) return;
+
+  const newIndex = selectedTopicIndex - 1;
+  const record = filteredTopics[newIndex];
+
+  if (!record) return;
+
+  setSelectedTopicIndex(newIndex);
+  setSelectedTopic(record);
+  setModalLoading(true);
+
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/api/test/topic-question-analysis/`,
+      {
+        params: {
+          student_id: studentId,
+          topic: record.topic,
+          sub_topic: record.sub_topic || record.subTopic,
+        },
+        withCredentials: true,
+      }
+    );
+
+    setModalQuestions(res.data || []);
+  } catch (err) {
+    console.error("Previous Topic API Error:", err);
+    setModalQuestions([]);
+  }
+
+  setModalLoading(false);
+};
+
+const handleNextTopic = async () => {
+  if (selectedTopicIndex >= filteredTopics.length - 1) return;
+
+  const newIndex = selectedTopicIndex + 1;
+  const record = filteredTopics[newIndex];
+
+  if (!record) return;
+
+  setSelectedTopicIndex(newIndex);
+  setSelectedTopic(record);
+  setModalLoading(true);
+
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/api/test/topic-question-analysis/`,
+      {
+        params: {
+          student_id: studentId,
+          topic: record.topic,
+          sub_topic: record.sub_topic || record.subTopic,
+        },
+        withCredentials: true,
+      }
+    );
+
+    setModalQuestions(res.data || []);
+  } catch (err) {
+    console.error("Next Topic API Error:", err);
+    setModalQuestions([]);
+  }
+
+  setModalLoading(false);
+};
+
+
+const handlePreviousQuestion = () => {
+  setSelectedQuestionIndex((prev) => Math.max(prev - 1, 0));
+};
+
+const handleNextQuestion = () => {
+  setSelectedQuestionIndex((prev) =>
+    Math.min(prev + 1, modalQuestions.length - 1)
+  );
 };
 
   // Table columns
@@ -911,10 +996,10 @@ const openTopicModal = async (record) => {
   loading={detailedLoading}
   columns={columns}
   rowKey="id"
-  onRow={(record) => ({
-    onClick: () => openTopicModal(record),
-    style: { cursor: "pointer" },
-  })}
+  onRow={(record, index) => ({
+  onClick: () => openTopicModal(record, index),
+  style: { cursor: "pointer" },
+})}
   pagination={{
     defaultPageSize: 10,
     pageSizeOptions: ["10", "20", "50"],
@@ -1051,6 +1136,36 @@ const openTopicModal = async (record) => {
                 View Detailed Solutions
               </Button>
             </div> */}
+
+            {/* Topic Navigation */}
+<div className="flex items-center justify-between pt-4 border-t">
+
+  <Button
+    size="large"
+    onClick={handlePreviousTopic}
+    disabled={selectedTopicIndex === 0}
+  >
+    ← Back
+  </Button>
+
+  <div className="text-sm font-semibold text-gray-500">
+    {selectedTopicIndex + 1} / {filteredTopics.length}
+  </div>
+
+  <Button
+    type="primary"
+    size="large"
+    onClick={handleNextTopic}
+    disabled={
+      selectedTopicIndex === filteredTopics.length - 1
+    }
+  >
+    Next →
+  </Button>
+
+</div>
+
+            
           </div>
         )}
       </Modal>
