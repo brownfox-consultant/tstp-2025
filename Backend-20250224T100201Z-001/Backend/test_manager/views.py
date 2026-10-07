@@ -10932,11 +10932,11 @@ class ResultViewSet(viewsets.ModelViewSet):
 
             for submission in full_submissions:
 
-                if not submission.assigned_date:
+                if not submission.completion_date:
                     continue
 
                 date_key = (
-                    submission.assigned_date
+                    submission.completion_date
                     .date()
                     .strftime("%Y-%m-%d")
                 )
