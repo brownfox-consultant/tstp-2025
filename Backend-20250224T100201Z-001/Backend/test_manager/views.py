@@ -10926,7 +10926,7 @@ class ResultViewSet(viewsets.ModelViewSet):
                     "result"
                 )
                 .order_by(
-                    "completion_date"
+                    "assigned_date"
                 )
             )
 
