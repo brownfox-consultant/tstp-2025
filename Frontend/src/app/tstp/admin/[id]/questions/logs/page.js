@@ -33,6 +33,11 @@ export default function QuestionLogsPage() {
   const [logs, setLogs] = useState([]);
   const [dailyCount, setDailyCount] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+  current: 1,
+  pageSize: 50,
+  total: 0,
+});
   const [filters, setFilters] = useState({
     srno: "",
     name: "",
@@ -47,31 +52,53 @@ export default function QuestionLogsPage() {
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [currentSrno, setCurrentSrno] = useState(null);
   const handleBack = () => router.back();
-  const fetchLogs = async () => {
-    try {
-      setLoading(true);
-      const params = {};
-      if (filters.srno) params.srno = filters.srno;
-      if (filters.name) params.name = filters.name;
-      if (filters.dateRange.length === 2) {
-        params.start_date = filters.dateRange[0].format("YYYY-MM-DD");
-        params.end_date = filters.dateRange[1].format("YYYY-MM-DD");
-      }
+  const fetchLogs = async (page = 1, pageSize = 50) => {
+  try {
+    setLoading(true);
 
-      const response = await axios.get(
-        `${BASE_URL}/api/question/logs-and-daily-count/`,
-        { params, withCredentials: true }
-      );
+    const params = {
+      page,
+      page_size: pageSize,
+    };
 
-      const results = response.data.results || {};
-      setLogs(results.logs || []);
-      setDailyCount(results.daily_question_count || null);
-    } catch (error) {
-      console.error("Failed to fetch logs", error);
-    } finally {
-      setLoading(false);
+    if (filters.srno) {
+      params.srno = filters.srno;
     }
-  };
+
+    if (filters.name) {
+      params.name = filters.name;
+    }
+
+    if (filters.dateRange.length === 2) {
+      params.start_date = filters.dateRange[0].format("YYYY-MM-DD");
+      params.end_date = filters.dateRange[1].format("YYYY-MM-DD");
+    }
+
+    const response = await axios.get(
+      `${BASE_URL}/api/question/logs-and-daily-count/`,
+      {
+        params,
+        withCredentials: true,
+      }
+    );
+
+    const results = response.data.results || {};
+
+    setLogs(results.logs || []);
+    setDailyCount(results.daily_question_count || null);
+
+    setPagination({
+      current: page,
+      pageSize: pageSize,
+      total: response.data.count || 0,
+    });
+
+  } catch (error) {
+    console.error("Failed to fetch logs", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   useEffect(() => {
@@ -187,10 +214,15 @@ export default function QuestionLogsPage() {
           </Col>
           <Col>
             <Button
-              onClick={() => {
-                setFilters({ srno: "", name: "", dateRange: [] });
-                fetchLogs();
-              }}
+             onClick={() => {
+  setFilters({
+    srno: "",
+    name: "",
+    dateRange: [],
+  });
+
+  fetchLogs(1, pagination.pageSize);
+}}
             >
               Reset
             </Button>
@@ -249,19 +281,34 @@ export default function QuestionLogsPage() {
           <Spin />
         ) : (
           <Table
-            rowKey="id"
-            dataSource={logs}
-            columns={columns}
-            bordered
-            size="middle"
-            onRow={(record) => ({
-              onClick: () => {
-                setCurrentQuestionId(record.question_id);
-                setCurrentSrno(record.srno);
-                setShowModal(true);
-              },
-            })}
-          />
+  rowKey="id"
+  dataSource={logs}
+  columns={columns}
+  bordered
+  size="middle"
+  pagination={{
+    current: pagination.current,
+    pageSize: pagination.pageSize,
+    total: pagination.total,
+    showSizeChanger: true,
+    pageSizeOptions: ["20", "50", "100"],
+    showTotal: (total, range) =>
+      `${range[0]}-${range[1]} of ${total} logs`,
+  }}
+  onChange={(paginationInfo) => {
+    fetchLogs(
+      paginationInfo.current,
+      paginationInfo.pageSize
+    );
+  }}
+  onRow={(record) => ({
+    onClick: () => {
+      setCurrentQuestionId(record.question_id);
+      setCurrentSrno(record.srno);
+      setShowModal(true);
+    },
+  })}
+/>
         )}
       </Card>
 
