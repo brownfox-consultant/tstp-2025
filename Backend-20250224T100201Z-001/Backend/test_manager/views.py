@@ -6900,10 +6900,15 @@ class TestViewSet(viewsets.ModelViewSet):
                 status=400
             )
 
-        submissions = TestSubmission.objects.filter(
-            student_id=student_id,
-            status=TestSubmission.COMPLETED
-        ).select_related("test", "result")
+        submissions = (
+            TestSubmission.objects
+            .filter(
+                student_id=student_id,
+                status=TestSubmission.COMPLETED
+            )
+            .select_related("test", "result")
+            .order_by("-completion_date", "-assigned_date")
+        )
 
         data = []
         modal_counter = 1
@@ -6923,39 +6928,54 @@ class TestViewSet(viewsets.ModelViewSet):
                     section_id = sub_section.get("id")
                     section_key = f"{section.course_subject.id}_{section_id}"
 
-                    # Get question IDs in correct test order
+                    # Keep exact test question order
                     if section_key in submission.selected_question_ids:
                         question_ids = submission.selected_question_ids[section_key]
                     else:
                         question_ids = sub_section.get("questions", [])
 
-                    # Convert section id → A/B/C
-                    section_label = chr(64 + int(section_id)) if section_id else "A"
+                    section_label = (
+                        chr(64 + int(section_id))
+                        if section_id
+                        else "A"
+                    )
 
                     for index, qid in enumerate(question_ids):
 
-                        question = Question.objects.filter(
-                            id=qid
-                        ).select_related("topic", "sub_topic").first()
+                        question = (
+                            Question.objects
+                            .filter(id=qid)
+                            .select_related("topic", "sub_topic")
+                            .first()
+                        )
 
                         if not question or not question.topic:
                             continue
 
-                        # Filter by topic
+                        # Topic filter
                         if question.topic.name != topic_name:
                             continue
 
-                        # Filter by sub_topic (if provided)
+                        # Sub-topic filter
                         if sub_topic_name:
-                            if not question.sub_topic or question.sub_topic.name != sub_topic_name:
+                            if (
+                                not question.sub_topic
+                                or question.sub_topic.name != sub_topic_name
+                            ):
                                 continue
 
-                        qa = QuestionAnswer.objects.filter(
-                            result=result,
-                            question_id=qid
-                        ).first()
+                        qa = (
+                            QuestionAnswer.objects
+                            .filter(
+                                result=result,
+                                question_id=qid
+                            )
+                            .first()
+                        )
 
-                        # Determine status
+                        # -------------------------
+                        # STATUS
+                        # -------------------------
                         if not qa:
                             status = "Skipped"
                         elif qa.is_skipped:
@@ -6965,19 +6985,161 @@ class TestViewSet(viewsets.ModelViewSet):
                         else:
                             status = "Incorrect"
 
-                        real_sr_no = index + 1  # position inside test
+                        # -------------------------
+                        # QUESTION DATA
+                        # -------------------------
+
+                        # Try to safely get question fields
+                        question_data = {
+                            "id": question.id,
+
+                            # Actual question text
+                            "question": getattr(
+                                question,
+                                "question",
+                                getattr(question, "description", "")
+                            ),
+
+                            "description": getattr(
+                                question,
+                                "description",
+                                ""
+                            ),
+
+                            # Question type
+                            "question_type": getattr(
+                                question,
+                                "question_type",
+                                None
+                            ),
+
+                            # Options
+                            "options": getattr(
+                                question,
+                                "options",
+                                []
+                            ),
+
+                            # Explanation
+                            "explanation": getattr(
+                                question,
+                                "explanation",
+                                ""
+                            ),
+
+                            # Correct answer
+                            "correct_answer": getattr(
+                                question,
+                                "correct_answer",
+                                None
+                            ),
+
+                            # Difficulty
+                            "difficulty": getattr(
+                                question,
+                                "difficulty",
+                                None
+                            ),
+
+                            # Calculator
+                            "show_calculator": getattr(
+                                question,
+                                "show_calculator",
+                                False
+                            ),
+                        }
+
+                        # -------------------------
+                        # ANSWER DATA
+                        # -------------------------
+
+                        selected_options = []
+                        is_correct = False
+                        is_skipped = True
+                        is_marked_for_review = False
+                        time_taken = 0
+                        times_visited = 0
+
+                        if qa:
+                            selected_options = qa.selected_options or []
+                            is_correct = qa.is_correct
+                            is_skipped = qa.is_skipped
+                            is_marked_for_review = qa.is_marked_for_review
+                            time_taken = qa.time_taken or 0
+                            times_visited = qa.times_visited or 0
+
+                        # -------------------------
+                        # FINAL RESPONSE
+                        # -------------------------
 
                         data.append({
                             "id": qa.id if qa else None,
-                            "question_number": modal_counter,        # 1,2,3...
-                            "test_sr_no": real_sr_no,               # actual test position
-                            "section": section_label,               # A/B
-                            "question_text": f"{question.topic.name}"
-                                            f"{' - ' + question.sub_topic.name if question.sub_topic else ''}",
-                            "test_name": test.name,
+
+                            # Popup question number
+                            "question_number": modal_counter,
+
+                            # Actual position in test
+                            "test_sr_no": index + 1,
+
+                            "section": section_label,
+
+                            "course_subject_id": section.course_subject.id,
+
+                            "topic": question.topic.name,
+
+                            "sub_topic": (
+                                question.sub_topic.name
+                                if question.sub_topic
+                                else None
+                            ),
+
+                            # Complete question information
+                            "question_data": question_data,
+
+                            # Answer information
+                            "selected_options": selected_options,
+
+                            "is_correct": is_correct,
+
+                            "is_skipped": is_skipped,
+
+                            "is_marked_for_review": is_marked_for_review,
+
                             "status": status,
-                            "time_taken": qa.time_taken if qa else 0,
-                            "date": submission.assigned_date.strftime("%d %b %Y"),
+
+                            # Time/navigation information
+                            "time_taken": time_taken,
+
+                            "times_visited": times_visited,
+
+                            "first_time_taken": (
+                                qa.first_time_taken if qa else 0
+                            ),
+
+                            "second_time_taken": (
+                                qa.second_time_taken if qa else 0
+                            ),
+
+                            "third_time_taken": (
+                                qa.third_time_taken if qa else 0
+                            ),
+
+                            # Test information
+                            "test_submission_id": submission.id,
+
+                            "test_id": test.id,
+
+                            "test_name": test.name,
+
+                            "date": (
+                                submission.completion_date.strftime(
+                                    "%d %b %Y"
+                                )
+                                if submission.completion_date
+                                else submission.assigned_date.strftime(
+                                    "%d %b %Y"
+                                )
+                            ),
                         })
 
                         modal_counter += 1

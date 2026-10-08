@@ -53,12 +53,14 @@ const [detailedLoading, setDetailedLoading] = useState(true);
 
 const [modalQuestions, setModalQuestions] = useState([]);
 const [modalLoading, setModalLoading] = useState(false);
+const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
 
 
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState(null);
+const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
+const [selectedTopic, setSelectedTopic] = useState(null);
 
   // Question navigation inside Detailed Topic Analysis popup
 // Topic navigation inside Detailed Topic Analysis popup
@@ -225,6 +227,10 @@ const fetchDetailedTopics = async () => {
 const openTopicModal = async (record, index = 0) => {
   setSelectedTopic(record);
   setSelectedTopicIndex(index);
+
+  // IMPORTANT
+  setSelectedQuestionIndex(0);
+
   setIsModalOpen(true);
   setModalLoading(true);
 
@@ -242,6 +248,7 @@ const openTopicModal = async (record, index = 0) => {
     );
 
     setModalQuestions(res.data || []);
+    setSelectedQuestionIndex(0);
   } catch (err) {
     console.error("Modal API Error:", err);
     setModalQuestions([]);
@@ -259,6 +266,8 @@ const handlePreviousTopic = async () => {
 
   setSelectedTopicIndex(newIndex);
   setSelectedTopic(record);
+  // IMPORTANT
+setSelectedQuestionIndex(0);
   setModalLoading(true);
 
   try {
@@ -293,6 +302,8 @@ const handleNextTopic = async () => {
 
   setSelectedTopicIndex(newIndex);
   setSelectedTopic(record);
+  // IMPORTANT
+setSelectedQuestionIndex(0);
   setModalLoading(true);
 
   try {
@@ -325,6 +336,42 @@ const handlePreviousQuestion = () => {
 const handleNextQuestion = () => {
   setSelectedQuestionIndex((prev) =>
     Math.min(prev + 1, modalQuestions.length - 1)
+  );
+};
+
+const parseOption = (option) => {
+  if (!option) {
+    return {
+      is_correct: false,
+      description: "",
+    };
+  }
+
+  // Already an object
+  if (typeof option === "object") {
+    return option;
+  }
+
+  // JSON string
+  try {
+    return JSON.parse(option);
+  } catch (error) {
+    return {
+      is_correct: false,
+      description: option,
+    };
+  }
+};
+
+const renderHtml = (html) => {
+  if (!html) return null;
+
+  return (
+    <div
+      dangerouslySetInnerHTML={{
+        __html: html,
+      }}
+    />
   );
 };
 
@@ -996,9 +1043,13 @@ const handleNextQuestion = () => {
   loading={detailedLoading}
   columns={columns}
   rowKey="id"
-  onRow={(record, index) => ({
-  onClick: () => openTopicModal(record, index),
-  style: { cursor: "pointer" },
+ onRow={(record, index) => ({
+  onClick: () => {
+    openTopicModal(record, index);
+  },
+  style: {
+    cursor: "pointer",
+  },
 })}
   pagination={{
     defaultPageSize: 10,
@@ -1066,66 +1117,80 @@ const handleNextQuestion = () => {
             </Row>
 
             {/* Questions List */}
-            <div className="max-h-96 overflow-y-auto">
-              <Table
-                dataSource={modalQuestions}
-                loading={modalLoading}
-                rowKey="id"
-                pagination={false}
-                size="small"
-                columns={[
-  {
-    title: "Q#",
-    dataIndex: "question_number",
-    width: 60,
-  },
-  {
-  title: "Question",
-  render: (_, record) => (
-    <div>
-      <div className="font-medium">
-        Q{record.test_sr_no} (Section {record.section})
-      </div>
-      <div className="text-xs text-gray-500">
-        {record.question_text}
-      </div>
-    </div>
-  ),
-},
-  {
-    title: "Test",
-    dataIndex: "test_name",
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    render: (status) => {
-      const color =
-        status === "Correct"
-          ? "success"
-          : status === "Incorrect"
-          ? "error"
-          : "warning";
+            {/* Questions List */}
+<div className="max-h-96 overflow-y-auto">
+  <Table
+    dataSource={modalQuestions}
+    loading={modalLoading}
+    rowKey="id"
+    pagination={false}
+    size="small"
+    onRow={(record, index) => ({
+  onClick: () => {
+  setSelectedQuestionIndex(index);
 
-      return <Tag color={color}>{status}</Tag>;
-    },
+  // Keep Topic Analysis modal open
+  // Open Question Detail modal on top
+  setIsQuestionModalOpen(true);
+},
+  style: {
+    cursor: "pointer",
   },
-  {
-    title: "Time",
-    dataIndex: "time_taken",
-    render: (time) => (
-      <span className="text-red-600 font-semibold">
-        {time}s
-      </span>
-    ),
-  },
-  {
-    title: "Date",
-    dataIndex: "date",
-  },
-]}
-              />
+})}
+    columns={[
+      {
+        title: "Q#",
+        dataIndex: "question_number",
+        width: 60,
+      },
+      {
+        title: "Question",
+        render: (_, record) => (
+          <div>
+            <div className="font-medium">
+              Q{record.test_sr_no} (Section {record.section})
             </div>
+
+            <div className="text-xs text-gray-500">
+              {record.question_text}
+            </div>
+          </div>
+        ),
+      },
+      {
+        title: "Test",
+        dataIndex: "test_name",
+      },
+      {
+        title: "Status",
+        dataIndex: "status",
+        render: (status) => {
+          const color =
+            status === "Correct"
+              ? "success"
+              : status === "Incorrect"
+              ? "error"
+              : "warning";
+
+          return <Tag color={color}>{status}</Tag>;
+        },
+      },
+      {
+        title: "Time",
+        dataIndex: "time_taken",
+        render: (time) => (
+          <span className="text-red-600 font-semibold">
+            {time}s
+          </span>
+        ),
+      },
+      {
+        title: "Date",
+        dataIndex: "date",
+      },
+    ]}
+  />
+</div>
 
             {/* Action Buttons */}
             {/* <div className="flex gap-3 pt-4 border-t">
@@ -1169,6 +1234,361 @@ const handleNextQuestion = () => {
           </div>
         )}
       </Modal>
+      {/* Question Detail Modal */}
+<Modal
+  open={isQuestionModalOpen}
+  onCancel={() => {
+    setIsQuestionModalOpen(false);
+    setSelectedQuestionIndex(0);
+  }}
+  footer={null}
+  width={850}
+  centered
+  title={
+    modalQuestions[selectedQuestionIndex] ? (
+      <div className="flex items-center gap-3">
+        <BookOutlined className="text-blue-600" />
+
+        <div>
+          <div className="font-bold text-lg">
+            Question {selectedQuestionIndex + 1}
+          </div>
+
+          <div className="text-sm text-gray-500 font-normal">
+            {modalQuestions[selectedQuestionIndex].test_name}
+          </div>
+        </div>
+      </div>
+    ) : (
+      "Question"
+    )
+  }
+>
+  {modalQuestions[selectedQuestionIndex] && (
+    <div className="space-y-5">
+
+      {/* Question Information */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-xs text-gray-500">
+            Question
+          </div>
+
+          <div className="font-bold text-gray-800">
+            Q
+            {modalQuestions[selectedQuestionIndex].test_sr_no}
+          </div>
+        </div>
+
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-xs text-gray-500">
+            Section
+          </div>
+
+          <div className="font-bold text-gray-800">
+            {modalQuestions[selectedQuestionIndex].section}
+          </div>
+        </div>
+
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-xs text-gray-500">
+            Status
+          </div>
+
+          <Tag
+            color={
+              modalQuestions[selectedQuestionIndex].status === "Correct"
+                ? "success"
+                : modalQuestions[selectedQuestionIndex].status === "Incorrect"
+                ? "error"
+                : "warning"
+            }
+          >
+            {modalQuestions[selectedQuestionIndex].status}
+          </Tag>
+        </div>
+
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-xs text-gray-500">
+            Time
+          </div>
+
+          <div className="font-bold text-red-600">
+            {modalQuestions[selectedQuestionIndex].time_taken || 0}s
+          </div>
+        </div>
+
+      </div>
+
+
+      {/* Question */}
+      <div className="border rounded-xl p-5 bg-white">
+
+        <div className="text-sm text-gray-500 mb-2">
+          Question {selectedQuestionIndex + 1} of{" "}
+          {modalQuestions.length}
+        </div>
+
+        <div className="text-lg font-semibold text-gray-800 leading-7">
+  {renderHtml(
+    modalQuestions[selectedQuestionIndex].question_data?.description ||
+    modalQuestions[selectedQuestionIndex].question_data?.question ||
+    modalQuestions[selectedQuestionIndex].question_text ||
+    "Question data not available"
+  )}
+</div>
+
+      </div>
+
+
+   {/* Options */}
+{modalQuestions[selectedQuestionIndex].question_data?.options && (
+  <div className="space-y-3">
+
+    <div className="font-semibold text-gray-800">
+      Options
+    </div>
+
+    {Object.entries(
+      modalQuestions[selectedQuestionIndex].question_data.options
+    ).map(([key, rawOption], index) => {
+
+      const option = parseOption(rawOption);
+
+      const isCorrect = option.is_correct === true;
+
+      // Student selected answer from API
+      const selectedOptions =
+        modalQuestions[selectedQuestionIndex].selected_options || [];
+
+      // Make selected_options always an array
+      const normalizedSelectedOptions = Array.isArray(selectedOptions)
+        ? selectedOptions
+        : selectedOptions
+        ? [selectedOptions]
+        : [];
+
+      /*
+       * Check different possible formats:
+       * ["A"]
+       * ["B"]
+       * ["1"]
+       * ["option_id"]
+       * option object values
+       */
+     const isSelected = normalizedSelectedOptions.some((selected) => {
+  if (selected === null || selected === undefined) {
+    return false;
+  }
+
+  // Backend selected_options uses 1-based option number:
+  // 1 = first option
+  // 2 = second option
+  // 3 = third option
+  // 4 = fourth option
+
+  return String(selected).trim() === String(index + 1);
+});
+
+      return (
+        <div
+          key={key}
+          className={`border rounded-lg p-4 transition-all ${
+            isSelected && isCorrect
+              ? "border-green-500 bg-green-50"
+              : isSelected && !isCorrect
+              ? "border-red-500 bg-red-50"
+              : isCorrect
+              ? "border-green-400 bg-green-50"
+              : "border-gray-200 bg-white"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+
+            {/* Option Number */}
+            <div
+              className={`font-bold min-w-[25px] ${
+                isSelected
+                  ? isCorrect
+                    ? "text-green-700"
+                    : "text-red-700"
+                  : isCorrect
+                  ? "text-green-700"
+                  : "text-gray-700"
+              }`}
+            >
+              {index + 1}.
+            </div>
+
+            {/* Option Text */}
+            <div
+              className={`flex-1 ${
+                isSelected
+                  ? isCorrect
+                    ? "text-green-800 font-semibold"
+                    : "text-red-800 font-semibold"
+                  : isCorrect
+                  ? "text-green-800 font-semibold"
+                  : "text-gray-700"
+              }`}
+            >
+              {renderHtml(option.description)}
+            </div>
+
+            {/* Answer badges */}
+            <div className="flex flex-col items-end gap-1">
+
+              {/* User selected answer */}
+              {isSelected && (
+                <Tag color={isCorrect ? "success" : "error"}>
+                  {isCorrect
+                    ? "✓ Your Answer"
+                    : "✗ Your Answer"}
+                </Tag>
+              )}
+
+              
+
+            </div>
+
+          </div>
+        </div>
+      );
+    })}
+
+    {/* Answer Summary */}
+    <div className="mt-4 p-4 rounded-lg bg-gray-50 border">
+
+      <div className="text-sm font-semibold text-gray-700 mb-3">
+        Answer Summary
+      </div>
+
+      {modalQuestions[selectedQuestionIndex].is_skipped ||
+      modalQuestions[selectedQuestionIndex].status === "Skipped" ? (
+
+        <div className="text-orange-600 font-semibold">
+          ⚠ Not Answered
+        </div>
+
+      ) : (
+        <div className="space-y-2">
+
+          <div>
+            <span className="font-semibold text-gray-700">
+              Your Answer:
+            </span>{" "}
+
+            {(() => {
+  const selectedOptions =
+    modalQuestions[selectedQuestionIndex].selected_options || [];
+
+  const normalizedSelectedOptions = Array.isArray(selectedOptions)
+    ? selectedOptions
+    : [selectedOptions];
+
+  return normalizedSelectedOptions.length > 0
+    ? normalizedSelectedOptions
+        .map((selected) => `Option ${selected}`)
+        .join(", ")
+    : "Not Answered";
+})()}
+          </div>
+
+          <div>
+            <span className="font-semibold text-gray-700">
+              Status:
+            </span>{" "}
+
+            <Tag
+              color={
+                modalQuestions[selectedQuestionIndex].status === "Correct"
+                  ? "success"
+                  : modalQuestions[selectedQuestionIndex].status === "Incorrect"
+                  ? "error"
+                  : "warning"
+              }
+            >
+              {modalQuestions[selectedQuestionIndex].status}
+            </Tag>
+          </div>
+
+        </div>
+      )}
+
+    </div>
+
+  </div>
+)}
+
+
+      {/* Question Metadata */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+
+        <div className="p-3 bg-blue-50 rounded-lg">
+          <div className="text-xs text-gray-500">
+            Test
+          </div>
+
+          <div className="font-semibold">
+            {modalQuestions[selectedQuestionIndex].test_name}
+          </div>
+        </div>
+
+        <div className="p-3 bg-orange-50 rounded-lg">
+          <div className="text-xs text-gray-500">
+            Date
+          </div>
+
+          <div className="font-semibold">
+            {modalQuestions[selectedQuestionIndex].date}
+          </div>
+        </div>
+
+        <div className="p-3 bg-purple-50 rounded-lg">
+          <div className="text-xs text-gray-500">
+            Visits
+          </div>
+
+          <div className="font-semibold">
+            {modalQuestions[selectedQuestionIndex].times_visited || 0}
+          </div>
+        </div>
+
+      </div>
+
+
+      {/* Question Navigation */}
+      <div className="flex items-center justify-between pt-4 border-t">
+
+        <Button
+          size="large"
+          onClick={handlePreviousQuestion}
+          disabled={selectedQuestionIndex === 0}
+        >
+          ← Back
+        </Button>
+
+        <div className="text-sm font-semibold text-gray-500">
+          {selectedQuestionIndex + 1} / {modalQuestions.length}
+        </div>
+
+        <Button
+          type="primary"
+          size="large"
+          onClick={handleNextQuestion}
+          disabled={
+            selectedQuestionIndex === modalQuestions.length - 1
+          }
+        >
+          Next →
+        </Button>
+
+      </div>
+
+    </div>
+  )}
+</Modal>
     </div>
   );
 }
