@@ -1301,6 +1301,13 @@ const renderHtml = (html) => {
   footer={null}
   width={850}
   centered
+  styles={{
+    body: {
+      maxHeight: "calc(100vh - 150px)",
+      overflowY: "auto",
+      padding: "12px 16px",
+    },
+  }}
   title={
     modalQuestions[selectedQuestionIndex] ? (
       <div className="flex items-center gap-3">
@@ -1325,7 +1332,7 @@ const renderHtml = (html) => {
     <div className="space-y-5">
 
       {/* Question Information */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
 
         <div className="p-3 bg-gray-50 rounded-lg">
           <div className="text-xs text-gray-500">
@@ -1337,6 +1344,16 @@ const renderHtml = (html) => {
             {modalQuestions[selectedQuestionIndex].test_sr_no}
           </div>
         </div>
+
+        <div className="p-3 bg-blue-50 rounded-lg">
+  <div className="text-xs text-gray-500">
+    Subject
+  </div>
+
+  <div className="font-bold text-blue-700">
+    {modalQuestions[selectedQuestionIndex].subject || "-"}
+  </div>
+</div>
 
         <div className="p-3 bg-gray-50 rounded-lg">
           <div className="text-xs text-gray-500">

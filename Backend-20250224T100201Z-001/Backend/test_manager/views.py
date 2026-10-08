@@ -7085,6 +7085,12 @@ class TestViewSet(viewsets.ModelViewSet):
 
                             "course_subject_id": section.course_subject.id,
 
+                            "subject": (
+                                section.course_subject.subject.name
+                                if section.course_subject and section.course_subject.subject
+                                else ""
+                            ),
+
                             "topic": question.topic.name,
 
                             "sub_topic": (
