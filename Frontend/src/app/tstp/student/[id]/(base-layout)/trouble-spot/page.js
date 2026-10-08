@@ -366,7 +366,6 @@ const parseOption = (option) => {
 const getQuestionStatus = (question) => {
   if (!question) return "Skipped";
 
-  // Get selected answers
   const selectedOptions = Array.isArray(question.selected_options)
     ? question.selected_options
     : question.selected_options !== undefined &&
@@ -380,11 +379,8 @@ const getQuestionStatus = (question) => {
     return "Skipped";
   }
 
-  const rawOptions = question.question_data?.options || {};
+  const rawOptions = question.question_data?.options || [];
 
-  // Support both:
-  // 1. Array of options
-  // 2. Object of options
   const options = Array.isArray(rawOptions)
     ? rawOptions
     : Object.values(rawOptions);
@@ -393,30 +389,26 @@ const getQuestionStatus = (question) => {
     return question.status || "Skipped";
   }
 
-  /*
-    Backend selected_options:
-    1 = first option
-    2 = second option
-    3 = third option
-    4 = fourth option
-  */
+  // selected_options is ZERO-BASED:
+  // 0 = option 1
+  // 1 = option 2
+  // 2 = option 3
+  // 3 = option 4
 
   const isCorrect = selectedOptions.every((selected) => {
-    const selectedNumber = Number(selected);
+    const selectedIndex = Number(selected);
 
-    if (!selectedNumber || selectedNumber < 1) {
+    if (
+      Number.isNaN(selectedIndex) ||
+      selectedIndex < 0 ||
+      selectedIndex >= options.length
+    ) {
       return false;
     }
 
-    const selectedOption = options[selectedNumber - 1];
+    const selectedOption = parseOption(options[selectedIndex]);
 
-    if (!selectedOption) {
-      return false;
-    }
-
-    const option = parseOption(selectedOption);
-
-    return option.is_correct === true;
+    return selectedOption.is_correct === true;
   });
 
   return isCorrect ? "Correct" : "Incorrect";
@@ -1455,13 +1447,13 @@ const renderHtml = (html) => {
     return false;
   }
 
-  // Backend selected_options uses 1-based option number:
-  // 1 = first option
-  // 2 = second option
-  // 3 = third option
-  // 4 = fourth option
+  // Backend selected_options uses ZERO-BASED index:
+  // 0 = first option
+  // 1 = second option
+  // 2 = third option
+  // 3 = fourth option
 
-  return String(selected).trim() === String(index + 1);
+  return String(selected).trim() === String(index);
 });
 
       return (
@@ -1561,10 +1553,10 @@ const renderHtml = (html) => {
     : [selectedOptions];
 
   return normalizedSelectedOptions.length > 0
-    ? normalizedSelectedOptions
-        .map((selected) => `Option ${selected}`)
-        .join(", ")
-    : "Not Answered";
+  ? normalizedSelectedOptions
+      .map((selected) => `Option ${Number(selected) + 1}`)
+      .join(", ")
+  : "Not Answered";
 })()}
           </div>
 
