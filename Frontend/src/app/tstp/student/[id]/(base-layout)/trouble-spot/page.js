@@ -363,6 +363,65 @@ const parseOption = (option) => {
   }
 };
 
+const getQuestionStatus = (question) => {
+  if (!question) return "Skipped";
+
+  // Get selected answers
+  const selectedOptions = Array.isArray(question.selected_options)
+    ? question.selected_options
+    : question.selected_options !== undefined &&
+      question.selected_options !== null &&
+      question.selected_options !== ""
+    ? [question.selected_options]
+    : [];
+
+  // No answer
+  if (question.is_skipped || selectedOptions.length === 0) {
+    return "Skipped";
+  }
+
+  const rawOptions = question.question_data?.options || {};
+
+  // Support both:
+  // 1. Array of options
+  // 2. Object of options
+  const options = Array.isArray(rawOptions)
+    ? rawOptions
+    : Object.values(rawOptions);
+
+  if (options.length === 0) {
+    return question.status || "Skipped";
+  }
+
+  /*
+    Backend selected_options:
+    1 = first option
+    2 = second option
+    3 = third option
+    4 = fourth option
+  */
+
+  const isCorrect = selectedOptions.every((selected) => {
+    const selectedNumber = Number(selected);
+
+    if (!selectedNumber || selectedNumber < 1) {
+      return false;
+    }
+
+    const selectedOption = options[selectedNumber - 1];
+
+    if (!selectedOption) {
+      return false;
+    }
+
+    const option = parseOption(selectedOption);
+
+    return option.is_correct === true;
+  });
+
+  return isCorrect ? "Correct" : "Incorrect";
+};
+
 const renderHtml = (html) => {
   if (!html) return null;
 
@@ -1161,20 +1220,26 @@ const renderHtml = (html) => {
         title: "Test",
         dataIndex: "test_name",
       },
-      {
-        title: "Status",
-        dataIndex: "status",
-        render: (status) => {
-          const color =
-            status === "Correct"
-              ? "success"
-              : status === "Incorrect"
-              ? "error"
-              : "warning";
+     {
+  title: "Status",
+  key: "status",
+  render: (_, record) => {
+    const status = getQuestionStatus(record);
 
-          return <Tag color={color}>{status}</Tag>;
-        },
-      },
+    const color =
+      status === "Correct"
+        ? "success"
+        : status === "Incorrect"
+        ? "error"
+        : "warning";
+
+    return (
+      <Tag color={color}>
+        {status}
+      </Tag>
+    );
+  },
+},
       {
         title: "Time",
         dataIndex: "time_taken",
@@ -1296,17 +1361,25 @@ const renderHtml = (html) => {
             Status
           </div>
 
-          <Tag
-            color={
-              modalQuestions[selectedQuestionIndex].status === "Correct"
-                ? "success"
-                : modalQuestions[selectedQuestionIndex].status === "Incorrect"
-                ? "error"
-                : "warning"
-            }
-          >
-            {modalQuestions[selectedQuestionIndex].status}
-          </Tag>
+          {(() => {
+  const displayStatus = getQuestionStatus(
+    modalQuestions[selectedQuestionIndex]
+  );
+
+  return (
+    <Tag
+      color={
+        displayStatus === "Correct"
+          ? "success"
+          : displayStatus === "Incorrect"
+          ? "error"
+          : "warning"
+      }
+    >
+      {displayStatus}
+    </Tag>
+  );
+})()}
         </div>
 
         <div className="p-3 bg-gray-50 rounded-lg">
@@ -1500,17 +1573,25 @@ const renderHtml = (html) => {
               Status:
             </span>{" "}
 
-            <Tag
-              color={
-                modalQuestions[selectedQuestionIndex].status === "Correct"
-                  ? "success"
-                  : modalQuestions[selectedQuestionIndex].status === "Incorrect"
-                  ? "error"
-                  : "warning"
-              }
-            >
-              {modalQuestions[selectedQuestionIndex].status}
-            </Tag>
+            {(() => {
+  const displayStatus = getQuestionStatus(
+    modalQuestions[selectedQuestionIndex]
+  );
+
+  return (
+    <Tag
+      color={
+        displayStatus === "Correct"
+          ? "success"
+          : displayStatus === "Incorrect"
+          ? "error"
+          : "warning"
+      }
+    >
+      {displayStatus}
+    </Tag>
+  );
+})()}
           </div>
 
         </div>
