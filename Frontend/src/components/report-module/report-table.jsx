@@ -16,6 +16,9 @@ import RaiseDoubtModal from "../RaiseDoubtModal";
 import { usePathname } from "next/navigation";
 import GridInOptions from "../question-list/gridin-options";
 import "./ReportNew.css";
+import { CommentOutlined } from "@ant-design/icons";
+import {  Tooltip } from "antd";
+import Comment from "../Comment";
 
 const buildOptions = (data, field) =>
   [...new Set(data.map((q) => q[field]).filter(Boolean))].map((t) => ({
@@ -40,29 +43,49 @@ function ReportTable({ sectionData, testSubmissionId }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(null); // NEW
   const [modalData, setModalData] = useState({});
   const [selectedOptions, setSelectedOptions] = useState([]);
+  const [commentOpen, setCommentOpen] = useState(false);
 
   // Fetch details of the selected question
-  useEffect(() => {
-    let params = {};
 
-    if (sectionData.test_type === "FULL_LENGTH_TEST") {
-      params.test_submission_id = testSubmissionId;
-    } else {
-      params.practice_test_result_id = testSubmissionId;
-    }
 
-    console.log("params.test_submission_id", params.test_submission_id)
-    console.log("params.practice_test_result_id", params.practice_test_result_id)
-    if (currentQuestionId) {
-      getQuestionDetails(currentQuestionId, params).then((res) => {
-  setModalData({
-    ...res.data.detail,
-    doubt_created: res.data.doubt_created,
-    doubt: res.data.doubt,
-  });
-});
-    }
-  }, [currentQuestionId]);
+  
+const fetchQuestionDetails = async (questionId) => {
+  if (!questionId) return;
+
+  const params = {};
+
+  if (sectionData.test_type === "FULL_LENGTH_TEST") {
+    params.test_submission_id = testSubmissionId;
+  } else {
+    params.practice_test_result_id = testSubmissionId;
+  }
+
+  try {
+    const res = await getQuestionDetails(questionId, params);
+
+    setModalData({
+      ...res.data.detail,
+      doubt_created: Boolean(res.data.doubt_created),
+      doubt: res.data.doubt ?? null,
+      doubt_id:
+        res.data.doubt_id ??
+        res.data.doubt?.id ??
+        res.data.doubt?.pk ??
+        res.data.doubt?.doubt_id ??
+        res.data.detail?.doubt_id ??
+        null,
+    });
+  } catch (error) {
+    console.error("Failed to fetch question details:", error);
+  }
+};
+
+useEffect(() => {
+  fetchQuestionDetails(currentQuestionId);
+}, [currentQuestionId, testSubmissionId, sectionData.test_type]);
+
+
+  
 
   // Open modal & set index when question is clicked
   const handleQuestionClick = (record, index) => {
@@ -703,23 +726,52 @@ function ReportTable({ sectionData, testSubmissionId }) {
               ← Previous
             </button>
 
-            {role === "student" && (
-  <div className="flex items-center gap-3">
-    <RaiseDoubtModal
-      question={currentQuestionId}
-      section={section_id}
-      course_subject={course_subject_id}
-      test={test_id}
-      doubtCreated={modalData.doubt_created}
-    />
+            
 
+{role === "student" && (
+  <div className="flex items-center gap-3">
+    {/* Show Raise a doubt only if no doubt exists */}
+    {!modalData.doubt_created && (
+      
+<RaiseDoubtModal
+  question={currentQuestionId}
+  section={section_id}
+  course_subject={course_subject_id}
+  test={test_id}
+  onSuccess={() => fetchQuestionDetails(currentQuestionId)}
+/>
+
+    )}
+
+    {/* Show backend message after a doubt is raised */}
     {modalData.doubt_created && (
       <span className="text-red-600 text-sm font-medium">
-        {modalData.doubt}
+        {typeof modalData.doubt === "string" && modalData.doubt
+          ? modalData.doubt
+          : "You have already created a doubt about this question."}
       </span>
     )}
+
+    {/* Comment button */}
+    <Tooltip
+      title={
+        !modalData.doubt_created
+          ? "Raise a doubt first to enable comments"
+          : "Open doubt discussion"
+      }
+    >
+      <Button
+        icon={<CommentOutlined />}
+        disabled={!modalData.doubt_created || !modalData.doubt_id}
+        onClick={() => setCommentOpen(true)}
+      >
+        Comment
+      </Button>
+    </Tooltip>
   </div>
 )}
+
+
 
             <button
               disabled={
@@ -874,8 +926,31 @@ function ReportTable({ sectionData, testSubmissionId }) {
           </>
 
         )}
-      </Modal>
-    </>
+      
+</Modal>
+
+{role === "student" &&
+  modalData.doubt_created &&
+  modalData.doubt_id && (
+    <Comment
+      open={commentOpen}
+      setOpen={setCommentOpen}
+      doubtId={modalData.doubt_id}
+      data={
+        typeof modalData.doubt === "object"
+          ? modalData.doubt
+          : {
+              description:
+                typeof modalData.doubt === "string"
+                  ? modalData.doubt
+                  : "Doubt discussion",
+            }
+      }
+      role={role}
+    />
+  )}
+</>
+
   );
 }
 

@@ -1613,38 +1613,58 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user, updated_at=timezone.now())
 
-    @permission_classes([IsAdminOrContentDeveloperOrFaculty])
+    
+    @permission_classes([IsAdminOrContentDeveloperOrFacultyOrStudent])
     def retrieve(self, request, pk=None, *args, **kwargs):
         instance = Question.get_question_by_id(question_id=pk)
 
         serializer = QuestionListSerializer(
             instance=instance,
             context={
-                'request': request,
-                'test_submission_id': request.GET.get('test_submission_id'),
-                'practice_test_result_id': request.GET.get('practice_test_result_id'),
-            }
+                "request": request,
+                "test_submission_id": request.GET.get("test_submission_id"),
+                "practice_test_result_id": request.GET.get(
+                    "practice_test_result_id"
+                ),
+            },
         )
 
-        topics = Topic.objects.filter(course_subject_id=instance.course_subject)
+        topics = Topic.objects.filter(
+            course_subject_id=instance.course_subject
+        )
         topics_serializer = TopicSerializer(topics, many=True)
 
-        # Check if the logged-in student has already raised a doubt
-        doubt_exists = Doubt.objects.filter(
-            student=request.user,
-            question=instance
-        ).exists()
-        print(f"Doubt exists for student {request.user.id} and question {instance.id}: {doubt_exists}")
+        # Find the student's existing doubt for this question.
+        doubt = None
+
+        if request.user.is_authenticated:
+            doubt = (
+                Doubt.objects.filter(
+                    student=request.user,
+                    question=instance,
+                )
+                .order_by("-id")
+                .first()
+            )
 
         return Response({
             "detail": serializer.data,
             "topics": topics_serializer.data,
-            "doubt_created": doubt_exists,
+            "doubt_created": doubt is not None,
             "doubt": (
                 "You have already created a doubt about this question."
-                if doubt_exists else ""
-            )
+                if doubt else ""
+            ),
+            "doubt_id": doubt.id if doubt else None,
+            "doubt_details": (
+                {
+                    "id": doubt.id,
+                    "description": doubt.description,
+                }
+                if doubt else None
+            ),
         })
+    
 
 
     @permission_classes([IsAdminOrContentDeveloper])

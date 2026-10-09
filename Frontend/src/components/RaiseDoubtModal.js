@@ -1,59 +1,100 @@
+
 import { raiseDoubt } from "@/app/services/authService";
-import { QuestionCircleOutlined } from "@ant-design/icons";
 import { Button, Input, Modal, notification } from "antd";
 import React, { useState } from "react";
+
 const { TextArea } = Input;
 
-function RaiseDoubtModal({ test, question, section, course_subject }) {
+function RaiseDoubtModal({
+  test,
+  question,
+  section,
+  course_subject,
+  onSuccess,
+}) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
-  const handleSubmit = () => {
+
+  const handleSubmit = async () => {
+    if (!value.trim()) {
+      notification.warning({
+        message: "Please enter your doubt.",
+      });
+      return;
+    }
+
     setLoading(true);
-    let payload = {
+
+    const payload = {
       test,
       question,
-      description: value,
+      description: value.trim(),
       course_subject,
       section,
     };
-    raiseDoubt(payload)
-      .then((res) => {
-        setValue();
-        setOpen(false);
-        notification.success({
-          message: "Doubt submitted successfully!",
-        });
-      })
-      .catch((err) => console.log(err))
-      .finally(() => setLoading(false));
+
+    try {
+      await raiseDoubt(payload);
+
+      setValue("");
+      setOpen(false);
+
+      notification.success({
+        message: "Doubt submitted successfully!",
+      });
+
+      // Refresh question details in ReportTable.
+      if (typeof onSuccess === "function") {
+        await onSuccess();
+      }
+    } catch (err) {
+      console.error("Failed to submit doubt:", err);
+
+      notification.error({
+        message: "Failed to submit doubt",
+        description:
+          err?.response?.data?.detail ||
+          "Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <button
+      <Button
+        type="primary"
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);
         }}
-        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
+        style={{
+          backgroundColor: "#f97316",
+          borderColor: "#f97316",
+        }}
       >
         Raise a doubt
-      </button>
+      </Button>
+
       <Modal
         open={open}
         onCancel={() => setOpen(false)}
         title="Raise a doubt"
         okText="Submit"
         onOk={handleSubmit}
-        okButtonProps={{ loading: loading }}
+        confirmLoading={loading}
+        okButtonProps={{
+          disabled: !value.trim(),
+        }}
       >
         <TextArea
           rows={4}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="What is your doubt?"
-        ></TextArea>
+        />
       </Modal>
     </div>
   );
