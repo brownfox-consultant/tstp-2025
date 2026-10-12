@@ -121,16 +121,25 @@ def send_test_completion_email(test_submission_id):
 
         student = submission.student
 
+        # ============================================================
         # Current Test
+        # ============================================================
+
         serializer = RecentFullLengthResultSerializer(submission)
         current_data = serializer.data
 
-        completed_on = timezone.localtime(submission.completion_date)
-        current_percentage = current_data["percentage"]
+        completed_on = timezone.localtime(
+            submission.completion_date
+        )
 
-        # Fetch 4 tests:
-        # First 3 -> Display
-        # 4th -> Used only for comparison
+        current_total_score = float(current_data["total_score"])
+
+        # ============================================================
+        # Fetch Previous 4 Completed Tests
+        # First 3 -> Display in email
+        # 4th -> Used for comparison with the 3rd
+        # ============================================================
+
         all_previous_tests = list(
             TestSubmission.objects.filter(
                 student=student,
@@ -144,56 +153,69 @@ def send_test_completion_email(test_submission_id):
         display_tests = all_previous_tests[:3]
 
         # ============================================================
-        # Current Test Performance (Current vs Previous Test)
+        # Current Test Performance
+        # Current Total Score vs Latest Previous Total Score
         # ============================================================
 
         latest_change = None
         latest_improved = None
 
         if all_previous_tests:
-            previous_serializer = RecentFullLengthResultSerializer(all_previous_tests[0])
+            previous_serializer = RecentFullLengthResultSerializer(
+                all_previous_tests[0]
+            )
             previous_data = previous_serializer.data
 
+            previous_total_score = float(
+                previous_data["total_score"]
+            )
+
             diff = round(
-                current_percentage - previous_data["percentage"],
+                current_total_score - previous_total_score,
                 2
             )
 
             latest_change = abs(diff)
-            latest_improved = diff >= 0
+            latest_improved = diff > 0
 
         # ============================================================
-        # Previous Test Comparison
-        # n2 vs n1
-        # n1 vs n3
-        # n3 -> No Previous Test
+        # Previous 3 Test Comparison
+        # Each test is compared with the next older test.
         # ============================================================
 
         comparison_data = []
 
         for index, test in enumerate(display_tests):
 
-            serializer = RecentFullLengthResultSerializer(test)
-            result = serializer.data
+            test_serializer = RecentFullLengthResultSerializer(test)
+            result = test_serializer.data
 
             difference = None
             is_improved = None
 
-            # Compare with the next older test
             if index + 1 < len(all_previous_tests):
 
                 older_test = all_previous_tests[index + 1]
 
-                older_serializer = RecentFullLengthResultSerializer(older_test)
+                older_serializer = RecentFullLengthResultSerializer(
+                    older_test
+                )
                 older_result = older_serializer.data
 
+                current_previous_score = float(
+                    result["total_score"]
+                )
+                older_total_score = float(
+                    older_result["total_score"]
+                )
+
                 diff = round(
-                    result["percentage"] - older_result["percentage"],
+                    current_previous_score - older_total_score,
                     2
                 )
 
                 difference = abs(diff)
-                is_improved = diff >= 0
+                is_improved = diff > 0
 
             comparison_data.append({
                 "test_name": test.test.name,
@@ -204,7 +226,6 @@ def send_test_completion_email(test_submission_id):
                 "total_score": result["total_score"],
                 "math_score": result["math_score"],
                 "english_score": result["english_score"],
-                "percentage": result["percentage"],
 
                 "difference": difference,
                 "is_improved": is_improved,
@@ -218,7 +239,10 @@ def send_test_completion_email(test_submission_id):
             User.objects.filter(
                 role__name="admin",
                 is_active=True
-            ).values_list("email", flat=True)
+            )
+            .exclude(email__isnull=True)
+            .exclude(email="")
+            .values_list("email", flat=True)
         )
 
         # ============================================================
@@ -229,18 +253,24 @@ def send_test_completion_email(test_submission_id):
             "student_name": student.name,
             "student_email": student.email,
             "test_name": submission.test.name,
-            "completed_on": completed_on.strftime("%d-%m-%Y %I:%M %p"),
+
+            "completed_on": completed_on.strftime(
+                "%d-%m-%Y %I:%M %p"
+            ),
 
             "total_score": current_data["total_score"],
             "math_score": current_data["math_score"],
             "english_score": current_data["english_score"],
-            "percentage": current_data["percentage"],
 
             "latest_change": latest_change,
             "latest_improved": latest_improved,
 
             "comparison_data": comparison_data,
         }
+
+        # ============================================================
+        # Render Email Template
+        # ============================================================
 
         html_content = render_to_string(
             "emails/test_completion.html",
@@ -249,17 +279,31 @@ def send_test_completion_email(test_submission_id):
 
         text_content = strip_tags(html_content)
 
+        # ============================================================
+        # Send Email
+        # ============================================================
+
         msg = EmailMultiAlternatives(
-            subject=f"{student.name} Completed Test - {submission.test.name}",
+            subject=(
+                f"{student.name} Completed Test - "
+                f"{submission.test.name}"
+            ),
             body=text_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[student.email],
             cc=admin_emails,
-            bcc=["vijayaluguvelli@gmail.com","surya2254@gmail.com"],
+            bcc=[
+                "vijayaluguvelli@gmail.com",
+                "surya2254@gmail.com",
+            ],
         )
 
         msg.attach_alternative(html_content, "text/html")
         msg.send()
 
-    except Exception as e:
-        print(f"Error sending test completion email: {e}")
+    except Exception:
+        logger.exception(
+            "Error sending test completion email for "
+            "submission ID %s",
+            test_submission_id
+        )

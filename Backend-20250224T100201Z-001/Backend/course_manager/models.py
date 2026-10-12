@@ -4,6 +4,9 @@ from django.db import models
 
 from user_manager.models import User
 
+from django.db import models
+from django.conf import settings
+
 
 class Course(models.Model):
     name = models.CharField(max_length=30, null=False, unique=True)
@@ -336,3 +339,22 @@ class CombinedScore(models.Model):
     section1_correct = models.IntegerField()
     section2_correct = models.IntegerField()
     total_score = models.IntegerField()
+
+
+class DeletedQuestion(models.Model):
+    original_question_id = models.PositiveIntegerField(db_index=True)
+    question_data = models.JSONField(default=dict)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="questions_deleted"
+    )
+    deleted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-deleted_at"]
+
+    def __str__(self):
+        return f"Deleted Question #{self.original_question_id}"

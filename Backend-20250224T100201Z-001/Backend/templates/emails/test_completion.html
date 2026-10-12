@@ -1,7 +1,9 @@
+
 <!DOCTYPE html>
 <html>
-
 <head>
+    <meta charset="UTF-8">
+
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -13,6 +15,7 @@
         table {
             border-collapse: collapse;
             width: 700px;
+            max-width: 100%;
             margin-bottom: 20px;
         }
 
@@ -25,7 +28,7 @@
 
         th {
             background: #dbe7f3;
-            font-size: 17px;
+            font-size: 15px;
             font-weight: bold;
         }
 
@@ -37,6 +40,7 @@
 
         .value {
             text-align: left;
+            overflow-wrap: anywhere;
         }
 
         .score {
@@ -73,8 +77,9 @@
         <strong>{{ test_name }}</strong>.
     </p>
 
-    <table>
+    <!-- Current Test Summary -->
 
+    <table>
         <tr>
             <th colspan="2">Student Details</th>
             <th colspan="2">Current Test Summary</th>
@@ -108,8 +113,8 @@
             <td class="label">Completed On</td>
             <td class="value">{{ completed_on }}</td>
 
-            <td class="label">Percentage</td>
-            <td class="score">{{ percentage }}%</td>
+            <td class="label">Score</td>
+            <td class="score">{{ total_score }}</td>
         </tr>
 
         <tr>
@@ -117,9 +122,7 @@
             <td></td>
 
             <td class="label">Performance</td>
-
             <td>
-
                 {% if latest_change == None %}
 
                     <span class="same">
@@ -135,100 +138,98 @@
                 {% elif latest_improved %}
 
                     <span class="up">
-                        ▲ Improved (+{{ latest_change }}%)
+                        ▲ Improved (+{{ latest_change }})
                     </span>
 
                 {% else %}
 
                     <span class="down">
-                        ▼ Declined (-{{ latest_change }}%)
+                        ▼ Declined (-{{ latest_change }})
                     </span>
 
                 {% endif %}
+            </td>
+        </tr>
+    </table>
 
+    <!-- Previous Test Comparison -->
+
+    {% if comparison_data %}
+
+    <table>
+        <tr>
+            <th colspan="7">
+                Previous 3 Test Comparison
+            </th>
+        </tr>
+
+        <tr>
+            <th>Test Name</th>
+            <th>Date</th>
+            <th>Total Score</th>
+            <th>Math</th>
+            <th>English</th>
+            <th>Score</th>
+            <th>Comparison</th>
+        </tr>
+
+        {% for test in comparison_data %}
+
+        <tr>
+            <td>{{ test.test_name }}</td>
+
+            <td>{{ test.date }}</td>
+
+            <td>
+                <strong>{{ test.total_score }}/1600</strong>
+            </td>
+
+            <td>{{ test.math_score }}</td>
+
+            <td>{{ test.english_score }}</td>
+
+            <td>
+                <strong>{{ test.total_score }}</strong>
+            </td>
+
+            <td>
+                {% if test.difference == None %}
+
+                    <span class="same">-</span>
+
+                {% elif test.difference == 0 %}
+
+                    <span class="same">
+                        No Change
+                    </span>
+
+                {% elif test.is_improved %}
+
+                    <span class="up">
+                        ▲ Improved (+{{ test.difference }})
+                    </span>
+
+                {% else %}
+
+                    <span class="down">
+                        ▼ Dropped (-{{ test.difference }})
+                    </span>
+
+                {% endif %}
             </td>
         </tr>
 
+        {% endfor %}
     </table>
-
-   {% if comparison_data %}
-
-<table>
-
-    <tr>
-        <th colspan="7">
-            Previous 3 Test Comparison
-        </th>
-    </tr>
-
-    <tr>
-        <th>Test Name</th>
-        <th>Date</th>
-        <th>Total Score</th>
-        <th>Math</th>
-        <th>English</th>
-        <th>Percentage</th>
-        <th>Comparison</th>
-    </tr>
-
-    {% for test in comparison_data %}
-
-    <tr>
-
-        <td>{{ test.test_name }}</td>
-
-        <td>{{ test.date }}</td>
-
-        <td><strong>{{ test.total_score }}/1600</strong></td>
-
-        <td>{{ test.math_score }}</td>
-
-        <td>{{ test.english_score }}</td>
-
-        <td><strong>{{ test.percentage }}%</strong></td>
-
-       <td>
-
-    {% if test.difference == None %}
-
-        <span class="same">
-            -
-        </span>
-
-    {% elif test.difference == 0 %}
-
-        <span class="same">
-            No Change
-        </span>
-
-    {% elif test.is_improved %}
-
-        <span class="up">
-            ▲ Improved by {{ test.difference }}%
-        </span>
-
-    {% else %}
-
-        <span class="down">
-            ▼ Dropped by {{ test.difference }}%
-        </span>
 
     {% endif %}
 
-</td>
+    <!-- Footer -->
 
-    </tr>
-
-    {% endfor %}
-
-</table>
-
-{% endif %}
     <div class="footer">
         Regards,<br>
         <strong>The Smart Test Prep Team</strong>
     </div>
 
 </body>
-
 </html>

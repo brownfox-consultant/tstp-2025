@@ -21,7 +21,7 @@ from sTest.utils import get_error_response_for_serializer, get_error_response, C
 from user_manager.serializers import StudentSerializer
 from system_manager.models import Suggestion
 from .filters import QuestionFilter, MaterialFilter
-from .models import Question, QuestionLog ,Course, Subject, CourseSubjects, Material, CourseEnrollment, Topic
+from .models import Question, QuestionLog ,Course, Subject, CourseSubjects, Material, CourseEnrollment, Topic,DeletedQuestion
 from .serializers import CreateQuestionSerializer, CourseWithSubjectsSerializer, QuestionListSerializer, \
     CourseSerializer, CreateCourseSerializer, MaterialSerializer, SubjectSerializer, \
     MaterialListSerializer, MaterialDetailsSerializer, TopicSerializer
@@ -75,6 +75,15 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from rest_framework.decorators import action
 from rest_framework.response import Response
+import json
+
+from django.core import serializers
+from django.db import transaction
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+
+from .models import Question, DeletedQuestion
 
 
 
@@ -1679,13 +1688,31 @@ class QuestionViewSet(viewsets.ModelViewSet):
         # instance.save()
         instance.delete()
 
-    @action(detail=True, methods=['patch'], permission_classes=[IsAdminOrContentDeveloper], url_path='deactivate')
+    @action(
+    detail=True,
+    methods=["patch"],
+    permission_classes=[IsAdminOrContentDeveloper],
+    url_path="deactivate"
+    )
     def deactivate_question(self, request, pk=None):
         question = Question.get_question_by_id(question_id=pk)
-        # question.is_active = False
-        # question.updated_at = timezone.now()
-        # question.save()
-        question.delete()
+
+        with transaction.atomic():
+            # Convert the complete question into a JSON snapshot
+            question_data = json.loads(
+                serializers.serialize("json", [question])
+            )[0]
+
+            # Save the snapshot in the new table
+            DeletedQuestion.objects.create(
+                original_question_id=question.id,
+                question_data=question_data,
+                deleted_by=request.user
+            )
+
+            # Delete the original question
+            question.delete()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['patch'], permission_classes=[IsAdmin], url_path='activate')
