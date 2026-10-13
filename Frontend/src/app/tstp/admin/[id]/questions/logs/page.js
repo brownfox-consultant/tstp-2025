@@ -16,6 +16,7 @@ import {
   Statistic,
   Tag,
   Divider,
+  message,
 } from "antd";
 import { BASE_URL } from "@/app/constants/apiConstants";
 import dayjs from "dayjs";
@@ -25,86 +26,100 @@ import { alphatbetArray } from "@/utils/utils";
 import GridInOptions from "@/components/question-list/gridin-options";
 import MathContent from "@/components/MathContent";
 import { LeftOutlined } from "@ant-design/icons";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const { RangePicker } = DatePicker;
+
+const EMPTY_FILTERS = {
+  srno: "",
+  name: "",
+  dateRange: [],
+};
 
 export default function QuestionLogsPage() {
   const [logs, setLogs] = useState([]);
   const [dailyCount, setDailyCount] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
-  current: 1,
-  pageSize: 50,
-  total: 0,
-});
-  const [filters, setFilters] = useState({
-    srno: "",
-    name: "",
-    dateRange: [],
+    current: 1,
+    pageSize: 50,
+    total: 0,
   });
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [userOptions, setUserOptions] = useState([]);
   const router = useRouter();
-  // modal states
+
+  // Question review modal state
   const [showModal, setShowModal] = useState(false);
   const [currentQuestionId, setCurrentQuestionId] = useState(null);
   const [modalData, setModalData] = useState({});
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [currentSrno, setCurrentSrno] = useState(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
   const handleBack = () => router.back();
-  const fetchLogs = async (page = 1, pageSize = 50) => {
-  try {
-    setLoading(true);
 
-    const params = {
-      page,
-      page_size: pageSize,
-    };
+  // activeFilters lets Reset fetch with empty filters immediately, without
+  // waiting for React's asynchronous setFilters update.
+  const fetchLogs = async (
+    page = 1,
+    pageSize = pagination.pageSize,
+    activeFilters = filters
+  ) => {
+    try {
+      setLoading(true);
 
-    if (filters.srno) {
-      params.srno = filters.srno;
-    }
+      const params = {
+        page: Number(page) || 1,
+        page_size: Number(pageSize) || 50,
+      };
 
-    if (filters.name) {
-      params.name = filters.name;
-    }
-
-    if (filters.dateRange.length === 2) {
-      params.start_date = filters.dateRange[0].format("YYYY-MM-DD");
-      params.end_date = filters.dateRange[1].format("YYYY-MM-DD");
-    }
-
-    const response = await axios.get(
-      `${BASE_URL}/api/question/logs-and-daily-count/`,
-      {
-        params,
-        withCredentials: true,
+      if (activeFilters.srno?.trim()) {
+        params.srno = activeFilters.srno.trim();
       }
-    );
 
-    const results = response.data.results || {};
+      if (activeFilters.name) {
+        params.name = activeFilters.name;
+      }
 
-    setLogs(results.logs || []);
-    setDailyCount(results.daily_question_count || null);
+      if (activeFilters.dateRange?.length === 2) {
+        params.start_date = activeFilters.dateRange[0].format("YYYY-MM-DD");
+        params.end_date = activeFilters.dateRange[1].format("YYYY-MM-DD");
+      }
 
-    setPagination({
-      current: page,
-      pageSize: pageSize,
-      total: response.data.count || 0,
-    });
+      const response = await axios.get(
+        `${BASE_URL}/api/question/logs-and-daily-count/`,
+        {
+          params,
+          withCredentials: true,
+        }
+      );
 
-  } catch (error) {
-    console.error("Failed to fetch logs", error);
-  } finally {
-    setLoading(false);
-  }
-};
+      // Supports the backend response where logs and daily summary are inside
+      // the paginated response's results object.
+      const payload = response.data?.results || {};
+      setLogs(Array.isArray(payload.logs) ? payload.logs : []);
+      setDailyCount(payload.daily_question_count || null);
 
+      setPagination({
+        current: Number(page) || 1,
+        pageSize: Number(pageSize) || 50,
+        total: Number(response.data?.count) || 0,
+      });
+    } catch (error) {
+      console.error("Failed to fetch question logs:", error);
+      const detail = error?.response?.data?.detail;
+      message.error(detail || "Failed to fetch question logs. Please check the API URL and backend logs.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchLogs();
+    fetchLogs(1, 50, EMPTY_FILTERS);
+    // Run only once when this page mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -113,9 +128,9 @@ export default function QuestionLogsPage() {
           `${BASE_URL}/api/user/content-developers-admins/`,
           { withCredentials: true }
         );
-        setUserOptions(response.data || []);
+        setUserOptions(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
-        console.error("Failed to fetch users", error);
+        console.error("Failed to fetch users:", error);
       }
     };
 
@@ -123,65 +138,124 @@ export default function QuestionLogsPage() {
   }, []);
 
   useEffect(() => {
-    if (currentQuestionId) {
-      getQuestionDetails(currentQuestionId).then((res) => {
-        setModalData(res.data.detail);
-        setSelectedOptions(res.data.detail.selected_options || []);
-      });
-    }
+    if (!currentQuestionId) return;
+
+    let cancelled = false;
+    const loadQuestion = async () => {
+      try {
+        setModalLoading(true);
+        const response = await getQuestionDetails(currentQuestionId);
+        if (cancelled) return;
+        const detail = response?.data?.detail || {};
+        setModalData(detail);
+        setSelectedOptions(detail.selected_options || []);
+      } catch (error) {
+        console.error("Failed to load question details:", error);
+        if (!cancelled) {
+          message.error("Could not load this question. It may have been deleted.");
+          setModalData({});
+        }
+      } finally {
+        if (!cancelled) setModalLoading(false);
+      }
+    };
+
+    loadQuestion();
+    return () => {
+      cancelled = true;
+    };
   }, [currentQuestionId]);
 
+  const closeModal = () => {
+    setShowModal(false);
+    setModalData({});
+    setCurrentQuestionId(null);
+    setCurrentSrno(null);
+    setSelectedOptions([]);
+  };
+
   const columns = [
-    { title: "Question Id", dataIndex: "srno", key: "srno" },
-    { title: "User", dataIndex: "user", key: "user" },
+    {
+      title: "Question Id",
+      dataIndex: "srno",
+      key: "srno",
+      render: (value, record) => value ?? record.question_id_snapshot ?? "—",
+    },
+    { title: "User", dataIndex: "user", key: "user", render: (value) => value || "—" },
     {
       title: "Action",
       dataIndex: "action",
       key: "action",
       render: (action) => {
-        const color = action === "Added" ? "green" : "blue";
-        return <Tag color={color}>{action}</Tag>;
+        const normalized = String(action || "").toUpperCase();
+        let color = "default";
+        let label = action || "Unknown";
+
+        if (normalized === "ADD" || normalized === "ADDED") {
+          color = "green";
+          label = "Added";
+        } else if (normalized === "EDIT" || normalized === "EDITED" || normalized === "UPDATE" || normalized === "UPDATED") {
+          color = "blue";
+          label = "Edited";
+        } else if (normalized === "DELETE" || normalized === "DELETED") {
+          color = "red";
+          label = "Deleted";
+        }
+
+        return <Tag color={color}>{label}</Tag>;
       },
     },
     {
       title: "Timestamp",
       dataIndex: "timestamp",
       key: "timestamp",
-      render: (text) => dayjs(text).format("DD MMM YYYY, hh:mm A"),
+      render: (value) => (value ? dayjs(value).format("DD MMM YYYY, hh:mm A") : "—"),
     },
     {
-      title: "IP Address",   // ✅ New column
+      title: "IP Address",
       dataIndex: "ip_address",
       key: "ip_address",
+      render: (value) => value || "—",
     },
   ];
 
+  const dailyColumns = [
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+      render: (value) => (value ? dayjs(value).format("DD MMM YYYY") : "—"),
+    },
+    { title: "Total Added", dataIndex: "total_added", key: "total_added" },
+    { title: "Total Updated", dataIndex: "total_updated", key: "total_updated" },
+    { title: "Total Deleted", dataIndex: "total_deleted", key: "total_deleted", render: (value) => value ?? 0 },
+    { title: "Total Suggestions", dataIndex: "total_suggestions", key: "total_suggestions", render: (value) => value ?? 0 },
+  ];
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-3">
-        <h1 className="text-2xl font-bold text-gray-800 m-0">Question Logs</h1>
+      <div className="mb-3 flex items-center justify-between">
+        <h1 className="m-0 text-2xl font-bold text-gray-800">Question Logs</h1>
         <button
+          type="button"
           onClick={handleBack}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm cursor-pointer"
+          className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-gray-600 shadow-sm transition-all hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900"
         >
           <LeftOutlined className="text-sm" />
           <span className="font-medium">Back</span>
         </button>
       </div>
 
-
-
-      {/* Filters */}
       <Card style={{ marginBottom: 20 }} title="Filters">
         <Row gutter={[16, 16]} align="middle">
           <Col>
             <Input
               placeholder="Question Id"
               value={filters.srno}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, srno: e.target.value }))
+              onChange={(event) =>
+                setFilters((previous) => ({ ...previous, srno: event.target.value }))
               }
+              onPressEnter={() => fetchLogs(1, pagination.pageSize)}
               style={{ width: 200 }}
             />
           </Col>
@@ -192,7 +266,7 @@ export default function QuestionLogsPage() {
               style={{ width: 220 }}
               value={filters.name || undefined}
               onChange={(value) =>
-                setFilters((prev) => ({ ...prev, name: value || "" }))
+                setFilters((previous) => ({ ...previous, name: value || "" }))
               }
               options={userOptions.map((user) => ({
                 label: `${user.name} (${user.role})`,
@@ -202,27 +276,23 @@ export default function QuestionLogsPage() {
           </Col>
           <Col>
             <RangePicker
+              value={filters.dateRange}
               onChange={(dates) =>
-                setFilters((prev) => ({ ...prev, dateRange: dates || [] }))
+                setFilters((previous) => ({ ...previous, dateRange: dates || [] }))
               }
             />
           </Col>
           <Col>
-            <Button type="primary" onClick={fetchLogs}>
+            <Button type="primary" onClick={() => fetchLogs(1, pagination.pageSize)}>
               Apply
             </Button>
           </Col>
           <Col>
             <Button
-             onClick={() => {
-  setFilters({
-    srno: "",
-    name: "",
-    dateRange: [],
-  });
-
-  fetchLogs(1, pagination.pageSize);
-}}
+              onClick={() => {
+                setFilters(EMPTY_FILTERS);
+                fetchLogs(1, pagination.pageSize, EMPTY_FILTERS);
+              }}
             >
               Reset
             </Button>
@@ -230,114 +300,97 @@ export default function QuestionLogsPage() {
         </Row>
       </Card>
 
-      {/* Daily Summary */}
       {dailyCount && (
         <Card style={{ marginBottom: 20 }} title="Daily Summary">
-          <Row gutter={16}>
-            <Col span={6}>
-              <Statistic title="Date Range" valueStyle={{ fontSize: "20px" }} value={dailyCount.date_range} />
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} md={6}>
+              <Statistic title="Date Range" value={dailyCount.date_range || "—"} valueStyle={{ fontSize: 20 }} />
             </Col>
-            <Col span={6}>
-              <Statistic title="Total Added" value={dailyCount.total_added} />
+            <Col xs={12} sm={6} md={4}>
+              <Statistic title="Total Added" value={dailyCount.total_added ?? 0} />
             </Col>
-            <Col span={6}>
-              <Statistic title="Total Updated" value={dailyCount.total_updated} />
+            <Col xs={12} sm={6} md={4}>
+              <Statistic title="Total Updated" value={dailyCount.total_updated ?? 0} />
             </Col>
-            <Col span={6}>
-              <Statistic title="Total Suggestions" value={dailyCount.total_suggestions || 0} />
+            <Col xs={12} sm={6} md={4}>
+              <Statistic title="Total Deleted" value={dailyCount.total_deleted ?? 0} />
+            </Col>
+            <Col xs={12} sm={6} md={6}>
+              <Statistic title="Total Suggestions" value={dailyCount.total_suggestions ?? 0} />
             </Col>
           </Row>
-
           <Divider />
-
           <Table
             rowKey="date"
             dataSource={dailyCount.day_wise || []}
+            columns={dailyColumns}
             pagination={false}
             style={{ marginTop: 20 }}
             bordered
-            columns={[
-              {
-                title: "Date",
-                dataIndex: "date",
-                key: "date",
-                render: (text) => dayjs(text).format("DD MMM YYYY"),
-              },
-              { title: "Total Added", dataIndex: "total_added", key: "total_added" },
-              {
-                title: "Total Updated",
-                dataIndex: "total_updated",
-                key: "total_updated",
-              },
-              { title: "Total Suggestions", dataIndex: "total_suggestions", key: "total_suggestions" },
-            ]}
+            scroll={{ x: true }}
           />
         </Card>
       )}
 
-      {/* Logs Table */}
       <Card title="Logs">
         {loading ? (
-          <Spin />
+          <div className="flex justify-center py-8"><Spin /></div>
         ) : (
           <Table
-  rowKey="id"
-  dataSource={logs}
-  columns={columns}
-  bordered
-  size="middle"
-  pagination={{
-    current: pagination.current,
-    pageSize: pagination.pageSize,
-    total: pagination.total,
-    showSizeChanger: true,
-    pageSizeOptions: ["20", "50", "100"],
-    showTotal: (total, range) =>
-      `${range[0]}-${range[1]} of ${total} logs`,
-  }}
-  onChange={(paginationInfo) => {
-    fetchLogs(
-      paginationInfo.current,
-      paginationInfo.pageSize
-    );
-  }}
-  onRow={(record) => ({
-    onClick: () => {
-      setCurrentQuestionId(record.question_id);
-      setCurrentSrno(record.srno);
-      setShowModal(true);
-    },
-  })}
-/>
+            rowKey={(record) => record.id ?? `${record.timestamp}-${record.action}-${record.srno ?? record.question_id_snapshot}`}
+            dataSource={logs}
+            columns={columns}
+            bordered
+            size="middle"
+            scroll={{ x: true }}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              pageSizeOptions: ["20", "50", "100"],
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} logs`,
+            }}
+            onChange={(paginationInfo) => {
+              // Pass numeric values, never the pagination object itself.
+              fetchLogs(Number(paginationInfo.current) || 1, Number(paginationInfo.pageSize) || 50);
+            }}
+            onRow={(record) => ({
+              onClick: () => {
+                // Deleted questions no longer exist in the live Question table,
+                // so do not call getQuestionDetails for their log entries.
+                if (!record.question_id) {
+                  if (String(record.action).toUpperCase() === "DELETE" || String(record.action).toUpperCase() === "DELETED") {
+                    message.info("This question was deleted, so its live question details are no longer available here.");
+                  }
+                  return;
+                }
+                setCurrentQuestionId(record.question_id);
+                setCurrentSrno(record.srno ?? record.question_id_snapshot ?? "—");
+                setShowModal(true);
+              },
+              style: { cursor: record.question_id ? "pointer" : "default" },
+            })}
+          />
         )}
       </Card>
 
-
-      {/* Reviewing Question Modal */}
       <Modal
         width={modalData.question_type === "MCQ" ? "80rem" : "64rem"}
         open={showModal}
-        title={`Reviewing Question (Question Id: ${currentSrno})`}
-        onCancel={() => {
-          setShowModal(false);
-          setModalData({});
-          setCurrentQuestionId(null);
-          setCurrentSrno(null);
-          setSelectedOptions([]);
-        }}
+        title={`Reviewing Question (Question Id: ${currentSrno ?? "—"})`}
+        onCancel={closeModal}
         footer={null}
+        destroyOnClose
       >
-        {Object.keys(modalData).length === 0 ? (
+        {modalLoading || Object.keys(modalData).length === 0 ? (
           <Loading />
         ) : (
           <>
-            <div className="w-full flex gap-8">
+            <div className="flex w-full gap-8">
               {modalData.question_subtype === "READING_COMPREHENSION" && (
-                <div className="overflow-x-hidden max-h-full overflow-y-scroll mx-auto flex-1 border">
-                  <MathContent
-                    cls={"p-4"}
-                    content={modalData?.reading_comprehension_passage}
-                  />
+                <div className="mx-auto max-h-full flex-1 overflow-x-hidden overflow-y-scroll border">
+                  <MathContent cls="p-4" content={modalData.reading_comprehension_passage} />
                 </div>
               )}
               <div className="question-desc my-4 flex-1">
@@ -347,55 +400,42 @@ export default function QuestionLogsPage() {
 
             {modalData.question_type === "MCQ" && (
               <div>
-                <div className="font-bold my-3">Options:</div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2">
-                  {modalData.options?.map(({ description, is_correct }, index) => (
-                    <div key={index} className="flex w-full items-center gap-1">
-                      <div>{alphatbetArray[index]}.</div>
-                      <div className="flex-1">
-                        {(selectedOptions ?? []).includes(index) && is_correct ? (
-                          <MathContent
-                            cls="font-bold border-2 bg-green-200 rounded-lg px-2 py-5"
-                            content={description}
-                          />
-                        ) : (selectedOptions || []).includes(index) ? (
-                          <MathContent
-                            cls="font-bold border-2 bg-red-200 rounded-lg px-2 py-5"
-                            content={description}
-                          />
-                        ) : is_correct ? (
-                          <MathContent
-                            cls="font-bold border-2 bg-green-200 rounded-lg px-2 py-5"
-                            content={description}
-                          />
-                        ) : (
-                          <MathContent
-                            cls="bg-white border-2 rounded-lg px-2 py-5"
-                            content={description}
-                          />
-                        )}
+                <div className="my-3 font-bold">Options:</div>
+                <div className="grid grid-cols-1 gap-x-8 gap-y-2 lg:grid-cols-2">
+                  {modalData.options?.map(({ description, is_correct }, index) => {
+                    const isSelected = (selectedOptions || []).includes(index);
+                    let optionClass = "bg-white border-2 rounded-lg px-2 py-5";
+                    if (is_correct) {
+                      optionClass = "font-bold border-2 bg-green-200 rounded-lg px-2 py-5";
+                    } else if (isSelected) {
+                      optionClass = "font-bold border-2 bg-red-200 rounded-lg px-2 py-5";
+                    }
+                    return (
+                      <div key={index} className="flex w-full items-center gap-1">
+                        <div>{alphatbetArray[index]}.</div>
+                        <div className="flex-1">
+                          <MathContent cls={optionClass} content={description} />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {modalData.question_type === "GRIDIN" && (
               <div>
-                <div className="font-bold my-3">Your Answer:</div>
-                <span className="border-2 rounded-lg px-2 py-1">
-                  {selectedOptions}
-                </span>
+                <div className="my-3 font-bold">Your Answer:</div>
+                <span className="rounded-lg border-2 px-2 py-1">{selectedOptions}</span>
                 <GridInOptions question={modalData} />
               </div>
             )}
 
             {modalData.explanation && (
               <>
-                <div className="font-bold mt-4 mb-2">Explanation:</div>
-                <div className="bg-white border-2 p-2 rounded-md max-h-80 overflow-auto mb-3">
-                  <MathContent cls={"p-2"} content={modalData.explanation} />
+                <div className="mb-2 mt-4 font-bold">Explanation:</div>
+                <div className="mb-3 max-h-80 overflow-auto rounded-md border-2 bg-white p-2">
+                  <MathContent cls="p-2" content={modalData.explanation} />
                 </div>
               </>
             )}

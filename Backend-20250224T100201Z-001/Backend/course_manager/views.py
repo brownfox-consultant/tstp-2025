@@ -85,6 +85,22 @@ from rest_framework import status
 
 from .models import Question, DeletedQuestion
 
+import datetime
+
+from django.db import transaction
+from django.db.models import Q, Count
+from django.utils import timezone
+from django.core import serializers as django_serializers
+
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.http import Http404
+
+
+
+
+
 
 
 
@@ -829,176 +845,282 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
 
 
+    
     @action(
-    detail=False,
-    methods=['get'],
-    permission_classes=[IsAdmin],
-    url_path='logs-and-daily-count'
-)
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAdmin],
+        url_path="logs-and-daily-count",
+    )
     def logs_and_daily_count(self, request):
         """
-        Provides daily or date-range question counts, suggestions, and logs.
-        Filters: ?date=YYYY-MM-DD OR ?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
-                ?srno=123
-                ?name=John
-        Supports pagination on logs.
+        Daily question counts and paginated audit logs.
+
+        Filters:
+            ?date=YYYY-MM-DD
+            ?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+            ?srno=123
+            ?name=John
+
+        If no date is supplied, defaults to the last 7 calendar days,
+        including today.
         """
 
-        # ✅ Date filters
+        # --------------------------------------------------
+        # 1. Parse date filters
+        # --------------------------------------------------
         date_str = request.query_params.get("date")
         start_date_str = request.query_params.get("start_date")
         end_date_str = request.query_params.get("end_date")
 
-        if date_str:
-            try:
-                filter_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-            except ValueError:
-                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
-            start_date = end_date = filter_date
-        else:
-            try:
-                if start_date_str and end_date_str:
-                    start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                    end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
-                elif start_date_str:
-                    start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                    end_date = start_date
-                elif end_date_str:
-                    end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
-                    start_date = end_date
+        try:
+            if date_str:
+                start_date = datetime.datetime.strptime(
+                    date_str, "%Y-%m-%d"
+                ).date()
+                end_date = start_date
+
+            elif start_date_str or end_date_str:
+                if start_date_str:
+                    start_date = datetime.datetime.strptime(
+                        start_date_str, "%Y-%m-%d"
+                    ).date()
                 else:
-                    end_date = timezone.now().date()
-                    start_date = end_date - datetime.timedelta(days=6)
-            except ValueError:
-                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
+                    start_date = datetime.datetime.strptime(
+                        end_date_str, "%Y-%m-%d"
+                    ).date()
 
-        # ✅ srno filter
+                if end_date_str:
+                    end_date = datetime.datetime.strptime(
+                        end_date_str, "%Y-%m-%d"
+                    ).date()
+                else:
+                    end_date = start_date
+
+            else:
+                end_date = timezone.localdate()
+                start_date = end_date - datetime.timedelta(days=6)
+
+        except ValueError:
+            return Response(
+                {"error": "Invalid date format. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if start_date > end_date:
+            return Response(
+                {"error": "start_date cannot be after end_date."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # --------------------------------------------------
+        # 2. Common filters
+        # --------------------------------------------------
         srno = request.query_params.get("srno")
-        srno_filter = Q()
-        if srno:
-            srno_filter = Q(srno=srno)
-
-        # ✅ user filter (by name)
         name = request.query_params.get("name")
-        name_filter = Q()
-        if name:
-            name_filter = Q(created_by__name__icontains=name)
 
-        # ✅ Daily "added" counts grouped by date
+        if srno:
+            try:
+                srno = int(srno)
+                if srno < 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                return Response(
+                    {"error": "srno must be a non-negative integer."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        question_filter = Q()
+        log_question_filter = Q()
+
+        if srno is not None and srno != "":
+            question_filter &= Q(srno=srno)
+
+            # Matches active questions and deleted questions.
+            log_question_filter &= (
+                Q(question__srno=srno)
+                | Q(question_srno_snapshot=srno)
+            )
+
+        if name:
+            question_filter &= Q(created_by__name__icontains=name)
+
+        # --------------------------------------------------
+        # 3. Daily added counts
+        # --------------------------------------------------
         daily_added = (
-            Question.objects.filter(created_at__date__range=[start_date, end_date])
-            .filter(srno_filter & name_filter)
+            Question.objects.filter(
+                created_at__date__range=(start_date, end_date)
+            )
+            .filter(question_filter)
             .values("created_at__date")
-            .annotate(total_added=Count("id"))
+            .annotate(total=Count("id"))
             .order_by("created_at__date")
         )
 
-        # ✅ Daily "updated" counts grouped by date
+        # --------------------------------------------------
+        # 4. Daily edited counts
+        # --------------------------------------------------
         daily_updated = (
             QuestionLog.objects.filter(
-                action="EDIT", timestamp__date__range=[start_date, end_date]
+                action="EDIT",
+                timestamp__date__range=(start_date, end_date),
             )
-            .filter(Q(question__srno=srno) if srno else Q())
+            .filter(log_question_filter)
             .filter(Q(user__name__icontains=name) if name else Q())
             .values("timestamp__date")
-            .annotate(total_updated=Count("id"))
+            .annotate(total=Count("id"))
             .order_by("timestamp__date")
         )
-        updated_map = {item["timestamp__date"]: item["total_updated"] for item in daily_updated}
 
-        # ✅ Daily "suggestions" counts grouped by date
-        # ✅ Daily "suggestions" counts grouped by date
-        # ✅ Daily "suggestions" counts grouped by date
+        # --------------------------------------------------
+        # 5. Daily deleted counts
+        # --------------------------------------------------
+        daily_deleted = (
+            QuestionLog.objects.filter(
+                action="DELETE",
+                timestamp__date__range=(start_date, end_date),
+            )
+            .filter(log_question_filter)
+            .filter(Q(user__name__icontains=name) if name else Q())
+            .values("timestamp__date")
+            .annotate(total=Count("id"))
+            .order_by("timestamp__date")
+        )
+
+        # --------------------------------------------------
+        # 6. Daily suggestion counts
+        # --------------------------------------------------
         daily_suggestions = (
-            Suggestion.objects.filter(created_at__date__range=[start_date, end_date])
-            .filter(Q(question__srno=srno) if srno else Q())
-            .filter(Q(created_by__name__icontains=name) if name else Q())
+            Suggestion.objects.filter(
+                created_at__date__range=(start_date, end_date)
+            )
+            .filter(
+                Q(question__srno=srno) if srno is not None else Q()
+            )
+            .filter(
+                Q(created_by__name__icontains=name) if name else Q()
+            )
             .values("created_at__date")
-            .annotate(total_suggestions=Count("id"))
+            .annotate(total=Count("id"))
             .order_by("created_at__date")
         )
 
-        # ✅ Build suggestions_map so it's available later
-        suggestions_map = {
-            item["created_at__date"]: item["total_suggestions"]
-            for item in daily_suggestions
-        }
+        # --------------------------------------------------
+        # 7. Build summary by date
+        # --------------------------------------------------
+        day_map = {}
 
-
-
-        # ✅ Combine day-wise summary
-        day_wise_summary = []
-        for added in daily_added:
-            day = added["created_at__date"]
-            day_wise_summary.append({
-                "date": day,
-                "total_added": added["total_added"],
-                "total_updated": updated_map.get(day, 0),
-                "total_suggestions": suggestions_map.get(day, 0),
-            })
-
-        # Add missing days where only updates happened
-        for updated in daily_updated:
-            day = updated["timestamp__date"]
-            if not any(s["date"] == day for s in day_wise_summary):
-                day_wise_summary.append({
-                    "date": day,
-                    "total_added": 0,
-                    "total_updated": updated["total_updated"],
-                    "total_suggestions": suggestions_map.get(day, 0),
-                })
-
-        # Add missing days where only suggestions happened
-        for suggestion in daily_suggestions:
-            day = suggestion["created_at__date"]
-            if not any(s["date"] == day for s in day_wise_summary):
-                day_wise_summary.append({
+        def get_day(day):
+            if day not in day_map:
+                day_map[day] = {
                     "date": day,
                     "total_added": 0,
                     "total_updated": 0,
-                    "total_suggestions": suggestion["total_suggestions"],
-                })
+                    "total_deleted": 0,
+                    "total_suggestions": 0,
+                }
+            return day_map[day]
 
-        day_wise_summary = sorted(day_wise_summary, key=lambda x: x["date"], reverse=True)
+        for item in daily_added:
+            get_day(item["created_at__date"])[
+                "total_added"
+            ] = item["total"]
+
+        for item in daily_updated:
+            get_day(item["timestamp__date"])[
+                "total_updated"
+            ] = item["total"]
+
+        for item in daily_deleted:
+            get_day(item["timestamp__date"])[
+                "total_deleted"
+            ] = item["total"]
+
+        for item in daily_suggestions:
+            get_day(item["created_at__date"])[
+                "total_suggestions"
+            ] = item["total"]
+
+        day_wise_summary = sorted(
+            day_map.values(),
+            key=lambda item: item["date"],
+            reverse=True,
+        )
 
         daily_summary = {
             "date_range": f"{start_date} to {end_date}",
-            "total_added": sum(d["total_added"] for d in day_wise_summary),
-            "total_updated": sum(d["total_updated"] for d in day_wise_summary),
-            "total_suggestions": sum(d["total_suggestions"] for d in day_wise_summary),
+            "total_added": sum(
+                item["total_added"] for item in day_wise_summary
+            ),
+            "total_updated": sum(
+                item["total_updated"] for item in day_wise_summary
+            ),
+            "total_deleted": sum(
+                item["total_deleted"] for item in day_wise_summary
+            ),
+            "total_suggestions": sum(
+                item["total_suggestions"] for item in day_wise_summary
+            ),
             "day_wise": day_wise_summary,
         }
 
-        # ✅ Logs with filters
+        # --------------------------------------------------
+        # 8. Fetch logs, including deleted questions
+        # --------------------------------------------------
         logs_qs = (
             QuestionLog.objects.select_related("question", "user")
-            .filter(timestamp__date__range=[start_date, end_date])
-            .filter(Q(question__srno=srno) if srno else Q())
+            .filter(timestamp__date__range=(start_date, end_date))
+            .filter(log_question_filter)
             .filter(Q(user__name__icontains=name) if name else Q())
-            .order_by("-timestamp")
+            .order_by("-timestamp", "-id")
         )
 
-        # ✅ Pagination
+        # --------------------------------------------------
+        # 9. Paginate logs
+        # --------------------------------------------------
         paginator = StandardResultsSetPagination()
-        paginated_logs = paginator.paginate_queryset(logs_qs, request)
+        paginated_logs = paginator.paginate_queryset(
+            logs_qs, request
+        )
 
-        logs_data = [
-            {
+        logs_data = []
+
+        for log in paginated_logs:
+            question_id = (
+                log.question_id_snapshot
+                if log.question_id_snapshot is not None
+                else (
+                    log.question.id if log.question else None
+                )
+            )
+
+            question_srno = (
+                log.question_srno_snapshot
+                if log.question_srno_snapshot is not None
+                else (
+                    log.question.srno if log.question else None
+                )
+            )
+
+            logs_data.append({
                 "id": log.id,
-                "question_id": log.question.id,
-                "srno": log.question.srno,
-                "user": log.user.name,
+                "question_id": question_id,
+                "srno": question_srno,
+                "user": log.user.name if log.user else None,
                 "action": log.get_action_display(),
                 "timestamp": log.timestamp,
                 "ip_address": log.ip_address,
-            }
-            for log in paginated_logs
-        ]
+            })
 
+        # --------------------------------------------------
+        # 10. Return response
+        # --------------------------------------------------
         return paginator.get_paginated_response({
             "daily_question_count": daily_summary,
             "logs": logs_data,
         })
+
 
 
 
@@ -1625,8 +1747,52 @@ class QuestionViewSet(viewsets.ModelViewSet):
     
     @permission_classes([IsAdminOrContentDeveloperOrFacultyOrStudent])
     def retrieve(self, request, pk=None, *args, **kwargs):
-        instance = Question.get_question_by_id(question_id=pk)
+        # 1. First search the active Question table
+        try:
+            instance = Question.get_question_by_id(question_id=pk)
 
+        except (Question.DoesNotExist, Http404):
+            instance = None
+
+        # 2. If not found, search DeletedQuestion
+        if instance is None:
+            deleted_record = (
+                DeletedQuestion.objects
+                .filter(original_question_id=pk)
+                .order_by("-deleted_at")
+                .first()
+            )
+
+            if not deleted_record:
+                return Response(
+                    {"detail": "Resource not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            saved_data = deleted_record.question_data
+
+            # Django serializer stores data as:
+            # {"model": "...", "pk": 5849, "fields": {...}}
+            if isinstance(saved_data, dict) and "fields" in saved_data:
+                question_data = {
+                    **saved_data["fields"],
+                    "id": saved_data.get("pk", deleted_record.original_question_id),
+                }
+            else:
+                question_data = saved_data
+
+            # Return a consistent response for the frontend.
+            return Response({
+                "detail": question_data,
+                "topics": [],
+                "doubt_created": False,
+                "doubt": "",
+                "doubt_id": None,
+                "doubt_details": None,
+                "is_deleted": True,
+            }, status=status.HTTP_200_OK)
+
+        # 3. Normal response for an existing question
         serializer = QuestionListSerializer(
             instance=instance,
             context={
@@ -1639,11 +1805,10 @@ class QuestionViewSet(viewsets.ModelViewSet):
         )
 
         topics = Topic.objects.filter(
-            course_subject_id=instance.course_subject
+            course_subject_id=instance.course_subject_id
         )
         topics_serializer = TopicSerializer(topics, many=True)
 
-        # Find the student's existing doubt for this question.
         doubt = None
 
         if request.user.is_authenticated:
@@ -1672,6 +1837,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 }
                 if doubt else None
             ),
+            "is_deleted": False,
         })
     
 
@@ -1688,32 +1854,53 @@ class QuestionViewSet(viewsets.ModelViewSet):
         # instance.save()
         instance.delete()
 
+    
     @action(
-    detail=True,
-    methods=["patch"],
-    permission_classes=[IsAdminOrContentDeveloper],
-    url_path="deactivate"
+        detail=True,
+        methods=["patch"],
+        permission_classes=[IsAdminOrContentDeveloper],
+        url_path="deactivate",
     )
     def deactivate_question(self, request, pk=None):
         question = Question.get_question_by_id(question_id=pk)
 
+        client_ip = request.META.get("HTTP_X_FORWARDED_FOR")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        else:
+            client_ip = request.META.get("REMOTE_ADDR")
+
         with transaction.atomic():
-            # Convert the complete question into a JSON snapshot
+            question_id = question.id
+            question_srno = question.srno
+
+            # Save the complete question before deleting it
             question_data = json.loads(
-                serializers.serialize("json", [question])
+                django_serializers.serialize("json", [question])
             )[0]
 
-            # Save the snapshot in the new table
+            # Preserve the deleted question
             DeletedQuestion.objects.create(
-                original_question_id=question.id,
+                original_question_id=question_id,
                 question_data=question_data,
-                deleted_by=request.user
+                deleted_by=request.user,
             )
 
-            # Delete the original question
+            # Record a permanent DELETE log
+            QuestionLog.objects.create(
+                question=question,
+                question_id_snapshot=question_id,
+                question_srno_snapshot=question_srno,
+                user=request.user,
+                action="DELETE",
+                ip_address=client_ip,
+            )
+
+            # Remove the original question
             question.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
     @action(detail=True, methods=['patch'], permission_classes=[IsAdmin], url_path='activate')
     def activate_question(self, request, pk=None):

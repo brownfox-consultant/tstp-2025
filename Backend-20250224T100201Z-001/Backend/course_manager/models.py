@@ -276,20 +276,64 @@ class Question(models.Model):
         return False
 
 
+
 class QuestionLog(models.Model):
     ACTION_CHOICES = [
-        ('ADD', 'Added'),
-        ('EDIT', 'Edited'),
+        ("ADD", "Added"),
+        ("EDIT", "Edited"),
+        ("DELETE", "Deleted"),
     ]
 
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='logs')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='question_logs')
-    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="logs",
+    )
+
+    # Preserve identifiers even after the original question is deleted
+    question_id_snapshot = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    question_srno_snapshot = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="question_logs",
+    )
+
+    action = models.CharField(
+        max_length=10,
+        choices=ACTION_CHOICES,
+    )
+
     timestamp = models.DateTimeField(auto_now_add=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
-        return f"{self.user.username} {self.get_action_display()} Q{self.question.id} on {self.timestamp}"
+        question_id = (
+            self.question_id_snapshot
+            or (self.question.id if self.question else "Unknown")
+        )
+        return (
+            f"{self.user.username} "
+            f"{self.get_action_display()} "
+            f"Q{question_id} on {self.timestamp}"
+        )
+
 
 class Material(models.Model):
     course_subject = models.ForeignKey(CourseSubjects, on_delete=models.CASCADE)
