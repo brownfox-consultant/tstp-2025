@@ -120,13 +120,64 @@ useEffect(() => {
 
   const questionViewCols = [
     role !== "student" && {
-      title: "Question Id",
-      dataIndex: "db_Srno",
-      key: "db_Srno",
-      align: "center",
-      sorter: (a, b) => a.db_Srno - b.db_Srno,
-      render: (value) => <span className="font-semibold text-gray-700">{value}</span>,
-    },
+title: "Question Id",
+dataIndex: "db_Srno",
+key: "db_Srno",
+align: "center",
+sorter: (a, b) => Number(a.db_Srno || 0) - Number(b.db_Srno || 0),
+
+filterDropdown: ({
+setSelectedKeys,
+selectedKeys,
+confirm,
+clearFilters,
+}) => (
+<div style={{ padding: 8, width: 220 }}>
+<input
+type="text"
+placeholder="Search Question Id"
+value={selectedKeys[0] || ""}
+onChange={(e) =>
+setSelectedKeys(e.target.value ? [e.target.value] : [])
+}
+onPressEnter={() => confirm()}
+style={{
+width: "100%",
+marginBottom: 8,
+padding: "6px 8px",
+border: "1px solid #d9d9d9",
+borderRadius: 6,
+}}
+/>
+
+  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+    <Button
+      size="small"
+      onClick={() => {
+        clearFilters();
+        confirm();
+      }}
+    >
+      Reset
+    </Button>
+
+    <Button type="primary" size="small" onClick={() => confirm()}>
+      Search
+    </Button>
+  </div>
+</div>
+
+),
+
+onFilter: (value, record) =>
+String(record.db_Srno ?? "")
+.toLowerCase()
+.includes(String(value).toLowerCase()),
+
+render: (value) => (
+<span className="font-semibold text-gray-700">{value}</span>
+),
+},
     {
       title: "Q#",
       dataIndex: "sr_no",

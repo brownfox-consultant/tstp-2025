@@ -516,6 +516,129 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size_query_param = "page_size"
     max_page_size = 200
 
+
+
+
+import re
+from html import unescape
+
+
+def clean_email_text(value):
+    """Convert HTML-formatted text to readable plain text."""
+    if value is None:
+        return ""
+
+    value = str(value)
+    value = re.sub(
+        r"<br\s*/?>",
+        "\n",
+        value,
+        flags=re.IGNORECASE,
+    )
+    value = re.sub(
+        r"</p\s*>",
+        "\n",
+        value,
+        flags=re.IGNORECASE,
+    )
+    value = re.sub(r"<[^>]+>", "", value)
+
+    return unescape(value).strip()
+
+
+def get_question_email_snapshot(question):
+    """Capture the question data required by the correction emails."""
+    return {
+        "question_id": question.id,
+        "srno": question.srno,
+        "description": question.description or "",
+        "options": question.options or [],
+    }
+
+
+def format_options_for_email(options):
+    """Format options and correct-answer markers for the change summary."""
+    if not options:
+        return "No options available"
+
+    if isinstance(options, dict):
+        options = list(options.values())
+
+    if not isinstance(options, list):
+        return clean_email_text(options)
+
+    lines = []
+
+    for index, option in enumerate(options):
+        if isinstance(option, dict):
+            label = (
+                option.get("label")
+                or option.get("key")
+                or option.get("option_label")
+                or chr(65 + index)
+            )
+
+            text = clean_email_text(
+                option.get("description")
+                or option.get("text")
+                or option.get("value")
+                or option.get("option")
+                or ""
+            )
+
+            correct = (
+                option.get("is_correct", False)
+                or option.get("correct", False)
+                or option.get("is_answer", False)
+            )
+
+            line = f"{label}. {text}"
+
+            if correct:
+                line += " [Correct Answer]"
+
+            lines.append(line)
+
+        else:
+            lines.append(
+                f"{chr(65 + index)}. {clean_email_text(option)}"
+            )
+
+    return "\n".join(lines)
+
+
+def get_question_field_changes(before, after):
+    """Return only changes to the description and options."""
+    changes = []
+
+    if before.get("description") != after.get("description"):
+        changes.append({
+            "field": "description",
+            "label": "Question Description",
+            "before": clean_email_text(
+                before.get("description")
+            ) or "Not provided",
+            "after": clean_email_text(
+                after.get("description")
+            ) or "Not provided",
+        })
+
+    if before.get("options") != after.get("options"):
+        changes.append({
+            "field": "options",
+            "label": "Options / Correct Answer",
+            "before": format_options_for_email(
+                before.get("options")
+            ),
+            "after": format_options_for_email(
+                after.get("options")
+            ),
+        })
+
+    return changes
+
+
+
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.get_all()
     serializer_class = CreateQuestionSerializer
@@ -1571,12 +1694,14 @@ class QuestionViewSet(viewsets.ModelViewSet):
             )
 
 
+    
     @permission_classes([IsAdmin])
     def update(self, request, pk=None, *args, **kwargs):
+        import copy
 
         try:
             base_question = Question.objects.select_related(
-                'topic', 'sub_topic'
+                "topic", "sub_topic"
             ).get(id=pk)
         except Question.DoesNotExist:
             return get_error_response("Invalid question id")
@@ -1584,29 +1709,27 @@ class QuestionViewSet(viewsets.ModelViewSet):
         course_updates = request.data.get("course_updates")
 
         if not course_updates or not isinstance(course_updates, list):
-            return get_error_response("course_updates must be provided as a list")
+            return get_error_response(
+                "course_updates must be provided as a list"
+            )
 
-        # --------------------------------------------------
-        # 1️⃣ Find cloned questions
-        # --------------------------------------------------
-
-        course_subject_ids = [cu["course_subject_id"] for cu in course_updates]
+        course_subject_ids = [
+            cu["course_subject_id"] for cu in course_updates
+        ]
 
         candidates = Question.objects.select_related(
-            'topic', 'sub_topic'
+            "topic", "sub_topic"
         ).filter(course_subject_id__in=course_subject_ids)
 
         questions_to_update = filter_questions_by_signature(
             base_question=base_question,
-            candidates=candidates
+            candidates=candidates,
         )
 
         if not questions_to_update:
-            return get_error_response("No matching questions found to update")
-
-        # --------------------------------------------------
-        # 2️⃣ Status map
-        # --------------------------------------------------
+            return get_error_response(
+                "No matching questions found to update"
+            )
 
         status_map = {
             cu["course_subject_id"]: cu.get("is_active", True)
@@ -1615,26 +1738,15 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         updated_questions = []
         options_changed_question_ids = []
+        question_changes = []
 
         context = {"request": request}
 
-        # --------------------------------------------------
-        # 3️⃣ UPDATE QUESTIONS
-        # --------------------------------------------------
-
         with transaction.atomic():
-
             for question in questions_to_update:
-
                 update_data = request.data.copy()
 
-                # --------------------------------------------------
-                # IMPORTANT:
-                # Do NOT change course/course_subject when doing
-                # "Update Question In Courses".
-                # Each matched question must stay in its own course.
-                # --------------------------------------------------
-
+                # Keep each cloned question in its own course.
                 update_data.pop("course", None)
                 update_data.pop("course_subject", None)
                 update_data.pop("course_updates", None)
@@ -1643,26 +1755,32 @@ class QuestionViewSet(viewsets.ModelViewSet):
                     question,
                     data=update_data,
                     partial=True,
-                    context=context
+                    context=context,
                 )
 
                 serializer.is_valid(raise_exception=True)
 
-                # Detect answer change
+                # Detect whether the answer/options are changing.
                 options_changed = has_answer_changed(
                     question,
-                    serializer.validated_data
+                    serializer.validated_data,
                 )
 
-                # Save while preserving this question's
-                # existing course_subject
+                # Capture the original question before saving.
+                before_snapshot = None
+
+                if options_changed:
+                    before_snapshot = copy.deepcopy(
+                        get_question_email_snapshot(question)
+                    )
+
                 updated_question = serializer.save(
                     is_active=status_map.get(
                         question.course_subject_id,
-                        question.is_active
+                        question.is_active,
                     ),
                     updated_by=request.user,
-                    updated_at=timezone.now()
+                    updated_at=timezone.now(),
                 )
 
                 updated_questions.append(updated_question)
@@ -1672,69 +1790,78 @@ class QuestionViewSet(viewsets.ModelViewSet):
                         updated_question.id
                     )
 
+                    # Capture the corrected question.
+                    updated_question.refresh_from_db()
+
+                    after_snapshot = copy.deepcopy(
+                        get_question_email_snapshot(updated_question)
+                    )
+
+                    changes = get_question_field_changes(
+                        before_snapshot,
+                        after_snapshot,
+                    )
+
+                    question_changes.append({
+                        "question_id": updated_question.id,
+                        "srno": after_snapshot.get("srno"),
+                        "before": before_snapshot,
+                        "after": after_snapshot,
+                        "changes": changes,
+                    })
+
                 QuestionLog.objects.create(
                     question=updated_question,
                     user=request.user,
                     action="EDIT",
-                    ip_address=self.get_client_ip(request)
+                    ip_address=self.get_client_ip(request),
                 )
-
-        # --------------------------------------------------
-        # 4️⃣ RE-EVALUATE TESTS
-        # --------------------------------------------------
 
         affected_student_ids = []
 
         if options_changed_question_ids:
+            # Recalculate affected test results.
+            re_evaluate_question_answers_sync(
+                options_changed_question_ids
+            )
 
-            # Recalculate results
-            re_evaluate_question_answers_sync(options_changed_question_ids)
-
-            # --------------------------------------------------
-            # 5️⃣ Find affected students (Full Length Tests)
-            # --------------------------------------------------
-
+            # Full Length Test students.
             fl_students = QuestionAnswer.objects.filter(
                 question_id__in=options_changed_question_ids
             ).values_list(
                 "result__test_submission__student_id",
-                flat=True
+                flat=True,
             )
 
-            # --------------------------------------------------
-            # 6️⃣ Find affected students (Practice Tests)
-            # --------------------------------------------------
-
+            # Practice Test students.
             pt_students = PracticeQuestionAnswer.objects.filter(
                 question_id__in=options_changed_question_ids
             ).values_list(
                 "practice_test_result__practice_test__student_id",
-                flat=True
+                flat=True,
             )
 
-            affected_student_ids = list(set(fl_students) | set(pt_students))
-
-            # --------------------------------------------------
-            # 7️⃣ SEND EMAIL (CELERY)
-            # --------------------------------------------------
+            affected_student_ids = list(
+                set(fl_students) | set(pt_students)
+            )
 
             if affected_student_ids:
                 send_question_update_email.delay(
                     student_ids=affected_student_ids,
-                    question_ids=options_changed_question_ids
+                    question_ids=options_changed_question_ids,
+                    question_changes=question_changes,
                 )
-
-        # --------------------------------------------------
-        # RESPONSE
-        # --------------------------------------------------
 
         return Response({
             "message": "Questions updated successfully",
             "updated_count": len(updated_questions),
             "options_changed": bool(options_changed_question_ids),
             "affected_students": len(affected_student_ids),
-            "updated_question_ids": [q.id for q in updated_questions],
+            "updated_question_ids": [
+                q.id for q in updated_questions
+            ],
         })
+
 
 
 

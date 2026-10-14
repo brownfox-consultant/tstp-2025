@@ -1,151 +1,321 @@
+
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Question Correction Impact Summary</title>
 </head>
 
-<body style="margin:0; padding:0; background:#f4f6f8; font-family:Arial, Helvetica, sans-serif;">
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
 
 <table width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="background:#f4f6f8; padding:30px 0;">
+       style="background:#f3f4f6;padding:20px 8px;">
+<tr>
+<td align="center">
 
+<table width="700" cellpadding="0" cellspacing="0" border="0"
+       style="width:100%;max-width:700px;background:#ffffff;border:1px solid #e5e7eb;">
+
+    <!-- HEADER -->
     <tr>
-        <td align="center">
-
-            <table width="700" cellpadding="0" cellspacing="0" border="0"
-                   style="background:#ffffff; border-radius:8px; overflow:hidden;">
-
-                <!-- Header -->
-                <tr>
-                    <td style="background:#1f2937; padding:25px 30px; color:#ffffff;">
-                        <h2 style="margin:0;">
-                            Question Correction Impact Summary
-                        </h2>
-                    </td>
-                </tr>
-
-                <!-- Content -->
-                <tr>
-                    <td style="padding:30px;">
-
-                        <p style="font-size:15px;">
-                            A question correction has impacted the following students.
-                        </p>
-
-                        {% for student in students %}
-
-                        <table width="100%" cellpadding="8" cellspacing="0" border="0"
-                               style="margin-top:25px; border:1px solid #e5e7eb;">
-
-                            <tr>
-                                <td colspan="2"
-                                    style="background:#f3f4f6; font-size:17px;">
-                                    <strong>{{ student.name }}</strong>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td width="160">
-                                    <strong>Email</strong>
-                                </td>
-                                <td>
-                                    {{ student.email }}
-                                </td>
-                            </tr>
-
-                        </table>
-
-                        {% for test in student.impacted_tests %}
-
-                        <table width="100%" cellpadding="7" cellspacing="0" border="0"
-                               style="margin-top:10px;">
-
-                            <tr>
-                                <td width="160">
-                                    <strong>Test Name</strong>
-                                </td>
-                                <td>
-                                    {{ test.test_name }}
-                                </td>
-                            </tr>
-
-                            <tr>
-    <td>
-        <strong>Subject</strong>
-    </td>
-    <td>
-        {{ test.subject }}
-    </td>
-</tr>
-
-                            <tr>
-                                <td>
-                                    <strong>Section</strong>
-                                </td>
-                                <td>
-                                    {{ test.section_name }}
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>
-                                    <strong>Question No</strong>
-                                </td>
-                                <td>
-                                    {{ test.sr_no }}
-                                </td>
-                            </tr>
-
-                        </table>
-
-                        {% endfor %}
-
-                        <hr style="border:0; border-top:1px solid #e5e7eb; margin:25px 0;">
-
-                        {% endfor %}
-
-                        <!-- Summary -->
-                        <table width="100%" cellpadding="10" cellspacing="0" border="0"
-                               style="margin-top:25px; background:#f9fafb;">
-
-                            <tr>
-                                <td>
-                                    <strong>Total Students Impacted</strong>
-                                </td>
-                                <td>
-                                    {{ total_impacted_students }}
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>
-                                    <strong>Updated At</strong>
-                                </td>
-                                <td>
-                                    {{ updated_at }}
-                                </td>
-                            </tr>
-
-                        </table>
-
-                        <p style="margin-top:25px; font-size:14px; color:#555;">
-                            The system has automatically recalculated the affected
-                            test scores.
-                        </p>
-
-                        <p style="margin-top:30px;">
-                            <strong>TSTP System</strong>
-                        </p>
-
-                    </td>
-                </tr>
-
-            </table>
-
+        <td style="background:#1f2937;padding:22px 24px;color:#ffffff;">
+            <h2 style="margin:0;font-size:21px;">
+                Question Correction Impact Summary
+            </h2>
+            <p style="margin:7px 0 0;font-size:12px;color:#d1d5db;">
+                TSTP Administration Report
+            </p>
         </td>
     </tr>
 
+    <tr>
+    <td style="padding:22px 24px;">
+
+        <p style="font-size:13px;line-height:1.7;color:#4b5563;margin:0 0 22px;">
+            A question correction has been applied. The following question
+            details are displayed once, followed by all students and tests
+            affected by the correction.
+        </p>
+
+        <!-- ========================================= -->
+        <!-- QUESTION DETAILS - DISPLAY ONLY ONCE     -->
+        <!-- ========================================= -->
+
+        {% if question_changes %}
+        <h3 style="font-size:17px;margin:0 0 12px;color:#1f2937;">
+            Corrected Question Details
+        </h3>
+
+        {% for item in question_changes %}
+
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="margin-bottom:22px;border:1px solid #d1d5db;border-collapse:collapse;">
+
+            <!-- SUBJECT AND QUESTION NUMBER -->
+            <tr>
+    <td style="padding:11px 12px;background:#eff6ff;color:#1d4ed8;font-size:13px;">
+        <strong>Subject:</strong>
+        {% with first_student=students|first %}
+            {% with first_test=first_student.impacted_tests|first %}
+                {{ first_test.subject|default:"-" }}
+            {% endwith %}
+        {% endwith %}
+    </td>
+</tr>
+
+            <tr>
+                <td style="padding:12px;">
+                    <p style="font-size:12px;color:#6b7280;margin:0 0 7px;">
+                        <strong>QUESTION DESCRIPTION</strong>
+                    </p>
+                    <div style="font-size:13px;line-height:1.6;overflow-wrap:anywhere;">
+                        {{ item.after.description|safe }}
+                    </div>
+                </td>
+            </tr>
+
+            {% if item.before.description != item.after.description %}
+            <tr>
+                <td style="padding:11px 12px;background:#fff1f2;border-top:1px solid #fecdd3;">
+                    <strong style="font-size:12px;color:#9f1239;">
+                        PREVIOUS QUESTION DESCRIPTION
+                    </strong>
+                    <div style="font-size:13px;line-height:1.6;margin-top:7px;">
+                        {{ item.before.description|safe }}
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+
+            <!-- BEFORE OPTIONS -->
+            <tr>
+                <td style="padding:10px 12px;background:#f3f4f6;border-top:1px solid #e5e7eb;">
+                    <strong style="font-size:12px;">
+                        OPTIONS — BEFORE CORRECTION
+                    </strong>
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding:10px 12px;">
+                    {% for option in item.before.options %}
+                    <table width="100%" cellpadding="7" cellspacing="0" border="0"
+                           style="margin-bottom:5px;border:1px solid #e5e7eb;border-collapse:collapse;">
+                        <tr>
+                            <td width="28" valign="top"
+                                style="font-size:12px;color:#6b7280;">
+                                <strong>
+                                    {% if option.label %}
+                                        {{ option.label }}
+                                    {% elif option.key %}
+                                        {{ option.key }}
+                                    {% else %}
+                                        {{ forloop.counter }}
+                                    {% endif %}.
+                                </strong>
+                            </td>
+
+                            <td style="font-size:12px;line-height:1.5;overflow-wrap:anywhere;">
+                                {% if option.description %}
+                                    {{ option.description|safe }}
+                                {% elif option.text %}
+                                    {{ option.text|safe }}
+                                {% elif option.value %}
+                                    {{ option.value|safe }}
+                                {% else %}
+                                    {{ option }}
+                                {% endif %}
+                            </td>
+
+                            {% if option.is_correct or option.correct or option.is_answer %}
+                            <td width="105" valign="top"
+                                style="font-size:10px;color:#15803d;">
+                                <strong>✓ Correct Answer</strong>
+                            </td>
+                            {% endif %}
+                        </tr>
+                    </table>
+                    {% empty %}
+                    <p style="font-size:12px;color:#6b7280;">
+                        No options available.
+                    </p>
+                    {% endfor %}
+                </td>
+            </tr>
+
+            <!-- AFTER OPTIONS -->
+            <tr>
+                <td style="padding:10px 12px;background:#dcfce7;border-top:1px solid #bbf7d0;">
+                    <strong style="font-size:12px;color:#166534;">
+                        OPTIONS — AFTER CORRECTION
+                    </strong>
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding:10px 12px;">
+                    {% for option in item.after.options %}
+                    <table width="100%" cellpadding="7" cellspacing="0" border="0"
+                           style="margin-bottom:5px;border:1px solid #d1fae5;border-collapse:collapse;">
+                        <tr>
+                            <td width="28" valign="top"
+                                style="font-size:12px;color:#6b7280;">
+                                <strong>
+                                    {% if option.label %}
+                                        {{ option.label }}
+                                    {% elif option.key %}
+                                        {{ option.key }}
+                                    {% else %}
+                                        {{ forloop.counter }}
+                                    {% endif %}.
+                                </strong>
+                            </td>
+
+                            <td style="font-size:12px;line-height:1.5;overflow-wrap:anywhere;">
+                                {% if option.description %}
+                                    {{ option.description|safe }}
+                                {% elif option.text %}
+                                    {{ option.text|safe }}
+                                {% elif option.value %}
+                                    {{ option.value|safe }}
+                                {% else %}
+                                    {{ option }}
+                                {% endif %}
+                            </td>
+
+                            {% if option.is_correct or option.correct or option.is_answer %}
+                            <td width="105" valign="top"
+                                style="font-size:10px;color:#15803d;">
+                                <strong>✓ Correct Answer</strong>
+                            </td>
+                            {% endif %}
+                        </tr>
+                    </table>
+                    {% empty %}
+                    <p style="font-size:12px;color:#6b7280;">
+                        No options available.
+                    </p>
+                    {% endfor %}
+                </td>
+            </tr>
+
+        </table>
+        {% endfor %}
+        {% endif %}
+
+        <!-- ========================================= -->
+        <!-- AFFECTED STUDENTS - BELOW QUESTION        -->
+        <!-- ========================================= -->
+
+        <h3 style="font-size:17px;margin:28px 0 12px;color:#1f2937;">
+            Affected Students and Tests
+        </h3>
+
+        {% for student in students %}
+
+        <table width="100%" cellpadding="8" cellspacing="0" border="0"
+               style="margin-top:16px;border:1px solid #d1d5db;border-collapse:collapse;font-size:12px;">
+
+            <tr>
+                <td colspan="2" style="background:#1f2937;color:#ffffff;font-size:14px;">
+                    <strong>{{ student.name }}</strong>
+                </td>
+            </tr>
+
+            <tr>
+                <td width="125" style="background:#f9fafb;">
+                    <strong>Email</strong>
+                </td>
+                <td>{{ student.email|default:"-" }}</td>
+            </tr>
+        </table>
+
+        {% for test in student.impacted_tests %}
+
+        <table width="100%" cellpadding="8" cellspacing="0" border="0"
+               style="margin-top:8px;border:1px solid #e5e7eb;border-collapse:collapse;font-size:12px;">
+
+            <tr>
+                <td colspan="2" style="background:#eff6ff;color:#1d4ed8;">
+                    <strong>{{ test.test_name }}</strong>
+                </td>
+            </tr>
+
+            <tr>
+                <td width="125" style="background:#f9fafb;">
+                    <strong>Test Type</strong>
+                </td>
+                <td>{{ test.test_type|default:"-" }}</td>
+            </tr>
+
+            <tr>
+                <td style="background:#f9fafb;">
+                    <strong>Subject</strong>
+                </td>
+                <td>{{ test.subject|default:"-" }}</td>
+            </tr>
+
+            <tr>
+                <td style="background:#f9fafb;">
+                    <strong>Section</strong>
+                </td>
+                <td>{{ test.section_name|default:"-" }}</td>
+            </tr>
+
+            <!-- <tr>
+                <td style="background:#f9fafb;">
+                    <strong>Question No.</strong>
+                </td>
+                <td>
+                    {% if test.question_change.srno %}
+                        {{ test.question_change.srno }}
+                    {% else %}
+                        {{ test.sr_no|default:"-" }}
+                    {% endif %}
+                </td>
+            </tr> -->
+
+        </table>
+
+        {% endfor %}
+
+        {% endfor %}
+
+        <!-- SUMMARY -->
+        <table width="100%" cellpadding="10" cellspacing="0" border="0"
+               style="margin-top:25px;background:#f9fafb;font-size:12px;">
+            <tr>
+                <td><strong>Total Students Impacted</strong></td>
+                <td>{{ total_impacted_students }}</td>
+            </tr>
+            <tr>
+                <td><strong>Updated At</strong></td>
+                <td>{{ updated_at }}</td>
+            </tr>
+        </table>
+
+        <p style="font-size:12px;line-height:1.7;color:#6b7280;margin-top:22px;">
+            The system has automatically recalculated the affected test scores.
+        </p>
+
+        <p style="font-size:13px;margin-top:22px;">
+            <strong>TSTP System</strong>
+        </p>
+
+    </td>
+    </tr>
+
+    <tr>
+        <td style="background:#f9fafb;padding:13px;text-align:center;color:#6b7280;font-size:11px;">
+            This is an automated notification from TSTP.
+        </td>
+    </tr>
+
+</table>
+
+</td>
+</tr>
 </table>
 
 </body>

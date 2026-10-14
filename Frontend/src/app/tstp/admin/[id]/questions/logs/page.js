@@ -304,7 +304,18 @@ export default function QuestionLogsPage() {
         <Card style={{ marginBottom: 20 }} title="Daily Summary">
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={6}>
-              <Statistic title="Date Range" value={dailyCount.date_range || "—"} valueStyle={{ fontSize: 20 }} />
+             <Statistic
+  title="Date Range"
+  value={
+    dailyCount.date_range
+      ? dailyCount.date_range
+          .split(" to ")
+          .map((date) => dayjs(date).format("DD-MM-YYYY"))
+          .join(" to ")
+      : "—"
+  }
+  valueStyle={{ fontSize: 20 }}
+/>
             </Col>
             <Col xs={12} sm={6} md={4}>
               <Statistic title="Total Added" value={dailyCount.total_added ?? 0} />

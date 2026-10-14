@@ -410,11 +410,13 @@ function ViewDoubtModal({
                 Related Question
               </h3>
 
-              {question?.srno && (
-                <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded">
-                  Sr No: {question.srno}
-                </span>
-              )}
+              
+{(role === "admin" || role === "faculty") && question?.srno && (
+  <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded">
+    Sr No: {question.srno}
+  </span>
+)}
+
 
             </div>
 

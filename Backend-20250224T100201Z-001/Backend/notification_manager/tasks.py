@@ -21,6 +21,7 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 
 import json
+from test_manager.models import QuestionAnswer, PracticeQuestionAnswer
 
 
 
@@ -104,203 +105,298 @@ def map_section_name(section_name):
     return section_name
 
 
-@shared_task
-def send_question_update_email(student_ids, question_ids):
 
-    print("\n========== QUESTION UPDATE EMAIL TASK ==========\n")
+
+@shared_task
+def send_question_update_email(
+    student_ids,
+    question_ids,
+    question_changes=None,
+):
+    import json
+
+    from django.conf import settings
+    from django.template.loader import render_to_string
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils import timezone
+
+    question_changes = question_changes or []
+    question_ids = {int(qid) for qid in question_ids}
+    student_ids = list(set(student_ids))
+
+    question_change_map = {
+        int(item["question_id"]): item
+        for item in question_changes
+    }
 
     total_impacted_students = 0
     admin_students = []
 
     for student in User.objects.filter(id__in=student_ids):
-
         print("Processing Student:", student.name)
 
+        impacted_tests = []
+
+        # ===============================================
+        # 1. FULL LENGTH TESTS
+        # ===============================================
         answers = QuestionAnswer.objects.filter(
             question_id__in=question_ids,
-            result__test_submission__student=student
+            result__test_submission__student=student,
         ).select_related(
             "result__test_submission__test"
         )
 
-        if not answers.exists():
-            continue
-
         submissions = {
-            qa.result.test_submission
-            for qa in answers
+            answer.result.test_submission
+            for answer in answers
         }
 
-        impacted_tests = []
-
-        # ---------------------------------------------------
-        # GET RESULT DETAILS
-        # ---------------------------------------------------
-
         for submission in submissions:
+            try:
+                view = ResultViewSet()
 
-            view = ResultViewSet()
-
-            request = type(
-                "obj",
-                (object,),
-                {
-                    "GET": {
-                        "test_submission_id": submission.id
+                request_obj = type(
+                    "EmailRequest",
+                    (object,),
+                    {
+                        "GET": {
+                            "test_submission_id": submission.id
+                        },
+                        "user": student,
                     },
-                    "user": student
-                }
-            )
+                )
 
-            response = view.get_details(request)
+                response = view.get_details(request_obj)
 
-            detailed_view = json.loads(response.content)
-
-            for subject in detailed_view.get("subjects", []):
-
-                for section in subject.get("sections", []):
-
-                    section_name = map_section_name(
-                        section.get("name")
+                if getattr(response, "status_code", 200) >= 400:
+                    print(
+                        "Could not load submission details:",
+                        submission.id,
                     )
+                    continue
 
-                    for question in section.get(
-                        "questions_data",
-                        []
-                    ):
+                response_content = response.content
 
-                        if question["question_id"] in question_ids:
+                if isinstance(response_content, bytes):
+                    response_content = response_content.decode("utf-8")
+
+                detailed_view = json.loads(response_content)
+
+                test_name = detailed_view.get(
+                    "testName",
+                    "Full Length Test",
+                ).replace("Test - ", "")
+
+                for subject in detailed_view.get("subjects", []):
+                    for section in subject.get("sections", []):
+                        section_name = map_section_name(
+                            section.get("name")
+                        )
+
+                        for question in section.get(
+                            "questions_data", []
+                        ):
+                            question_id = question.get("question_id")
+
+                            if question_id is None:
+                                continue
+
+                            question_id = int(question_id)
+
+                            if question_id not in question_ids:
+                                continue
 
                             impacted_tests.append({
-                                "test_name": detailed_view[
-                                    "testName"
-                                ].replace("Test - ", ""),
-
+                                "test_type": "Full Length Test",
+                                "test_name": test_name,
                                 "section_name": section_name,
-
                                 "sr_no": question.get("sr_no"),
-
-                                "subject": subject.get("name"),
-
-                                "topic": question.get("topic"),
-
-                                "difficulty": question.get(
-                                    "difficulty"
+                                "subject": subject.get("name") or "-",
+                                "topic": question.get("topic") or "-",
+                                "difficulty": (
+                                    question.get("difficulty") or "-"
+                                ),
+                                "question_id": question_id,
+                                "question_change": (
+                                    question_change_map.get(question_id)
                                 ),
                             })
+
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception(
+                    "Error processing Full Length submission %s",
+                    submission.id,
+                )
+
+        # ===============================================
+        # 2. PRACTICE TESTS
+        # ===============================================
+        practice_answers = PracticeQuestionAnswer.objects.filter(
+            question_id__in=question_ids,
+            practice_test_result__practice_test__student=student,
+        ).select_related(
+            "question",
+            "question__course_subject__subject",
+            "question__topic",
+            "practice_test_result__practice_test",
+        )
+
+        for answer in practice_answers:
+            question = answer.question
+            question_id = int(question.id)
+
+            practice_result = answer.practice_test_result
+            practice_test = practice_result.practice_test
+
+            practice_test_name = (
+                getattr(practice_test, "name", None)
+                or str(practice_test)
+            )
+
+            impacted_tests.append({
+                "test_type": "Practice Test",
+                "test_name": practice_test_name,
+                "section_name": "Practice Test",
+                "sr_no": question.srno,
+                "subject": (
+                    question.course_subject.subject.name
+                    if question.course_subject_id
+                    else "-"
+                ),
+                "topic": (
+                    question.topic.name if question.topic else "-"
+                ),
+                "difficulty": question.difficulty or "-",
+                "question_id": question_id,
+                "question_change": question_change_map.get(
+                    question_id
+                ),
+            })
+
+        # ===============================================
+        # 3. REMOVE DUPLICATE TEST/QUESTION ENTRIES
+        # ===============================================
+        unique_tests = []
+        seen = set()
+
+        for item in impacted_tests:
+            key = (
+                item["test_type"],
+                item["test_name"],
+                item["question_id"],
+                item["section_name"],
+            )
+
+            if key not in seen:
+                seen.add(key)
+                unique_tests.append(item)
+
+        impacted_tests = unique_tests
 
         if not impacted_tests:
             continue
 
         total_impacted_students += 1
 
-        # ---------------------------------------------------
-        # SUBJECT / TOPIC / DIFFICULTY
-        # ---------------------------------------------------
+        impacted_question_ids = {
+            item["question_id"] for item in impacted_tests
+        }
 
-        subject_name = impacted_tests[0]["subject"]
-        topic_name = impacted_tests[0]["topic"]
-        difficulty = impacted_tests[0]["difficulty"]
+        student_question_changes = [
+            item
+            for item in question_changes
+            if int(item["question_id"]) in impacted_question_ids
+        ]
 
-        # ===================================================
-        # STUDENT NOTIFICATION
-        # ===================================================
-
+        # ===============================================
+        # 4. STUDENT EMAIL
+        # ===============================================
         student_email_context = {
             "student_name": student.name,
             "impacted_tests": impacted_tests,
-            "subject_name": subject_name,
-            "topic_name": topic_name,
-            "difficulty": difficulty,
+            "question_changes": student_question_changes,
         }
 
         student_email_body = render_to_string(
             "emails/question_update.html",
-            student_email_context
+            student_email_context,
         )
 
-        # ---------------------------------------------------
-        # DATABASE NOTIFICATION
-        # ---------------------------------------------------
+        notification_description = (
+            "A question correction has impacted your test performance. "
+            "Your affected test results have been recalculated. "
+            "Please log in to your dashboard to view your updated results."
+        )
 
-        notification_description = f"""
-A question correction has impacted your test performance.
-
-Please log in to your dashboard to view your updated results.
-"""
-
+        # ===============================================
+        # 5. DATABASE NOTIFICATION
+        # ===============================================
         UserNotification.objects.create(
             user=student,
             subject="Question Correction Update",
             description=notification_description,
             category=Notification.TEST,
-            reference_id=impacted_tests[0]["sr_no"],
+            reference_id=impacted_tests[0]["question_id"],
         )
 
-        # ---------------------------------------------------
-        # SEND STUDENT EMAIL
-        # ---------------------------------------------------
+        # ===============================================
+        # 6. SEND STUDENT EMAIL
+        # ===============================================
+        if student.email:
+            email = EmailMultiAlternatives(
+                subject="Question Correction Update",
+                body=notification_description,
+                from_email=settings.EMAIL_HOST_USER,
+                to=[student.email],
+                bcc=["vijayaluguvelli@gmail.com"],
+            )
 
-        email = EmailMultiAlternatives(
-            subject="Question Correction Update",
-            body=notification_description,
-            from_email=settings.EMAIL_HOST_USER,
-            to=[student.email],
-            bcc=["vijayaluguvelli@gmail.com"],
-        )
+            email.attach_alternative(
+                student_email_body,
+                "text/html",
+            )
 
-        email.attach_alternative(
-            student_email_body,
-            "text/html"
-        )
+            email.send(fail_silently=False)
+            print("Student email sent:", student.email)
 
-        email.send(fail_silently=False)
-
-        print(
-            "✅ Student email sent:",
-            student.email
-        )
-
-        # ===================================================
-        # COLLECT ADMIN DATA
-        # ===================================================
-
+        # ===============================================
+        # 7. COLLECT ADMIN DATA
+        # ===============================================
         admin_students.append({
             "name": student.name,
             "email": student.email,
             "impacted_tests": impacted_tests,
         })
 
-    # =======================================================
-    # SINGLE ADMIN EMAIL
-    # =======================================================
-
+    # ===============================================
+    # 8. SEND ONE CONSOLIDATED ADMIN EMAIL
+    # ===============================================
     if total_impacted_students > 0:
-
-        updated_at = timezone.now().strftime(
+        updated_at = timezone.localtime().strftime(
             "%Y-%m-%d %H:%M:%S"
         )
 
         admin_email_context = {
             "students": admin_students,
+            "question_changes": question_changes,
             "total_impacted_students": total_impacted_students,
             "updated_at": updated_at,
         }
 
         admin_email_body = render_to_string(
             "emails/question_update_admin.html",
-            admin_email_context
+            admin_email_context,
         )
 
-        admin_plain_text = f"""
-Question Correction Impact Summary
-
-Total Students Impacted : {total_impacted_students}
-Updated At              : {updated_at}
-
-The system has automatically recalculated
-the affected test scores.
-"""
+        admin_plain_text = (
+            "Question Correction Impact Summary\n\n"
+            f"Total Students Impacted: {total_impacted_students}\n"
+            f"Updated At: {updated_at}\n\n"
+            "The system has automatically recalculated "
+            "the affected test scores."
+        )
 
         email = EmailMultiAlternatives(
             subject="Question Correction Impact Summary",
@@ -312,16 +408,20 @@ the affected test scores.
 
         email.attach_alternative(
             admin_email_body,
-            "text/html"
+            "text/html",
         )
 
         email.send(fail_silently=False)
+        print("SINGLE ADMIN EMAIL SENT")
 
-        print("✅ SINGLE ADMIN EMAIL SENT")
+    print("QUESTION UPDATE TASK COMPLETED")
 
-    print(
-        "\n========== TASK COMPLETED ==========\n"
-    )
+    return {
+        "total_impacted_students": total_impacted_students,
+        "question_ids": list(question_ids),
+    }
+
+
 
 
 @shared_task

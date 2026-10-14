@@ -633,7 +633,7 @@ const handleDelete = async (id) => {
           rowClassName={(record, index) =>
             index % 2 === 0 ? "even-row" : "odd-row"
           }
-          className="tablestyles mt-4"
+           className="border-gray-200 border rounded report-table-custom [&_.ant-table-thead>tr>th]:!py-1.5 [&_.ant-table-tbody>tr:not(.ant-table-measure-row)>td]:!py-1.5 [&_.ant-table-tbody>tr.ant-table-measure-row>td]:!p-0 [&_.ant-table-tbody>tr.ant-table-measure-row]:!h-0 [&_.ant-table-tbody>tr.report-row-white>td]:!bg-white [&_.ant-table-tbody>tr.report-row-orange>td]:!bg-[#FFF8EB] [&_.ant-table-tbody>tr.report-row-white:hover>td]:!bg-[#F9FAFB] [&_.ant-table-tbody>tr.report-row-orange:hover>td]:!bg-[#FFEED4]"
           scroll={{ x: "max-content", y: 480 }}
           onChange={handleTableChange}
         ></Table>
