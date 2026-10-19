@@ -81,76 +81,189 @@ def get_question_signature_hash(question):
 # ANSWER CHANGE DETECTION (CRITICAL)
 # ======================================================
 
-def normalize_list(values):
-    if not values:
-        return []
-    return sorted([str(v).strip().lower() for v in values])
+
+def _normalise_answer(value):
+    """
+    Normalize an answer value without comparing question/option wording.
+    """
+    if isinstance(value, str):
+        return value.strip().casefold()
+
+    if isinstance(value, (list, tuple)):
+        return [_normalise_answer(item) for item in value]
+
+    if isinstance(value, dict):
+        return {
+            str(key): _normalise_answer(val)
+            for key, val in sorted(
+                value.items(),
+                key=lambda item: str(item[0]),
+            )
+        }
+
+    return value
+
+
+def _get_correct_option_signature(options):
+    """
+    Return only the correct-option selection, excluding option text.
+    """
+    if isinstance(options, str):
+        try:
+            options = json.loads(options)
+        except (json.JSONDecodeError, TypeError):
+            return None
+
+    if not isinstance(options, list):
+        return None
+
+    correct = []
+
+    for index, option in enumerate(options):
+        if not isinstance(option, dict):
+            continue
+
+        is_correct = any(
+            option.get(key) is True
+            for key in (
+                "is_correct",
+                "correct",
+                "is_answer",
+                "isCorrect",
+                "isAnswer",
+            )
+        )
+
+        if is_correct:
+            identifier = (
+                option.get("id")
+                or option.get("key")
+                or option.get("label")
+                or index
+            )
+            correct.append(str(identifier))
+
+    return sorted(correct)
 
 
 def has_answer_changed(question, validated_data):
     """
-    Detect answer change for all question types.
-    """
+    Return True only when the answer key changes.
 
-    question_type = question.question_type
-    question_subtype = question.question_subtype
+    MCQ:
+        Compare correct-option selections, not option wording.
+
+    GRIDIN:
+        Compare answer values, not unrelated question text.
+
+    Other question types:
+        Return False until their answer-key structure is explicitly
+        supported here.
+    """
+    question_type = str(question.question_type or "").upper()
+    question_subtype = str(question.question_subtype or "").upper()
 
     old_options = question.options or []
-    new_options = validated_data.get("options")
+    new_options = validated_data.get("options", old_options)
 
-    if new_options is None:
+    # ---------------------------------------------
+    # MCQ: single-choice and multiple-choice
+    # ---------------------------------------------
+    if question_type == "MCQ":
+        old_signature = _get_correct_option_signature(old_options)
+        new_signature = _get_correct_option_signature(new_options)
+
+        # Do not guess if the option structure is unsupported.
+        if old_signature is None or new_signature is None:
+            return False
+
+        return old_signature != new_signature
+
+    # ---------------------------------------------
+    # GRIDIN: compare recognized answer fields
+    # ---------------------------------------------
+    if question_type == "GRIDIN":
+        answer_fields = (
+            "answer",
+            "correct_answer",
+            "correct_answers",
+            "answer_key",
+            "answer_keys",
+            "grid_in_answer",
+            "gridin_answer",
+            "grid_answer",
+            "accepted_answers",
+        )
+
+        for field_name in answer_fields:
+            old_value = getattr(question, field_name, None)
+
+            if field_name in validated_data:
+                new_value = validated_data[field_name]
+            else:
+                new_value = old_value
+
+            if _normalise_answer(old_value) != _normalise_answer(new_value):
+                return True
+
+        # If Grid-in answers are stored inside options, inspect the
+        # answer-specific keys and exclude descriptions/text.
+        answer_keys = (
+            "answer",
+            "correct_answer",
+            "correct_answers",
+            "answer_key",
+            "accepted_answers",
+            "min_value",
+            "max_value",
+            "tolerance",
+        )
+
+        def extract_grid_answers(options):
+            if isinstance(options, str):
+                try:
+                    options = json.loads(options)
+                except (json.JSONDecodeError, TypeError):
+                    return None
+
+            if isinstance(options, dict):
+                return {
+                    key: _normalise_answer(options[key])
+                    for key in answer_keys
+                    if key in options
+                }
+
+            if isinstance(options, list):
+                result = []
+
+                for option in options:
+                    if not isinstance(option, dict):
+                        continue
+
+                    result.append({
+                        key: _normalise_answer(option[key])
+                        for key in answer_keys
+                        if key in option
+                    })
+
+                return result
+
+            return None
+
+        old_grid_signature = extract_grid_answers(old_options)
+        new_grid_signature = extract_grid_answers(new_options)
+
+        if (
+            old_grid_signature is not None
+            and new_grid_signature is not None
+        ):
+            return old_grid_signature != new_grid_signature
+
         return False
 
-    # ------------------------------
-    # MCQ Single Choice
-    # ------------------------------
-    if question_type == "MCQ" and question_subtype == "SINGLE_CHOICE":
-
-        return normalize_list(old_options) != normalize_list(new_options)
-
-    # ------------------------------
-    # MCQ Multi Choice
-    # ------------------------------
-    if question_type == "MCQ" and question_subtype == "MULTI_CHOICE":
-
-        return normalize_list(old_options) != normalize_list(new_options)
-
-    # ------------------------------
-    # GRIDIN Single Answer
-    # ------------------------------
-    if question_type == "GRIDIN" and question_subtype == "SINGLE_ANSWER":
-
-        return normalize_list(old_options) != normalize_list(new_options)
-
-    # ------------------------------
-    # GRIDIN Multi Answer
-    # ------------------------------
-    if question_type == "GRIDIN" and question_subtype == "MULTI_ANSWER":
-
-        return normalize_list(old_options) != normalize_list(new_options)
-
-    # ------------------------------
-    # GRIDIN Range Based
-    # ------------------------------
-    if question_type == "GRIDIN" and question_subtype == "RANGE_BASED_ANSWER":
-
-        return normalize_list(old_options) != normalize_list(new_options)
-
-    # ------------------------------
-    # Fill in the Blanks
-    # ------------------------------
-    if question_subtype == "FILL_IN_THE_BLANKS":
-
-        return normalize_list(old_options) != normalize_list(new_options)
-
-    # ------------------------------
-    # Reading Comprehension
-    # ------------------------------
-    if question_subtype == "READING_COMPREHENSION":
-
-        return normalize_list(old_options) != normalize_list(new_options)
-
+    # Unsupported types do not trigger answer-correction emails.
     return False
+
 
 
 # ======================================================
