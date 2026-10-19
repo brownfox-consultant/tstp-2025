@@ -1663,6 +1663,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
                     QuestionLog.objects.create(
                         question=created_question,
+                        question_id_snapshot=created_question.id,
+                        question_srno_snapshot=created_question.srno,
                         user=request.user,
                         action='ADD',
                         ip_address=self.get_client_ip(request)
