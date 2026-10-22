@@ -1,12 +1,10 @@
+
 "use client";
 
 import { verifyOtp } from "@/app/services/registerStudent";
-import { Input, InputNumber, Modal } from "antd";
+import { Modal, message } from "antd";
 import React, { useState } from "react";
-import dynamic from "next/dynamic";
-
-// Dynamic import to prevent SSR hydration issues
-const OtpInput = dynamic(() => import("react-otp-input"), { ssr: false });
+import OtpInput from "react-otp-input";
 
 function OtpModal({
   open,
@@ -18,72 +16,90 @@ function OtpModal({
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (otp) => setOtp(otp);
+  const handleVerify = async () => {
+    if (otp.length !== 6) {
+      message.warning("Please enter the complete 6-digit OTP.");
+      return;
+    }
 
-  const handleVerify = () => {
-    setLoading(true);
-    let payload = {
-      ...extraPayload,
-      otp: otp,
-    };
+    try {
+      setLoading(true);
 
-    verifyOtp(payload)
-      .then((res) => {
-        afterSuccess();
-      })
-      .finally(() => setLoading(false));
+      const payload = {
+        ...extraPayload,
+        otp,
+      };
+
+      await verifyOtp(payload);
+
+      setOtp("");
+      afterSuccess();
+    } catch (error) {
+      console.error("OTP verification failed:", error);
+
+      message.error(
+        error?.response?.data?.message ||
+          error?.response?.data?.detail ||
+          "OTP verification failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // const renderInput = (inputProps, index, inputRef) => {
-  //   return (
-  //     <input
-  //       key={index}
-  //       {...inputProps}
-  //       ref={inputRef}
-  //       style={{
-  //         width: "3rem",
-  //         height: "3rem",
-  //         margin: "0 0.5rem",
-  //         fontSize: "2.5rem",
-  //         borderRadius: "4px",
-  //         border: "1px solid rgba(0,0,0,0.3)",
-  //       }}
-  //     />
-  //   );
-  // };
+  const handleClose = () => {
+    if (loading) return;
+
+    setOtp("");
+    setOpen(false);
+  };
 
   return (
     <Modal
       open={open}
-      onCancel={() => setOpen(false)}
+      onCancel={handleClose}
       title="Enter OTP"
       okText="Verify"
+      cancelText="Cancel"
       onOk={handleVerify}
-      okButtonProps={{ loading: loading }}
+      confirmLoading={loading}
+      okButtonProps={{
+        disabled: otp.length !== 6,
+      }}
+      closable={!loading}
+      maskClosable={!loading}
+      keyboard={!loading}
+      destroyOnHidden
     >
-      <p>
+      <p className="mb-4">
         Please enter the 6-digit OTP sent to your email{" "}
-        {email ? <>({email})</> : ""}
+        {email ? <strong>({email})</strong> : null}
       </p>
-      <OtpInput
-        value={otp}
-        onChange={setOtp}
-        numInputs={6}
-        renderInput={(props) => (
-          <input
-            {...props}
-            style={{
-              width: "1.75rem",
-              height: "2rem",
-              margin: "0.5rem",
-              fontSize: "1.75rem",
-              borderRadius: "4px",
-              border: "1px solid rgba(0,0,0,0.3)",
-              paddingLeft: "0.25rem",
-            }}
-          />
-        )}
-      />
+
+      <div className="flex justify-center">
+        <OtpInput
+          value={otp}
+          onChange={setOtp}
+          numInputs={6}
+          shouldAutoFocus
+          inputType="tel"
+          renderInput={(props) => (
+            <input
+              {...props}
+              style={{
+                width: "2.5rem",
+                height: "2.75rem",
+                margin: "0 0.3rem",
+                fontSize: "1.25rem",
+                textAlign: "center",
+                borderRadius: "6px",
+                border: "1px solid #d9d9d9",
+                outline: "none",
+              }}
+            />
+          )}
+        />
+      </div>
     </Modal>
   );
 }

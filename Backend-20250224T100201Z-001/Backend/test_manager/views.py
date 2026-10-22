@@ -5403,8 +5403,7 @@ class TestViewSet(viewsets.ModelViewSet):
                 self.get_previous_fallback_questions(
                     result.test_submission.student,
                     course_subject_id,
-                    excluded_ids=set(selected_questions)
-                    | set(excluded_question_ids),
+                    excluded_ids=set(selected_questions),
                     allowed_topics=allowed_topics
                 )
             )
@@ -5545,20 +5544,75 @@ class TestViewSet(viewsets.ModelViewSet):
 
         return selected_questions[:27]
 
+    
+    def get_math_dynamic_questions(
+        self,
+        course_subject_id,
+        result,
+        excluded_question_ids
+    ):
+        """
+        Math Dynamic Full-Length Test:
+        Advance Math: 7
+        Algebra: 8
+        Geometry and Trigonometry: 3
+        Problem-Solving and Data Analysis: 4
+        Total: 22
+        """
+
+        distribution = [
+            {"topic": "Advance Math", "count": 7},
+            {"topic": "Algebra", "count": 8},
+            {"topic": "Geometry and Trigonometry", "count": 3},
+            {"topic": "Problem-Solving and Data Analysis", "count": 4},
+        ]
+
+        selected_questions = []
+        used_question_ids = set(excluded_question_ids or [])
+
+        for item in distribution:
+            topic_name = item["topic"]
+            required_count = item["count"]
+
+            questions = self.get_dynamic_section_questions(
+                course_subject_id=course_subject_id,
+                result=result,
+                num_questions=required_count,
+                excluded_question_ids=used_question_ids,
+                allowed_topics=[topic_name],
+                allowed_subtopics=None,
+            )
+
+            questions = list(dict.fromkeys(questions))
+
+            selected_questions.extend(questions)
+            used_question_ids.update(questions)
+
+            print(
+                f"MATH DOMAIN: {topic_name} | "
+                f"Required: {required_count} | "
+                f"Selected: {len(questions)}"
+            )
+
+        print(f"MATH FINAL DISTRIBUTION | Total: {len(selected_questions)}")
+
+        return selected_questions[:22]
+
+    
     def select_questions_for_section(
-    self,
-    course_subject_id,
-    section,
-    section_id,
-    sub_section,
-    test,
-    test_submission,
-    excluded_question_ids
+        self,
+        course_subject_id,
+        section,
+        section_id,
+        sub_section,
+        test,
+        test_submission,
+        excluded_question_ids
     ):
         question_ids = []
 
         if test.format_type == Test.LINEAR:
-            question_ids = sub_section.get('questions', [])
+            question_ids = sub_section.get("questions", [])
 
         elif test.format_type == Test.DYNAMIC:
 
@@ -5567,63 +5621,22 @@ class TestViewSet(viewsets.ModelViewSet):
             ) if test_submission else None
 
             if result:
-
-                # Default
-                num_questions = sub_section.get('no_of_questions', 0)
+                num_questions = sub_section.get("no_of_questions", 0)
 
                 subject_name = (
                     section.course_subject.subject.name
                     if section and section.course_subject
                     else ""
-                )
-
-                sub_section_name = (
-                    sub_section.get("name", "").strip().lower()
-                    if sub_section
-                    else ""
-                )
+                ).strip().lower()
 
                 print(
                     f"Subject name: {subject_name}, "
                     f"Test type: {test.test_type}"
                 )
 
-                print(
-                    f"Section name: "
-                    f"{section.name if section else None}"
-                )
-
-                print(
-                    f"Sub-section name: {sub_section_name}"
-                )
-
-                # =====================================================
-                # ENGLISH FULL LENGTH TEST
-                # =====================================================
-                if (
-                    subject_name
-                    and subject_name.strip().lower() == "english"
-                    and test.test_type == Test.EXAM
-                ):
-
-                    # BOTH SEC A AND SEC B HAVE 27 QUESTIONS
-                    # -----------------------------------------
-                    # Q1-Q16  -> Group 1
-                    # Q17-Q27 -> Group 2
-
+                # ENGLISH FULL-LENGTH TEST
+                if subject_name == "english" and test.test_type == Test.EXAM:
                     num_questions = 27
-
-                    print(
-                        "ENGLISH SECTION => 27 QUESTIONS"
-                    )
-
-                    print(
-                        "Q1-Q16  => Craft & Structure + Information and Ideas"
-                    )
-
-                    print(
-                        "Q17-Q27 => Standard English Conventions + Expression of Ideas"
-                    )
 
                     question_ids = self.get_english_dynamic_questions(
                         course_subject_id=course_subject_id,
@@ -5631,22 +5644,27 @@ class TestViewSet(viewsets.ModelViewSet):
                         excluded_question_ids=excluded_question_ids
                     )
 
-                else:
+                # MATH FULL-LENGTH TEST
+                elif subject_name == "math" and test.test_type == Test.EXAM:
+                    num_questions = 22
 
-                    # =================================================
-                    # OTHER SUBJECTS
-                    # =================================================
+                    question_ids = self.get_math_dynamic_questions(
+                        course_subject_id=course_subject_id,
+                        result=result,
+                        excluded_question_ids=excluded_question_ids
+                    )
+
+                # OTHER SUBJECTS / TESTS
+                else:
                     question_ids = self.get_dynamic_section_questions(
-                        course_subject_id,
-                        result,
-                        num_questions,
-                        excluded_question_ids,
+                        course_subject_id=course_subject_id,
+                        result=result,
+                        num_questions=num_questions,
+                        excluded_question_ids=excluded_question_ids,
                         allowed_topics=None
                     )
 
-                # -----------------------------------------------------
                 # UPDATE SECTION STATS
-                # -----------------------------------------------------
                 section_stats, created = SectionStats.objects.get_or_create(
                     result=result,
                     course_subject_id=course_subject_id,
@@ -5661,11 +5679,10 @@ class TestViewSet(viewsets.ModelViewSet):
 
                 if not created:
                     section_stats.total_questions = len(question_ids)
-                    section_stats.save(
-                        update_fields=["total_questions"]
-                    )
+                    section_stats.save(update_fields=["total_questions"])
 
         return question_ids
+
 
     def get_first_section_questions(self, course_subject_id, num_questions, excluded_question_ids):
         questions = Question.objects.filter(
@@ -5839,8 +5856,7 @@ class TestViewSet(viewsets.ModelViewSet):
         previous_question_ids = self.get_previous_fallback_questions(
             result.test_submission.student,
             course_subject_id,
-            excluded_ids=set(selected_questions)
-            | set(excluded_question_ids),
+            excluded_ids=set(selected_questions),
             allowed_topics=allowed_topics,
             allowed_subtopics=allowed_subtopics,
         )
@@ -5990,9 +6006,9 @@ class TestViewSet(viewsets.ModelViewSet):
             )
         
         if allowed_subtopics:
-                    question_queryset = question_queryset.filter(
-                        sub_topic__name__in=allowed_subtopics
-                    )
+            fallback_queryset = fallback_queryset.filter(
+                sub_topic__name__in=allowed_subtopics
+            )
 
         active_ids = set(
             fallback_queryset.values_list("id", flat=True)
@@ -6073,9 +6089,9 @@ class TestViewSet(viewsets.ModelViewSet):
             )
 
         if allowed_subtopics:
-                    question_queryset = question_queryset.filter(
-                        sub_topic__name__in=allowed_subtopics
-                    )
+            previous_queryset = previous_queryset.filter(
+                sub_topic__name__in=allowed_subtopics
+            )
 
         return list(
             previous_queryset.values_list(
