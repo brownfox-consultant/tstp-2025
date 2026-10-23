@@ -94,7 +94,7 @@ const QuestionItem = ({ question, onClick }) => {
             <div className="hidden md:flex items-center gap-2 text-xs">
               <span className="text-gray-400 font-bold uppercase tracking-wider text-[10px]">Selections:</span>
               <span className="font-medium text-gray-700">
-  {renderSelectedOptions(question.selected_options)}
+  {renderSelectedOptions((parseInt(question.selected_options) || 0) + 1)}
 </span>
 
             </div>

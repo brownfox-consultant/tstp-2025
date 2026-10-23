@@ -518,13 +518,13 @@ const NeedsImprovementTopics = ({
   };
 
   return (
-    <div className="space-y-6 mt-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6 items-start">
 
       {/* ================= STRONG TOPICS ================= */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-emerald-200">
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-emerald-200">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-xl font-bold text-gray-800">
               Strong Topics
             </h2>
 
@@ -543,7 +543,7 @@ const NeedsImprovementTopics = ({
             No strong topics yet.
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {strongTopics.map((topic) => (
               <TopicCard
                 key={topic.id}
@@ -556,10 +556,10 @@ const NeedsImprovementTopics = ({
       </div>
 
       {/* ================= WEAK TOPICS ================= */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-orange-200">
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-orange-200">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-xl font-bold text-gray-800">
               Weak Topics
             </h2>
 
@@ -584,7 +584,7 @@ const NeedsImprovementTopics = ({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {weakTopics.map((topic) => (
               <TopicCard
                 key={topic.id}

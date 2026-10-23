@@ -1560,38 +1560,55 @@ class UserViewSet(viewsets.ModelViewSet):
         # Return the paginated response
         return paginator.get_paginated_response(serializer.data)
 
+    
     @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
     def forgot_password(self, request):
         email = request.data.get('email')
-        print("email",email)
+        print("email", email)
+
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             return get_error_response('User not found.')
 
-        try:
-            existing_reset_token = PasswordResetToken.objects.get(user=user, used=False)
-            if existing_reset_token is not None:
-                existing_reset_token.used = True
-                existing_reset_token.save()
-        except PasswordResetToken.DoesNotExist:
-            pass
+        # Invalidate existing unused reset tokens
+        PasswordResetToken.objects.filter(
+            user=user,
+            used=False
+        ).update(used=True)
 
-        # Create a password reset token
-        password_reset_token = PasswordResetToken.objects.create(user=user,
-                                                                 expires_at=timezone.now() + timedelta(hours=1))
+        # Create a new password reset token
+        password_reset_token = PasswordResetToken.objects.create(
+            user=user,
+            expires_at=timezone.now() + timedelta(hours=1)
+        )
 
-        # Construct the password reset link
-        reset_link = f'{settings.FRONTEND_URL}/reset-password?token={password_reset_token.token}'
+        # Construct the reset link
+        reset_link = (
+            f'{settings.FRONTEND_URL}/reset-password'
+            f'?token={password_reset_token.token}'
+        )
 
-        # Send notification
-        notification_params = {NotificationTemplate.RESET_LINK: reset_link}
-        print(Notification.FORGOT_PASSWORD_NOTIFICATION,notification_params,user.id)
-        send_notification.delay(notification_name=Notification.FORGOT_PASSWORD_NOTIFICATION,
-                                params=notification_params,
-                                user_id=user.id)
+        # Get the user's name
+        user_name = user.name or user.email
 
-        return Response({"detail": "Password reset email sent."}, status=status.HTTP_200_OK)
+        # Send both placeholders to the notification system
+        notification_params = {
+            NotificationTemplate.USER_NAME: user_name,
+            NotificationTemplate.RESET_LINK: reset_link,
+        }
+
+        send_notification.delay(
+            notification_name=Notification.FORGOT_PASSWORD_NOTIFICATION,
+            params=notification_params,
+            user_id=user.id
+        )
+
+        return Response(
+            {"detail": "Password reset email sent."},
+            status=status.HTTP_200_OK
+        )
+
 
     @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
     def reset_password(self, request):

@@ -24,7 +24,32 @@ export default function LastTestActivity({ activeTab = "fullLength", fullLengthD
   };
 
   // Get only the most recent test
-  const lastFullLengthTest = fullLengthData && fullLengthData.length > 0 ? fullLengthData[0] : null;
+  // Get the latest completed test
+  const getLastCompletedTest = (tests, dateField) => {
+    if (!Array.isArray(tests) || tests.length === 0) {
+      return null;
+    }
+
+    const completedTests = tests.filter(
+      (test) => test.status?.toUpperCase() === "COMPLETED"
+    );
+
+    if (completedTests.length === 0) {
+      return null;
+    }
+
+    return [...completedTests].sort((a, b) => {
+      const dateA = a[dateField] ? dayjs(a[dateField]).valueOf() : 0;
+      const dateB = b[dateField] ? dayjs(b[dateField]).valueOf() : 0;
+
+      return dateB - dateA;
+    })[0];
+  };
+
+  const lastFullLengthTest = getLastCompletedTest(
+    fullLengthData,
+    "completion_date"
+  );
   const lastPracticeTest = practiceData && practiceData.length > 0 ? practiceData[0] : null;
 
   // Check if practice test is within last 5 days
