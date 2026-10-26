@@ -119,7 +119,7 @@ useEffect(() => {
 };
 
   const questionViewCols = [
-    role !== "student" && {
+   (role === "admin" || role === "faculty") && {
 title: "Question Id",
 dataIndex: "db_Srno",
 key: "db_Srno",
@@ -656,15 +656,17 @@ render: (value) => (
         Reviewing Question {currentQuestionIndex + 1}
       </span>
 
-      {role !== "student" && modalData?.srno && (
-        <>
-          <span className="text-gray-400">|</span>
+      
+{(role === "admin" || role === "faculty") && modalData?.srno && (
+  <>
+    <span className="text-gray-400">|</span>
 
-          <span className="text-sm text-gray-500">
-            Question Id: {modalData.srno}
-          </span>
-        </>
-      )}
+    <span className="text-sm text-gray-500">
+      Question Id: {modalData.srno}
+    </span>
+  </>
+)}
+
     </div>
 
     {/* Question Number Navigation */}

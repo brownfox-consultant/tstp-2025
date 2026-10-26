@@ -798,7 +798,7 @@ export default function ScoreAnalysis_FullLengthTest({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6">
 
         {/* Total Full-Length Tests */}
         <div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#FFF8EB] to-[#FFF0D4] flex flex-col justify-between">
@@ -813,24 +813,43 @@ export default function ScoreAnalysis_FullLengthTest({
           </p>
         </div>
 
-        {/* Percentage */}
-        <div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#EBF4FF] to-[#D4E4FF] flex flex-col justify-between">
-          <h4 className="text-sm font-semibold uppercase text-[#1e40af]">
-            {courseName} Percentage
-          </h4>
-          <div className="text-5xl font-black text-[#3b82f6]">
-            {summary.percentage}%
-          </div>
-          <div className="mt-3 w-full bg-blue-100 rounded-full h-2">
-            <div
-              className="h-2 rounded-full"
-              style={{
-                width: `${summary.percentage}%`,
-                background: "linear-gradient(90deg, #3b82f6, #60a5fa)",
-              }}
-            />
-          </div>
-        </div>
+        
+{/* Lowest Score in SAT */}
+<div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#EBF4FF] to-[#D4E4FF] flex flex-col justify-between">
+  <h4 className="text-sm font-semibold uppercase text-[#1e40af]">
+    Lowest Score in SAT
+  </h4>
+  <div className="text-5xl font-black text-[#3b82f6] mt-2">
+    {chartData.length > 0
+      ? Math.min(...chartData.map(test => Number(test.Overall) || 0))
+      : 0}
+  </div>
+  <div className="text-sm text-[#1e40af] mt-1">
+    out of 1600
+  </div>
+</div>
+
+
+{/* Average Score in SAT */}
+<div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] flex flex-col justify-between">
+  <h4 className="text-sm font-semibold uppercase text-[#065f46]">
+    Average Score in SAT
+  </h4>
+  <div className="text-5xl font-black text-[#10b981] mt-2">
+    {chartData.length > 0
+      ? Math.round(
+          chartData.reduce(
+            (sum, test) => sum + (Number(test.Overall) || 0),
+            0
+          ) / chartData.length
+        )
+      : 0}
+  </div>
+  <div className="text-sm text-[#047857] mt-1">
+    out of 1600
+  </div>
+</div>
+
 
         {/* Highest Score */}
         <div className="p-6 rounded-lg lg:rounded-2xl shadow-lg bg-gradient-to-br from-[#E8F4FC] to-[#D4F1F9] flex flex-col justify-between">

@@ -77,54 +77,118 @@ function TestHeader() {
   useHotkeys("alt+d", () => setDropdownVisible((prev) => !prev));
   useHotkeys("alt+k", () => setAreShortcutsVisible((prev) => !prev));
 
-  return (
-    <header className="w-full min-h-16 bg-neutral-100 border-b-2 border-dashed border-black px-10 py-2 flex flex-row justify-between">
-      <div className="w-full grid grid-cols-3">
-        <div>
-          <div className="section-name text-lg flex flex-col font-semibold">
-            <span>{name}</span>
-            {currentSection && (
-              <span className="text-sm text-gray-600">
-                {`Sub : ${subjectName}`}  {sectionName && `Sec : ${sectionName}`}
-              </span>
+  // return (
+  //   <header className="w-full min-h-16 bg-neutral-100 border-b-2 border-dashed border-black px-10 py-2 flex flex-row justify-between">
+  //     <div className="w-full grid grid-cols-3">
+  //       <div>
+  //         <div className="section-name text-lg flex flex-col font-semibold">
+  //           <span>{name}</span>
+  //           {currentSection && (
+  //             <span className="text-sm text-gray-600">
+  //               {`Sub : ${subjectName}`}  {sectionName && `Sec : ${sectionName}`}
+  //             </span>
               
-            )}
-          </div>
-          <DirectionsDropdown
-            dropdownVisible={dropdownVisible}
-            setDropdownVisible={setDropdownVisible}
-          />
+  //           )}
+  //         </div>
+  //         <DirectionsDropdown
+  //           dropdownVisible={dropdownVisible}
+  //           setDropdownVisible={setDropdownVisible}
+  //         />
+  //       </div>
+
+  //       <div className="text-center">
+  //         {timeLeft ? <TestTimer expiryTimestamp={time} /> : <TestStopwatch />}
+  //       </div>
+
+  //       <div className="flex flex-row items-end justify-end">
+  //         {isCalculatorAllowed && (
+  //           <CalculatorComponent
+  //             showCalculator={isCalculatorVisible}
+  //             setShowCalculator={setIsCalculatorVisible}
+  //           />
+  //         )}
+  //         {isCalculatorAllowed && (
+  //           <ReferenceSheet
+  //             isOpen={isReferenceSheetVisible}
+  //             setIsOpen={setIsReferenceSheetVisible}
+  //           />
+  //         )}
+  //         <ShortcutsReference
+  //           isOpen={areShortcutsVisible}
+  //           setIsOpen={setAreShortcutsVisible}
+  //         />
+  //         <ExitExamModal
+  //           setOpenModal={setIsExamExitModalVisble}
+  //           openModal={isExamExitModalVisble}
+  //         />
+  //       </div>
+  //     </div>
+  //   </header>
+  // );
+  
+return (
+  <header className="w-full min-h-16 bg-neutral-100 border-b-2 border-dashed border-blue-400 px-4 md:px-8 py-2">
+    <div className="w-full grid grid-cols-1 md:grid-cols-3 items-center gap-2">
+
+      {/* Left: Test name and directions */}
+      <div className="min-w-0">
+        <div className="section-name text-lg flex flex-col font-semibold">
+          <span>{name}</span>
+
+          {currentSection && (
+            <span className="text-sm text-gray-600">
+              {`Sub : ${subjectName}`}{" "}
+              {sectionName && `Sec : ${sectionName}`}
+            </span>
+          )}
         </div>
 
-        <div className="text-center">
-          {timeLeft ? <TestTimer expiryTimestamp={time} /> : <TestStopwatch />}
-        </div>
-
-        <div className="flex flex-row items-end justify-end">
-          {isCalculatorAllowed && (
-            <CalculatorComponent
-              showCalculator={isCalculatorVisible}
-              setShowCalculator={setIsCalculatorVisible}
-            />
-          )}
-          {isCalculatorAllowed && (
-            <ReferenceSheet
-              isOpen={isReferenceSheetVisible}
-              setIsOpen={setIsReferenceSheetVisible}
-            />
-          )}
-          <ShortcutsReference
-            isOpen={areShortcutsVisible}
-            setIsOpen={setAreShortcutsVisible}
-          />
-          <ExitExamModal
-            setOpenModal={setIsExamExitModalVisble}
-            openModal={isExamExitModalVisble}
-          />
-        </div>
+        <DirectionsDropdown
+          dropdownVisible={dropdownVisible}
+          setDropdownVisible={setDropdownVisible}
+        />
       </div>
-    </header>
-  );
+
+      {/* Center: Timer */}
+      <div className="flex items-center justify-center">
+        {timeLeft ? (
+          <TestTimer expiryTimestamp={time} />
+        ) : (
+          <TestStopwatch />
+        )}
+      </div>
+
+      {/* Right: All header icons in one line */}
+      <div className="flex flex-row flex-nowrap items-center justify-end gap-2 md:gap-4 whitespace-nowrap overflow-x-auto">
+        {isCalculatorAllowed && (
+          <CalculatorComponent
+            showCalculator={isCalculatorVisible}
+            setShowCalculator={setIsCalculatorVisible}
+          />
+        )}
+
+        {isCalculatorAllowed && (
+          <ReferenceSheet
+            isOpen={isReferenceSheetVisible}
+            setIsOpen={setIsReferenceSheetVisible}
+          />
+        )}
+
+        <ShortcutsReference
+          isOpen={areShortcutsVisible}
+          setIsOpen={setAreShortcutsVisible}
+        />
+
+        <ExitExamModal
+          setOpenModal={setIsExamExitModalVisble}
+          openModal={isExamExitModalVisble}
+        />
+      </div>
+
+    </div>
+  </header>
+);
+
 }
 
 export default TestHeader;

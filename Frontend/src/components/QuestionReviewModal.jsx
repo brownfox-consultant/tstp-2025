@@ -31,6 +31,7 @@ function QuestionReviewModal({
   testType,
   testSubmissionId,
 }) {
+  console.log("role", role);
   const [data, setData] = useState(null);
   const [showDoubt, setShowDoubt] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
@@ -172,11 +173,13 @@ function QuestionReviewModal({
         width={data?.question_type === "MCQ" ? "80rem" : "64rem"}
         open={open}
         style={{ top: 20 }}
-        title={
-          role === "student"
-            ? `Reviewing Question ${currentIndex + 1}`
-            : `Reviewing Question ${currentIndex + 1} (Question Id: ${currentSrno})`
-        }
+        
+title={
+  role === "admin" || role === "faculty"
+    ? `Reviewing Question ${currentIndex + 1} (Question Id: ${currentSrno})`
+    : `Reviewing Question ${currentIndex + 1}`
+}
+
         onCancel={handleReviewClose}
         footer={
           <div className="flex justify-between">
