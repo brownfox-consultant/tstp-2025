@@ -61,6 +61,10 @@
                 {{ first_test.subject|default:"-" }}
             {% endwith %}
         {% endwith %}
+        &nbsp; | &nbsp;
+        <strong>Question ID.:</strong>
+{{ item.srno_after|default:item.srno|default:"-" }}
+
     </td>
 </tr>
 

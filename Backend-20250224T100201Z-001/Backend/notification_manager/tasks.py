@@ -19,6 +19,7 @@ from user_manager.models import User
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
+from course_manager.models import Question
 
 import json
 from test_manager.models import QuestionAnswer, PracticeQuestionAnswer
@@ -211,7 +212,9 @@ def send_question_update_email(
                                 "test_type": "Full Length Test",
                                 "test_name": test_name,
                                 "section_name": section_name,
-                                "sr_no": question.get("sr_no"),
+                                "sr_no": Question.objects.filter(
+                                    id=question_id
+                                ).values_list("srno", flat=True).first(),
                                 "subject": subject.get("name") or "-",
                                 "topic": question.get("topic") or "-",
                                 "difficulty": (

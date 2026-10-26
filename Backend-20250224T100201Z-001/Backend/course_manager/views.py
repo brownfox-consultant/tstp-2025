@@ -1806,6 +1806,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
                     question_changes.append({
                         "question_id": updated_question.id,
+                        "srno_before": before_snapshot.get("srno"),
+                        "srno_after": after_snapshot.get("srno"),
                         "srno": after_snapshot.get("srno"),
                         "before": before_snapshot,
                         "after": after_snapshot,
