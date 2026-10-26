@@ -1367,7 +1367,7 @@ const renderQuestionTimeGraph = (flow) => {
               </p>
             </div>
 
-            {pattern && (
+            {/* {pattern && (
               <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 text-center border border-gray-100 shadow-sm">
                 <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">
                   Efficiency Score
@@ -1393,7 +1393,7 @@ const renderQuestionTimeGraph = (flow) => {
                   />
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 
