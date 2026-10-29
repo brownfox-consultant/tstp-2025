@@ -21,6 +21,7 @@ import {
   AppstoreOutlined,
   FolderOpenOutlined,
   QuestionOutlined,
+  RobotOutlined,
   FileUnknownOutlined,
   FontSizeOutlined,
   SwapOutlined,
@@ -55,6 +56,11 @@ const flatItems = [
   },
   { key: "courses", icon: <AppstoreOutlined />, label: "Courses" },
   { key: "questions", icon: <QuestionOutlined />, label: "Questions" },
+  {
+    key: "ai-generated-questions",
+    icon: <RobotOutlined />,
+    label: "AI-generated questions",
+  },
 
   {
     key: "tests",

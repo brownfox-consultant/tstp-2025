@@ -273,10 +273,10 @@ function CalculatorComponent({ showCalculator, setShowCalculator }) {
       {/* Trigger Button */}
       <div
         onClick={toggleModal}
-        className="flex flex-col gap-2 justify-center text-sm items-center cursor-pointer p-2 rounded hover:bg-black/5"
+        className="flex h-14 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded p-1 text-xs leading-tight text-center cursor-pointer hover:bg-black/5"
       >
-        <CalculatorOutlined />
-        Calculator
+        <span className="flex h-5 items-center justify-center text-sm leading-none"><CalculatorOutlined /></span>
+        <span className="flex min-h-5 items-center justify-center">Calculator</span>
       </div>
 
       {/* Calculator Modal */}

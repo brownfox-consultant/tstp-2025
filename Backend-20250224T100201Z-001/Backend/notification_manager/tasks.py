@@ -212,9 +212,10 @@ def send_question_update_email(
                                 "test_type": "Full Length Test",
                                 "test_name": test_name,
                                 "section_name": section_name,
-                                "sr_no": Question.objects.filter(
-                                    id=question_id
-                                ).values_list("srno", flat=True).first(),
+                                # `sr_no` is the question number shown in a
+                                # student's test (within that test/section).
+                                # `db_Srno` is the question's catalog number.
+                                "sr_no": question.get("sr_no") or question.get("db_Srno") or "-",
                                 "subject": subject.get("name") or "-",
                                 "topic": question.get("topic") or "-",
                                 "difficulty": (

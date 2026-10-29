@@ -1,5 +1,8 @@
 import logging
 import uuid
+import os
+import urllib.error
+import urllib.request
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -191,6 +194,14 @@ class CourseViewSet(viewsets.ModelViewSet):
             {"value": choice[0], "label": choice[1]}
             for choice in Question.QUESTION_SUBTYPE
         ]
+        show_calculator_list = [
+            {"value": True, "label": "Yes"},
+            {"value": False, "label": "No"},
+        ]
+        status_list = [
+            {"value": True, "label": "Active"},
+            {"value": False, "label": "Inactive"},
+        ]
 
 
         # If you also want topics:
@@ -210,6 +221,8 @@ class CourseViewSet(viewsets.ModelViewSet):
             "questionTypeList": question_type_list,
             "testTypeList": test_type_list,
             "questionSubtypeList": question_subtype_list,  # ✅ added
+            "showCalculatorList": show_calculator_list,
+            "statusList": status_list,
         })
 
         
@@ -654,6 +667,194 @@ class QuestionViewSet(viewsets.ModelViewSet):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="generate-ai",
+        permission_classes=[IsAdminOrContentDeveloper],
+    )
+    def generate_ai_questions(self, request):
+        """Generate a batch of draft questions using the server-configured OpenAI API key."""
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return Response(
+                {"detail": "AI question generation is not configured. Set OPENAI_API_KEY on the backend."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            count = int(request.data.get("count", 10))
+        except (TypeError, ValueError):
+            return Response({"detail": "count must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
+        if count < 1 or count > 30:
+            return Response({"detail": "count must be between 1 and 30."}, status=status.HTTP_400_BAD_REQUEST)
+
+        course_subject = CourseSubjects.objects.select_related("course", "subject").filter(
+            id=request.data.get("course_subject_id")
+        ).first()
+        if not course_subject:
+            return Response({"detail": "Select a valid course and subject."}, status=status.HTTP_400_BAD_REQUEST)
+
+        topic_name = (request.data.get("topic") or "").strip()
+        sub_topic_name = (request.data.get("sub_topic") or "").strip()
+        topic = Topic.objects.filter(course_subject=course_subject, name=topic_name).first()
+        if not topic:
+            return Response({"detail": "Select a valid topic for this subject."}, status=status.HTTP_400_BAD_REQUEST)
+        if sub_topic_name and not topic.subtopics.filter(name=sub_topic_name).exists():
+            return Response({"detail": "Select a valid sub topic for this topic."}, status=status.HTTP_400_BAD_REQUEST)
+
+        filters = dict(request.data.get("filters") or {})
+        filters.setdefault("difficulty", Question.MODERATE_DIFFICULTY)
+        filters.setdefault("test_type", Question.SELF_PRACTICE_TEST_TYPE)
+        allowed = {
+            "test_type": {value for value, _ in Question.TEST_TYPE_CHOICES},
+            "difficulty": {value for value, _ in Question.DIFFICULTY_CHOICES},
+            "question_type": {value for value, _ in Question.QUESTION_TYPE},
+            "question_subtype": {value for value, _ in Question.QUESTION_SUBTYPE},
+        }
+        for name, choices in allowed.items():
+            value = filters.get(name)
+            if value and value not in choices:
+                return Response({"detail": f"Invalid {name} filter."}, status=status.HTTP_400_BAD_REQUEST)
+
+        question_type = filters.get("question_type") or Question.MCQ
+        question_subtype = filters.get("question_subtype") or (
+            Question.MCQ_SINGLE_CHOICE_QUESTION
+            if question_type == Question.MCQ
+            else Question.GRIDIN_SINGLE_ANSWER
+        )
+        if question_type == Question.MCQ and question_subtype in {
+            Question.GRIDIN_SINGLE_ANSWER,
+            Question.GRIDIN_MULTI_ANSWER,
+            Question.GRIDIN_RANGE_BASED_ANSWER,
+        }:
+            return Response({"detail": "The selected subtype does not match the question type."}, status=status.HTTP_400_BAD_REQUEST)
+        if question_type == Question.GRIDIN and question_subtype not in {
+            Question.GRIDIN_SINGLE_ANSWER,
+            Question.GRIDIN_MULTI_ANSWER,
+            Question.GRIDIN_RANGE_BASED_ANSWER,
+        }:
+            return Response({"detail": "The selected subtype does not match the question type."}, status=status.HTTP_400_BAD_REQUEST)
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "questions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "question": {"type": "string"},
+                            "options": {"type": "array", "items": {"type": "string"}},
+                            "correct_answers": {"type": "array", "items": {"type": "string"}},
+                            "passage": {"type": "string"},
+                            "explanation": {"type": "string"},
+                            "range_min": {"type": "number"},
+                            "range_max": {"type": "number"},
+                        },
+                        "required": ["question", "options", "correct_answers", "passage", "explanation", "range_min", "range_max"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            "required": ["questions"],
+            "additionalProperties": False,
+        }
+        filters_for_prompt = {
+            "test_type": filters.get("test_type"),
+            "difficulty": filters.get("difficulty"),
+            "question_type": question_type,
+            "question_subtype": question_subtype,
+            "show_calculator": filters.get("show_calculator"),
+        }
+        prompt = (
+            f"Generate exactly {count} original, accurate assessment questions for "
+            f"course {course_subject.course.name}, subject {course_subject.subject.name}, "
+            f"topic {topic_name}, subtopic {sub_topic_name or 'unspecified'}. "
+            f"Apply these requested settings: {json.dumps(filters_for_prompt)}. "
+            "For multiple choice, provide four distinct option strings and put the correct option text(s) in correct_answers. "
+            "For grid-in, leave options empty and provide the answer(s) in correct_answers. "
+            "For range-based grid-in, provide numeric range_min and range_max. "
+            "For fill-in-the-blanks, use an empty options array and put accepted answers in correct_answers. "
+            "For reading comprehension, include a short original passage and make the question depend on it. "
+            "For other types, passage must be an empty string. Keep explanations concise."
+        )
+        payload = {
+            "model": os.environ.get("OPENAI_QUESTION_MODEL", "gpt-4.1-mini"),
+            "instructions": "You create original, clear educational assessment questions. Follow all requested taxonomy and question settings. Do not copy known test questions.",
+            "input": prompt,
+            "text": {"format": {
+                "type": "json_schema",
+                "name": "generated_questions",
+                "strict": True,
+                "schema": schema,
+            }},
+            "max_output_tokens": min(16000, count * 500 + 1000),
+            "store": False,
+        }
+
+        try:
+            api_request = urllib.request.Request(
+                "https://api.openai.com/v1/responses",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(api_request, timeout=90) as api_response:
+                ai_response = json.loads(api_response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            try:
+                provider_body = json.loads(exc.read().decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                provider_body = {}
+            provider_error = provider_body.get("error", {})
+            if not isinstance(provider_error, dict):
+                provider_error = {}
+            provider_code = provider_error.get("status") or provider_error.get("code") or "unknown_error"
+            provider_message = provider_error.get("message") or "No error message was returned by the provider."
+            self.logger.error(
+                "OpenAI question generation failed: status=%s code=%s",
+                exc.code,
+                provider_code,
+            )
+            if exc.code in (401, 403) or "api key" in provider_message.lower():
+                detail = "OpenAI rejected the backend API key. Check OPENAI_API_KEY and restart the backend."
+            elif exc.code == 429 or "quota" in provider_message.lower() or "rate limit" in provider_message.lower():
+                detail = "OpenAI API quota or rate limit reached. Check the OpenAI project limits and try again."
+            else:
+                detail = f"OpenAI returned HTTP {exc.code} ({provider_code}): {provider_message[:300]}"
+            return Response({"detail": detail}, status=status.HTTP_502_BAD_GATEWAY)
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            self.logger.error("OpenAI question generation request failed: %s", exc)
+            return Response({"detail": "The OpenAI API is temporarily unavailable. Please try again."}, status=status.HTTP_502_BAD_GATEWAY)
+
+        output_text = ai_response.get("output_text")
+        if not output_text:
+            output_text = "".join(
+                part.get("text", "")
+                for item in ai_response.get("output", [])
+                if item.get("type") == "message"
+                for part in item.get("content", [])
+                if part.get("type") == "output_text"
+            )
+        try:
+            questions = json.loads(output_text).get("questions", [])
+        except (TypeError, json.JSONDecodeError, AttributeError):
+            return Response({"detail": "The AI response could not be read. Please try again."}, status=status.HTTP_502_BAD_GATEWAY)
+        if len(questions) != count:
+            return Response({"detail": "The AI returned an incomplete batch. Please try generating again."}, status=status.HTTP_502_BAD_GATEWAY)
+
+        for question in questions:
+            has_range_answer = (
+                question_subtype == Question.GRIDIN_RANGE_BASED_ANSWER
+                and question.get("range_min") <= question.get("range_max")
+            )
+            if not question.get("question") or (not question.get("correct_answers") and not has_range_answer):
+                return Response({"detail": "The AI returned a question without its text or answer."}, status=status.HTTP_502_BAD_GATEWAY)
+            question["question_type"] = question_type
+            question["question_subtype"] = question_subtype
+        return Response({"questions": questions}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='export-by-subtopics', permission_classes=[IsAdminOrContentDeveloper])
     def export_by_subtopics(self, request):

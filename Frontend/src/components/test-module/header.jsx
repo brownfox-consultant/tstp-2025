@@ -159,7 +159,7 @@ return (
       </div>
 
       {/* Right: All header icons in one line */}
-      <div className="flex flex-row flex-nowrap items-center justify-end gap-2 md:gap-4 whitespace-nowrap overflow-x-auto">
+      <div className="flex flex-row flex-nowrap items-center justify-end gap-1 md:gap-2">
         {isCalculatorAllowed && (
           <CalculatorComponent
             showCalculator={isCalculatorVisible}

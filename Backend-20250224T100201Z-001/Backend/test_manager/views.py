@@ -34,6 +34,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from django.db.models import Avg, Count, Max, Min
 
 # ==========================
 # Filters & Pagination
@@ -6316,16 +6317,126 @@ class TestViewSet(viewsets.ModelViewSet):
             else:
                 return Response({"error": "Invalid custom date range."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Filter practice tests and full-length tests within the date range
+        
+        # Filter completed practice tests within the date range
         practice_test_results = PracticeTestResult.objects.filter(
             practice_test__student=student,
+            status="COMPLETED",
             created_at__range=(start_date, end_date)
         )
+
+        # Filter completed full-length tests within the date range
         full_length_test_results = Result.objects.filter(
             test_submission__student=student,
             test_submission__status=TestSubmission.COMPLETED,
             created_at__range=(start_date, end_date)
         )
+
+        # Practice tests: highest and lowest correct-answer counts
+        practice_score_stats = practice_test_results.aggregate(
+            highest_score=Max("correct_answer_count"),
+            lowest_score=Min("correct_answer_count"),
+        )
+
+        # Full-length tests: SAT-scaled scores
+        # IMPORTANT: Replace this with your existing SAT score calculation.
+        # Result does not have a sat_score field in the model you shared.
+        
+        # Calculate SAT-scaled scores for completed Full Length Tests.
+        # Reuse the same scoring logic as get_details().
+
+        full_length_sat_scores = []
+
+        for result in full_length_test_results.select_related(
+            "test_submission__test"
+        ):
+            test_submission = result.test_submission
+            test = test_submission.test
+            selected_question_ids = test_submission.selected_question_ids or {}
+
+            total_sat_score = 0
+
+            sections = Section.objects.filter(
+                test=test
+            ).select_related(
+                "course_subject__subject"
+            ).order_by("order")
+
+            # Group sections by course subject, matching get_details().
+            subjects_map = {}
+
+            for section in sections:
+                subj_id = section.course_subject_id
+
+                if subj_id not in subjects_map:
+                    subjects_map[subj_id] = {
+                        "course_subject": section.course_subject,
+                        "sections": [],
+                    }
+
+                subjects_map[subj_id]["sections"].append(section)
+
+            for subj_id, subject_info in subjects_map.items():
+                course_subject = subject_info["course_subject"]
+
+                section_1_score = 0
+                section_2_score = 0
+
+                for section in subject_info["sections"]:
+                    for sub_section in section.sub_sections or []:
+                        section_id = sub_section.get("id")
+
+                        section_key = f"{subj_id}_{section_id}"
+
+                        if section_key in selected_question_ids:
+                            question_ids = selected_question_ids[section_key]
+                        elif str(section_id) in selected_question_ids:
+                            question_ids = selected_question_ids[str(section_id)]
+                        else:
+                            question_ids = sub_section.get("questions", [])
+
+                        if not question_ids:
+                            continue
+
+                        correct_count = QuestionAnswer.objects.filter(
+                            result=result,
+                            course_subject_id=subj_id,
+                            section_id=section_id,
+                            question_id__in=question_ids,
+                            is_correct=True,
+                        ).count()
+
+                        # Match the section scoring logic in get_details().
+                        if section_id == 1:
+                            section_1_score = correct_count
+                        else:
+                            section_2_score = correct_count
+
+                # Use the existing SAT raw-to-scaled score mapping.
+                score_record = CombinedScore.objects.filter(
+                    section1_correct=section_1_score,
+                    section2_correct=section_2_score,
+                    subject_name=course_subject.subject.name,
+                ).first()
+
+                if score_record:
+                    total_sat_score += score_record.total_score
+
+            full_length_sat_scores.append(total_sat_score)
+
+        # Get highest and lowest SAT scores.
+        full_length_score_stats = {
+            "highest_score": (
+                max(full_length_sat_scores)
+                if full_length_sat_scores else None
+            ),
+            "lowest_score": (
+                min(full_length_sat_scores)
+                if full_length_sat_scores else None
+            ),
+        }
+
+
 
         # Calculate stats for practice tests
         practice_test_count = practice_test_results.count()
@@ -6402,24 +6513,31 @@ class TestViewSet(viewsets.ModelViewSet):
             overall_change = 0
 
         # Construct the response data
+        
+        # Construct the response data
         response_data = {
             "full_length_tests": {
                 "count": full_length_test_count,
                 "average_percentage": round(full_length_avg_percentage, 2),
-                "change_percentage": round(full_length_change, 2)
+                "change_percentage": round(full_length_change, 2),
+                "highest_score": full_length_score_stats["highest_score"],
+                "lowest_score": full_length_score_stats["lowest_score"],
             },
             "practice_tests": {
                 "count": practice_test_count,
                 "average_percentage": round(practice_test_avg_percentage, 2),
-                "change_percentage": round(practice_change, 2)
+                "change_percentage": round(practice_change, 2),
+                "highest_score": practice_score_stats["highest_score"],
+                "lowest_score": practice_score_stats["lowest_score"],
             },
             "overall_average_percentage": {
                 "average_percentage": round(combined_avg_percentage, 2),
-                "change_percentage": round(overall_change, 2)
-            }
+                "change_percentage": round(overall_change, 2),
+            },
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+
 
     @action(
     detail=False,

@@ -859,7 +859,7 @@ export default function ScoreAnalysis_FullLengthTest({
           <div className="text-5xl font-black text-[#0071BC]">
             {summary.highest_score}
           </div>
-          <div className="text-sm text-[#70D9E4]">
+          <div className="text-sm text-[#2E2725]">
             out of {summary.max_score}
           </div>
         </div>
