@@ -148,6 +148,29 @@ function AllUsersTable({ tabKey, api }) {
     }
   };
 
+  const downloadBulkRegistrationTemplate = () => {
+    const headers = [
+      "name",
+      "email",
+      "phone_number",
+      "alternative_number",
+      "address",
+      "dob (YYYY-MM-DD)",
+      "blood_group",
+      "courses (comma-separated)",
+    ];
+    const csv = `${headers.join(",")}\r\n`;
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "user_bulk_upload_template.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
 
 
   useEffect(() => {
@@ -1834,24 +1857,28 @@ menuItems.push({
               Upload Excel File
             </label>
 
-            <Upload
-              accept=".xlsx,.xls"
-              maxCount={1}
-              beforeUpload={(file) => {
-                setSelectedFile(file);
-                return false;
-              }}
-            >
-              <Button icon={<UploadOutlined />}>
-                Select Excel File
+            <Space wrap>
+              <Upload
+                accept=".xlsx,.xls"
+                maxCount={1}
+                beforeUpload={(file) => {
+                  setSelectedFile(file);
+                  return false;
+                }}
+              >
+                <Button icon={<UploadOutlined />}>
+                  Select Excel File
+                </Button>
+              </Upload>
+              <Button onClick={downloadBulkRegistrationTemplate}>
+                Download Sample Format
               </Button>
-            </Upload>
-
-            {/* <div className="mt-2 text-gray-500 text-sm">
-        Columns required:
-        <br />
-        <strong>name, email, phone_number</strong>
-      </div> */}
+            </Space>
+            <div className="mt-2 text-gray-500 text-sm">
+              Open the downloaded CSV in Excel, fill in the rows, then save it as .xlsx before uploading.
+              Email and phone number are required. Enter courses
+ as SAT or SAT,GRE. Enter date of birth as YYYY-MM-DD.
+            </div>
           </div>
 
           <div className="mt-4 p-3 bg-gray-50 rounded">
