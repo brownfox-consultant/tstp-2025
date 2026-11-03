@@ -117,6 +117,28 @@ function DashboardLayout({ children }) {
   const isLoggingOut = React.useRef(false);
 
   const { id } = useParams();
+  const [studentBgColor, setStudentBgColor] = useState("#FAFAFA");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedBg =
+        (id ? window.localStorage.getItem(`student_bg_color_${id}`) : null) ||
+        window.localStorage.getItem("student_bg_color") ||
+        "#FAFAFA";
+      setStudentBgColor(storedBg);
+
+      const handleBgChange = (e) => {
+        if (e.detail) {
+          setStudentBgColor(e.detail);
+        }
+      };
+
+      window.addEventListener("student-bg-color-change", handleBgChange);
+      return () => {
+        window.removeEventListener("student-bg-color-change", handleBgChange);
+      };
+    }
+  }, [id]);
 
   const {
     token: { colorBgContainer, borderRadius },
@@ -485,9 +507,10 @@ function DashboardLayout({ children }) {
           style={{
             padding: 24,
             minHeight: "calc(100vh - 48px)",
-            background: "#FAFAFA", // Gray-50 like background
+            background: studentBgColor || "#FAFAFA",
             borderRadius: borderRadius,
             overflowY: "auto",
+            transition: "background 0.3s ease",
           }}
         >
           <Suspense fallback={<Loading />}>{children}</Suspense>
