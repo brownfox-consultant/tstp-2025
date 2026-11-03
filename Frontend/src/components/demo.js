@@ -26,6 +26,7 @@ import {
   getTestResult,
   getDoubtsList,
   getIssuesList,
+  getUnreadDoubtCommentCount,
 } from "@/app/services/authService";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -164,6 +165,10 @@ function StatCard({
 
   const handleViewAll = () => {
     if (value === 0) return;
+    if (!apiKey) {
+      router.push(`/tstp/admin/${id}/${routeName}`);
+      return;
+    }
     const params = new URLSearchParams();
     params.append("category", apiKey);
     if (selectedFilter === "custom" && customStartDate && customEndDate) {
@@ -346,6 +351,7 @@ export default function Dashboard() {
   }, []);
 
   const [notificationCounts, setNotificationCounts] = useState({});
+  const [unreadDoubtComments, setUnreadDoubtComments] = useState(0);
   const [todayCounts, setTodayCounts] = useState({});
 const [activityFeed, setActivityFeed] = useState({
   activities: [],
@@ -446,6 +452,12 @@ const displayActivities = activityFeed.activities || [];
     // setRecentSubmissions(DUMMY_FULL_LENGTH);
 
     setLoadingSubmissions(false);
+  }, []);
+
+  useEffect(() => {
+    getUnreadDoubtCommentCount()
+      .then((res) => setUnreadDoubtComments(res.data?.unread_count ?? 0))
+      .catch(() => setUnreadDoubtComments(0));
   }, []);
 
   useEffect(() => {
@@ -967,7 +979,7 @@ useEffect(() => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 mb-6">
             {SECTIONS.map(
               ({ display, key, route, gradient, trendType }) => (
                 <StatCard
@@ -984,6 +996,13 @@ useEffect(() => {
                 />
               )
             )}
+            <StatCard
+              title="New Comments"
+              value={unreadDoubtComments}
+              routeName="doubts"
+              gradientClass="from-orange-500 to-amber-400"
+              trendType="up"
+            />
           </div>
           {/* Question Count Table */}
           <div className="bg-white shadow-md rounded-xl mb-6">

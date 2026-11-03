@@ -14,6 +14,7 @@ import {
   createFacultySlot,
   deleteFacultySlot,
   getSubjectTopics,
+  markDoubtCommentsSeen,
 } from "@/app/services/authService";
 
 import { useGlobalContext } from "@/context/store";
@@ -322,8 +323,27 @@ function ViewDoubtModal({
 
       <Button
         type="text"
-        icon={<CommentOutlined />}
-        onClick={() => setCommentOpen(true)}
+        icon={
+          <span className="relative inline-flex">
+            <CommentOutlined />
+            {(role === "admin" || role === "student") && data.new_comment_count > 0 && (
+              <span className="absolute -right-3 -top-2 min-w-4 rounded-full bg-red-500 px-1 text-center text-[10px] leading-4 text-white">
+                {data.new_comment_count}
+              </span>
+            )}
+          </span>
+        }
+        onClick={async () => {
+          if (role === 'admin' || role === 'student') {
+            try {
+              await markDoubtCommentsSeen(id);
+              setUpdated?.((previous) => !previous);
+            } catch (error) {
+              console.error('Unable to mark doubt comments as seen:', error);
+            }
+          }
+          setCommentOpen(true);
+        }}
         className="flex items-center text-blue-500 hover:bg-blue-50 rounded-md px-2"
         title="Comments"
       >

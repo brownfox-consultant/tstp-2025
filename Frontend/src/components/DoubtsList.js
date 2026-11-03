@@ -14,7 +14,7 @@ import timezone from "dayjs/plugin/timezone";
 import { getSubjectTopics } from "@/app/services/authService";
 import EditQuestionForm from "./EditQuestionForm";
 import { Button, Modal } from "antd";
-import { EditOutlined, CloseOutlined, DeleteOutlined } from "@ant-design/icons";
+import { EditOutlined, CloseOutlined, DeleteOutlined, CommentOutlined } from "@ant-design/icons";
 import EditQuestionModal from "./EditQuestionModal";
 
 dayjs.extend(utc);
@@ -135,6 +135,18 @@ const handleDelete = async (id) => {
       sorter: true,
       sortDirections: ['ascend', 'descend'],
       render: (text) => <>{text}</>,
+    },
+    {
+      key: "new_comment_count",
+      dataIndex: "new_comment_count",
+      title: "Comments",
+      width: 110,
+      align: "center",
+      render: (count) => count > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700" title={`${count} new comment${count === 1 ? '' : 's'}`}>
+          <CommentOutlined /> {count} new
+        </span>
+      ) : <span className="text-gray-400">—</span>,
     },
     {
       key: "status",
@@ -271,6 +283,18 @@ const handleDelete = async (id) => {
       width: 400,
       sorter: true,
       sorter: { multiple: 1 },
+    },
+    {
+      key: "new_comment_count",
+      dataIndex: "new_comment_count",
+      title: "Replies",
+      width: 110,
+      align: "center",
+      render: (count) => count > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700" title={`${count} new admin repl${count === 1 ? 'y' : 'ies'}`}>
+          <CommentOutlined /> {count} new
+        </span>
+      ) : <span className="text-gray-400">—</span>,
     },
     {
       key: "status",

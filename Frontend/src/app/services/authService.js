@@ -570,6 +570,22 @@ export const getDoubtComments = (doubtId) => {
     .catch(handleAPIError);
 };
 
+export const getUnreadDoubtCommentCount = () => axios.get(
+  `${BASE_URL}/api/doubt-comments/unread-count/`, { withCredentials: true }
+).catch(handleAPIError);
+
+export const markDoubtCommentsSeen = (doubtId) => axios.post(
+  `${BASE_URL}/api/doubt-comments/mark-seen/`,
+  { doubt_id: doubtId },
+  {
+    withCredentials: true,
+    headers: {
+      "X-CSRFToken": window.localStorage.getItem("csrfToken"),
+      "ngrok-skip-browser-warning": "69420",
+    },
+  }
+).catch(handleAPIError);
+
 
 // Create a new doubt comment
 // Supports text + image/video/audio/document

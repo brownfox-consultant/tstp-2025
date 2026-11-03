@@ -88,13 +88,20 @@ class DoubtListSerializer(serializers.ModelSerializer):
     faculty_assigned_date = serializers.SerializerMethodField()
     resolution_date = serializers.SerializerMethodField()
     scheduled_slot = serializers.SerializerMethodField()
+    new_comment_count = serializers.SerializerMethodField()
 
     
 
     class Meta:
         model = Doubt
         fields = ['id', 'test','test_type', 'student', 'faculty','faculty_id','resolved_by', 'question', 'description', 'status', 'resolution',
-                  'created_at', 'faculty_assigned_date', 'resolution_date','scheduled_slot']
+                    'created_at', 'faculty_assigned_date', 'resolution_date','scheduled_slot', 'new_comment_count']
+
+    def get_new_comment_count(self, obj):
+        request = self.context.get('request')
+        role = getattr(getattr(getattr(request, 'user', None), 'role', None), 'name', '').lower()
+        unread_field = 'student_unread' if role == 'student' else 'admin_unread'
+        return obj.comments.filter(**{unread_field: True}).count()
 
     def get_test(self, obj):
         if obj.test:

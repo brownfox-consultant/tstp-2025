@@ -264,6 +264,9 @@ class DoubtComment(models.Model):
         null=True
     )
 
+    admin_unread = models.BooleanField(default=False, db_index=True)
+    student_unread = models.BooleanField(default=False, db_index=True)
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )

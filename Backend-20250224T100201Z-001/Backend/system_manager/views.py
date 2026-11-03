@@ -1151,7 +1151,11 @@ class DoubtViewSet(viewsets.ModelViewSet):
         paginator = CustomPageNumberPagination()
         paginated_doubts = paginator.paginate_queryset(filtered_doubts, request)
 
-        serializer = DoubtListSerializer(paginated_doubts, many=True)
+        serializer = DoubtListSerializer(
+            paginated_doubts,
+            many=True,
+            context={'request': request},
+        )
 
         # Return the paginated response
         return paginator.get_paginated_response(serializer.data)
@@ -1163,6 +1167,38 @@ class DoubtCommentViewSet(viewsets.ModelViewSet):
     queryset = DoubtComment.objects.all()
     serializer_class = DoubtCommentSerializer
     permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'], url_path='unread-count')
+    def unread_count(self, request):
+        role = getattr(getattr(request.user, 'role', None), 'name', '').lower()
+        if role == 'admin':
+            unread_comments = DoubtComment.objects.filter(admin_unread=True)
+        elif role == 'student':
+            unread_comments = DoubtComment.objects.filter(
+                student_unread=True,
+                doubt__student=request.user,
+            )
+        else:
+            return Response({'detail': 'Admin or student access required.'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({'unread_count': unread_comments.count()})
+
+    @action(detail=False, methods=['post'], url_path='mark-seen')
+    def mark_seen(self, request):
+        role = getattr(getattr(request.user, 'role', None), 'name', '').lower()
+        doubt_id = request.data.get('doubt_id')
+        if not doubt_id:
+            return Response({'detail': 'doubt_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if role == 'admin':
+            DoubtComment.objects.filter(doubt_id=doubt_id, admin_unread=True).update(admin_unread=False)
+        elif role == 'student':
+            DoubtComment.objects.filter(
+                doubt_id=doubt_id,
+                doubt__student=request.user,
+                student_unread=True,
+            ).update(student_unread=False)
+        else:
+            return Response({'detail': 'Admin or student access required.'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({'detail': 'Comments marked as seen.'})
 
     def get_doubt(self, doubt_id):
 
@@ -1373,6 +1409,8 @@ class DoubtCommentViewSet(viewsets.ModelViewSet):
             message=message,
             message_type=message_type,
             attachment=attachment,
+            admin_unread=(getattr(getattr(request.user, 'role', None), 'name', '').lower() != 'admin'),
+            student_unread=(getattr(getattr(request.user, 'role', None), 'name', '').lower() == 'admin'),
         )
 
         serializer = self.get_serializer(
