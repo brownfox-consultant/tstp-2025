@@ -23,6 +23,7 @@ import {
   Badge,
   Tooltip,
   Modal,
+  Select,
 } from "antd";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -1024,6 +1025,8 @@ function QuestionsList({
       );
 
       let paramsPayload = {
+        page_size: Number(searchParams.get("page_size")) || 15,
+
         question_type:
           filters.question_type?.join(",") ||
           "",
@@ -1135,7 +1138,8 @@ function QuestionsList({
   page = 1,
   filtersObj = {},
   query = searchParams.get("query") || searchText,
-  ordering = searchParams.get("ordering") || ""
+  ordering = searchParams.get("ordering") || "",
+  pageSize = Number(searchParams.get("page_size")) || 15
 ) => {
     const newParams =
       new URLSearchParams(
@@ -1196,6 +1200,8 @@ newParams.set(
   "page",
   page
 );
+
+newParams.set("page_size", String(pageSize));
 
 
     router.replace(
@@ -1284,7 +1290,8 @@ if (sorter?.order === "ascend") {
     pagination.current,
     mergedFilters,
     searchParams.get("query") || "",
-    ordering
+    ordering,
+    pagination.pageSize
   );
 };
 
@@ -1301,7 +1308,7 @@ if (sorter?.order === "ascend") {
 
     total: total,
 
-    pageSize: 15,
+    pageSize: Number(searchParams.get("page_size")) || 15,
 
     showSizeChanger: false,
 
@@ -1318,7 +1325,7 @@ if (sorter?.order === "ascend") {
 
       const totalPages =
         Math.ceil(
-          total / 15
+          total / (Number(searchParams.get("page_size")) || 15)
         );
 
 
@@ -1383,6 +1390,23 @@ if (sorter?.order === "ascend") {
           >
             Go
           </Button>
+
+          <span>Per page:</span>
+          <Select
+            size="small"
+            value={Number(searchParams.get("page_size")) || 15}
+            style={{ width: 76 }}
+            options={[15, 25, 50, 100].map((size) => ({
+              value: size,
+              label: size,
+            }))}
+            onChange={(pageSize) => {
+              const newParams = new URLSearchParams(searchParams.toString());
+              newParams.set("page", "1");
+              newParams.set("page_size", String(pageSize));
+              router.replace(`${pathname}?${newParams.toString()}`);
+            }}
+          />
 
         </div>
       );
