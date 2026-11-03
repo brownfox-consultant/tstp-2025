@@ -18,6 +18,108 @@ function ProfileComponent() {
   const [form] = useForm();
   const [isSaveDisabled, setIsSaveDisabled] = useState(true);
 
+  // Background color state & presets
+  const [currentBgColor, setCurrentBgColor] = useState("#FAFAFA");
+  const [customColor, setCustomColor] = useState("#e68686");
+  const [customOpacity, setCustomOpacity] = useState(17);
+
+  const hexToRgba = (hex, opacityPercent) => {
+    let cleanHex = hex.replace("#", "");
+    if (cleanHex.length === 3) {
+      cleanHex = cleanHex.split("").map((c) => c + c).join("");
+    }
+    const num = parseInt(cleanHex, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    const a = (opacityPercent / 100).toFixed(2);
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedBg =
+        (id ? window.localStorage.getItem(`student_bg_color_${id}`) : null) ||
+        window.localStorage.getItem("student_bg_color") ||
+        "#FAFAFA";
+      setCurrentBgColor(savedBg);
+    }
+  }, [id]);
+
+  const applyBgColor = (color, showToast = false) => {
+    setCurrentBgColor(color);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("student_bg_color", color);
+      if (id) {
+        window.localStorage.setItem(`student_bg_color_${id}`, color);
+      }
+      window.dispatchEvent(
+        new CustomEvent("student-bg-color-change", { detail: color })
+      );
+    }
+    if (showToast) {
+      message.open({
+        key: "student_bg_color_toast",
+        type: "success",
+        content: "Background color updated!",
+        duration: 1.5,
+      });
+    }
+  };
+
+  const colorPresets = [
+    {
+      name: "Default (Classic)",
+      value: "#FAFAFA",
+      previewStyle: { background: "#FAFAFA" },
+    },
+    {
+      name: "Soft Red (Requested)",
+      value: "rgb(230 134 134 / 17%)",
+      previewStyle: { background: "rgb(230 134 134 / 17%)" },
+    },
+    {
+      name: "Soft Peach",
+      value: "rgb(251 146 60 / 17%)",
+      previewStyle: { background: "rgb(251 146 60 / 17%)" },
+    },
+    {
+      name: "Soft Amber",
+      value: "rgb(250 204 21 / 17%)",
+      previewStyle: { background: "rgb(250 204 21 / 17%)" },
+    },
+    {
+      name: "Soft Mint",
+      value: "rgb(74 222 128 / 17%)",
+      previewStyle: { background: "rgb(74 222 128 / 17%)" },
+    },
+    {
+      name: "Soft Teal",
+      value: "rgb(45 212 191 / 17%)",
+      previewStyle: { background: "rgb(45 212 191 / 17%)" },
+    },
+    {
+      name: "Soft Sky",
+      value: "rgb(56 189 248 / 17%)",
+      previewStyle: { background: "rgb(56 189 248 / 17%)" },
+    },
+    {
+      name: "Soft Indigo",
+      value: "rgb(129 140 248 / 17%)",
+      previewStyle: { background: "rgb(129 140 248 / 17%)" },
+    },
+    {
+      name: "Soft Purple",
+      value: "rgb(192 132 252 / 17%)",
+      previewStyle: { background: "rgb(192 132 252 / 17%)" },
+    },
+    {
+      name: "Soft Pink",
+      value: "rgb(244 114 182 / 17%)",
+      previewStyle: { background: "rgb(244 114 182 / 17%)" },
+    },
+  ];
+
   // Use country code hook
   const {
     countryCodes,
@@ -325,6 +427,159 @@ function ProfileComponent() {
                 </div>
               </div>
             )}
+
+            {/* Divider with Label for Color Palette */}
+            <div className="flex items-center gap-4 my-8">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Dashboard Background Color
+              </span>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+            </div>
+
+            {/* Background Color Palette Card */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <div>
+                  <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                    Theme Background Palette
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Choose a preset color swatch or pick a custom color to personalize your dashboard.
+                  </p>
+                </div>
+
+                {/* Reset button */}
+                <button
+                  type="button"
+                  onClick={() => applyBgColor("#FAFAFA", true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors self-start sm:self-auto cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Reset Default
+                </button>
+              </div>
+
+              {/* Color Presets Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-3 mb-5">
+                {colorPresets.map((preset) => {
+                  const isSelected = currentBgColor === preset.value;
+                  return (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => applyBgColor(preset.value, true)}
+                      className={`
+                        group relative flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition-all duration-200 cursor-pointer
+                        ${isSelected
+                          ? "border-orange-500 bg-orange-50/30 shadow-sm ring-2 ring-orange-200"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
+                        }
+                      `}
+                      title={preset.name}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-full shadow-inner flex items-center justify-center border border-gray-300"
+                        style={preset.previewStyle}
+                      >
+                        {isSelected && (
+                          <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-medium text-gray-700 mt-1.5 text-center truncate max-w-full">
+                        {preset.name.replace(/ \(.*\)/, '')}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Color & Softness Picker */}
+              <div className="p-3.5 bg-gray-50/80 rounded-xl border border-gray-200 flex flex-col sm:flex-row items-center gap-4 justify-between">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <input
+                    type="color"
+                    id="customBgColorPicker"
+                    value={customColor}
+                    onChange={(e) => {
+                      const newHex = e.target.value;
+                      setCustomColor(newHex);
+                      applyBgColor(hexToRgba(newHex, customOpacity), false);
+                    }}
+                    onBlur={() => {
+                      message.open({
+                        key: "student_bg_color_toast",
+                        type: "success",
+                        content: "Background color updated!",
+                        duration: 1.5,
+                      });
+                    }}
+                    className="w-9 h-9 rounded-lg cursor-pointer border border-gray-300 shadow-sm p-0.5 bg-white"
+                  />
+                  <div>
+                    <label htmlFor="customBgColorPicker" className="text-xs font-semibold text-gray-700 cursor-pointer block">
+                      Custom Color Picker
+                    </label>
+                    <span className="text-[11px] text-gray-500 font-mono">
+                      {customColor}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-56">
+                  <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
+                    Opacity:
+                  </span>
+                  <input
+                    type="range"
+                    min="5"
+                    max="60"
+                    value={customOpacity}
+                    onChange={(e) => {
+                      const newOp = Number(e.target.value);
+                      setCustomOpacity(newOp);
+                      applyBgColor(hexToRgba(customColor, newOp), false);
+                    }}
+                    onMouseUp={() => {
+                      message.open({
+                        key: "student_bg_color_toast",
+                        type: "success",
+                        content: "Background color updated!",
+                        duration: 1.5,
+                      });
+                    }}
+                    onTouchEnd={() => {
+                      message.open({
+                        key: "student_bg_color_toast",
+                        type: "success",
+                        content: "Background color updated!",
+                        duration: 1.5,
+                      });
+                    }}
+                    className="w-full accent-orange-500 cursor-pointer"
+                  />
+                  <span className="text-xs font-mono font-medium text-gray-600 w-8">
+                    {customOpacity}%
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span className="text-xs text-gray-500">Active:</span>
+                  <div
+                    className="w-5 h-5 rounded border border-gray-300 shadow-inner"
+                    style={{ background: currentBgColor }}
+                  />
+                  <span className="text-[11px] font-mono text-gray-700 bg-white px-2 py-0.5 rounded border border-gray-200 truncate max-w-[160px]">
+                    {currentBgColor}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
