@@ -29,9 +29,31 @@ export default function AdvancedSearchModal1({ open, onClose, onApply, data = []
   const [subtopics, setSubtopics] = useState([]);
 
   useEffect(() => {
-    axios.get(`${BASE_URL}/api/test/topics/`, { withCredentials: true })
-      .then((res) => setTopics(res.data))
-      .catch((err) => console.error("Error fetching topics:", err));
+    const fetchTopics = async () => {
+      try {
+        const response = await axios.get(`${BASE_URL}/api/test/topics/`, { withCredentials: true });
+        const topicList = response.data || [];
+        const courseSubjectIds = [...new Set(topicList
+          .filter((topic) => !topic["course_subject__course__name"] || !topic["course_subject__subject__name"])
+          .map((topic) => topic.course_subject_id)
+          .filter(Boolean))];
+        const details = await Promise.all(courseSubjectIds.map((id) =>
+          axios.get(`${BASE_URL}/api/question/${id}/topics/`, { withCredentials: true })
+        ));
+        const detailById = new Map(details.flatMap((item) => item.data).map((topic) => [topic.id, topic]));
+        setTopics(topicList.map((topic) => {
+          const detail = detailById.get(topic.id);
+          return {
+            ...topic,
+            courseName: topic["course_subject__course__name"] || detail?.course?.name,
+            subjectName: topic["course_subject__subject__name"] || detail?.subject?.name,
+          };
+        }));
+      } catch (err) {
+        console.error("Error fetching topics:", err);
+      }
+    };
+    fetchTopics();
   }, []);
 
   useEffect(() => {
@@ -229,7 +251,10 @@ export default function AdvancedSearchModal1({ open, onClose, onApply, data = []
       case "Topic":
         return <Select mode="multiple" allowClear className="w-full" size="large"
           placeholder="Select topics" value={localFilters.topic || []}
-          options={topics.map((item) => ({ label: item.name, value: item.id }))}
+          options={topics.map((item) => ({
+            label: `${item.name} - ${item.courseName || "Course"} - ${item.subjectName || "Subject"}`,
+            value: item.id,
+          }))}
           onChange={(value) => setLocalFilters({ ...localFilters, topic: value, sub_topic: [] })} />;
 
       case "Subtopic":

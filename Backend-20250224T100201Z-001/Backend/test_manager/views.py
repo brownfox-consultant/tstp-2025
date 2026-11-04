@@ -2342,7 +2342,13 @@ class TestViewSet(viewsets.ModelViewSet):
             if course_id and subject_id:
                 topics = topics.filter(course_subject__course_id=course_id, course_subject__subject_id=subject_id)
 
-            data = topics.values("id", "name", "course_subject_id")
+            data = topics.values(
+                "id",
+                "name",
+                "course_subject_id",
+                "course_subject__course__name",
+                "course_subject__subject__name",
+            )
             return Response(list(data))
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
