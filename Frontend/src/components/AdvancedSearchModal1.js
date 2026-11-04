@@ -1,4 +1,4 @@
-import { Modal, Checkbox, Input, DatePicker, Tag, Button, Radio } from "antd";
+import { Modal, Checkbox, Input, DatePicker, Tag, Button, Radio, Select } from "antd";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { BASE_URL } from "@/app/constants/apiConstants";
@@ -15,6 +15,9 @@ const CATEGORIES = [
   { key: "Difficulty", label: "Difficulty" },
   { key: "Created Date", label: "Created Date" },
   { key: "Question Text", label: "Question Text" },
+  { key: "Topic", label: "Topic" },
+  { key: "Subtopic", label: "Subtopic" },
+  { key: "Question ID", label: "Question ID" },
 ];
 
 export default function AdvancedSearchModal1({ open, onClose, onApply, data = [] }) {
@@ -22,6 +25,24 @@ export default function AdvancedSearchModal1({ open, onClose, onApply, data = []
   const [creators, setCreators] = useState([]);
   const [courses, setCourses] = useState([]);
   const [activeCategory, setActiveCategory] = useState("Course");
+  const [topics, setTopics] = useState([]);
+  const [subtopics, setSubtopics] = useState([]);
+
+  useEffect(() => {
+    axios.get(`${BASE_URL}/api/test/topics/`, { withCredentials: true })
+      .then((res) => setTopics(res.data))
+      .catch((err) => console.error("Error fetching topics:", err));
+  }, []);
+
+  useEffect(() => {
+    const selected = localFilters.topic || [];
+    if (!selected.length) { setSubtopics([]); return; }
+    Promise.all(selected.map((id) => axios.get(
+      `${BASE_URL}/api/test/topics/${id}/subtopics/`, { withCredentials: true }
+    )))
+      .then((responses) => setSubtopics(responses.flatMap((res) => res.data)))
+      .catch((err) => console.error("Error fetching subtopics:", err));
+  }, [localFilters.topic]);
 
   useEffect(() => {
     if (data?.length) {
@@ -205,6 +226,24 @@ export default function AdvancedSearchModal1({ open, onClose, onApply, data = []
            </div>
         );
 
+      case "Topic":
+        return <Select mode="multiple" allowClear className="w-full" size="large"
+          placeholder="Select topics" value={localFilters.topic || []}
+          options={topics.map((item) => ({ label: item.name, value: item.id }))}
+          onChange={(value) => setLocalFilters({ ...localFilters, topic: value, sub_topic: [] })} />;
+
+      case "Subtopic":
+        return <Select mode="multiple" allowClear className="w-full" size="large"
+          placeholder="Select subtopics" value={localFilters.sub_topic || []}
+          options={subtopics.map((item) => ({ label: item.name, value: item.id }))}
+          disabled={!subtopics.length}
+          onChange={(value) => setLocalFilters({ ...localFilters, sub_topic: value })} />;
+
+      case "Question ID":
+        return <Input placeholder="Enter question ID (Sr. No)" size="large"
+          value={localFilters.question_id || ""}
+          onChange={(e) => setLocalFilters({ ...localFilters, question_id: e.target.value })} />;
+
       default:
         return null;
     }
@@ -249,6 +288,16 @@ export default function AdvancedSearchModal1({ open, onClose, onApply, data = []
       if (key === "question" && typeof value === 'string' && value.trim()) {
          tags.push({ key, value: value, label: `Text: "${value}"` });
          continue;
+      }
+
+      if (["topic", "sub_topic"].includes(key) && Array.isArray(value)) {
+        const options = key === "topic" ? topics : subtopics;
+        value.forEach((id) => tags.push({ key, value: id, label: options.find((item) => item.id === id)?.name || id }));
+        continue;
+      }
+      if (key === "question_id" && String(value).trim()) {
+        tags.push({ key, value, label: `Question ID: ${value}` });
+        continue;
       }
 
       // Generic Arrays (Created By, Status)
@@ -330,6 +379,9 @@ export default function AdvancedSearchModal1({ open, onClose, onApply, data = []
                else if (cat.key === "Difficulty") hasFilters = localFilters.difficulty?.length > 0;
                else if (cat.key === "Created Date") hasFilters = !!localFilters.dateRange;
                else if (cat.key === "Question Text") hasFilters = !!localFilters.question;
+               else if (cat.key === "Topic") hasFilters = localFilters.topic?.length > 0;
+               else if (cat.key === "Subtopic") hasFilters = localFilters.sub_topic?.length > 0;
+               else if (cat.key === "Question ID") hasFilters = !!localFilters.question_id;
 
                return (
                  <div

@@ -1,5 +1,6 @@
 from django.db.models import Q
 from django_filters import rest_framework as filters
+import re
 
 from system_manager.models import Doubt, FacultyTimeSlot, Issue, StudentFeedback,Concern,Meeting 
 from system_manager.models import Suggestion
@@ -16,22 +17,30 @@ class FacultyTimeSlotFilter(filters.FilterSet):
         fields = ['faculty_id', 'date', 'is_booked']
 
 class SuggestionFilter(filters.FilterSet):
+    search = filters.CharFilter(method='filter_search')
     course = filters.CharFilter(method='filter_course')
     subject = filters.CharFilter(method='filter_subject')
     created_by = filters.CharFilter(method='filter_created_by')
     status = filters.CharFilter(method='filter_status')
     difficulty = filters.CharFilter(method='filter_difficulty')
+    topic = filters.CharFilter(method='filter_topic')
+    sub_topic = filters.CharFilter(method='filter_sub_topic')
+    question_id = filters.NumberFilter(field_name='question__srno')
     created_date = filters.DateFromToRangeFilter(field_name='created_at')
     question_text = filters.CharFilter(method='filter_question_text')
 
     class Meta:
         model = Suggestion
         fields = [
+            'search',
             'course',
             'subject',
             'created_by',
             'status',
             'difficulty',
+            'topic',
+            'sub_topic',
+            'question_id',
             'created_date',
             'question_text',
         ]
@@ -44,6 +53,20 @@ class SuggestionFilter(filters.FilterSet):
             query &= Q(question__description__icontains=word)
 
         return queryset.filter(query)   
+
+    def filter_search(self, queryset, name, value):
+        # Ignore equation/layout punctuation (including Unicode minus signs) so
+        # a copied question finds the same text stored without that formatting.
+        terms = re.findall(r'[\w]+(?:[.,][\w]+)*', value, flags=re.UNICODE)
+        for term in terms:
+            queryset = queryset.filter(
+                Q(question__description__icontains=term)
+                | Q(status__icontains=term)
+                | Q(created_by__name__icontains=term)
+                | Q(question__course_subject__course__name__icontains=term)
+                | Q(question__course_subject__subject__name__icontains=term)
+            )
+        return queryset.distinct()
 
     def filter_course(self, queryset, name, value):
         values = value.split(",")
@@ -68,6 +91,12 @@ class SuggestionFilter(filters.FilterSet):
     def filter_difficulty(self, queryset, name, value):
         difficulties = value.split(',')
         return queryset.filter(question__difficulty__in=difficulties)
+
+    def filter_topic(self, queryset, name, value):
+        return queryset.filter(topic_id__in=value.split(',')).distinct()
+
+    def filter_sub_topic(self, queryset, name, value):
+        return queryset.filter(sub_topic_id__in=value.split(',')).distinct()
 
 
 

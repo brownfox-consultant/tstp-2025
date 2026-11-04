@@ -1797,7 +1797,6 @@ class SuggestionViewSet(viewsets.ModelViewSet):
     filter_backends = [
         DjangoFilterBackend,
         drf_filters.OrderingFilter,
-        drf_filters.SearchFilter
     ]
 
     filterset_class = SuggestionFilter

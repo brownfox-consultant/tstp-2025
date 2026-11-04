@@ -2,7 +2,7 @@ import {
   getSuggestionsList,
   getSubjectTopics,
 } from "@/app/services/authService";
-import { Input, Table, Button, Modal } from "antd";
+import { Input, Table, Button, Modal, Checkbox } from "antd";
 import React, { useEffect, useState } from "react";
 import ViewSuggestionModal from "./ViewSuggestionModal";
 import SuggestionStatusTag from "./SuggestionStatusTag";
@@ -20,6 +20,8 @@ import MathContent from "./MathContent";
 import AdvancedSearchModal1 from "./AdvancedSearchModal1";
 import EditQuestionForm from "./EditQuestionForm";
 import EditQuestionModal from "./EditQuestionModal";
+import axios from "axios";
+import { BASE_URL } from "@/app/constants/apiConstants";
 const { Search } = Input;
 
 function SuggestionsList() {
@@ -36,57 +38,74 @@ function SuggestionsList() {
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [sorterState, setSorterState] = useState(null); // ✅ added this to track sorting
 
-  // Edit Modal State
+  const [quickFilters, setQuickFilters] = useState({});
+  const [filterDrafts, setFilterDrafts] = useState({});
+  const [filterOptions, setFilterOptions] = useState({ course: [], subject: [], topic: [], sub_topic: [] });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editQuestionData, setEditQuestionData] = useState(null);
   const [topicOptions, setTopicOptions] = useState([]);
-
-  // ✅ Map frontend column key → backend field
   const SORT_FIELD_MAP = {
-  srno: "question__srno",
-  course: "question__course_subject__course__name",
-  subject: "question__course_subject__subject__name",
-  created_by: "created_by__name",
-  created_at: "created_at",
-  status: "status",
-  difficulty: "question__difficulty",
-  question: "question__description",
-};
-
-  const applyAdvancedFilters = async (filters) => {
-    setAdvancedFilters(filters);
+    srno: "question__srno",
+    course: "question__course_subject__course__name",
+    subject: "question__course_subject__subject__name",
+    created_by: "created_by__name",
+    created_at: "created_at",
+    status: "status",
+    difficulty: "question__difficulty",
+    question: "question__description",
   };
+  const applyAdvancedFilters = async (filters) => setAdvancedFilters(filters);
 
-  // ✅ Fetch data (runs on filters, sorting, or pagination)
+  useEffect(() => {
+    Promise.all([
+      axios.get(`${BASE_URL}/api/course/list/`, { withCredentials: true }),
+      axios.get(`${BASE_URL}/api/subject/`, { withCredentials: true }),
+      axios.get(`${BASE_URL}/api/test/topics/`, { withCredentials: true }),
+    ]).then(async ([courseRes, subjectRes, topicRes]) => {
+      const topics = topicRes.data || [];
+      const subtopicResponses = await Promise.all(topics.map((topic) =>
+        axios.get(`${BASE_URL}/api/test/topics/${topic.id}/subtopics/`, { withCredentials: true })
+      ));
+      setFilterOptions({
+        course: courseRes.data.map((item) => ({ label: item.name, value: item.id })),
+        subject: subjectRes.data.map((item) => ({ label: item.name, value: item.id })),
+        topic: topics.map((item) => ({ label: item.name, value: item.id })),
+        sub_topic: subtopicResponses.flatMap((res) => res.data).map((item) => ({ label: item.name, value: item.id })),
+      });
+    }).catch((err) => console.error("Error loading suggestion filters:", err));
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       setSkeletonLoading(true);
-
       const params = { page: current };
-
-      // include filters
-      if (advancedFilters?.course?.length)
-        params.course = advancedFilters.course.join(",");
-      if (advancedFilters?.created_by?.length)
-        params.created_by = advancedFilters.created_by.join(",");
-      if (advancedFilters?.status?.length)
-        params.status = advancedFilters.status.join(",");
-      if (advancedFilters?.difficulty?.length)
-        params.difficulty = advancedFilters.difficulty.join(",");
+      if (searchTerm.trim()) params.search = searchTerm.trim();
+      if (quickFilters.srno?.trim()) params.question_id = quickFilters.srno.trim();
+      if (quickFilters.course?.length) params.course = quickFilters.course.join(",");
+      if (quickFilters.subject?.length) params.subject = quickFilters.subject.join(",");
+      if (quickFilters.topic?.length) params.topic = quickFilters.topic.join(",");
+      if (quickFilters.sub_topic?.length) params.sub_topic = quickFilters.sub_topic.join(",");
+      if (advancedFilters?.course?.length) params.course = advancedFilters.course.join(",");
+      if (advancedFilters?.created_by?.length) params.created_by = advancedFilters.created_by.join(",");
+      if (advancedFilters?.status?.length) params.status = advancedFilters.status.join(",");
+      if (advancedFilters?.difficulty?.length) params.difficulty = advancedFilters.difficulty.join(",");
+      if (advancedFilters?.topic?.length) params.topic = advancedFilters.topic.join(",");
+      if (advancedFilters?.sub_topic?.length) params.sub_topic = advancedFilters.sub_topic.join(",");
+      if (advancedFilters?.question_id?.trim()) params.question_id = advancedFilters.question_id.trim();
       if (advancedFilters?.dateRange?.length === 2) {
-        params.created_date_after =
-          advancedFilters.dateRange[0].format("YYYY-MM-DD");
-        params.created_date_before =
-          advancedFilters.dateRange[1].format("YYYY-MM-DD");
+        params.created_date_after = advancedFilters.dateRange[0].format("YYYY-MM-DD");
+        params.created_date_before = advancedFilters.dateRange[1].format("YYYY-MM-DD");
       }
-      if (advancedFilters?.question)
-        params.question_text = advancedFilters.question;
-
-      // ✅ include sorting param
-      if (sorterState?.orderParam) {
-        params.ordering = sorterState.orderParam;
-      }
-
+      if (advancedFilters?.question) params.question_text = advancedFilters.question;
+      if (quickFilters.srno?.trim()) params.question_id = quickFilters.srno.trim();
+      if (quickFilters.course?.length) params.course = quickFilters.course.join(",");
+      if (quickFilters.subject?.length) params.subject = quickFilters.subject.join(",");
+      if (quickFilters.topic?.length) params.topic = quickFilters.topic.join(",");
+      if (quickFilters.sub_topic?.length) params.sub_topic = quickFilters.sub_topic.join(",");
+      // Use normalized server search for copied question text containing math
+      // punctuation (for example, Unicode minus signs and parentheses).
+      if (quickFilters.question?.trim()) params.search = quickFilters.question.trim();
+      if (sorterState?.orderParam) params.ordering = sorterState.orderParam;
       try {
         const res = await getSuggestionsList(params);
         const { results, count, total_pages, current_page } = res.data;
@@ -94,48 +113,74 @@ function SuggestionsList() {
         setTotal(count);
         setTotalPages(total_pages);
         setCurrent(current_page);
-        setFilteredData(
-          searchTerm ? handleSearch(searchTerm, results) : results,
-        );
+        setFilteredData(results);
       } catch (err) {
         console.error("Fetch error:", err);
       } finally {
         setSkeletonLoading(false);
       }
     };
-
     fetchData();
-  }, [current, advancedFilters, sorterState, updated]);
+  }, [current, advancedFilters, sorterState, updated, searchTerm, quickFilters]);
 
   const router = useRouter();
+  const isQuickFilterApplied = (field) => Array.isArray(quickFilters[field])
+    ? quickFilters[field].length > 0
+    : Boolean(quickFilters[field]?.trim?.());
 
-  // ✅ local search
-  const handleSearch = (value, dataToFilter = suggestionsData) => {
-    setSearchTerm(value);
-    if (!value) return setFilteredData(dataToFilter);
+  const renderCheckboxFilter = (field) => ({ confirm }) => (
+    <div className="min-w-56 p-2">
+      <Checkbox.Group
+        className="flex max-h-64 flex-col gap-2 overflow-y-auto"
+        value={filterDrafts[field] ?? quickFilters[field] ?? []}
+        options={filterOptions[field] || []}
+        onChange={(values) => setFilterDrafts({ ...filterDrafts, [field]: values })}
+      />
+      <div className="mt-2 flex justify-between border-t pt-2">
+        <Button size="small" type="text" onClick={() => {
+          setCurrent(1);
+          setQuickFilters({ ...quickFilters, [field]: [] });
+          setFilterDrafts({ ...filterDrafts, [field]: [] });
+          confirm();
+        }}>Reset</Button>
+        <Button size="small" type="primary" onClick={() => {
+          setCurrent(1);
+          setQuickFilters({ ...quickFilters, [field]: filterDrafts[field] ?? quickFilters[field] ?? [] });
+          confirm();
+        }}>OK</Button>
+      </div>
+    </div>
+  );
 
-    const normalizedInput = value.toLowerCase().replace(/\s|_|,|-/g, "");
-    const filtered = dataToFilter.filter((item) => {
-      const course = item.course?.toLowerCase() || "";
-      const question = item.question?.description?.toLowerCase() || "";
-      const createdBy = item.created_by?.toLowerCase() || "";
-      const status = item.status?.toLowerCase().replace(/\s|_/g, "") || "";
-      const createdDate = dayjs(item.created_at)
-        .format("MMM D, YYYY")
-        .toLowerCase()
-        .replace(/\s|,|-/g, "");
-      return (
-        course.includes(normalizedInput) ||
-        question.includes(normalizedInput) ||
-        createdBy.includes(normalizedInput) ||
-        status.includes(normalizedInput) ||
-        createdDate.includes(normalizedInput)
-      );
-    });
-
-    setFilteredData(filtered);
-    return filtered;
-  };
+  const renderTextFilter = (field, placeholder) => ({ confirm }) => (
+    <div className="w-64 p-2" onKeyDown={(event) => event.stopPropagation()}>
+      <Input
+        autoFocus
+        allowClear
+        placeholder={placeholder}
+        value={filterDrafts[field] ?? quickFilters[field] ?? ""}
+        onChange={(event) => setFilterDrafts({ ...filterDrafts, [field]: event.target.value })}
+        onPressEnter={() => {
+          setCurrent(1);
+          setQuickFilters({ ...quickFilters, [field]: filterDrafts[field] ?? quickFilters[field] ?? "" });
+          confirm();
+        }}
+      />
+      <div className="mt-2 flex justify-between">
+        <Button size="small" type="text" onClick={() => {
+          setCurrent(1);
+          setQuickFilters({ ...quickFilters, [field]: "" });
+          setFilterDrafts({ ...filterDrafts, [field]: "" });
+          confirm();
+        }}>Reset</Button>
+        <Button size="small" type="primary" icon={<SearchOutlined />} onClick={() => {
+          setCurrent(1);
+          setQuickFilters({ ...quickFilters, [field]: filterDrafts[field] ?? quickFilters[field] ?? "" });
+          confirm();
+        }}>Search</Button>
+      </div>
+    </div>
+  );
 
   const cols = [
     {
@@ -144,19 +189,26 @@ function SuggestionsList() {
       title: "Sr. No",
       sorter: true, // ✅ use true instead of custom sorter
       width: 80,
+      filterDropdown: renderTextFilter("srno", "Search Sr. No"),
+      filterIcon: () => <SearchOutlined style={{ color: isQuickFilterApplied("srno") ? "#1677ff" : "#8c8c8c" }} />,
     },
     {
       key: "course",
       dataIndex: "course",
       title: "Course",
       sorter: true,
+      filterDropdown: renderCheckboxFilter("course"),
+      filterIcon: () => <FilterOutlined style={{ color: isQuickFilterApplied("course") ? "#1677ff" : "#8c8c8c" }} />,
     },
     {
       key: "subject",
       dataIndex: "subject",
       title: "Subject",
       sorter: true,
+      filterDropdown: renderCheckboxFilter("subject"),
+      filterIcon: () => <FilterOutlined style={{ color: isQuickFilterApplied("subject") ? "#1677ff" : "#8c8c8c" }} />,
     },
+
     {
       key: "question",
       dataIndex: "question",
@@ -164,6 +216,8 @@ function SuggestionsList() {
       title: "Question",
       sorter: true,
       render: (question) => <MathContent content={question.description} />,
+      filterDropdown: renderTextFilter("question", "Search question text"),
+      filterIcon: () => <SearchOutlined style={{ color: isQuickFilterApplied("question") ? "#1677ff" : "#8c8c8c" }} />,
     },
     {
       key: "created_by",
@@ -254,7 +308,10 @@ function SuggestionsList() {
           placeholder="Search questions..."
           prefix={<SearchOutlined className="text-gray-400" />}
           value={searchTerm}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={(e) => {
+            setCurrent(1);
+            setSearchTerm(e.target.value);
+          }}
           allowClear
           className="max-w-[450px] h-10 rounded-lg border-gray-200 hover:border-blue-400 focus:border-blue-500 shadow-sm text-base"
         />
@@ -305,8 +362,6 @@ function SuggestionsList() {
         data={suggestionsData}
       />
 
-     
-
         {/* Form Content */}
         <div className="p-4 max-h-[70vh] overflow-y-auto bg-gray-50">
           {editQuestionData && (
@@ -322,7 +377,7 @@ function SuggestionsList() {
 />
           )}
         </div>
-      
+
     </div>
   );
 }
