@@ -1817,6 +1817,8 @@ class SuggestionViewSet(viewsets.ModelViewSet):
         # ✅ FIXED RELATIONS
         'question__course_subject__course__name',
         'question__course_subject__subject__name',
+        'topic__name',
+        'sub_topic__name',
 
         'question__difficulty',
         'question__srno',
