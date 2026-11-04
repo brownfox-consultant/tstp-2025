@@ -63,14 +63,32 @@ function SuggestionsList() {
       axios.get(`${BASE_URL}/api/test/topics/`, { withCredentials: true }),
     ]).then(async ([courseRes, subjectRes, topicRes]) => {
       const topics = topicRes.data || [];
-      const subtopicResponses = await Promise.all(topics.map((topic) =>
-        axios.get(`${BASE_URL}/api/test/topics/${topic.id}/subtopics/`, { withCredentials: true })
+      const courseSubjectIds = [...new Set(topics.map((topic) => topic.course_subject_id).filter(Boolean))];
+      const detailResponses = await Promise.allSettled(courseSubjectIds.map((id) =>
+        axios.get(`${BASE_URL}/api/question/${id}/topics/`, { withCredentials: true })
       ));
+      const topicDetails = new Map(detailResponses
+        .filter((result) => result.status === "fulfilled")
+        .flatMap((result) => result.value.data)
+        .map((topic) => [topic.id, topic]));
+      const topicLabel = (topic) => {
+        const detail = topicDetails.get(topic.id);
+        const course = detail?.course?.name || topic["course_subject__course__name"];
+        const subject = detail?.subject?.name || topic["course_subject__subject__name"];
+        return [topic.name, course, subject].filter(Boolean).join(" - ");
+      };
+      const subtopicResponses = await Promise.all(topics.map(async (topic) => {
+        const response = await axios.get(`${BASE_URL}/api/test/topics/${topic.id}/subtopics/`, { withCredentials: true });
+        return response.data.map((subtopic) => ({
+          ...subtopic,
+          label: [subtopic.name, topic.name, topicLabel(topic).split(" - ").slice(1)].flat(2).filter(Boolean).join(" - "),
+        }));
+      }));
       setFilterOptions({
         course: courseRes.data.map((item) => ({ label: item.name, value: item.id })),
         subject: subjectRes.data.map((item) => ({ label: item.name, value: item.id })),
-        topic: topics.map((item) => ({ label: item.name, value: item.id })),
-        sub_topic: subtopicResponses.flatMap((res) => res.data).map((item) => ({ label: item.name, value: item.id })),
+        topic: topics.map((item) => ({ label: topicLabel(item), value: item.id })),
+        sub_topic: subtopicResponses.flat().map((item) => ({ label: item.label, value: item.id })),
       });
     }).catch((err) => console.error("Error loading suggestion filters:", err));
   }, []);
@@ -80,7 +98,7 @@ function SuggestionsList() {
       setSkeletonLoading(true);
       const params = { page: current };
       if (searchTerm.trim()) params.search = searchTerm.trim();
-      if (quickFilters.srno?.trim()) params.question_id = quickFilters.srno.trim();
+      if (quickFilters.srno?.trim()) params.question_srno = quickFilters.srno.trim();
       if (quickFilters.course?.length) params.course = quickFilters.course.join(",");
       if (quickFilters.subject?.length) params.subject = quickFilters.subject.join(",");
       if (quickFilters.topic?.length) params.topic = quickFilters.topic.join(",");
@@ -91,13 +109,15 @@ function SuggestionsList() {
       if (advancedFilters?.difficulty?.length) params.difficulty = advancedFilters.difficulty.join(",");
       if (advancedFilters?.topic?.length) params.topic = advancedFilters.topic.join(",");
       if (advancedFilters?.sub_topic?.length) params.sub_topic = advancedFilters.sub_topic.join(",");
-      if (advancedFilters?.question_id?.trim()) params.question_id = advancedFilters.question_id.trim();
+      if (!quickFilters.srno?.trim() && advancedFilters?.question_id?.trim()) {
+        params.question_id = advancedFilters.question_id.trim();
+      }
       if (advancedFilters?.dateRange?.length === 2) {
         params.created_date_after = advancedFilters.dateRange[0].format("YYYY-MM-DD");
         params.created_date_before = advancedFilters.dateRange[1].format("YYYY-MM-DD");
       }
       if (advancedFilters?.question) params.question_text = advancedFilters.question;
-      if (quickFilters.srno?.trim()) params.question_id = quickFilters.srno.trim();
+      if (quickFilters.srno?.trim()) params.question_srno = quickFilters.srno.trim();
       if (quickFilters.course?.length) params.course = quickFilters.course.join(",");
       if (quickFilters.subject?.length) params.subject = quickFilters.subject.join(",");
       if (quickFilters.topic?.length) params.topic = quickFilters.topic.join(",");
@@ -130,12 +150,14 @@ function SuggestionsList() {
 
   const renderCheckboxFilter = (field) => ({ confirm }) => (
     <div className="min-w-56 p-2">
-      <Checkbox.Group
-        className="flex max-h-64 flex-col gap-2 overflow-y-auto"
-        value={filterDrafts[field] ?? quickFilters[field] ?? []}
-        options={filterOptions[field] || []}
-        onChange={(values) => setFilterDrafts({ ...filterDrafts, [field]: values })}
-      />
+      <div style={{ maxHeight: 260, overflowY: "auto", overscrollBehavior: "contain" }}>
+        <Checkbox.Group
+          className="flex flex-col gap-2"
+          value={filterDrafts[field] ?? quickFilters[field] ?? []}
+          options={filterOptions[field] || []}
+          onChange={(values) => setFilterDrafts({ ...filterDrafts, [field]: values })}
+        />
+      </div>
       <div className="mt-2 flex justify-between border-t pt-2">
         <Button size="small" type="text" onClick={() => {
           setCurrent(1);
@@ -207,6 +229,20 @@ function SuggestionsList() {
       sorter: true,
       filterDropdown: renderCheckboxFilter("subject"),
       filterIcon: () => <FilterOutlined style={{ color: isQuickFilterApplied("subject") ? "#1677ff" : "#8c8c8c" }} />,
+    },
+    {
+      key: "topic",
+      title: "Topic",
+      dataIndex: ["suggestion", "topic"],
+      filterDropdown: renderCheckboxFilter("topic"),
+      filterIcon: () => <FilterOutlined style={{ color: isQuickFilterApplied("topic") ? "#1677ff" : "#8c8c8c" }} />,
+    },
+    {
+      key: "sub_topic",
+      title: "Subtopic",
+      dataIndex: ["suggestion", "sub_topic"],
+      filterDropdown: renderCheckboxFilter("sub_topic"),
+      filterIcon: () => <FilterOutlined style={{ color: isQuickFilterApplied("sub_topic") ? "#1677ff" : "#8c8c8c" }} />,
     },
 
     {

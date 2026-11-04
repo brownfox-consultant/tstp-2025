@@ -26,6 +26,7 @@ class SuggestionFilter(filters.FilterSet):
     topic = filters.CharFilter(method='filter_topic')
     sub_topic = filters.CharFilter(method='filter_sub_topic')
     question_id = filters.NumberFilter(field_name='question__srno')
+    question_srno = filters.NumberFilter(field_name='question__srno')
     created_date = filters.DateFromToRangeFilter(field_name='created_at')
     question_text = filters.CharFilter(method='filter_question_text')
 
@@ -41,6 +42,7 @@ class SuggestionFilter(filters.FilterSet):
             'topic',
             'sub_topic',
             'question_id',
+            'question_srno',
             'created_date',
             'question_text',
         ]
@@ -55,6 +57,13 @@ class SuggestionFilter(filters.FilterSet):
         return queryset.filter(query)   
 
     def filter_search(self, queryset, name, value):
+        # A numeric-only search in this list is an exact question Sr. No lookup.
+        # Searching the serialized question HTML can otherwise match numbers
+        # embedded in base64 image data and return unrelated questions.
+        numeric_value = value.strip()
+        if numeric_value.isdecimal():
+            return queryset.filter(question__srno=int(numeric_value))
+
         # Ignore equation/layout punctuation (including Unicode minus signs) so
         # a copied question finds the same text stored without that formatting.
         terms = re.findall(r'[\w]+(?:[.,][\w]+)*', value, flags=re.UNICODE)
