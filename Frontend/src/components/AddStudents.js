@@ -21,7 +21,7 @@ import Highlighter from "react-highlight-words";
 function AddStudents({ courseFromTable = null }) {
   const { id, testId } = useParams();
   const pathname = usePathname();
-  const testSection = pathname.split("/")[4] === "fixnaltest" ? "fixnaltest" : "tests";
+  const testSection = pathname.split("/")[4] === "SectionalTest" ? "SectionalTest" : "tests";
   const router = useRouter();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [tableLoading, setTableLoading] = useState(false);

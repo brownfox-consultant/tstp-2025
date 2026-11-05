@@ -68,9 +68,9 @@ const flatItems = [
     label: "Full Length Tests",
   },
    {
-    key: "fixnaltest",
+    key: "SectionalTest",
     icon: <FileUnknownOutlined />,
-    label: "Fixnaltest",
+    label: "Sectional Test",
   },
   {
     key: "test-list",

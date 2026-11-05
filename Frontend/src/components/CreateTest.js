@@ -19,7 +19,7 @@ const { Option } = Select;
 function CreateTest({ setTestDetails }) {
   const params = useParams();
   const pathname = usePathname();
-  const isFixnaltest = pathname.split("/").includes("fixnaltest");
+  const isSectionalTest = pathname.split("/").includes("SectionalTest");
   const router = useRouter();
   const [options, setOptions] = useState([]);
   const [form] = useForm();
@@ -47,7 +47,7 @@ function CreateTest({ setTestDetails }) {
 
   const onSubmit = (values) => {
     setCreateLoading(true);
-    createTest({ ...values, is_fixnaltest: isFixnaltest })
+    createTest({ ...values, is_SectionalTest: isSectionalTest })
       .then((res) => {
         setTestDetails(res.data);
 
@@ -55,7 +55,7 @@ function CreateTest({ setTestDetails }) {
           `test-${res.data.id}`,
           JSON.stringify(res.data),
         );
-        router.push(`/tstp/admin/${params.id}/${isFixnaltest ? "fixnaltest" : "tests"}/edit/${res.data.id}`);
+        router.push(`/tstp/admin/${params.id}/${isSectionalTest ? "SectionalTest" : "tests"}/edit/${res.data.id}`);
       })
       .finally(() => setCreateLoading(false));
   };

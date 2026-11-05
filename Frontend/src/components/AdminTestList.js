@@ -26,7 +26,7 @@ function AdminTestList() {
 
   const router = useRouter();
   const pathname = usePathname();
-  const isFixnaltest = pathname.split("/").includes("fixnaltest");
+  const isSectionalTest = pathname.split("/").includes("SectionalTest");
   const [updated, setUpdated] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
@@ -150,7 +150,7 @@ function AdminTestList() {
 
   useEffect(() => {
     setTableLoading(true);
-    getTestsList({ page: current, search: searchText || globalSearch, page_size: pageSize, is_fixnaltest: isFixnaltest, ...params })
+    getTestsList({ page: current, search: searchText || globalSearch, page_size: pageSize, is_SectionalTest: isSectionalTest, ...params })
       .then((res) => {
         setTestsData(res.data.results);
         setCurrent(res.data.current_page);
@@ -158,7 +158,7 @@ function AdminTestList() {
         setTotalPages(res.data.total_pages);
       })
       .finally(() => setTableLoading(false));
-  }, [updated, current, pageSize, searchText, globalSearch, params, isFixnaltest]);
+  }, [updated, current, pageSize, searchText, globalSearch, params, isSectionalTest]);
 
   const deleteConfirm = (id) => {
     setConfirmLoading(true);
@@ -416,8 +416,8 @@ function AdminTestList() {
         {/* Header */}
         <div className="flex flex-row gap-4 mb-4 justify-between">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">{isFixnaltest ? "Fixnaltest" : "Full Length Tests"}</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage and create {isFixnaltest ? "Fixnaltest" : "full length tests"}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">{isSectionalTest ? "SectionalTest" : "Full Length Tests"}</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage and create {isSectionalTest ? "SectionalTest" : "full length tests"}</p>
           </div>
           <div className="flex items-center gap-3">
             {role == "admin" && (

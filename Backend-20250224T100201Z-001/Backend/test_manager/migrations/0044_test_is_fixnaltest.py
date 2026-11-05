@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='test',
-            name='is_fixnaltest',
+            name='is_SectionalTest',
             field=models.BooleanField(default=False),
         ),
     ]

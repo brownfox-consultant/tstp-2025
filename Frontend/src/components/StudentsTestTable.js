@@ -30,7 +30,7 @@ function StudentsTestTable({ testReady, testDetails = {} }) {
   const router = useRouter();
   const pathname = usePathname();
   const role = pathname.split("/")[2];
-  const testSection = pathname.split("/")[4] === "fixnaltest" ? "fixnaltest" : "tests";
+  const testSection = pathname.split("/")[4] === "SectionalTest" ? "SectionalTest" : "tests";
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
   function handleReassign(test_submission_id) {
