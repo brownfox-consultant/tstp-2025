@@ -28,7 +28,9 @@ function StudentsTestTable({ testReady, testDetails = {} }) {
   const [loading, setLoading] = useState(false);
   const { id, testId } = useParams();
   const router = useRouter();
-  const role = usePathname().split("/")[2];
+  const pathname = usePathname();
+  const role = pathname.split("/")[2];
+  const testSection = pathname.split("/")[4] === "fixnaltest" ? "fixnaltest" : "tests";
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
   function handleReassign(test_submission_id) {
@@ -242,7 +244,7 @@ function StudentsTestTable({ testReady, testDetails = {} }) {
                   role === "admin" && (
                     <Button
                       onClick={() =>
-                        router.push(`/tstp/admin/${id}/tests/add/${testId}`)
+                        router.push(`/tstp/admin/${id}/${testSection}/add/${testId}`)
                       }
                       size="medium"
                       className="action-button"

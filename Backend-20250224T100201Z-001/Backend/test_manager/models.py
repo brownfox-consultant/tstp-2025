@@ -23,6 +23,7 @@ class Test(models.Model):
         (ASSIGNMENT, 'Assignment'),
     ]
     test_type = models.CharField(max_length=20, choices=TEST_TYPE_CHOICES, default=EXAM)
+    is_fixnaltest = models.BooleanField(default=False)
 
     LINEAR = 'LINEAR'
     DYNAMIC = 'DYNAMIC'

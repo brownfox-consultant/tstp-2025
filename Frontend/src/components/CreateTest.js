@@ -11,13 +11,15 @@ import {
 } from "@ant-design/icons";
 import { Form, Input, Select, Spin, Button } from "antd";
 import { useForm } from "antd/es/form/Form";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 const { Option } = Select;
 
 function CreateTest({ setTestDetails }) {
   const params = useParams();
+  const pathname = usePathname();
+  const isFixnaltest = pathname.split("/").includes("fixnaltest");
   const router = useRouter();
   const [options, setOptions] = useState([]);
   const [form] = useForm();
@@ -45,7 +47,7 @@ function CreateTest({ setTestDetails }) {
 
   const onSubmit = (values) => {
     setCreateLoading(true);
-    createTest(values)
+    createTest({ ...values, is_fixnaltest: isFixnaltest })
       .then((res) => {
         setTestDetails(res.data);
 
@@ -53,7 +55,7 @@ function CreateTest({ setTestDetails }) {
           `test-${res.data.id}`,
           JSON.stringify(res.data),
         );
-        router.push(`/tstp/admin/${params.id}/tests/edit/${res.data.id}`);
+        router.push(`/tstp/admin/${params.id}/${isFixnaltest ? "fixnaltest" : "tests"}/edit/${res.data.id}`);
       })
       .finally(() => setCreateLoading(false));
   };

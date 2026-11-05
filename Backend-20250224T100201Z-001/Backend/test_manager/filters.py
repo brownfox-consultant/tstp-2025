@@ -7,6 +7,7 @@ from .models import Test, TestSubmission, PracticeTest
 
 class TestFilter(django_filters.FilterSet):
     search = django_filters.CharFilter(method='filter_search')  # Universal search
+    is_fixnaltest = django_filters.BooleanFilter(field_name='is_fixnaltest')
     format_type = django_filters.CharFilter(field_name='format_type', lookup_expr='exact')
     test_type = django_filters.CharFilter(field_name='test_type', lookup_expr='exact')
     course = django_filters.NumberFilter(field_name='course_id', lookup_expr='exact')
@@ -24,7 +25,7 @@ class TestFilter(django_filters.FilterSet):
 
     class Meta:
         model = Test
-        fields = ['format_type', 'test_type', 'course', 'created_at']
+        fields = ['format_type', 'test_type', 'course', 'created_at', 'is_fixnaltest']
 
     def filter_search(self, queryset, name, value):
         from datetime import datetime

@@ -21,6 +21,7 @@ import Highlighter from "react-highlight-words";
 function AddStudents({ courseFromTable = null }) {
   const { id, testId } = useParams();
   const pathname = usePathname();
+  const testSection = pathname.split("/")[4] === "fixnaltest" ? "fixnaltest" : "tests";
   const router = useRouter();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [tableLoading, setTableLoading] = useState(false);
@@ -190,6 +191,16 @@ function AddStudents({ courseFromTable = null }) {
         setTotal(count);
         setDataSource(results);
       })
+      .catch((err) => {
+        Modal.error({
+          title: "Unable to load eligible students",
+          content:
+            err.response?.data?.detail ||
+            err.response?.data?.error ||
+            err.message ||
+            "Please try again.",
+        });
+      })
       .finally(() => setTableLoading(false));
   }, [current, searchText, globalSearch, testId]);
 
@@ -221,10 +232,19 @@ function AddStudents({ courseFromTable = null }) {
       .then((res) => {
         Modal.success({
           title: res.data.detail,
-          onOk: router.push(`/tstp/admin/${id}/tests`),
+          onOk: () => router.push(`/tstp/admin/${id}/${testSection}`),
         });
       })
-      .catch((err) => console.log("err", err))
+      .catch((err) => {
+        Modal.error({
+          title: "Unable to assign students",
+          content:
+            err.response?.data?.detail ||
+            err.response?.data?.error ||
+            err.message ||
+            "Please try again.",
+        });
+      })
       .finally(() => setLoading(false));
   };
 

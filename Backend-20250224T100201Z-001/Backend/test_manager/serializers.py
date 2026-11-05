@@ -37,7 +37,7 @@ class TestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Test
-        fields = ['id', 'course', 'course_name', 'name', 'test_type', 'format_type', 'created_at', 'updated_at',
+        fields = ['id', 'course', 'course_name', 'name', 'test_type', 'is_fixnaltest', 'format_type', 'created_at', 'updated_at',
                   'created_by', 'updated_by', 'subject', 'show_skip_button', 'show_prev_button']
 
 
@@ -46,7 +46,7 @@ class TestListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Test
-        fields = ['id', 'course', 'course_name', 'name', 'test_type', 'format_type', 'show_skip_button',
+        fields = ['id', 'course', 'course_name', 'name', 'test_type', 'is_fixnaltest', 'format_type', 'show_skip_button',
                   'show_prev_button', 'created_at', 'updated_at']
 
 
