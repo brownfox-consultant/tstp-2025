@@ -3948,10 +3948,13 @@ class TestViewSet(viewsets.ModelViewSet):
                 NotificationTemplate.REFERENCE_ID: test_submission.id
             }
 
-            send_notification.delay(
-                notification_name=Notification.TEST_ASSIGNED_NOTIFICATION,
-                params=notification_params,
-                user_id=student.id
+            transaction.on_commit(
+                lambda params=notification_params.copy(), user_id=student.id: send_notification.delay(
+                    notification_name=Notification.TEST_ASSIGNED_NOTIFICATION,
+                    params=params,
+                    user_id=user_id,
+                ),
+                robust=True,
             )
 
         return Response(

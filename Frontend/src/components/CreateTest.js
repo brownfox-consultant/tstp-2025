@@ -47,7 +47,7 @@ function CreateTest({ setTestDetails }) {
 
   const onSubmit = (values) => {
     setCreateLoading(true);
-    createTest({ ...values, is_SectionalTest: isSectionalTest })
+    createTest({ ...values, is_sectional_test: isSectionalTest })
       .then((res) => {
         setTestDetails(res.data);
 

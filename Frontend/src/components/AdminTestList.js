@@ -150,7 +150,7 @@ function AdminTestList() {
 
   useEffect(() => {
     setTableLoading(true);
-    getTestsList({ page: current, search: searchText || globalSearch, page_size: pageSize, is_SectionalTest: isSectionalTest, ...params })
+    getTestsList({ page: current, search: searchText || globalSearch, page_size: pageSize, is_sectional_test: isSectionalTest, ...params })
       .then((res) => {
         setTestsData(res.data.results);
         setCurrent(res.data.current_page);
@@ -416,8 +416,8 @@ function AdminTestList() {
         {/* Header */}
         <div className="flex flex-row gap-4 mb-4 justify-between">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">{isSectionalTest ? "SectionalTest" : "Full Length Tests"}</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage and create {isSectionalTest ? "SectionalTest" : "full length tests"}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">{isSectionalTest ? "Sectional Test" : "Full Length Tests"}</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage and create {isSectionalTest ? "sectional tests" : "full length tests"}</p>
           </div>
           <div className="flex items-center gap-3">
             {role == "admin" && (
