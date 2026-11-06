@@ -67,11 +67,11 @@ const flatItems = [
     icon: <FontSizeOutlined />,
     label: "Full Length Tests",
   },
-   {
-    key: "SectionalTest",
-    icon: <FileUnknownOutlined />,
-    label: "Sectional Test",
-  },
+  //  {
+  //   key: "SectionalTest",
+  //   icon: <FileUnknownOutlined />,
+  //   label: "Sectional Test",
+  // },
   {
     key: "test-list",
     icon: <UnorderedListOutlined />,
