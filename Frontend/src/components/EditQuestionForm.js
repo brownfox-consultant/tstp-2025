@@ -931,46 +931,20 @@ form.setFieldsValue({
   }
 };
 
-const handlePreviousNavigation = async () => {
+const handlePreviousNavigation = () => {
   if (!hasPreviousQuestion) {
     return;
   }
 
-  try {
-    const values = await form.validateFields();
-
-    await onSubmit(values, "previous");
-  } catch (error) {
-    // Ant Design validation errors are already displayed
-    // beside the fields.
-    if (!error?.errorFields) {
-      console.error(
-        "Previous question navigation error:",
-        error
-      );
-    }
-  }
+  onPreviousQuestion?.();
 };
 
-const handleNextNavigation = async () => {
+const handleNextNavigation = () => {
   if (!hasNextQuestion) {
     return;
   }
 
-  try {
-    const values = await form.validateFields();
-
-    await onSubmit(values, "next");
-  } catch (error) {
-    // Ant Design validation errors are already displayed
-    // beside the fields.
-    if (!error?.errorFields) {
-      console.error(
-        "Next question navigation error:",
-        error
-      );
-    }
-  }
+  onNextQuestion?.();
 };
 
   return (
